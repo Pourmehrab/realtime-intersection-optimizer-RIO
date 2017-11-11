@@ -1,0 +1,5 @@
+simRep: 1
+simDur: 900
+warmup: 300
+simRes: 1
+timeRes: 1
