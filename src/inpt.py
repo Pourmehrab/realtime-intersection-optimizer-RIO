@@ -1,3 +1,10 @@
+'''
+By:     Mahmoud Pourmehrab
+E-mail: mpourmehrab@ufl.edu
+Last update: November/2017
+'''
+
+
 def readprms(self, intName, fileID, d):
     filepath = "./data/" + intName + "/" + fileID + "prms.txt"
     FILE = open(filepath)
