@@ -11,7 +11,7 @@ import numpy as np
 import sys
 from src.inter import Intersection
 from src.sim import Simulator
-from src.trjsol import LVTOsol
+from src.trjopt import LVTOsol
 
 if __name__ == "__main__":
     print('Python Path: ', sys.executable)
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     IntObj = Intersection(InterName)
     simObj = Simulator(InterName)
 
-    LVTOsol(300, 30, 50, -1, 3, 0, 100, simObj)
+    LVTOsol(300, 18,False)
 
     t2 = time.clock()
     print(' Elapsed Time: {} ms'.format(int(1000 * (t2 - t1))), end='')
