@@ -4,27 +4,21 @@ minimize f(x)
     subject to:
     g_i(x) >= 0,  i = 1,...,m
     h_j(x)  = 0,  j = 1,...,p
+
+
+By:     Mahmoud Pourmehrab
+E-mail: mpourmehrab@ufl.edu
+Date:        Nov 2017
+Last update: Nov/25/2017
 '''
 
 import numpy as np
-from bokeh.plotting import figure
-from bokeh.io import export_svgs, show
-from bokeh.models import HoverTool
+from src.vis import MahmoudVisual
+from src.trj import MahmoudTrj
+from scipy.optimize import minimize
 
 
-class MahmoudLAVO:
-    '''
-    By:     Mahmoud Pourmehrab
-    E-mail: mpourmehrab@ufl.edu
-    Date:        Nov 2017
-    Last update: Nov/25/2017
-    '''
-
-    lag = np.array([1])  # lag on signalization
-    res = 1  # second
-    eps = 0.01
-    deci = 2
-
+class MahmoudLAVO(MahmoudTrj):
     def __init__(self, t0, d0, v0, gs=0, gt=86400, fdeg=2, vmax=15, vcont=10, amin=-4.5, amax=3):
         '''
 
@@ -32,7 +26,7 @@ class MahmoudLAVO:
         :param v0:          initial speed in m/s
         :param gs:          start of green in s
         :param gt:          end of green in s
-        :param fdeg:        2: free, 1: dist-const, 0: time and dist-const
+        :param fdeg:        0: free, 1: dist-const, 2: time and dist-const
         :param vmax:        speed limit in m/s
         :param vcont:       speed limit at the control point in m/s
         :param amin:        deceleration rate in m/s2
@@ -50,40 +44,14 @@ class MahmoudLAVO:
         self.insight()
 
     def solve(self):
-        if self.fdeg == 2:
-            self.LVTOsol4sig()
+        if self.fdeg == 0:
+            self.LVTOfree()
+        elif self.fdeg == 1:
+            self.LVTOsingly()
         else:
-            pass
+            self.LVTOdoublly()
 
-    def insight(self):
-        print('''MahmoudTrj(.) received the following request:
-                dist: {:04.2f} m             initial speed: {:04.2f} m/s
-                deceleration: {:04.2f} m/s2   acceleration: {:04.2f} m/s2
-                spd limit: {:04.2f} m/s       spd limit @ control: {:04.2f} m/s
-                green interval:            [{:04.2f}, {:04.2f}] sec
-                '''.format(self.d0, self.v0, self.amin, self.amax, self.vmax, self.vcont, self.gs, self.gt))
-
-        if self.v0 > self.vmax:
-            t = (self.vmax - self.v0) / self.amin
-            d = (self.vmax ** 2 - self.v0 ** 2) / (2 * self.amin)
-            print('Vehicle can decelerate to spd limit in {:04.2f} sec, {:04.2f} m'.format(t, d))
-        else:
-            t = (self.vmax - self.v0) / self.amax
-            d = (self.vmax ** 2 - self.v0 ** 2) / (2 * self.amax)
-            print('Vehicle can accelerate to spd limit in {:04.2f} sec, {:04.2f} m'.format(t, d))
-        if self.vcont < self.vmax:
-            t = (self.vcont - self.vmax) / self.amin
-            d = (self.vcont ** 2 - self.vmax ** 2) / (2 * self.amin)
-            print('then decelerates to control spd limit in {:04.2f} sec, {:04.2f} m'.format(t, d))
-        elif self.vcont > self.vmax:
-            t = (self.vcont - self.vmax) / self.amax
-            d = (self.vcont ** 2 - self.vmax ** 2) / (2 * self.amax)
-            print('then accelerates to control spd limit in {:04.2f} sec, {:04.2f} m'.format(t, d))
-
-    def reset(self):
-        self.stat = False
-
-    def LVTOsol4sig(self):
+    def LVTOfree(self):
         ''' In this case vehicle speeds up to v3, d0 meters of its detection location
         this case we know what's the limit on v3 after traveling d0
         '''
@@ -109,6 +77,12 @@ class MahmoudLAVO:
             v3 = self.vcont
             while v3 >= 0:
                 print()
+
+    def LVTOsingly(self):
+        pass
+
+    def LVTOdoublly(self):
+        pass
 
     def setopt(self, v2, v3, a1, a3, tt):
         self.stat = True
@@ -155,22 +129,26 @@ class MahmoudLAVO:
         if abs(dv3) > self.eps and abs(a3) > self.eps:
             return (v3 - v2) / a3
 
-    def d1(self, t, a1):
-        return self.d0 - self.v0 * (t - self.t0) - a1 * (t - self.t0) ** 2 / 2
+    def d1(self, dt, a1):
+        # print('{}'.format(self.d0 - self.v0 * dt - a1 * dt ** 2 / 2))
+        return self.d0 - self.v0 * dt - a1 * dt ** 2 / 2
 
-    def d2(self, t, t1, v2, a1):
-        return self.d1(t1, a1) - v2 * (t - t1)
+    def d2(self, dt, t1, v2, a1):
+        # print('{}'.format(self.d1(t1, a1) - v2 * dt))
+        return self.d1(t1, a1) - v2 * dt
 
-    def d3(self, t, t1, t2, v2, a1, a3):
-        return self.d2(t2, t1, v2, a1) - v2 * (t - t2) - a3 * (t - t2) ** 2 / 2
+    def d3(self, dt, t1, t2, v2, a1, a3):
+        # print('{}'.format(self.d2(t2, t1, v2, a1) - v2 * dt - a3 * dt ** 2 / 2))
+        return self.d2(t2, t1, v2, a1) - v2 * dt - a3 * dt ** 2 / 2
 
     def d(self, t, t1, t2, v2, a1, a3):
-        if t <= t1:
-            return self.d1(t, a1)
-        elif t <= t1 + t2:
-            return self.d2(t, t1, v2, a1)
+        dt = t - self.t0
+        if dt <= t1:
+            return self.d1(dt, a1)
+        elif dt <= t1 + t2:
+            return self.d2(dt - t1, t1, v2, a1)
         else:
-            return self.d3(t, t1, t2, v2, a1, a3)
+            return self.d3(dt - t1 - t2, t1, t2, v2, a1, a3)
 
     def buildtrj(self, v2, v3, a1, a3):
         tt = self.tTime(v2, v3, a1, a3)
@@ -188,31 +166,13 @@ class MahmoudLAVO:
         self.depVar = vd(self.indepVar, t1, t2, v2, a1, a3)
         # control: the last point of trajectory should be zero
 
-    def blnkfig(self):
-        hover = HoverTool(tooltips=[
-            ("index", "$index"),
-            ("(time,dist)", "($x sec, $y m)"),
-        ])
-        fig = figure(width=500, height=500, tools=[hover],
-                     title="Mouse over the dots")
-        fig.title.text = "Time-Space Diagram"
-        fig.title.align = "center"
-        fig.output_backend = "svg"
-        return fig
-
-    def plotrj(self, fig):
-        fig.line(self.indepVar, self.depVar, line_width=3)
-        return fig
-
-    def exprtrj(self, fig):
-        export_svgs(fig, filename="trj.svg")
-
 
 if __name__ == "__main__":
-    x = MahmoudLAVO(0, 500, 17, 40)
+    x = MahmoudLAVO(13, 500, 17, 40)
     x.buildtrj(13.1345, 4.47734, -1.11671, -1.16845)
-    fig = x.plotrj(x.blnkfig())
-    show(fig)
-    export_svgs(fig, 'trj.svg')
+
+    vis = MahmoudVisual(6)
+    vis.plotrj(x.indepVar, x.depVar, 2)
+    vis.makeplt()
 
     print()
