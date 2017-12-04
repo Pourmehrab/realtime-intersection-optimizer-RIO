@@ -18,7 +18,6 @@ class Intersection:
             self.NoLanes = self.CM.shape[1]
 
         self.LS = Intersection.readMat(self, intName, 'LS')
-        self.NoLane = self.CM.shape[1]
 
         d = {"v": "v", "y": "y", "ar": "ar", "optRange": "optRange"}
         # speed : m/s, time : sec, distance : meters
@@ -30,7 +29,7 @@ class Intersection:
         return input
 
     def readPhs(self):
-        # TO-DO: don't hard-code this
+        # TODO: don't hard-code this
         self.ph = (
             {'lanes': (0, 1, 2, 3), 'minG': 5, 'maxG': 25},
             {'lanes': (4, 5, 6), 'minG': 5, 'maxG': 25},
