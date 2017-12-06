@@ -22,26 +22,14 @@ class MahmoudLAVO(MahmoudTrj):
     def __init__(self, t0, d0, v0, gs=0, gt=86400, fdeg=0, vmax=15, vcont=10, amin=-4.5, amax=3):
         '''
 
-        :param d0:          distance to control point
-        :param v0:          initial speed in m/s
-        :param gs:          start of green in s
-        :param gt:          end of green in s
         :param fdeg:        0: free, 1: dist-const, 2: time and dist-const
-        :param vmax:        speed limit in m/s
-        :param vcont:       speed limit at the control point in m/s
-        :param amin:        deceleration rate in m/s2
-        :param amax:        acceleration rate in m/s2
         '''
-        self.t0, self.d0, self.v0 = t0, d0, v0
+        self.insight()
 
+        super().__init__(t0, d0, v0, gs, gt, vmax, vcont, amin, amax)
         self.fdeg = fdeg
-        self.vmax, self.vcont = vmax, vcont
-        self.amin, self.amax = amin, amax
-        self.gs, self.gt = gs + self.lag, gt  # todo make sure lag is less than gt-gs
         self.x = np.array([vmax, vcont, amax, amin], dtype=float)
-        self.t1, self.t2, self.t3, self.tt, self.stat = 0, 0, 0, gt + 1, False
-
-        self.insight()  # todo add control arrivals to a similar method but somewhere else
+        self.t1, self.t2, self.t3, self.tt = 0, 0, 0, gt + 1
 
     def solve(self):
         if self.fdeg == 0:
@@ -76,7 +64,7 @@ class MahmoudLAVO(MahmoudTrj):
         bnds = ((0, self.vmax), (0, self.vcont), (self.amin, self.amax), (self.amin, self.amax))
         cons = ({'type': 'ineq',
                  'fun': lambda x, d0, v0, gs: (
-                                                  x[3] * (v0 - x[0]) ** 2 + x[2] * (
+                                                      x[3] * (v0 - x[0]) ** 2 + x[2] * (
                                                       2 * x[3] * d0 - (x[0] - x[1]) ** 2))
                                               / (2 * x[2] * x[3] * x[0]) - gs,
                  'jac': self.tTimeDer,
@@ -107,7 +95,7 @@ class MahmoudLAVO(MahmoudTrj):
         bnds = ((0, self.vmax), (0, self.vcont), (self.amin, self.amax), (self.amin, self.amax))
         cons = ({'type': 'ineq',
                  'fun': lambda x, d0, v0, gs: (
-                                                  x[3] * (v0 - x[0]) ** 2 + x[2] * (
+                                                      x[3] * (v0 - x[0]) ** 2 + x[2] * (
                                                       2 * x[3] * d0 - (x[0] - x[1]) ** 2))
                                               / (2 * x[2] * x[3] * x[0]) - gs,
                  'jac': self.tTimeDer,
@@ -143,31 +131,31 @@ class MahmoudLAVO(MahmoudTrj):
 
     def tTimeDer(self, x, d0, v0, gs):
         return np.array([(x[3] * (-v0 ** 2 + x[0] ** 2) + x[2] * (-2 * x[3] * d0 - x[0] ** 2 + x[1] ** 2)) / (
-            2 * x[2] * x[3] * x[0] ** 2)
+                2 * x[2] * x[3] * x[0] ** 2)
                             , (x[0] - x[1]) / (x[3] * x[0])
                             , -((v0 - x[0]) ** 2 / (2 * x[2] ** 2 * x[0]))
                             , (x[0] - x[1]) ** 2 / (2 * x[3] ** 2 * x[0])])
 
     def calct1(self, v2, a1):
         dv1 = v2 - self.v0
-        if abs(dv1) > self.eps and abs(a1) > self.eps:
+        if abs(dv1) > self.EPS and abs(a1) > self.EPS:
             return (v2 - self.v0) / a1
 
     def calct2(self, v2, v3, a1, a3):
         dv1 = v2 - self.v0
         dv3 = v3 - v2
-        if abs(dv1) > self.eps and abs(a1) > self.eps and abs(dv3) > self.eps and abs(a3) > self.eps:
+        if abs(dv1) > self.EPS and abs(a1) > self.EPS and abs(dv3) > self.EPS and abs(a3) > self.EPS:
             return (self.d0 - (v2 ** 2 - self.v0 ** 2) / (2 * a1) - (v3 ** 2 - v2 ** 2) / (2 * a3)) / v2
-        elif abs(dv1) <= self.eps or abs(a1) <= self.eps:
+        elif abs(dv1) <= self.EPS or abs(a1) <= self.EPS:
             return (self.d0 - (v3 ** 2 - v2 ** 2) / (2 * a3)) / v2
-        elif abs(dv3) <= self.eps or abs(a3) <= self.eps:
+        elif abs(dv3) <= self.EPS or abs(a3) <= self.EPS:
             return (self.d0 - (v2 ** 2 - self.v0 ** 2) / (2 * a1)) / v2
         else:
             return self.d0 / v2
 
     def calct3(self, v2, v3, a3):
         dv3 = v3 - v2
-        if abs(dv3) > self.eps and abs(a3) > self.eps:
+        if abs(dv3) > self.EPS and abs(a3) > self.EPS:
             return (v3 - v2) / a3
 
     def d1(self, dt, a1):
@@ -197,11 +185,11 @@ class MahmoudLAVO(MahmoudTrj):
         t2 = self.calct2(x[0], x[1], x[2], x[3])
 
         tend = self.t0 + tt
-        if tend % self.res > self.eps:
-            self.indepVar = np.append(np.arange(self.t0, self.t0 + tt, MahmoudLAVO.res, dtype=float), tend).round(
-                self.deci)
+        if tend % self.RES > self.EPS:
+            self.indepVar = np.append(np.arange(self.t0, self.t0 + tt, MahmoudLAVO.RES, dtype=float), tend).round(
+                self.DIG)
         else:
-            self.indepVar = np.arange(self.t0, self.t0 + tt, MahmoudLAVO.res, dtype=float).round(self.deci)
+            self.indepVar = np.arange(self.t0, self.t0 + tt, MahmoudLAVO.RES, dtype=float).round(self.DIG)
 
         vd = np.vectorize(self.d)
         self.depVar = vd(self.indepVar, t1, t2, x[0], x[2], x[3])

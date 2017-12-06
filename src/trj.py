@@ -1,12 +1,30 @@
-
 class MahmoudTrj:
     '''
-    Abstract class
+    Abstract class for trajectories
     '''
-    lag = 1  # lag on signalization
-    res = 1  # second
-    eps = 0.01
-    deci = 2
+    LAG = 1  # lag on signalization
+    RES = 1  # second
+    EPS = 0.01
+    DIG = 2
+
+    def __init__(self, t0, d0, v0, gs, gt, vmax, vcont, amin, amax):
+        '''
+
+        :param t0:          current time
+        :param d0:          distance to control point
+        :param v0:          initial speed in m/s
+        :param gs:          start of green in s
+        :param gt:          end of green in s
+        :param vmax:        speed limit in m/s
+        :param vcont:       speed limit at the control point in m/s
+        :param amin:        deceleration rate in m/s2
+        :param amax:        acceleration rate in m/s2
+        '''
+        self.t0, self.d0, self.v0 = t0, d0, v0
+        self.amin, self.amax = amin, amax
+        self.vmax, self.vcont = vmax, vcont
+        self.gs, self.gt = gs + self.LAG, gt  # todo make sure lag is less than gt-gs
+        self.stat = False
 
     def insight(self):
         print('''MahmoudTrj(.) received the following request:

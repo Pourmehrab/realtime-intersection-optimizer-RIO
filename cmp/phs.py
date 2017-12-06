@@ -10,17 +10,18 @@ Last update: Dec/03/2017
 
 from itertools import combinations
 import numpy as np
+import os
 
 
-def phenum(l, LLI):
+def phenum(l, lli, name):
     '''
 
     :param l: number of lanes
-    :param LLI: link lane incidence matrix
+    :param lli: link lane incidence matrix
     :return:
     '''
 
-    allCombs = []
+    all_combs = []
     phlen = 1
 
     # of all generated subset of lanes
@@ -29,68 +30,87 @@ def phenum(l, LLI):
     nall, ncnf, ninc = 0, 0, 0
 
     while True:
-        newComb = []
+        new_comb = []
         for ph in combinations(range(0, l), phlen):
-            newComb.append(ph)
-        nall += newComb.__len__()
+            new_comb.append(ph)
+        nall += len(new_comb)
 
-        nonConfCombs = chkconflict(newComb, LLI)
+        non_conf_combs = chkconflict(new_comb, lli)
 
-        if nonConfCombs.__len__() == 0:  # all conflicting
-            ncnf += newComb.__len__()
+        if len(non_conf_combs) == 0:  # all conflicting
+            ncnf += len(new_comb)
             break
         else:  # some conflicting
-            ncnf += newComb.__len__() - nonConfCombs.__len__()
+            ncnf += len(new_comb) - len(non_conf_combs)
 
-            if allCombs.__len__() > 0:
-                allCombs, ninc = chkinc(allCombs, nonConfCombs, ninc)
+            if len(all_combs) > 0:
+                all_combs, ninc = chkinc(all_combs, non_conf_combs, ninc)
             else:
-                allCombs += nonConfCombs
+                all_combs += non_conf_combs
 
         phlen += 1
 
     print('Phase Generator Report enumerated : {}, conflicting: {}, inclusion: {}, remaining: {}\n'.format(
-        nall, ncnf, ninc, allCombs.__len__()))
-    return allCombs
+        nall, ncnf, ninc, len(all_combs)))
+
+    write2txt(all_combs, l, name)
 
 
-def chkconflict(newComb, LLI):
+def chkconflict(new_comb, lli):
     '''
 
-    :param newComb:
-    :param LLI:
+    :param new_comb:
+    :param lli:
     :return: list of non conflicting
     '''
-    list, n = [], 0
+    refined_combs, n = [], 0
 
-    for comb in newComb:
-        sum = 0
+    for comb in new_comb:
+        total = 0
         for jj in comb:
-            sum += np.sum(np.sum(LLI[jj, comb]))
+            total += np.sum(np.sum(lli[jj, comb]))
 
-        if sum == 0:
-            list.append(comb)
+        if total == 0:
+            refined_combs.append(comb)
 
-    return list
+    return refined_combs
 
 
-def chkinc(allCombs, nonConfCombs, ninc):
+def chkinc(all_combs, non_conf_combs, ninc):
     indx = 0
-    while indx < allCombs.__len__():
-        if allCombs.__len__() == 0:
+    while indx < len(all_combs):
+        if len(all_combs) == 0:
             print('error')
-        t1 = allCombs[indx]
-        for t2 in nonConfCombs:
+        t1 = all_combs[indx]
+        for t2 in non_conf_combs:
             flag = True
             if set(t1).issubset(t2):
                 ninc += 1
-                del allCombs[indx]
+                del all_combs[indx]
                 flag = False
                 break
         if flag:
             indx += 1
-        elif allCombs.__len__() == 0:
+        elif len(all_combs) == 0:
             break
-    allCombs += nonConfCombs
-    return allCombs, ninc
+    all_combs += non_conf_combs
+    return all_combs, ninc
 
+
+def write2txt(all_combs, l, name):
+    filepath = os.path.join('data/' + name, 'PPI.txt')
+    with open(filepath, "w") as text_file:
+        for ph in range(0, len(all_combs)):
+            lane = 0
+            if lane in all_combs[ph]:
+                text_file.writelines("1")
+            else:
+                text_file.writelines("0")
+            lane = 1
+            while lane < l:
+                if lane in all_combs[ph]:
+                    text_file.writelines(",1")
+                else:
+                    text_file.writelines(",0")
+                lane += 1
+            text_file.writelines("\n")

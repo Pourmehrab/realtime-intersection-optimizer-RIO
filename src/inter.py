@@ -5,34 +5,41 @@ Last update: November/2017
 '''
 
 import numpy as np
-from src.inpt import readprms
+import os
+from src.inpt import read_prms
+from cmp.phs import phenum
 
 
 class Intersection:
-    def __init__(self, intName):
-        self.CM = Intersection.readMat(self, intName, 'CM')
-        if self.CM.shape[0] != self.CM.shape[1]:
-            print('Check CM file for CM to be square matrix.\n')
-            quit()
-        else:
-            self.NoLanes = self.CM.shape[1]
+    def __init__(self, int_name):
+        self.name = int_name
+        self.nl=0
+        self.set_lli()
 
-        self.LS = Intersection.readMat(self, intName, 'LS')
+        self.move_share = Intersection._read_mat(self, int_name, 'MS')
+        self._set_phs()
 
         d = {"v": "v", "y": "y", "ar": "ar", "optRange": "optRange"}
         # speed : m/s, time : sec, distance : meters
-        readprms(self, intName, 'int', d)
+        read_prms(self, int_name, 'int', d)
 
-    def readMat(self, intName, filename):
-        filepath = "./data/" + intName + "/" + filename + ".txt"
-        input = np.loadtxt(filepath, dtype='i', delimiter=',')
-        return input
+    def set_lli(self):
+        self.lli = self._read_mat(self.name, 'CM')
+        if self.lli.shape[0] != self.lli.shape[1]:
+            raise Exception('Check CM.txt file for CM to be square matrix.')
+        else:
+            self.nl = self.lli.shape[1]
 
-    def readPhs(self):
-        # TODO: don't hard-code this
-        self.ph = (
-            {'lanes': (0, 1, 2, 3), 'minG': 5, 'maxG': 25},
-            {'lanes': (4, 5, 6), 'minG': 5, 'maxG': 25},
-            {'lanes': (7, 8, 9, 10), 'minG': 5, 'maxG': 25},
-            {'lanes': (11, 12, 13, 14, 15), 'minG': 5, 'maxG': 25}
-        )
+    def _read_mat(self, int_name, filename):
+        filepath = os.path.join('data/' + int_name, filename + '.txt')
+        if os.path.exists(filepath):
+            return np.loadtxt(filepath, dtype='i', delimiter=',')
+        else:
+            raise Exception(filepath + ' was not found.')
+
+    def _set_phs(self):
+        filepath = os.path.join('data/' + self.name, 'PPI.txt')
+        if os.path.exists(filepath):
+            self.ppi = np.loadtxt(filepath, dtype='i', delimiter=',')
+        else:
+            phenum(self.nl, self.lli, self.name)

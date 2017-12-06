@@ -7,7 +7,6 @@ Last update: Dec/03/2017
 '''
 
 import time
-from cmp.phs import phenum
 # import datetime
 import sys
 from src.inter import Intersection
@@ -17,13 +16,13 @@ if __name__ == "__main__":
     print('Python Path: ', sys.executable)
     print('Python Version: ', sys.version)
 
+    inter_name = '13th16th'
+
+    IntObj = Intersection(inter_name)
+    simObj = Simulator(inter_name)
+
     t1 = time.clock()
-    InterName = '13th16th'
 
-    IntObj = Intersection(InterName)
-    simObj = Simulator(InterName)
-
-    phenum(IntObj.NoLanes,IntObj.CM)
 
     t2 = time.clock()
     print(' Elapsed Time: {} ms'.format(int(1000 * (t2 - t1))), end='')
