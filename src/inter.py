@@ -1,7 +1,8 @@
 '''
 By:     Mahmoud Pourmehrab
 E-mail: mpourmehrab@ufl.edu
-Last update: November/2017
+Date:        Nov 2017
+Last update: Dec/08/2017
 '''
 
 import numpy as np
@@ -13,7 +14,7 @@ from cmp.phs import phenum
 class Intersection:
     def __init__(self, int_name):
         self.name = int_name
-        self.nl=0
+        self.nl = 0
         self.set_lli()
 
         self.move_share = Intersection._read_mat(self, int_name, 'MS')
