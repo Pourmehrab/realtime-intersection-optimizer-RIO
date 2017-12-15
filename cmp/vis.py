@@ -2,7 +2,7 @@ from bokeh.plotting import figure
 from bokeh.io import export_svgs, show
 from bokeh.models import HoverTool
 
-class MahmoudVisual:
+class MahmoudVis:
     def __init__(self, lane):
         hover = HoverTool(tooltips=[
             ("index", "$index"),

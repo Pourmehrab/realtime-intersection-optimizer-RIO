@@ -1,4 +1,4 @@
-v: 14
-y: 1.5
-ar: 1
-optRange: 300
+max_speed: 14
+yellow_duration: 1.5
+all_red_duration: 1
+opt_range: 300

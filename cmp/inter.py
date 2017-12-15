@@ -7,7 +7,7 @@ Last update: Dec/08/2017
 
 import numpy as np
 import os
-from src.inpt import read_prms
+from cmp.inpt import read_prms
 from cmp.phs import phenum
 
 
@@ -20,8 +20,8 @@ class Intersection:
         self.move_share = Intersection._read_mat(self, int_name, 'MS')
         self._set_phs()
 
-        d = {"v": "v", "y": "y", "ar": "ar", "optRange": "optRange"}
-        # speed : m/s, time : sec, distance : meters
+        d = {"max_speed": '_v', "yellow_duration": '_y', "all_red_duration": '_ar', "opt_range": '_opt_range'}
+        # max_speed : m/s, time : sec, distance : meters
         read_prms(self, int_name, 'int', d)
 
     def set_lli(self):
@@ -29,7 +29,7 @@ class Intersection:
         if self.lli.shape[0] != self.lli.shape[1]:
             raise Exception('Check CM.txt file for CM to be square matrix.')
         else:
-            self.nl = self.lli.shape[1]
+            self._nl = self.lli.shape[1]
 
     def _read_mat(self, int_name, filename):
         filepath = os.path.join('data/' + int_name, filename + '.txt')
@@ -43,4 +43,10 @@ class Intersection:
         if os.path.exists(filepath):
             self.ppi = np.loadtxt(filepath, dtype='i', delimiter=',')
         else:
-            phenum(self.nl, self.lli, self.name)
+            phenum(self._nl, self.lli, self.name)
+
+    def get_num_lanes(self):
+        return self._nl
+
+    def get_max_speed(self):
+        return self._v

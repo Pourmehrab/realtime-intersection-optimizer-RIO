@@ -96,7 +96,7 @@ class VehiclesList(_DoublyLinkedBase):
 
     # ------------------------------- utility method -------------------------------
     def _validate(self, p):
-        if not isinstance(self, p):
+        if not isinstance(p, self.Position):
             raise TypeError('p must be proper Position type')
         if p._container is not self:
             raise ValueError('p is no longer valid')
@@ -162,11 +162,52 @@ class VehiclesList(_DoublyLinkedBase):
 
 class Lanes:
     def __init__(self, nl):
-        # todo: a lane can have speed limit and other attributes
-        self.vehlist = {}
-        for l in range(0, nl):
-            self.vehlist[l] = VehiclesList()
+        '''
+        Data Structure for an a dictionary of lanes
+
+        :param nl: number of lanes
+        '''
+        # todo:(Mahmoud) a lane can have speed limit, opt range and other some other attributes
+        self.vehlist = {l: VehiclesList() for l in range(0, nl)}
 
 
-if __name__ == "__main__":
-    pass
+class Vehicle:
+    def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest=1, length=4, amin=-4.5, amax=3):
+        '''
+        Data Structure for an individual vehicle
+
+        :param det_id:          the id assigned to this vehicle by radio
+        :param det_type:        0: Conventional, 1: Connected, 2: Automated
+        :param det_time:        detection time in seconds from reference time
+        :param speed:           detection speed in m/s
+        :param dist:            detection distance to stop bar in meter
+        :param length:          length of vehicle in meter
+        :param amin:            desirable deceleration rate in m/s2
+        :param amax:            desired acceleration rate in m/s2
+        :param dest:            destination 0: right turn, 1: through, 2: left
+        :param des_speed:       desired speed in m/s
+        '''
+        self.id = det_id
+        self.type = det_type
+        self.det_time = det_time
+        self.speed = speed
+        self.dist = dist
+        self.length = length
+        self.amin = amin
+        self.amax = amax
+        self.dest = dest
+        self.des_speed = des_speed
+
+    def set_freeflowtt(self):
+        '''
+
+        :return: freeflowtt:      free flow travel time in second
+        '''
+        pass
+
+    def set_trj(self):
+        '''
+
+        :return: trajectory of the vehicle
+        '''
+        pass
