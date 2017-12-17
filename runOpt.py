@@ -31,22 +31,25 @@ if __name__ == "__main__":
 
     # Initialization
     intersection = Intersection(inter_name)
-    sim_prms = Simulator(inter_name)
-
     num_lanes = intersection.get_num_lanes()
-    lanes = Lanes(num_lanes)
     ppi = intersection.get_phs()
+    max_speed = intersection.get_max_speed()  # in m/s
 
     signal = SigNet(num_lanes, ppi)
+
+    lanes = Lanes(num_lanes)
+
+    sim_prms = Simulator(inter_name)
+
+    t1 = time.clock()
+    # sample signal optimization
     lanes_demand = [3, 2, 3, 4, 5, 2, 6, 3, 2, 7, 3, 5, 2, 5, 3, 6]
     signal.set_dem(lanes_demand)
     signal.solve()
 
-    t1 = time.clock()
+
 
     # add vehicles to the lane
-    max_speed = intersection.get_max_speed()  # in m/s
-
     # work with vehicle data structure
     det_time = 0
     for i in range(100):
@@ -68,24 +71,16 @@ if __name__ == "__main__":
     p = lanes.vehlist[0].first()
     # lanes.vehlist[0].delete(p)
 
-
-
+    t2 = time.clock()
+    print(' Elapsed Time: {} ms'.format(int(1000 * (t2 - t1))), end='')
     # do some trj optimization
     lane = 0
     fol_veh = lanes.vehlist[lane].first()
     lead_veh = lanes.vehlist[lane].before(fol_veh)
     if lead_veh is None:
-        x = MahmoudAVO(None, fol_veh.element(), 100)
+        trjoptimizer = MahmoudAVO(None, fol_veh.element(), 100)
     else:
-        x = MahmoudAVO(lead_veh.element(), fol_veh.element(), 100)
+        trjoptimizer = MahmoudAVO(lead_veh.element(), fol_veh.element(), 100)
+    trjoptimizer.solve()
 
-    x.solve()
-    # x.buildtrj(13.1345, 4.47734, -1.11671, -1.16845)
-    # vis = MahmoudVisual(6)
-    # vis.plotrj(x.indepVar, x.depVar, 2)
-    # vis.makeplt()
 
-    print()
-
-    t2 = time.clock()
-    print(' Elapsed Time: {} ms'.format(int(1000 * (t2 - t1))), end='')

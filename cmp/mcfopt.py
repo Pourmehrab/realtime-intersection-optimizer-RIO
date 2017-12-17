@@ -4,6 +4,7 @@ This class is meant to slove the min cost flow problem that is set up for phase 
 Code is written in Python 3
 Install the list of packages in the Pipfile using PyEnv
 
+solver by Google: https://goo.gl/jFncvj
 
 By:     Mahmoud Pourmehrab
 E-mail: mpourmehrab@ufl.edu
@@ -12,6 +13,7 @@ Last update: Dec/15/2017
 '''
 
 from ortools.graph import pywrapgraph
+import numpy as np
 
 
 class SigNet:
@@ -32,7 +34,8 @@ class SigNet:
 
 
     '''
-    M = 999  # todo hash the node number based on p and l
+    M = 999
+    CMIN = 1
 
     def __init__(self, num_lanes, ppi):
         num_ph = ppi.shape[0]
@@ -43,13 +46,22 @@ class SigNet:
         # add phase selection arcs
         self.start_nodes = [p for p in range(num_ph)]
         self.end_nodes = [num_ph + p for p in range(num_ph)]
-        self.unit_costs = [1 for p in range(num_ph)]
+        max_ph_size = max(np.sum(ppi, 1))
+        self.unit_costs = [int(self.CMIN + max_ph_size - sum(ppi[p]) + 1) for p in range(num_ph)]
+        self.capacities = [self.M for p in range(num_ph)]
+
+        # add phase activator arcs
+        self.start_nodes += [p for p in range(num_ph)]
+        self.end_nodes += [num_ph + p for p in range(num_ph)]
+        self.unit_costs += [self.CMIN for p in range(num_ph)]
+        self.capacities += [1 for p in range(num_ph)]
 
         # add sink arcs
         self.start_nodes += [num_ph + p for p in range(num_ph)]
         self.end_nodes += [2 * num_ph for p in range(num_ph)]
         self.unit_costs += [0 for p in range(num_ph)]
         self.demand_nodes = [num_ph + p for p in range(num_ph)]
+        self.capacities += [self.M for p in range(num_ph)]
 
         # add lane to phase arcs
         index = len(self.start_nodes) - 1
@@ -60,8 +72,7 @@ class SigNet:
                     self.start_nodes.append(2 * num_ph + 1 + l)
                     self.end_nodes.append(p)
                     self.unit_costs.append(0)
-
-        self.capacities = [self.M for n in range(len(self.start_nodes))]
+                    self.capacities.append(self.M)
 
         self.supplies = [0 for n in range(2 * num_ph + self.num_lanes + 1)]
 
@@ -88,16 +99,18 @@ class SigNet:
         # Find the minimum cost flow between node 0 and node 4.
         if min_cost_flow.Solve() == min_cost_flow.OPTIMAL:
             print('Solution to MCF found.')
-            # print('Minimum cost:', min_cost_flow.OptimalCost())
-            # print('')
-            # print('  Arc    Flow / Capacity  Cost')
+            print('Minimum cost:', min_cost_flow.OptimalCost())
+            print('')
+            print('  Arc    Flow / Capacity  Cost')
             # for i in range(min_cost_flow.NumArcs()):
-            #     cost = min_cost_flow.Flow(i) * min_cost_flow.UnitCost(i)
-            #     print('%1s -> %1s   %3s  / %3s       %3s' % (
-            #         min_cost_flow.Tail(i),
-            #         min_cost_flow.Head(i),
-            #         min_cost_flow.Flow(i),
-            #         min_cost_flow.Capacity(i),
-            #         cost))
+            for i in range(16):
+                if min_cost_flow.Flow(i) > 0:
+                    cost = min_cost_flow.Flow(i) * min_cost_flow.UnitCost(i)
+                    print('%1s -> %1s   %3s  / %3s       %3s' % (
+                        min_cost_flow.Tail(i),
+                        min_cost_flow.Head(i),
+                        min_cost_flow.Flow(i),
+                        min_cost_flow.Capacity(i),
+                        cost))
         else:
             raise Exception('There was an issue with the min cost flow input.')
