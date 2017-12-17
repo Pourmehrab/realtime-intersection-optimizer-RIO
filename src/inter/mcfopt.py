@@ -9,7 +9,7 @@ solver by Google: https://goo.gl/jFncvj
 By:     Mahmoud Pourmehrab
 E-mail: mpourmehrab@ufl.edu
 Date:        Dec 2017
-Last update: Dec/15/2017
+Last update: Dec/17/2017
 '''
 
 from ortools.graph import pywrapgraph
@@ -25,13 +25,15 @@ class SigNet:
 
     ARCS:
     Phase-selection arcs are from 0 to |p|-1
-        cost 1 unit
-    Sink arcs are from |p| to 2|p|-1
-        cost 0 unit
-    Lane-assignment arcs are from 2|p| to len(A)
-        cost 0 unit
-    (Arcs have no capacity let's say M)
+        cost 1 unit / cap of M
+    Phase-activator arcs are from |p| to 2|p|-1
+        cost 1 unit / cap of 1
+    Sink arcs are from 2|p| to 3|p|-1
+        cost 0 unit / cap of M
+    Lane-assignment arcs are from 3|p| to len(A)
+        cost 0 unit / cap of M
 
+    (Note M is a large number implemented as self.M)
 
     '''
     M = 999
@@ -96,21 +98,20 @@ class SigNet:
         for i in range(0, len(self.supplies)):
             min_cost_flow.SetNodeSupply(i, self.supplies[i])
 
-        # Find the minimum cost flow between node 0 and node 4.
-        if min_cost_flow.Solve() == min_cost_flow.OPTIMAL:
-            print('Solution to MCF found.')
-            print('Minimum cost:', min_cost_flow.OptimalCost())
-            print('')
-            print('  Arc    Flow / Capacity  Cost')
-            # for i in range(min_cost_flow.NumArcs()):
-            for i in range(16):
-                if min_cost_flow.Flow(i) > 0:
-                    cost = min_cost_flow.Flow(i) * min_cost_flow.UnitCost(i)
-                    print('%1s -> %1s   %3s  / %3s       %3s' % (
-                        min_cost_flow.Tail(i),
-                        min_cost_flow.Head(i),
-                        min_cost_flow.Flow(i),
-                        min_cost_flow.Capacity(i),
-                        cost))
-        else:
-            raise Exception('There was an issue with the min cost flow input.')
+        # Find the minimum cost flows
+        # if min_cost_flow.Solve() == min_cost_flow.OPTIMAL:
+        #     print('Minimum cost:', min_cost_flow.OptimalCost())
+        #     print('')
+        #     print('  Arc    Flow / Capacity  Cost')
+        #     # for i in range(min_cost_flow.NumArcs()):
+        #     for i in range(16):
+        #         if min_cost_flow.Flow(i) > 0:
+        #             cost = min_cost_flow.Flow(i) * min_cost_flow.UnitCost(i)
+        #             print('%1s -> %1s   %3s  / %3s       %3s' % (
+        #                 min_cost_flow.Tail(i),
+        #                 min_cost_flow.Head(i),
+        #                 min_cost_flow.Flow(i),
+        #                 min_cost_flow.Capacity(i),
+        #                 cost))
+        # else:
+        #     raise Exception('There was an issue with the min cost flow input.')

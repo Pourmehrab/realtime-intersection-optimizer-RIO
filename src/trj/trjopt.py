@@ -10,7 +10,7 @@ Last update: Dec/14/2017
 import numpy as np
 from scipy.optimize import minimize
 
-from src.trj import MahmoudTrj
+from src.trj.trj import MahmoudTrj
 
 
 class MahmoudAVO(MahmoudTrj):
