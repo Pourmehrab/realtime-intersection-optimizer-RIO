@@ -7,8 +7,8 @@ Last update: Dec/08/2017
 
 import numpy as np
 import os
-from cmp.inpt import read_prms
-from cmp.phs import phenum
+from src.inpt.inpt import read_prms
+from src.inter.phs import phenum
 
 
 class Intersection:

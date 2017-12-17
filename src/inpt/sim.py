@@ -4,7 +4,7 @@ E-mail: mpourmehrab@ufl.edu
 Date:        November 2017
 Last update: Dec/08/2017
 '''
-from cmp.inpt import read_prms
+from src.inpt.inpt import read_prms
 
 
 class Simulator:

@@ -16,11 +16,11 @@ import time
 
 import numpy as np
 
-from cmp.inter import Intersection
-from cmp.sim import Simulator
-from cmp.veh import Lanes, Vehicle
-from cmp.mcfopt import SigNet
-from src.trjopt import MahmoudAVO
+from src.inter.inter import Intersection
+from src.inpt.sim import Simulator
+from src.inter.veh import Lanes, Vehicle
+from src.inter.mcfopt import SigNet
+from src.trj.trjopt import MahmoudAVO
 
 if __name__ == "__main__":
     print('Python Path: ', sys.executable)

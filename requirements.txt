@@ -1,0 +1,4 @@
+numpy==1.13.3
+scipy==1.0.0
+bokeh==0.12.10
+ortools==6.6.4656
