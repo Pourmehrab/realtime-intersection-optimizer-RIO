@@ -41,9 +41,11 @@ class Intersection:
     def _set_phs(self):
         filepath = os.path.join('data/' + self.name, 'PPI.txt')
         if os.path.exists(filepath):
-            self.ppi = np.loadtxt(filepath, dtype='i', delimiter=',')
+            self._ppi = np.loadtxt(filepath, dtype='i', delimiter=',')
         else:
             phenum(self._nl, self.lli, self.name)
+    def get_phs(self):
+        return self._ppi
 
     def get_num_lanes(self):
         return self._nl

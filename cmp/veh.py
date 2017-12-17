@@ -203,11 +203,19 @@ class Vehicle:
 
         :return: freeflowtt:      free flow travel time in second
         '''
-        pass
+        pass # todo compute free flow travel time
 
     def set_trj(self):
         '''
 
         :return: trajectory of the vehicle
         '''
-        pass
+        pass # todo set the trajectory
+
+    def set_earlst(self,t):
+        '''
+
+        :param t: earliest time vehicle can get to the stopbar if enouhg green is given
+        :return: same
+        '''
+        self.earlst = t
