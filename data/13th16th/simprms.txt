@@ -1,0 +1,4 @@
+simulation_repetition: 900
+simulation_duration: 900
+warmup_duration: 300
+optimization_frequency: 1
