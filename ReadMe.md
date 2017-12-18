@@ -1,5 +1,5 @@
 # General Description
-SI unit is used.
+SI unit, Python 3.6.3 used.
 
 ## PyCharm Set up
 * To use Markdown in PyCharm install "Markdown Support" under Plugin menu
@@ -29,6 +29,7 @@ This files is the main file should be run. It moderates all else.
 ## Useful Links
 * Markdown hints [here](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
 * Paper is on overleaf [here](https://www.overleaf.com/9570639sgrcxsbwcxxm)
+* graphs on overleaf too [here](https://www.overleaf.com/12858212yfdxbdznnyhb)
 
 
 
