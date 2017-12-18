@@ -1,5 +1,5 @@
 # General Description
-SI unit is used.
+SI unit, Python 3.6.3 used.
 
 ## PyCharm Set up
 * To use Markdown in PyCharm install "Markdown Support" under Plugin menu
