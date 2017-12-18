@@ -46,12 +46,12 @@ class TikzDirectedGraph:
             if i < ngap:
                 lane += 1
                 self._f.write(
-                    '\\node (l{:d}) at ( {:2.2f},{:2.2f}) [circle,line width=0.8mm,draw,inner sep=0pt,minimum size=6mm] {{$l_{{{:d}}}$}};\n'.format(
+                    '\\node (l{:d}) at ({:2.2f},{:2.2f}) [circle,line width=0.8mm,draw,inner sep=0pt,minimum size=6mm] {{$l_{{{:d}}}$}};\n'.format(
                         lane, x, y, lane))
             else:
                 dis_lane += 1
                 self._f.write(
-                    '\\node (d{:d}) at ( {:2.2f},{:2.2f}) [rectangle,draw,inner sep=0pt,minimum size=6mm] {{$d_{{{:d}}}$}};\n'.format(
+                    '\\node (d{:d}) at ({:2.2f},{:2.2f}) [rectangle,draw,inner sep=0pt,minimum size=6mm] {{$d_{{{:d}}}$}};\n'.format(
                         dis_lane, x, y, dis_lane))
             if i != ngap - 1:
                 y += s
@@ -65,12 +65,12 @@ class TikzDirectedGraph:
             if i < ngap:
                 lane += 1
                 self._f.write(
-                    '\\node (l{:d}) at ( {:2.2f},{:2.2f}) [circle,line width=0.8mm,draw,inner sep=0pt,minimum size=6mm] {{$l_{{{:d}}}$}};\n'.format(
+                    '\\node (l{:d}) at ({:2.2f},{:2.2f}) [circle,line width=0.8mm,draw,inner sep=0pt,minimum size=6mm] {{$l_{{{:d}}}$}};\n'.format(
                         lane, x, y, lane))
             else:
                 dis_lane += 1
                 self._f.write(
-                    '\\node (d{:d}) at ( {:2.2f},{:2.2f}) [rectangle,draw,inner sep=0pt,minimum size=6mm] {{$d_{{{:d}}}$}};\n'.format(
+                    '\\node (d{:d}) at ({:2.2f},{:2.2f}) [rectangle,draw,inner sep=0pt,minimum size=6mm] {{$d_{{{:d}}}$}};\n'.format(
                         dis_lane, x, y, dis_lane))
             if i != ngap - 1:
                 x += s
@@ -84,12 +84,12 @@ class TikzDirectedGraph:
             if i < ngap:
                 lane += 1
                 self._f.write(
-                    '\\node (l{:d}) at ( {:2.2f},{:2.2f}) [circle,line width=0.8mm,draw,inner sep=0pt,minimum size=6mm] {{$l_{{{:d}}}$}};\n'.format(
+                    '\\node (l{:d}) at ({:2.2f},{:2.2f}) [circle,line width=0.8mm,draw,inner sep=0pt,minimum size=6mm] {{$l_{{{:d}}}$}};\n'.format(
                         lane, x, y, lane))
             else:
                 dis_lane += 1
                 self._f.write(
-                    '\\node (d{:d}) at ( {:2.2f},{:2.2f}) [rectangle,draw,inner sep=0pt,minimum size=6mm] {{$d_{{{:d}}}$}};\n'.format(
+                    '\\node (d{:d}) at ({:2.2f},{:2.2f}) [rectangle,draw,inner sep=0pt,minimum size=6mm] {{$d_{{{:d}}}$}};\n'.format(
                         dis_lane, x, y, dis_lane))
             if i != ngap - 1:
                 y -= s
@@ -103,12 +103,12 @@ class TikzDirectedGraph:
             if i < ngap:
                 lane += 1
                 self._f.write(
-                    '\\node (l{:d}) at ( {:2.2f},{:2.2f}) [circle,line width=0.8mm,draw,inner sep=0pt,minimum size=6mm] {{$l_{{{:d}}}$}};\n'.format(
+                    '\\node (l{:d}) at ({:2.2f},{:2.2f}) [circle,line width=0.8mm,draw,inner sep=0pt,minimum size=6mm] {{$l_{{{:d}}}$}};\n'.format(
                         lane, x, y, lane))
             else:
                 dis_lane += 1
                 self._f.write(
-                    '\\node (d{:d}) at ( {:2.2f},{:2.2f}) [rectangle,draw,inner sep=0pt,minimum size=6mm] {{$d_{{{:d}}}$}};\n'.format(
+                    '\\node (d{:d}) at ({:2.2f},{:2.2f}) [rectangle,draw,inner sep=0pt,minimum size=6mm] {{$d_{{{:d}}}$}};\n'.format(
                         dis_lane, x, y, dis_lane))
             if i != ngap - 1:
                 x -= s
@@ -154,7 +154,7 @@ class TikzDirectedGraph:
         for l in range(self.num_lanes):
             lane = l + 1
             self._f.write(
-                '\\node (l{:d}) at ( {:2.2f},{:2.2f}) [circle,draw,inner sep=0pt,minimum size=6mm] {{$l_{{{:d}}}$}};\n'.format(
+                '\\node (l{:d}) at ({:2.2f},{:2.2f}) [circle,draw,inner sep=0pt,minimum size=6mm] {{$l_{{{:d}}}$}};\n'.format(
                     lane, x, y, lane))
             self._f.write('\\node [black,above] at (l{:d}.north) {{{{\\tiny $(+d_{{{:d}}})$}}}};\n'.format(lane, lane))
             x += self.W
@@ -165,14 +165,14 @@ class TikzDirectedGraph:
         for ph in range(len(self.ppi)):
             phase = ph + 1
             self._f.write(
-                '\\node (p{:d}) at ( {:2.2f},{:2.2f}) [circle,draw,inner sep=0pt,minimum size=6mm] {{$p_{{{:d}}}$}};\n'.format(
+                '\\node (p{:d}) at ({:2.2f},{:2.2f}) [circle,draw,inner sep=0pt,minimum size=6mm] {{$p_{{{:d}}}$}};\n'.format(
                     phase, x, y, phase))
             self._f.write(
-                '\\node (pp{:d}) at ( {:2.2f},{:2.2f}) [circle,draw,inner sep=0pt,minimum size=6mm] {{$p_{{{:d}}}^\prime$}};\n'.format(
+                '\\node (pp{:d}) at ({:2.2f},{:2.2f}) [circle,draw,inner sep=0pt,minimum size=6mm] {{$p_{{{:d}}}^\prime$}};\n'.format(
                     phase, x, y - self.H, phase))
             x += self.W
         self._f.write(
-            '\\node (sink) at ( {:2.2f},{:2.2f}) [circle,draw,inner sep=1.5pt,minimum size=6mm] {{$sink$}};\n'.format(
+            '\\node (sink) at ({:2.2f},{:2.2f}) [circle,draw,inner sep=1.5pt,minimum size=6mm] {{$sink$}};\n'.format(
                 0, 0))
         self._f.write('\\node [black,below] at (sink.south) {{$(-\\sum_{{l=1}}^{{16}} d_{{l}})$}};\n')
 
@@ -205,4 +205,3 @@ class TikzDirectedGraph:
     def _closefile(self, file):
         file.write('\end{tikzpicture}')
         file.close()
-        print('done')

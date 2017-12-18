@@ -7,7 +7,7 @@ Install the list of packages in the Pipfile using PyEnv
 By:     Mahmoud Pourmehrab
 E-mail: mpourmehrab@ufl.edu
 Date:        Nov 2017
-Last update: Dec/08/2017
+Last update: Dec/17/2017
 '''
 
 # import datetime
