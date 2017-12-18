@@ -50,6 +50,9 @@ if __name__ == "__main__":
 
     # make tikz graph
     tikzobj = TikzDirectedGraph(inter_name, num_lanes, ppi)
+    tikzobj.set_mcf_orig()
+    tikzobj.set_phase_graph()
+
 
     # add vehicles to the lane
     # work with vehicle data structure

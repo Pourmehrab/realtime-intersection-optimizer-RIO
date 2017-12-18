@@ -106,4 +106,4 @@ ENV/
 *.html
 *.csv
 
-.log/
+log/
