@@ -5,8 +5,10 @@ Date:        Nov 2017
 Last update: Dec/08/2017
 '''
 
-import numpy as np
 import os
+
+import numpy as np
+
 from src.inpt.inpt import read_prms
 from src.inter.phs import phenum
 
@@ -44,6 +46,8 @@ class Intersection:
             self._ppi = np.loadtxt(filepath, dtype='i', delimiter=',')
         else:
             phenum(self._nl, self.lli, self.name)
+        # print('PPI loaded.')
+
     def get_phs(self):
         return self._ppi
 

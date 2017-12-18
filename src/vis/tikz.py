@@ -19,7 +19,7 @@ import numpy as np
 
 class TikzDirectedGraph:
     H = 3  # height of layers
-    W = 1.06  # width of steps
+    W = 1.05  # width of steps
 
     def __init__(self, inter_name, num_lanes, ppi):
         self.inter_name = inter_name
@@ -36,7 +36,7 @@ class TikzDirectedGraph:
         self._make_header()
 
         s, e, gap = 0.7, 0.5, 2
-        bl, tl, tr, br = (0, 0), (0, 6 * s + e), (5 * s + e, 5 * s + e), (5 * s + e, 0)
+        bl, tl, tr, br = [0, 0], [0, 6 * s + e], [5 * s + e, 5 * s + e], [5 * s + e, 0]
 
         x, y = bl
         x -= gap
@@ -142,7 +142,7 @@ class TikzDirectedGraph:
         self._closefile(self._f)
 
     def _make_header(self):
-        string = '\\begin{tikzpicture}\n\n'
+        string = '\\begin{tikzpicture}\n'
         self._f.write(string)
 
     def _add_nodes(self):

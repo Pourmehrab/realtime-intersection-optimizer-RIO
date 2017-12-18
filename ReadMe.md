@@ -15,7 +15,7 @@ To install:
 
 # Input Data
 Directory `\data` includes folders named after each intersection of interest. Includes:
-* `CM.txt`: intersection conflict matrix (LLI)
+* `CM.txt`: intersection conflict matrix (LLI: 1 if i,j are conflicting) [may create it by running `test.py>` for 13th and 16th]
 * `intprms.txt`: intersection parameters
 * `MS.txt`: movement share
 * `PPI.txt`: phase-lane incidence matrix (code generates this if not there)
@@ -29,7 +29,7 @@ This files is the main file should be run. It moderates all else.
 ## Useful Links
 * Markdown hints [here](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
 * Paper is on overleaf [here](https://www.overleaf.com/9570639sgrcxsbwcxxm)
-* graphs on overleaf too [here](https://www.overleaf.com/12858212yfdxbdznnyhb)
+* Graphs are on overleaf too [here](https://www.overleaf.com/12858212yfdxbdznnyhb)
 
 
 
