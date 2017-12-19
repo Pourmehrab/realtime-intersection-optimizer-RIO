@@ -10,7 +10,7 @@ Don't forget the header for loading packages:
 By:     Mahmoud Pourmehrab
 E-mail: mpourmehrab@ufl.edu
 Date:        Dec 2017
-Last update: Dec/17/2017
+Last update: Dec/19/2017
 '''
 
 import os
@@ -18,8 +18,6 @@ import numpy as np
 
 
 class TikzDirectedGraph:
-    H = 3  # height of layers
-    W = 1.05  # width of steps
 
     def __init__(self, inter_name, num_lanes, ppi):
         self.inter_name = inter_name
@@ -148,20 +146,24 @@ class TikzDirectedGraph:
     def _add_nodes(self):
         self._f.write('%NODES\n')
 
-        x_left = self.comp_x_left(self.num_lanes)
+        H = 3  # height of layers
+        W = (21 - 2 * 2.54) / self.num_lanes  # width of steps
+
+        x_left = self.comp_x_left(self.num_lanes, W)
         x = x_left
-        y = 3 * self.H
+        y = 4 * H
         for l in range(self.num_lanes):
             lane = l + 1
             self._f.write(
                 '\\node (l{:d}) at ({:2.2f},{:2.2f}) [circle,draw,inner sep=0pt,minimum size=6mm] {{$l_{{{:d}}}$}};\n'.format(
                     lane, x, y, lane))
             self._f.write('\\node [black,above] at (l{:d}.north) {{{{\\tiny $(+d_{{{:d}}})$}}}};\n'.format(lane, lane))
-            x += self.W
+            x += W
 
-        x_left = self.comp_x_left(len(self.ppi))
+        W = (21 - 2 * 2.54) / len(self.ppi)  # width of steps
+        x_left = self.comp_x_left(len(self.ppi), W)
         x = x_left
-        y = 2 * self.H
+        y = 2 * H
         for ph in range(len(self.ppi)):
             phase = ph + 1
             self._f.write(
@@ -169,18 +171,18 @@ class TikzDirectedGraph:
                     phase, x, y, phase))
             self._f.write(
                 '\\node (pp{:d}) at ({:2.2f},{:2.2f}) [circle,draw,inner sep=0pt,minimum size=6mm] {{$p_{{{:d}}}^\prime$}};\n'.format(
-                    phase, x, y - self.H, phase))
-            x += self.W
+                    phase, x, y - H, phase))
+            x += W
         self._f.write(
             '\\node (sink) at ({:2.2f},{:2.2f}) [circle,draw,inner sep=1.5pt,minimum size=6mm] {{$sink$}};\n'.format(
                 0, 0))
         self._f.write('\\node [black,below] at (sink.south) {{$(-\\sum_{{l=1}}^{{16}} d_{{l}})$}};\n')
 
-    def comp_x_left(self, n):
+    def comp_x_left(self, n, W):
         if n % 2 == 0:
-            return -1 * self.W * self.num_lanes // 2
+            return -1 * W * n // 2
         else:
-            return -1 * self.W * self.num_lanes // 2 + self.W / 2
+            return -1 * W * n // 2 + W / 2
 
     def _add_arcs(self):
         # \draw[->, line width = 1.8pt] FYI
@@ -200,7 +202,11 @@ class TikzDirectedGraph:
             self._f.write(
                 '\\draw[->,> = latex,semithick,bend left=20] (p{:d}) to node [above,align=center,rotate=90,midway] {{{{\\tiny $1/1$}}}} (pp{:d});\n'.format(
                     p + 1, p + 1))
-            self._f.write('\\draw[->,> = latex,semithick] (pp{:d}) to (sink);\n'.format(p + 1, p + 1))
+            self._f.write('\\draw[->,> = latex,semithick] (pp{:d}) to [out=270,in={:2.2f}](sink);\n'.format(p + 1,
+                                                                                                            180 - (
+                                                                                                                    180 / (
+                                                                                                                    len(
+                                                                                                                        self.ppi) - 1)) * p))
 
     def _closefile(self, file):
         file.write('\end{tikzpicture}')

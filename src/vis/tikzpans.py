@@ -1,3 +1,18 @@
+'''
+Goal: Make phases panels for publication
+
+Don't forget the header for loading packages:
+
+\\usepackage{tikz}
+\\usetikzlibrary{arrows,decorations.pathmorphing,backgrounds,positioning,fit,petri}
+
+
+By:     Mahmoud Pourmehrab
+E-mail: mpourmehrab@ufl.edu
+Date:        Dec 2017
+Last update: Dec/19/2017
+'''
+
 import os
 
 from src.vis.tikz import TikzDirectedGraph
@@ -134,8 +149,8 @@ class TikZpanels(TikzDirectedGraph):
                 for d in dis:
                     self._f.write(
                         '\\draw[->,>=stealth,line width = 1pt,gray] (l{:d}) {:s} to (d{:d});\n'.format(base_lane + l,
-                                                                                                    d[1],
-                                                                                                        base_dis_lane +
-                                                                                                        d[0]))
+                                                                                                       d[1],
+                                                                                                       base_dis_lane +
+                                                                                                       d[0]))
 
         return dis_lane + 1, lane + 1
