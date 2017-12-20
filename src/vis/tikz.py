@@ -17,12 +17,12 @@ import os
 import numpy as np
 
 
-class TikzDirectedGraph:
+class MahmoudTikzDirectedGraph:
 
     def __init__(self, inter_name, num_lanes, ppi):
         self.inter_name = inter_name
         self.num_lanes = num_lanes
-        self.ppi = ppi
+        self.pli = ppi
 
     def set_phase_graph(self):
         self.filepath = os.path.join('log/' + self.inter_name, 'phases_graph.txt')
@@ -160,11 +160,11 @@ class TikzDirectedGraph:
             self._f.write('\\node [black,above] at (l{:d}.north) {{{{\\tiny $(+d_{{{:d}}})$}}}};\n'.format(lane, lane))
             x += W
 
-        W = (21 - 2 * 2.54) / len(self.ppi)  # width of steps
-        x_left = self.comp_x_left(len(self.ppi), W)
+        W = (21 - 2 * 2.54) / len(self.pli)  # width of steps
+        x_left = self.comp_x_left(len(self.pli), W)
         x = x_left
         y = 2 * H
-        for ph in range(len(self.ppi)):
+        for ph in range(len(self.pli)):
             phase = ph + 1
             self._f.write(
                 '\\node (p{:d}) at ({:2.2f},{:2.2f}) [circle,draw,inner sep=0pt,minimum size=6mm] {{$p_{{{:d}}}$}};\n'.format(
@@ -188,16 +188,16 @@ class TikzDirectedGraph:
         # \draw[->, line width = 1.8pt] FYI
         self._f.write('%ARCS\n')
         # add lane to phase arcs
-        for p in range(len(self.ppi)):
+        for p in range(len(self.pli)):
             for l in range(self.num_lanes):
-                if self.ppi[p, l]:
+                if self.pli[p, l]:
                     self._f.write('\\draw[->,> = latex,semithick] (l{:d}) to (p{:d});\n'.format(l + 1, p + 1))
 
-        max_ph_size = max(np.sum(self.ppi, 1))
-        for p in range(len(self.ppi)):
+        max_ph_size = max(np.sum(self.pli, 1))
+        for p in range(len(self.pli)):
             self._f.write(
                 '\\draw[->,> = latex,semithick,bend right=20] (p{:d}) to node [below,align=center,rotate=90,midway] {{{{\\tiny ${:d}/\\infty$}}}} (pp{:d});\n'.format(
-                    p + 1, int(1 + max_ph_size - sum(self.ppi[p]) + 1), p + 1))
+                    p + 1, int(1 + max_ph_size - sum(self.pli[p]) + 1), p + 1))
 
             self._f.write(
                 '\\draw[->,> = latex,semithick,bend left=20] (p{:d}) to node [above,align=center,rotate=90,midway] {{{{\\tiny $1/1$}}}} (pp{:d});\n'.format(
@@ -206,7 +206,7 @@ class TikzDirectedGraph:
                                                                                                             180 - (
                                                                                                                     180 / (
                                                                                                                     len(
-                                                                                                                        self.ppi) - 1)) * p))
+                                                                                                                        self.pli) - 1)) * p))
 
     def _closefile(self, file):
         file.write('\end{tikzpicture}')

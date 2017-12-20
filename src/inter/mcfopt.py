@@ -16,7 +16,7 @@ from ortools.graph import pywrapgraph
 import numpy as np
 
 
-class SigNet:
+class MahmoudSigNet:
     '''
     NODES:
     Head of phase-selection arcs: from 0 to |p|-1

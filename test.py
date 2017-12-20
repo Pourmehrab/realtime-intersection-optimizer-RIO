@@ -7,20 +7,21 @@ Install the list of packages in the Pipfile using PyEnv
 By:     Mahmoud Pourmehrab
 E-mail: mpourmehrab@ufl.edu
 Date:        Nov 2017
-Last update: Dec/19/2017
+Last update: Dec/20/2017
 '''
 
 import os
 # import datetime
 import sys
 import time
+import numpy as np
 
-from src.inpt.sim import Simulator
-from src.inter.inter import Intersection
-from src.inter.mcfopt import SigNet
-from src.inter.veh import Lanes
-# from src.vis.tikzpans import TikZpanels,TikzDirectedGraph
-from src.vis.tikzpans import TikzDirectedGraph
+from src.inpt.sim import MahmoudSimulator
+from src.inter.inter import MahmoudIntersection
+from src.trj.trjopt import MahmoudAVO
+from src.inter.mcfopt import MahmoudSigNet
+from src.inter.veh import MahmoudLanes, MahmoudVehicle
+from src.vis.tikzpans import MahmoudTikZpanels, MahmoudTikzDirectedGraph
 
 
 def set_CM(inter_name):
@@ -30,6 +31,7 @@ def set_CM(inter_name):
     else:
         f = open(filepath, 'x')
 
+    # key is a lane : vals are lanes that are in conflict with key
     conf_dict = {1: [7],
                  2: [7, 8, 12, 16, 15, 14, 13],
                  3: [7, 8, 12, 16, 15, 14, 9],
@@ -62,6 +64,65 @@ def set_CM(inter_name):
     f.close()
 
 
+def MahmoudMainHigh(intersection, num_lanes, ppi, max_speed, signal, lanes, sim_prms):
+    # do sample signal optimization
+    lanes_demand = [3, 2, 3, 4, 5, 2, 6, 3, 2, 7, 3, 5, 2, 5, 3, 6]
+    signal.set_dem(lanes_demand)
+    signal.solve()
+
+    # make min cost flow graph
+    tikzobj = MahmoudTikzDirectedGraph(inter_name, num_lanes, ppi)
+    tikzobj.set_mcf_orig()
+    tikzobj.set_phase_graph()
+    # Make panels of phases
+    tikzobj = MahmoudTikZpanels(inter_name, num_lanes, ppi)
+
+
+def MahmoudMainLowDem(intersection, num_lanes, ppi, max_speed, signal, lanes, sim_prms):
+    # first define what rows of PPI should be used
+    use_phase = (17, 9, 8, 15)
+
+    print('\n/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\.')
+    for ph in use_phase:
+        print('Phase {:d} includes lanes'.format(ph + 1))
+        for l in range(num_lanes):
+            if ppi[ph, l]:
+                print(' ,{:d}'.format(l + 1), end='')
+        print('\n')
+
+    # add vehicles to the lane
+    # work with vehicle data structure
+    det_time = 0
+    for i in range(100):
+        lane = np.random.randint(0, num_lanes)
+        det_id = 'veh_' + str(np.random.rand())
+        det_type = np.random.randint(0, 3)
+        det_time += np.random.exponential(2)  # 2 sec is the saturation headway here
+        speed = np.random.triangular(0.85 * max_speed, max_speed, 1.1 * max_speed)
+        dist = np.random.uniform(150 - 10, 150 + 10)  # 150 m is the detection distance
+
+        # add vehicle to the list
+        lanes.vehlist[lane].add_last(MahmoudVehicle(det_id, det_type, det_time, speed, dist, max_speed))
+        print('A new vehicle detected at lane {:d}, (total of {:d})'.format(lane, len(lanes.vehlist[lane])))
+
+        # set earliest travel time for this vehicle
+        last = lanes.vehlist[lane].last()
+        last.element().set_earlst(det_time + dist / (.85 * max_speed))
+
+    p = lanes.vehlist[0].first()
+    lanes.vehlist[0].delete(p)
+
+    # do some trj optimization
+    lane = 0
+    fol_veh = lanes.vehlist[lane].first()
+    lead_veh = lanes.vehlist[lane].before(fol_veh)
+    if lead_veh is None:
+        trjoptimizer = MahmoudAVO(None, fol_veh.element(), 100)
+    else:
+        trjoptimizer = MahmoudAVO(lead_veh.element(), fol_veh.element(), 100)
+    trjoptimizer.solve()
+
+
 if __name__ == "__main__":
     print('Python Path: ', sys.executable)
     print('Python Version: ', sys.version)
@@ -72,60 +133,18 @@ if __name__ == "__main__":
     # set_CM(inter_name)
 
     # Initialization
-    intersection = Intersection(inter_name)
+    intersection = MahmoudIntersection(inter_name)
     num_lanes = intersection.get_num_lanes()
     ppi = intersection.get_phs()
     max_speed = intersection.get_max_speed()  # in m/s
 
-    signal = SigNet(num_lanes, ppi)
+    signal = MahmoudSigNet(num_lanes, ppi)
 
-    lanes = Lanes(num_lanes)
+    lanes = MahmoudLanes(num_lanes)
 
-    sim_prms = Simulator(inter_name)
+    sim_prms = MahmoudSimulator(inter_name)
 
     t1 = time.clock()
-    # sample signal optimization
-    lanes_demand = [3, 2, 3, 4, 5, 2, 6, 3, 2, 7, 3, 5, 2, 5, 3, 6]
-    signal.set_dem(lanes_demand)
-    signal.solve()
-
-    # make min cost flow graph
-    tikzobj = TikzDirectedGraph(inter_name, num_lanes, ppi)
-    tikzobj.set_mcf_orig()
-    tikzobj.set_phase_graph()
-    # Make panels of phases
-    # tikzobj = TikZpanels(inter_name, num_lanes, ppi)
-
-    # add vehicles to the lane
-    # work with vehicle data structure
-    # det_time = 0
-    # for i in range(100):
-    #     lane = np.random.randint(0, num_lanes)
-    #     det_id = 'veh_' + str(np.random.rand())
-    #     det_type = np.random.randint(0, 3)
-    #     det_time += np.random.exponential(2)  # 2 sec is the saturation headway here
-    #     speed = np.random.triangular(0.85 * max_speed, max_speed, 1.1 * max_speed)
-    #     dist = np.random.uniform(150 - 10, 150 + 10)  # 150 m is the detection distance
-    #
-    #     # add vehicle to the list
-    #     lanes.vehlist[lane].add_last(Vehicle(det_id, det_type, det_time, speed, dist, max_speed))
-    #     print('A new vehicle detected at lane {:d}, (total of {:d})'.format(lane, len(lanes.vehlist[lane])))
-    #
-    #     # set earliest travel time for this vehicle
-    #     last = lanes.vehlist[lane].last()
-    #     last.element().set_earlst(det_time + dist / (.85 * max_speed))
-    #
-    # p = lanes.vehlist[0].first()
-    # # lanes.vehlist[0].delete(p)
-    #
-    # t2 = time.clock()
-    # print(' Elapsed Time: {} ms'.format(int(1000 * (t2 - t1))), end='')
-    # # do some trj optimization
-    # lane = 0
-    # fol_veh = lanes.vehlist[lane].first()
-    # lead_veh = lanes.vehlist[lane].before(fol_veh)
-    # if lead_veh is None:
-    #     trjoptimizer = MahmoudAVO(None, fol_veh.element(), 100)
-    # else:
-    #     trjoptimizer = MahmoudAVO(lead_veh.element(), fol_veh.element(), 100)
-    # trjoptimizer.solve()
+    MahmoudMainLowDem(intersection, num_lanes, ppi, max_speed, signal, lanes, sim_prms)
+    t2 = time.clock()
+    print(' Elapsed Time: {} ms'.format(int(1000 * (t2 - t1))), end='')

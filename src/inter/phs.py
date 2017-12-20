@@ -98,7 +98,7 @@ def chkinc(all_combs, non_conf_combs, ninc):
 
 
 def write2txt(all_combs, l, name):
-    filepath = os.path.join('data/' + name, 'PPI.txt')
+    filepath = os.path.join('data/' + name, 'PLI.txt')
     with open(filepath, "w") as text_file:
         for ph in range(0, len(all_combs)):
             lane = 0

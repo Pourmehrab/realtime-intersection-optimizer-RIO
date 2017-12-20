@@ -13,13 +13,13 @@ from src.inpt.inpt import read_prms
 from src.inter.phs import phenum
 
 
-class Intersection:
+class MahmoudIntersection:
     def __init__(self, int_name):
         self.name = int_name
         self.nl = 0
         self.set_lli()
 
-        self.move_share = Intersection._read_mat(self, int_name, 'MS')
+        self.move_share = MahmoudIntersection._read_mat(self, int_name, 'MS')
         self._set_phs()
 
         d = {"max_speed": '_v', "yellow_duration": '_y', "all_red_duration": '_ar', "opt_range": '_opt_range'}
@@ -41,15 +41,15 @@ class Intersection:
             raise Exception(filepath + ' was not found.')
 
     def _set_phs(self):
-        filepath = os.path.join('data/' + self.name, 'PPI.txt')
+        filepath = os.path.join('data/' + self.name, 'PLI.txt')
         if os.path.exists(filepath):
-            self._ppi = np.loadtxt(filepath, dtype='i', delimiter=',')
+            self._pli = np.loadtxt(filepath, dtype='i', delimiter=',')
         else:
             phenum(self._nl, self.lli, self.name)
         # print('PPI loaded.')
 
     def get_phs(self):
-        return self._ppi
+        return self._pli
 
     def get_num_lanes(self):
         return self._nl

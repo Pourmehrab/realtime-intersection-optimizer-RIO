@@ -15,10 +15,10 @@ Last update: Dec/19/2017
 
 import os
 
-from src.vis.tikz import TikzDirectedGraph
+from src.vis.tikz import MahmoudTikzDirectedGraph
 
 
-class TikZpanels(TikzDirectedGraph):
+class MahmoudTikZpanels(MahmoudTikzDirectedGraph):
 
     def __init__(self, inter_name, num_lanes, ppi):
 
@@ -44,7 +44,7 @@ class TikZpanels(TikzDirectedGraph):
                           14: [[3, '[out=90,in=270]']], 15: [[2, '[out=90,in=0]']], 16: [[1, '[out=90,in=0]']]}
 
         for ph in range(len(ppi)):
-            W, H = 4, 4  # distance between panels
+            W, H = 4, 4.5  # distance between panels
             j = 1 * (ph % 4)
             i = -1 * (ph // 4)
             self._f.write('%panel: ({:d},{:d})\n'.format(i, j))
@@ -62,7 +62,10 @@ class TikZpanels(TikzDirectedGraph):
         self._closefile(self._f)
 
     def _make_panel(self, s, e, gap, bl, tl, tr, br, dis_lane, lane, ph):
+
         x, y = bl
+        self._f.write('\\node () at ({:2.2f},{:2.2f}) {{Phase {:d}}};\n'.format(x+1, y-1, ph + 1))
+
         x -= gap
         nt, ngap = 7, 5
         base_dis_lane, base_lane = dis_lane, lane
@@ -140,7 +143,7 @@ class TikZpanels(TikzDirectedGraph):
                 x -= s + e
 
         for l, dis in self.lane2lane.items():
-            if self.ppi[ph, l - 1]:
+            if self.pli[ph, l - 1]:
                 for d in dis:
                     self._f.write(
                         '\\draw[->,>=stealth,line width = 3pt] (l{:d}) {:s} to (d{:d});\n'.format(base_lane + l, d[1],

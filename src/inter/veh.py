@@ -160,7 +160,7 @@ class VehiclesList(_DoublyLinkedBase):
         return old_value
 
 
-class Lanes:
+class MahmoudLanes:
     def __init__(self, nl):
         '''
         Data Structure for an a dictionary of lanes
@@ -171,7 +171,7 @@ class Lanes:
         self.vehlist = {l: VehiclesList() for l in range(0, nl)}
 
 
-class Vehicle:
+class MahmoudVehicle:
     def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest=1, length=4, amin=-4.5, amax=3):
         '''
         Data Structure for an individual vehicle
