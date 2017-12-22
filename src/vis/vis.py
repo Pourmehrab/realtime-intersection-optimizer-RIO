@@ -2,7 +2,7 @@ from bokeh.plotting import figure
 from bokeh.io import export_svgs, show
 from bokeh.models import HoverTool
 
-class MahmoudVis:
+class MahmoudVisTrj:
     def __init__(self, lane):
         hover = HoverTool(tooltips=[
             ("index", "$index"),
@@ -14,14 +14,13 @@ class MahmoudVis:
         self.fig.title.align = "center"
         self.fig.output_backend = "svg"
 
-    def plotrj(self, t, d, l):
+    def plotrj(self, t, d):
         self.fig.line(t, d, line_width=3)
+        show(self.fig)
 
-    def exprtrj(self, fig):
+    def exprtrj(self):
         export_svgs(self.fig, filename="trj.svg")
 
-    def makeplt(self):
-        show(self.fig)
 
 # import matplotlib.pyplot as plt
 # from numpy import sqrt as np

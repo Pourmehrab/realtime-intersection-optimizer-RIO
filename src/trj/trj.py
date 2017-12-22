@@ -31,12 +31,13 @@ class MahmoudTrj:
         self.stat = False
 
     def insight(self):
-        print(''' MahmoudTrj(.) received the following request:
+        print(''' MahmoudTrj(.) received the following request at {:04.2f} sec:
                 dist: {:04.2f} m             initial speed: {:04.2f} m/s
                 deceleration: {:04.2f} m/s2   acceleration: {:04.2f} m/s2
                 spd limit: {:04.2f} m/s       spd limit @ control: {:04.2f} m/s
                 green interval:            [{:04.2f}, {:04.2f}] sec
-                '''.format(self.fol_veh.dist, self.fol_veh.speed, self.fol_veh.amin, self.fol_veh.amax, self.vmax, self.vcont, self.gs, self.gt))
+                '''.format(self.fol_veh.det_time, self.fol_veh.dist, self.fol_veh.speed, self.fol_veh.amin,
+                           self.fol_veh.amax, self.vmax, self.vcont, self.gs, self.gt))
 
         if self.fol_veh.speed > self.vmax:
             t = (self.vmax - self.fol_veh.speed) / self.fol_veh.amin

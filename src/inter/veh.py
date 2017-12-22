@@ -100,9 +100,10 @@ class VehiclesList(_DoublyLinkedBase):
             raise TypeError('p must be proper Position type')
         if p._container is not self:
             raise ValueError('p is no longer valid')
+        if p._node._next is None:
+            raise Exception('P is no longer valid')
         return p._node
 
-    # ------------------------------- utility method -------------------------------
     def _make_position(self, node):
         if node is self._header or node is self._trailer:
             return None
@@ -172,7 +173,7 @@ class MahmoudLanes:
 
 
 class MahmoudVehicle:
-    def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest=1, length=4, amin=-4.5, amax=3):
+    def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest=1, length=4, amin=-2, amax=2):
         '''
         Data Structure for an individual vehicle
 
@@ -203,16 +204,18 @@ class MahmoudVehicle:
 
         :return: freeflowtt:      free flow travel time in second
         '''
-        pass # todo compute free flow travel time
+        pass  # todo compute free flow travel time
 
-    def set_trj(self):
+    def set_trj(self, t, d):
         '''
 
         :return: trajectory of the vehicle
         '''
-        pass # todo set the trajectory
+        self.trj_t = t
+        self.trj_d = d
+        pass  # todo set the trajectory
 
-    def set_earlst(self,t):
+    def set_earlst(self, t):
         '''
 
         :param t: earliest time vehicle can get to the stopbar if enouhg green is given
