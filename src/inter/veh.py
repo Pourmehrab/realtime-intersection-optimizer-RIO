@@ -213,6 +213,7 @@ class MahmoudVehicle:
         '''
         self.trj_t = t
         self.trj_d = d
+
         pass  # todo set the trajectory
 
     def set_earlst(self, t):

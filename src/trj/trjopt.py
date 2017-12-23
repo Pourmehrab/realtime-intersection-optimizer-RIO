@@ -28,7 +28,7 @@ class MahmoudAVO(MahmoudTrj):
 
         super().__init__(lead_veh, fol_veh, gs, gt, vmax, vcont)
 
-        self.insight()
+        # self.insight()
 
         self.fdeg = fdeg
         # solution is of the form v2, v3, a1, a3
@@ -191,6 +191,8 @@ class MahmoudAVO(MahmoudTrj):
         dv1 = v2 - self.fol_veh.speed
         if abs(dv1) > self.EPS and abs(a1) > self.EPS:
             return (v2 - self.fol_veh.speed) / a1
+        else:
+            return 0
 
     def calct2(self, v2, v3, a1, a3):
         dv1 = v2 - self.fol_veh.speed
@@ -231,18 +233,19 @@ class MahmoudAVO(MahmoudTrj):
         else:
             return self.d3(dt - t1 - t2, t1, t2, v2, a1, a3)
 
-    def create_trj_domain(self, tt, tend):
+    def create_trj_domain(self, ts, te):
         '''
 
-        :param tt: relative duration of trj
-        :return: domain of trj
+        :param ts: start time
+        :param te: end time
+        :return: trj domain
         '''
         # todo: (Mahmoud) control the last point of trajectory should be zero
-        if tt % self.RES > self.EPS:
-            indep_var = np.append(np.arange(self.fol_veh.det_time, tend, MahmoudAVO.RES, dtype=float), tend).round(
+        if te - ts % self.RES > self.EPS:
+            indep_var = np.append(np.arange(self.fol_veh.det_time, te, MahmoudAVO.RES, dtype=float), te).round(
                 self.DIG)
         else:
-            indep_var = np.arange(self.fol_veh.det_time, tend, MahmoudAVO.RES, dtype=float).round(self.DIG)
+            indep_var = np.arange(self.fol_veh.det_time, te, MahmoudAVO.RES, dtype=float).round(self.DIG)
 
         return indep_var
 
@@ -253,14 +256,14 @@ class MahmoudAVO(MahmoudTrj):
         t2 = self.calct2(self.x[0], self.x[1], self.x[2], self.x[3])
 
         tend = self.fol_veh.det_time + tt
-        indep_var = self.create_trj_domain(tt, tend)
+        indep_var = self.create_trj_domain(self.fol_veh.det_time, tend)
 
         vd = np.vectorize(self.d_three_comp)
         dep_var = vd(indep_var, t1, t2, self.x[0], self.x[2], self.x[3])
         self.fol_veh.set_trj(indep_var, dep_var)
 
-    def set_one_comp_trj(self, k=4):
-        # tt = self.gs - self.fol_veh.det_time
+    def set_one_comp_trj(self, k=9):
+        tt = self.gs - self.fol_veh.det_time
         #
         # d0, v0, t0, vcont = self.fol_veh.dist, self.fol_veh.speed, self.fol_veh.det_time, self.vcont
         #
@@ -269,49 +272,89 @@ class MahmoudAVO(MahmoudTrj):
         # c = (6 * d0 * t0 * (t0 + tt) - tt * ((t0 + tt) * (3 * t0 + tt) * v0 + t0 * (3 * t0 + 2 * tt) * vcont)) / tt ** 3
         # d = ((t0 + tt) * ((t0 + tt) * (d0 * (-2 * t0 + tt) + t0 * tt * v0) + t0 ** 2 * tt * vcont)) / tt ** 3
         #
-        # indep_var = self.create_trj_domain(tt, self.gs)
+        indep_var = self.create_trj_domain(0, tt)
         #
         # dep_var = a * indep_var ** 3 + b * indep_var ** 2 + c * indep_var + d
         # self.fol_veh.set_trj(indep_var, dep_var)
         t1 = 0
-        t2 = self.gs - self.fol_veh.det_time
-        ro = t1 / t2
-        s = 1000
+        t2 = tt
+        s = 1  # scales the constraints
 
-        c = [(t2 - t1 * ro ** n) / (n + 1) for n in range(k, -1, -1)]
-        A = [
+        c = [t2 / (n + 1) for n in range(k, -1, -1)]
+        a1_coeff_der = s / t2
+        A1 = [
             [0 for n in range(k, 0, -1)] + [s],
-            [0 for n in range(k, 1, -1)] + [s / t2, 0],
+            [0 for n in range(k, 1, -1)] + [a1_coeff_der, 0],
             [s for n in range(k, -1, -1)],
             [s * n / t2 for n in range(k, 0, -1)] + [0],
-
-            [0 for n in range(k, 0, -1)] + [-1 * s],
-            [0 for n in range(k, 1, -1)] + [-1 * s / t2, 0],
-            [-1 * s for n in range(k, -1, -1)],
-            [-1 * s * n / t2 for n in range(k, 0, -1)] + [0],
-
         ]
-        b = [s * self.fol_veh.dist - self.EPS, -1 * s * self.fol_veh.speed - self.EPS, 0 + self.EPS,
-             -1 * s * self.vcont - self.EPS,
-             -1 * s * self.fol_veh.dist - self.EPS, s * self.fol_veh.speed - self.EPS, 0 - self.EPS,
-             s * self.vcont - self.EPS]
+        b1 = [s * self.fol_veh.dist, -1 * s * self.fol_veh.speed, 0, -1 * s * self.vcont, ]
 
-        for i in range(k, -1, -1):
-            print('+{:2.4f} a({:d})'.format(round(c[i], 1), k - i), end='')
-        print('\n')
-        for i in range(k, -1, -1):
-            print('+{:2.4f} a({:d})'.format(round(A[0][i], 4), k - i), end='')
-        print('<={:2.2f}'.format(round(b[0], 4)))
-        for i in range(k, -1, -1):
-            print('+{:2.4f} a({:d})'.format(round(A[1][i], 4), k - i), end='')
-        print('<={:2.2f}'.format(round(b[1], 4)))
-        for i in range(k, -1, -1):
-            print('+{:2.4f} a({:d})'.format(round(A[2][i], 4), k - i), end='')
-        print('<={:2.2f}'.format(round(b[2], 4)))
-        for i in range(k, -1, -1):
-            print('+{:2.4f} a({:d})'.format(round(A[3][i], 4), k - i), end='')
-        print('<={:2.2f}\n'.format(round(b[3], 4)))
+        m = 2*k
+        dt = 1 / (m + 1)
 
-        res = linprog(c, A_ub=A, b_ub=b, options={"disp": False})
-        print(res)
-        print('done')
+        # for i in range(m, 0, -1):
+        #     print('{:3.2f} '.format(i * dt))
+
+        # first set of consts is for nonnegative speed
+        # second set is for maximum speed
+        # print('/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\.')
+        A2 = [[s * n * (i * dt) ** (n - 1) / t2 for n in range(k, 1, -1)] + [a1_coeff_der, 0] for i in
+              range(m, 0, -1)] + [[-s * n * (i * dt) ** (n - 1) / t2 for n in range(k, 1, -1)] + [-1 * a1_coeff_der, 0]
+                                  for i in range(m, 0, -1)]
+        b2 = [0 for n in range(m)] + [self.vmax for n in range(m)]
+
+        bnds = [(None, None) for n in range(k, -1, -1)]
+        # for i in range(k, -1, -1):
+        #     print('+{:2.4f}*a{:d} '.format(round(c[i], 1), k - i), end='')
+        # print('\n')
+        # for i in range(k, -1, -1):
+        #     print('+{:2.4f}*a{:d} '.format(round(A1[0][i], 4), k - i), end='')
+        # print(' =e= {:2.2f}'.format(round(b1[0], 4)))
+        # for i in range(k, -1, -1):
+        #     print('+{:2.4f}*a{:d} '.format(round(A1[1][i], 4), k - i), end='')
+        # print(' =e= {:2.2f}'.format(round(b1[1], 4)))
+        # for i in range(k, -1, -1):
+        #     print('+{:2.4f}*a{:d} '.format(round(A1[2][i], 4), k - i), end='')
+        # print(' =e= {:2.2f}'.format(round(b1[2], 4)))
+        # for i in range(k, -1, -1):
+        #     print('+{:2.4f}*a{:d} '.format(round(A1[3][i], 4), k - i), end='')
+        # print(' =e= {:2.2f}\n'.format(round(b1[3], 4)))
+
+        opt_coeffs = linprog(c, A_ub=A2, b_ub=b2, A_eq=A1, b_eq=b1, bounds=bnds, options={"disp": False})
+
+        # print(opt_coeffs)
+
+        def print_matrix(A):
+            print('\n'.join([''.join(['{:4}  '.format(item) for item in row])
+                             for row in A]))
+            print('\n')
+
+        # print_matrix(A1)
+        # print_matrix(A2)
+
+        def hornereval(x, a):
+            '''Use Horner's method to compute and return the polynomial
+               a[0] + a[1] x^1 + a[2] x^2 + ... + a[n-1] x^(n-1)
+            evaluated at x.'''
+            dist, speed = 0, 0
+            for i in range(len(a) - 1):
+                dist = a[i] + (x * dist)
+                speed = i + 1 * a[i + 1] + (x * speed)
+            return a[-1] + (x * dist), -1 * speed
+
+        def plot_mathematica(a, t2):
+            print('f{:d}[t_]:='.format(k))
+            for i in range(len(a)):
+                if a[i] > 0:
+                    print('+{:2.4f}*(t/{:2.4f})^{:d}'.format(a[i], t2, len(a) - i - 1), end=' ')
+                elif a[i] < 0:
+                    print('{:2.4f}*(t/{:2.4f})^{:d}'.format(a[i], t2, len(a) - i - 1), end=' ')
+            print('\n')
+
+        plot_mathematica(opt_coeffs.x, t2)
+
+        dep_var_dist, dep_var_speed = hornereval(indep_var / t2, opt_coeffs.x)
+        # print(indep_var)
+        # print(dep_var)
+        self.fol_veh.set_trj(indep_var + self.fol_veh.det_time, dep_var_dist)

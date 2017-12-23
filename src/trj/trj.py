@@ -15,7 +15,7 @@ class MahmoudTrj:
     Abstract class for trajectories
     '''
     LAG = 1  # lag on signalization
-    RES = 1  # second
+    RES = 0.2  # second
     EPS = 0.01
     DIG = 2
 

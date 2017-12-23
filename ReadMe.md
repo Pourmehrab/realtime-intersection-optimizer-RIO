@@ -30,7 +30,10 @@ This files is the main file should be run. It moderates all else.
 * Markdown hints [here](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
 * Paper is on overleaf [here](https://www.overleaf.com/9570639sgrcxsbwcxxm)
 
+## LP Solver for Traj Optimization:
 
+* Requires Microsoft Visual C++ Build Tools [here](http://landinghub.visualstudio.com/visual-cpp-build-tools)
+* IBM ILOG CPLEX Optimization Studio Version 12.8.0
+* Microsoft Visual C++ 2015 Redistributable Package (x64) [here](https://www.microsoft.com/en-US/download/details.aspx?id=53587)
 
-
-
+* package name `cvxopt`
