@@ -24,8 +24,9 @@ class MahmoudTrj:
         self.lead_veh = lead_veh
         self.fol_veh = fol_veh
         self.vmax, self.vcont = vmax, vcont
-        if gt > gs + self.LAG:
-            self.gs, self.gt = gs + self.LAG, gt
+        gt_lagged = gs + self.LAG
+        if gt > gt_lagged:
+            self.gs, self.gt = gt_lagged, gt
         else:
             raise Exception('Signal lag exceeds the length of green')
         self.stat = False

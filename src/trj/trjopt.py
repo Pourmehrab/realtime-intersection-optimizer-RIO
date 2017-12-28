@@ -37,7 +37,6 @@ class MahmoudAVO(MahmoudTrj):
         self.x[2] = fol_veh.amax if vmax > fol_veh.speed else fol_veh.amin
         self.x[3] = fol_veh.amax if vcont > vmax else fol_veh.amin
 
-        self.t1, self.t2, self.t3, self.tt = 0, 0, 0, gt + 1
 
         # self.bnds = (
         #     (0, self.vmax), (0, self.vcont), (self.fol_veh.amin, self.fol_veh.amax),
