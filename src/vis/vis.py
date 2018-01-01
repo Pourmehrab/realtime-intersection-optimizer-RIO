@@ -9,6 +9,7 @@ class MahmoudVisTrj:
             ("index", "$index"),
             ("time", "$x{0.0 a} sec"),
             ("distance", "$y{0.0 a} m"),
+            ("speed", "@s{0.0 a} m/s"),
         ])
         self.fig = figure(width=500, height=500, tools=[hover],
                           title="Mouse over the dots")
@@ -16,9 +17,9 @@ class MahmoudVisTrj:
         self.fig.title.align = "center"
         self.fig.output_backend = "svg"
 
-    def plotrj(self, t, d):
+    def plotrj(self, t, d, s):
         source = ColumnDataSource(data=dict(
-            x=t, y=d,
+            x=t, y=d, s=s,
         ))
         self.fig.line('x', 'y', line_width=3, source=source)
         show(self.fig)

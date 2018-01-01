@@ -9,6 +9,7 @@ Date:        Nov 2017
 Last update: Dec/08/2017
 '''
 
+import numpy as np
 
 class MahmoudTrj:
     '''
@@ -17,13 +18,12 @@ class MahmoudTrj:
     LAG = 1  # lag on signalization
     RES = 0.2  # second
     EPS = 0.01
-    DIG = 2
+    DIG = 2 # number of digits to cut
 
-    def __init__(self, lead_veh, fol_veh, gs, gt, vmax, vcont):
+    def __init__(self, lead_veh, fol_veh, gs, gt):
 
         self.lead_veh = lead_veh
         self.fol_veh = fol_veh
-        self.vmax, self.vcont = vmax, vcont
         gt_lagged = gs + self.LAG
         if gt > gt_lagged:
             self.gs, self.gt = gt_lagged, gt
@@ -31,31 +31,21 @@ class MahmoudTrj:
             raise Exception('Signal lag exceeds the length of green')
         self.stat = False
 
-    def insight(self):
-        print(''' MahmoudTrj(.) received the following request at {:04.2f} sec:
-                dist: {:04.2f} m             initial speed: {:04.2f} m/s
-                deceleration: {:04.2f} m/s2   acceleration: {:04.2f} m/s2
-                spd limit: {:04.2f} m/s       spd limit @ control: {:04.2f} m/s
-                green interval:            [{:04.2f}, {:04.2f}] sec
-                '''.format(self.fol_veh.det_time, self.fol_veh.dist, self.fol_veh.speed, self.fol_veh.amin,
-                           self.fol_veh.amax, self.vmax, self.vcont, self.gs, self.gt))
+    def create_trj_domain(self, ts, te):
+        '''
 
-        if self.fol_veh.speed > self.vmax:
-            t = (self.vmax - self.fol_veh.speed) / self.fol_veh.amin
-            d = (self.vmax ** 2 - self.fol_veh.speed ** 2) / (2 * self.fol_veh.amin)
-            print('Vehicle can decelerate to spd limit in {:04.2f} sec, {:04.2f} m'.format(t, d))
+        :param ts: start time
+        :param te: end time
+        :return: trj domain
+        '''
+        # todo: (Mahmoud) control the last point of trajectory should be zero
+        if te - ts % self.RES > self.EPS:
+            indep_var = np.append(np.arange(self.fol_veh.det_time, te, MahmoudTrj.RES, dtype=float), te).round(
+                self.DIG)
         else:
-            t = (self.vmax - self.fol_veh.speed) / self.fol_veh.amax
-            d = (self.vmax ** 2 - self.fol_veh.speed ** 2) / (2 * self.fol_veh.amax)
-            print('Vehicle can accelerate to spd limit in {:04.2f} sec, {:04.2f} m'.format(t, d))
-        if self.vcont < self.vmax:
-            t = (self.vcont - self.vmax) / self.fol_veh.amin
-            d = (self.vcont ** 2 - self.vmax ** 2) / (2 * self.fol_veh.amin)
-            print('then decelerates to control spd limit in {:04.2f} sec, {:04.2f} m'.format(t, d))
-        elif self.vcont > self.vmax:
-            t = (self.vcont - self.vmax) / self.fol_veh.amax
-            d = (self.vcont ** 2 - self.vmax ** 2) / (2 * self.fol_veh.amax)
-            print('then accelerates to control spd limit in {:04.2f} sec, {:04.2f} m'.format(t, d))
+            indep_var = np.arange(self.fol_veh.det_time, te, MahmoudTrj.RES, dtype=float).round(self.DIG)
+
+        return indep_var
 
     def reset(self):
         self.stat = False

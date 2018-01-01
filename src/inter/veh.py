@@ -173,7 +173,7 @@ class MahmoudLanes:
 
 
 class MahmoudVehicle:
-    def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest=1, length=4, amin=-2, amax=2):
+    def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest=1, length=4.8, amin=-3, amax=2):
         '''
         Data Structure for an individual vehicle
 
@@ -198,6 +198,7 @@ class MahmoudVehicle:
         self.amax = amax
         self.dest = dest
         self.des_speed = des_speed
+        self.curr_t_indx = -1
 
     def set_freeflowtt(self):
         '''
@@ -206,15 +207,15 @@ class MahmoudVehicle:
         '''
         pass  # todo compute free flow travel time
 
-    def set_trj(self, t, d):
+    def set_trj(self, t, d, s):
         '''
 
         :return: trajectory of the vehicle
         '''
         self.trj_t = t
         self.trj_d = d
-
-        pass  # todo set the trajectory
+        self.trj_s = s
+        self.curr_t_indx = 0
 
     def set_earlst(self, t):
         '''

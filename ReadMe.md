@@ -1,3 +1,5 @@
+[TOC]
+
 # General Description
 SI unit, Python 3.6.3 used.
 
@@ -32,8 +34,12 @@ This files is the main file should be run. It moderates all else.
 
 ## LP Solver for Traj Optimization:
 
+* Packages can solve LP: `cvxopt, Scipy.minimize, docplex`
 * Requires Microsoft Visual C++ Build Tools [here](http://landinghub.visualstudio.com/visual-cpp-build-tools)
 * IBM ILOG CPLEX Optimization Studio Version 12.8.0
+	* Do `pip install docplex`. Find more here:
+		*  [Documentation](http://ibmdecisionoptimization.github.io/docplex-doc/)
+		* [Examples](https://github.com/IBMDecisionOptimization/docplex-examples)
+
 * Microsoft Visual C++ 2015 Redistributable Package (x64) [here](https://www.microsoft.com/en-US/download/details.aspx?id=53587)
 
-* package name `cvxopt`

@@ -55,7 +55,7 @@ f_out.write(
     '\\node (core) at ({:2.2f},{:2.2f}) [circle,fill=gray!50!white,draw,inner sep=0pt,minimum size={:2.2f}cm,line width=1mm] {{\\tiny Optimize}};\n'.format(
         0, 0, diameter))
 
-freq = 5*20  # Hertz (per sec) pick even
+freq = 5 * 20  # Hertz (per sec) pick even
 angle_step = 360 / freq
 angles = [i * angle_step for i in range(freq)]
 
@@ -137,11 +137,11 @@ f_out.write(
 f_in.write('''\\draw [->,> = latex,very thick] 
     (45:{:2.2f}) arc (45:70:{:2.2f});
 \\draw[white,rotate=-125, postaction={{decorate, decoration={{text along path, raise=4pt, text align={{align=center}}, text={{Time}}, reverse path}}}}] (0,0) circle ({:2.2f}cm);\n'''.format(
-    r5 + gap , r5 + gap , r5 + gap ))
+    r5 + gap, r5 + gap, r5 + gap))
 f_out.write('''\\draw [->,> = latex,very thick] 
     (45:{:2.2f}) arc (45:70:{:2.2f});
 \\draw[white,rotate=-125, postaction={{decorate, decoration={{text along path, raise=4pt, text align={{align=center}}, text={{Time}}, reverse path}}}}] (0,0) circle ({:2.2f}cm);\n'''.format(
-    r5 + gap , r5 + gap , r5 + gap ))
+    r5 + gap, r5 + gap, r5 + gap))
 
 f_in.write('\\end{tikzpicture}')
 f_out.write('\\end{tikzpicture}')
