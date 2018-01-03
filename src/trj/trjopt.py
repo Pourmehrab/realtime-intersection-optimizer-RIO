@@ -37,12 +37,10 @@ class MahmoudAVO(MahmoudTrj):
         self.x[2] = fol_veh.amax if vmax > fol_veh.speed else fol_veh.amin
         self.x[3] = fol_veh.amax if vcont > vmax else fol_veh.amin
 
-        if self.fdeg <= 1:  # Solve LTVO
+        if self.fdeg < 1:  # Solve LTVO
             self.solve()
-        elif self.fdeg <= 2:
-            pass
         else:
-            pass
+            self.ctrl_get_one_comp_trj()
 
     def insight(self):
         print(''' MahmoudTrj(.) received the following request at {:04.2f} sec:
@@ -156,17 +154,17 @@ class MahmoudAVO(MahmoudTrj):
         return self.fol_veh.dist - self.fol_veh.speed * dt - a1 * dt ** 2 / 2, a1 * dt + self.fol_veh.speed
 
     def dv2(self, dt, t1, v2, a1):
-        return self.dv1(t1, a1) - v2 * dt, v2
+        return self.dv1(t1, a1)[0] - v2 * dt, v2
 
     def dv3(self, dt, t1, t2, v2, a1, a3):
-        return self.dv2(t2, t1, v2, a1) - v2 * dt - a3 * dt ** 2 / 2, a3 * dt + v2
+        return self.dv2(t2, t1, v2, a1)[0] - v2 * dt - a3 * dt ** 2 / 2, a3 * dt + v2
 
     def d_three_comp(self, t, t1, t2, v2, a1, a3):
         dt = t - self.fol_veh.det_time
         if dt <= t1:
             return self.dv1(dt, a1)
         elif dt <= t1 + t2:
-            return self.dv2(dt - t1, t1, v2, a1)
+            return self.dv2(dt - t1, t1, v2, a1)[0]
         else:
             return self.dv3(dt - t1 - t2, t1, t2, v2, a1, a3)
 
@@ -184,6 +182,11 @@ class MahmoudAVO(MahmoudTrj):
 
         return indep_var, dep_var, speed
 
+    def ctrl_get_one_comp_trj(self):
+        t, d, s = self.get_one_comp_trj(self.fol_veh.det_time, self.fol_veh.dist, self.fol_veh.speed, self.gs, 0,
+                                        self.vcont)
+        return t, d, s
+
     def get_one_comp_trj(self, t1, d1, s1, t2, d2, s2, k=3):
         '''
         :param t1: start time stamp
@@ -195,23 +198,22 @@ class MahmoudAVO(MahmoudTrj):
         :param k:  poly degree
         :return:   t,d,s vectors
         '''
-        tt = self.gs - self.fol_veh.det_time
+        tt = t2 - t1
         indep_var = self.create_trj_domain(0, tt)
-        t2 = tt
         s = 1  # scales the constraints
 
-        c = [t2 / (n + 1) for n in range(k, -1, -1)]
-        a1_coeff_der = s / t2
+        c = [tt / (n + 1) for n in range(k, -1, -1)]
+        a1_coeff_der = s / tt
         A1 = [
             [0 for n in range(k, 0, -1)] + [s],
             [0 for n in range(k, 1, -1)] + [a1_coeff_der, 0],
             [s for n in range(k, -1, -1)],
-            [s * n / t2 for n in range(k, 0, -1)] + [0],
+            [s * n / tt for n in range(k, 0, -1)] + [0],
         ]
-        b1 = [s * self.fol_veh.dist, -1 * s * self.fol_veh.speed, 0, -1 * s * self.vcont, ]
+        b1 = [s * d1, -1 * s * s1, s * d2, -1 * s * s2, ]
 
-        m = 2 * k
-        dt = 1 / (m + 1)
+        m = 2 * k  # number ot segments is m+2
+        dt = 1 / (m + 1)  # time steps
 
         # first set of consts is for non-negative speed
         # second set is for maximum speed

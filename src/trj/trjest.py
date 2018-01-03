@@ -6,7 +6,7 @@ Install the list of packages in the Pipfile using PyEnv
 By:     Mahmoud Pourmehrab
 E-mail: mpourmehrab@ufl.edu
 Date:        Dec 2017
-Last update: Dec/30/2017
+Last update: Jan/03/2017
 '''
 import numpy as np
 
@@ -25,8 +25,15 @@ class MahmoudCNVE(MahmoudTrj):
         t, d, v = self.gipps_cf()
 
         # This part adds the end part that is out of Gipps CF domain
-        tend =
+        t_prime = d[-1] / self.fol_veh.des_speed
 
+        tend = self.create_trj_domain(t[-1], t[-1] + t_prime)
+        dend = [d[-1] - (tend[i] - t[-1]) * self.fol_veh.des_speed for i in range(len(tend))]
+        vend = [self.fol_veh.des_speed for i in range(len(tend))]
+
+        t = t + tend
+        d = d + dend
+        v = v + vend
 
     def gipps_cf(self):
         '''
@@ -81,4 +88,3 @@ class MahmoudCNVE(MahmoudTrj):
 
     def augmet2cross(self):
         pass
-
