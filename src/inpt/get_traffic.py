@@ -1,9 +1,9 @@
-'''
-By:     Mahmoud Pourmehrab
-E-mail: mpourmehrab@ufl.edu
-Date:        Feb 2018
-Last update: Feb/05/2018
-'''
+####################################
+# File name: get_traffic.py        #
+# Author: Mahmoud Pourmehrab       #
+# Email: mpourmehrab@ufl.edu       #
+# Last Modified: Feb/16/2018       #
+####################################
 
 import os
 import pandas as pd
@@ -73,7 +73,7 @@ class Traffic:
         '''
         indx = self.curr_indx + 1
         while self.all_vehicles['arrival time'][indx] <= t and self.all_vehicles['sc'][indx] == self.active_sc:
-            l = self.all_vehicles['lane'][indx]
+            lane = self.all_vehicles['lane'][indx]
             det_id = 'xyz'
             det_type = self.all_vehicles['type'][indx]  # 0: CNV, 1: CAV
             det_time = self.all_vehicles['arrival time'][indx]
@@ -85,8 +85,12 @@ class Traffic:
             amin = self.all_vehicles['maxDec'][indx]
             amax = self.all_vehicles['maxAcc'][indx]
 
+            # create the vehicle and get the earliest departure time
             veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx)
-            lanes.vehlist[l].add_last(veh)
+            # add it
+            lanes.vehlist[lane] += veh  # recall it is an array
+
             indx += 1
 
+        # to keep track of how much of csv is processed
         self.curr_indx = indx - 1

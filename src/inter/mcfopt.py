@@ -1,3 +1,11 @@
+####################################
+# File name: mcfopt.py             #
+# Author: Mahmoud Pourmehrab       #
+# Email: mpourmehrab@ufl.edu       #
+# Last Modified: Feb/16/2018       #
+####################################
+
+
 '''
 This class is meant to slove the min cost flow problem that is set up for phase selection
 
@@ -5,11 +13,6 @@ Code is written in Python 3
 Install the list of packages in the Pipfile using PyEnv
 
 solver by Google: https://goo.gl/jFncvj
-
-By:     Mahmoud Pourmehrab
-E-mail: mpourmehrab@ufl.edu
-Date:        Dec 2017
-Last update: Dec/17/2017
 '''
 
 from ortools.graph import pywrapgraph

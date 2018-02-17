@@ -1,9 +1,9 @@
-'''
-By:     Mahmoud Pourmehrab
-E-mail: mpourmehrab@ufl.edu
-Date:        November 2017
-Last update: Feb/15/2018
-'''
+####################################
+# File name: sim.py                #
+# Author: Mahmoud Pourmehrab       #
+# Email: mpourmehrab@ufl.edu       #
+# Last Modified: Feb/16/2018       #
+####################################
 
 
 class Simulator:

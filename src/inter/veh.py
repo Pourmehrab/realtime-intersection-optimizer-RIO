@@ -1,9 +1,9 @@
-'''
-By:     Mahmoud Pourmehrab
-E-mail: mpourmehrab@ufl.edu
-Date:        Dec 2017
-Last update: Dec/08/2017
-'''
+####################################
+# File name: veh.py                #
+# Author: Mahmoud Pourmehrab       #
+# Email: mpourmehrab@ufl.edu       #
+# Last Modified: Feb/16/2018       #
+####################################
 
 import numpy as np
 
@@ -221,6 +221,9 @@ class Vehicle:
         self.csv_indx = indx  # is used to find vehicle in original csv file
         self.last_trj_point_indx = -1  # changes in set_trj()
 
+        # assuming green forever and no vehicle in front, when departs
+        self.set_earlst()
+
     def set_trj(self, t, d, s):
         '''
         Sets trajectory of the vehicle
@@ -229,10 +232,16 @@ class Vehicle:
         self.trajectory[1:n, :] = [t, d, s]
         self.last_trj_point_indx = n
 
-    def set_earlst(self, t):
+    def set_earlst(self):
         '''
-
-        :param t: earliest time vehicle can get to the stop bar if enough green is given
+        get earliest time for last vehicle added to this lane
+        assume no vehicle is in from
+        treat as lead vehicle, however type matters
         :return: same
         '''
-        self.earlst = t
+        if self.veh_type == 0:
+            # assume it keeps its speed constant: distance over speed
+            self.earlst = self.trajectory[0, 1] / self.trajectory[0, 2]
+        else:
+            # todo: here do nonlinear opt for lead CAV
+            self.earlst = self.trajectory[0, 1] / self.trajectory[0, 2]

@@ -1,9 +1,11 @@
-'''
-By:     Mahmoud Pourmehrab
-E-mail: mpourmehrab@ufl.edu
-Date:        Feb 2018
-Last update: Feb/15/2018
+####################################
+# File name: data.py               #
+# Author: Mahmoud Pourmehrab       #
+# Email: mpourmehrab@ufl.edu       #
+# Last Modified: Feb/16/2018       #
+####################################
 
+'''
 stores data of the following intersection:
 numbers are one-based (get converted to zero-based later)
 

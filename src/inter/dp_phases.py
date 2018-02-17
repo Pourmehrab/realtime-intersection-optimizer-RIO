@@ -1,3 +1,10 @@
+####################################
+# File name: dp_phases.py          #
+# Author: Mahmoud Pourmehrab       #
+# Email: mpourmehrab@ufl.edu       #
+# Last Modified: Feb/16/2018       #
+####################################
+
 # key is a lane : vals are lanes that are in conflict with key
 conf_dict = {1: [7],
              2: [7, 8, 12, 16, 15, 14, 13],

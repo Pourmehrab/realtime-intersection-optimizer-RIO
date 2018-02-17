@@ -1,12 +1,9 @@
-'''
-Creates library of all phases
-
-
-By:     Mahmoud Pourmehrab
-E-mail: mpourmehrab@ufl.edu
-Date:        Dec 2017
-Last update: Dec/03/2017
-'''
+####################################
+# File name: phs.py                #
+# Author: Mahmoud Pourmehrab       #
+# Email: mpourmehrab@ufl.edu       #
+# Last Modified: Feb/16/2018       #
+####################################
 
 from itertools import combinations
 import numpy as np

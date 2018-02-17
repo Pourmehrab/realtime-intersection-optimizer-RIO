@@ -1,9 +1,10 @@
-'''
-By:     Mahmoud Pourmehrab
-E-mail: mpourmehrab@ufl.edu
-Date:        Nov 2017
-Last update: Dec/08/2017
-'''
+####################################
+# File name: inpt.py               #
+# Author: Mahmoud Pourmehrab       #
+# Email: mpourmehrab@ufl.edu       #
+# Last Modified: Feb/16/2018       #
+####################################
+
 import os
 
 

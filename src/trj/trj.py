@@ -1,13 +1,10 @@
-'''
-Code is written in Python 3
-Install the list of packages in the Pipfile using PyEnv
+####################################
+# File name: trj.py                #
+# Author: Mahmoud Pourmehrab       #
+# Email: mpourmehrab@ufl.edu       #
+# Last Modified: Feb/16/2018       #
+####################################
 
-
-By:     Mahmoud Pourmehrab
-E-mail: mpourmehrab@ufl.edu
-Date:        Nov 2017
-Last update: Dec/15/2017
-'''
 
 import numpy as np
 

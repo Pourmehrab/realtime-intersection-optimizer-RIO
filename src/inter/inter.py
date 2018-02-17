@@ -1,9 +1,9 @@
-'''
-By:     Mahmoud Pourmehrab
-E-mail: mpourmehrab@ufl.edu
-Date:        Nov 2017
-Last update: Feb/15/2017
-'''
+####################################
+# File name: inter.py              #
+# Author: Mahmoud Pourmehrab       #
+# Email: mpourmehrab@ufl.edu       #
+# Last Modified: Feb/16/2018       #
+####################################
 
 import os
 
