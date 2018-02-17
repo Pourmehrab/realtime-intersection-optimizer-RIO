@@ -45,7 +45,7 @@ def mcf_signal_optimizer(intersection, num_lanes, ppi, max_speed, signal, lanes,
     tikzobj = TikZpanels(inter_name, num_lanes, ppi)
 
 
-def stochastic_optimizer(intersection, traffic, num_lanes, pli, use_phase, max_speed, lanes):
+def stochastic_optimizer(intersection, traffic, num_lanes, use_phase, max_speed, lanes):
     '''
     Based on the paper submitted to IEEE Intelligent Transportation Systems Magazine
     :param pli: phase lane incidence dictionary
@@ -54,7 +54,7 @@ def stochastic_optimizer(intersection, traffic, num_lanes, pli, use_phase, max_s
     '''
 
     # first define what rows of phase-lane incidence matrix should be used
-    signal = Signal(num_lanes)
+    signal = Signal(intersection.name, num_lanes)
 
     # get the time when first vehicle shows up
     t = traffic.get_first_arrival()
@@ -67,7 +67,7 @@ def stochastic_optimizer(intersection, traffic, num_lanes, pli, use_phase, max_s
 
     while True:  # stops when all rows of csv are processed (a break statement controls this)
         t = simulator.get_clock()  # gets current simulation clock
-        traffic.add_vehicles(lanes, t)  # checks for new vehicles in all incoming lanes
+        traffic.add_vehicles(lanes, t)  # checks for new vehicles in all incoming lanes (also sets earliest time)
 
         # optimize like lead
         # for l in range(num_lanes):
@@ -78,6 +78,9 @@ def stochastic_optimizer(intersection, traffic, num_lanes, pli, use_phase, max_s
         #         while next_veh_indx != None:
         #             trj_planner = Connected(generic_lead, generic_follower, gs=45)
         #             trj_planner.solve(1)  # pass 1 for follower vehicle (when first argument is not None)
+
+        # DO SIGNAL OPTIMIZATION
+        signal.do_spat_decision(lanes)
 
         # move sim to next time step
         if traffic.keep_simulating():
@@ -91,7 +94,7 @@ def stochastic_optimizer(intersection, traffic, num_lanes, pli, use_phase, max_s
 
                 lanes = Lanes(num_lanes)
 
-                signal = Signal(num_lanes)
+                signal = Signal(intersection.name,num_lanes)
                 signal.enqueue(use_phase[0], 0)
         else:
             # simulation ends save the csv which has travel time column in it
@@ -112,13 +115,12 @@ if __name__ == "__main__":
     # Intersection name
     # there should be a csv file under `data` (refer to readme for details)
     # also look in src/inter/data.py
-    inter_name = 'reserv'  # Options: reserv, 13th16th
+    inter_name = '13th16th'  # Options: reserv, 13th16th
 
     # Instantiations of necessary objects
     # intersection keeps lane-lane and phase-lane incidence dictionaries
     intersection = Intersection(inter_name)
     num_lanes = intersection.get_num_lanes()
-    ppi = intersection.get_phs()
     max_speed = intersection.get_max_speed()  # in m/s
 
     # lanes is a dictionary where key is lane index and value is a doubly-linked list that keeps vehicles in that lane
@@ -132,7 +134,7 @@ if __name__ == "__main__":
     # here we start doing optimization for all scenarios which exist in the csv file read before
     # stochastic_optimizer(.) works based on the logic provided in paper submitted to IEEE ITS
     # find more details inside the function
-    stochastic_optimizer(intersection, traffic, num_lanes, ppi, (17, 9, 8, 15), max_speed, lanes)
+    stochastic_optimizer(intersection, traffic, num_lanes, (17, 9, 8, 15), max_speed, lanes)
     t2 = time.clock()
     print(' Elapsed Time: {} ms'.format(int(1000 * (t2 - t1))), end='')
 

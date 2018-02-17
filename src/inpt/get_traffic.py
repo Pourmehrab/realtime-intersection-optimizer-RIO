@@ -74,7 +74,7 @@ class Traffic:
         indx = self.curr_indx + 1
         while self.all_vehicles['arrival time'][indx] <= t and self.all_vehicles['sc'][indx] == self.active_sc:
             lane = self.all_vehicles['lane'][indx]
-            det_id = 'xyz'
+            det_id = 'xyz' # todo (Patrick) this changes when code becomes real-time
             det_type = self.all_vehicles['type'][indx]  # 0: CNV, 1: CAV
             det_time = self.all_vehicles['arrival time'][indx]
             speed = self.all_vehicles['curSpd'][indx]
@@ -88,7 +88,7 @@ class Traffic:
             # create the vehicle and get the earliest departure time
             veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx)
             # add it
-            lanes.vehlist[lane] += veh  # recall it is an array
+            lanes.vehlist[lane] += [veh]  # recall it is an array
 
             indx += 1
 

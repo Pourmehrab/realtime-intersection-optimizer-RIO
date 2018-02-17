@@ -87,10 +87,22 @@ def get_phases(s):
         return None
 
 
-def get_intersection_params(s):
+def get_signal_params(s):
     if s == '13th16th':
-        return 14, 1.5, 1, 300
+        return 1.5, 1, 300
     elif s == 'reserv':
-        return 14, 1.5, 1, 300
+        return 1.5, 1, 300
+    else:
+        return None
+
+
+def get_general_params(s):
+    '''
+    :return: max speed (m/s), number of incoming lanes
+    '''
+    if s == '13th16th':
+        return 14, 16
+    elif s == 'reserv':
+        return 14, 12
     else:
         return None

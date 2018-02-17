@@ -17,14 +17,44 @@ from src.inpt.data import *
 class Intersection:
     def __init__(self, int_name):
         self.name = int_name
-        self._set_lli()
-
-        self._set_pli()
 
         # d = {"max_speed": '_v', "yellow_duration": '_y', "all_red_duration": '_ar', "opt_range": '_opt_range'}
         # max_speed : m/s, time : sec, distance : meters
         # read_prms(self, int_name, 'int', d)
-        self._v, self._y, self._ar, self._opt_range = get_intersection_params(int_name)
+        self._v, self._nl = get_general_params(int_name)
+
+    def get_num_lanes(self):
+        return self._nl
+
+    def get_max_speed(self):
+        return self._v
+
+
+class Signal:
+
+    def __init__(self, int_name, num_lanes):
+        '''
+        - sequence keeps the sequence of phases to be executed from 0
+        - green_dur keeps the amount of green allocated to each phase
+        - yellow and all-red is a fix amount at the end of all phases (look at class variables)
+        - start keeps the absolute time (in sec) when each phase starts
+
+        * SPaT starts executing from 0 to end of each list
+
+        - schedule keeps the earliest departures at the stop bars of each lane and gets updated when a signal decision
+         goes permanent. It is made by a dictionary of arrays (key is lane, value is sorted earliest departures).
+
+        '''
+        self.name = int_name
+
+        self._y, self._ar, self._opt_range = get_signal_params(int_name)
+
+        self._set_lli()
+
+        self._set_pli()
+
+        self.sequence, self.green_dur, self.start = [], [], []
+        self.schedule = {l: [] for l in range(num_lanes)}
 
     def _set_lli(self):
         '''
@@ -63,32 +93,12 @@ class Intersection:
     def get_phs(self):
         return self._pli
 
-    def get_num_lanes(self):
-        return self._nl
-
-    def get_max_speed(self):
-        return self._v
-
-
-class Signal():
-    Y = 2  # yellow time sec
-    AR = 1  # all-red time sec
-
-    def __init__(self, num_lanes):
+    def do_spat_decision(self, lanes):
         '''
-        we start executing from 0 to end of each list
-
-        - sequence keeps the sequence of phases to be executed from 0
-        - green_dur keeps the amount of green allocated to each phase
-        - yellow and all-red is a fix amount at the end of all phases (look at class variables)
-        - start keeps the absolute time (in sec) when each phase starts
-
-        - schedule keeps the earliest departures at the stop bars of each lane and gets updated when a signal decision goes
-         permanent. It is made by a dictionary of arrays (key is lane, value is sorted earliest departures).
-
+        works based on methodology in IEEE paper
+        :return:
         '''
-        self.sequence, self.green_dur, self.start = [], [], []
-        self.schedule = {l: [] for l in range(num_lanes)}
+        pass
 
     def enqueue(self, p, g):
         '''
@@ -100,7 +110,11 @@ class Signal():
         '''
         self.sequence += [p]
         self.green_dur += [g]
-        self.start += [self.start[-1] + self.green_dur[-1] + self.Y + self.AR]
+
+        if len(self.sequence) > 1:
+            self.start += [self.start[-1] + self.green_dur[-1] + self._y + self._ar]
+        else:
+            self.start += [self.green_dur[-1] + self._y + self._ar]
 
     def dequeue(self):
         del self.sequence[0]

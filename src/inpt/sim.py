@@ -15,6 +15,7 @@ class Simulator:
 
     def next_sim_step(self):
         # configure sim resolution by changing the increment unit
+        # todo (Patrick) this changes when code becomes real-time
         self.clock += self.STEP
 
     def get_clock(self):
