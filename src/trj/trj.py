@@ -6,54 +6,60 @@ Install the list of packages in the Pipfile using PyEnv
 By:     Mahmoud Pourmehrab
 E-mail: mpourmehrab@ufl.edu
 Date:        Nov 2017
-Last update: Dec/08/2017
+Last update: Dec/15/2017
 '''
 
+import numpy as np
 
-class MahmoudTrj:
+
+class Trajectory:
     '''
     Abstract class for trajectories
     '''
-    LAG = 1  # lag on signalization
-    RES = 1  # second
-    EPS = 0.01
-    DIG = 2
 
-    def __init__(self, lead_veh, fol_veh, gs, gt, vmax, vcont):
+    LAG = 1  # lag on signalization
+    RES = 1  # second (be careful not to exceed max size of trajectory
+    EPS = 0.01
+    DIG = 4  # number of digits to cut
+
+    def __init__(self, lead_veh, fol_veh, gs, gt):
 
         self.lead_veh = lead_veh
         self.fol_veh = fol_veh
-        self.vmax, self.vcont = vmax, vcont
-        if gt > gs + self.LAG:
-            self.gs, self.gt = gs + self.LAG, gt
+        gt_lagged = gs + self.LAG
+        if gt > gt_lagged:
+            self.gs, self.gt = gt_lagged, gt
         else:
             raise Exception('Signal lag exceeds the length of green')
         self.stat = False
 
-    def insight(self):
-        print(''' MahmoudTrj(.) received the following request:
-                dist: {:04.2f} m             initial speed: {:04.2f} m/s
-                deceleration: {:04.2f} m/s2   acceleration: {:04.2f} m/s2
-                spd limit: {:04.2f} m/s       spd limit @ control: {:04.2f} m/s
-                green interval:            [{:04.2f}, {:04.2f}] sec
-                '''.format(self.fol_veh.dist, self.fol_veh.speed, self.fol_veh.amin, self.fol_veh.amax, self.vmax, self.vcont, self.gs, self.gt))
+    def create_trj_domain(self, ts, te):
+        '''
 
-        if self.fol_veh.speed > self.vmax:
-            t = (self.vmax - self.fol_veh.speed) / self.fol_veh.amin
-            d = (self.vmax ** 2 - self.fol_veh.speed ** 2) / (2 * self.fol_veh.amin)
-            print('Vehicle can decelerate to spd limit in {:04.2f} sec, {:04.2f} m'.format(t, d))
+        :param ts: start time
+        :param te: end time
+        :return: trj domain
+        '''
+        # todo: (Mahmoud) control the last point of trajectory should be zero
+        if te - ts % self.RES > self.EPS:
+            indep_var = np.append(np.arange(ts, te, Trajectory.RES, dtype=float), te).round(
+                self.DIG)
         else:
-            t = (self.vmax - self.fol_veh.speed) / self.fol_veh.amax
-            d = (self.vmax ** 2 - self.fol_veh.speed ** 2) / (2 * self.fol_veh.amax)
-            print('Vehicle can accelerate to spd limit in {:04.2f} sec, {:04.2f} m'.format(t, d))
-        if self.vcont < self.vmax:
-            t = (self.vcont - self.vmax) / self.fol_veh.amin
-            d = (self.vcont ** 2 - self.vmax ** 2) / (2 * self.fol_veh.amin)
-            print('then decelerates to control spd limit in {:04.2f} sec, {:04.2f} m'.format(t, d))
-        elif self.vcont > self.vmax:
-            t = (self.vcont - self.vmax) / self.fol_veh.amax
-            d = (self.vcont ** 2 - self.vmax ** 2) / (2 * self.fol_veh.amax)
-            print('then accelerates to control spd limit in {:04.2f} sec, {:04.2f} m'.format(t, d))
+            indep_var = np.arange(ts, te, Trajectory.RES, dtype=float).round(self.DIG)
 
-    def reset(self):
-        self.stat = False
+        return indep_var
+
+    def linear_trj(self):
+        tend = self.fol_veh.trajectory[0, 1] / self.fol_veh.curr_speed
+
+        t = self.create_trj_domain(self.fol_veh.trajectory[0, 0], self.fol_veh.trajectory[0, 0] + tend)
+        s = np.array([self.fol_veh.curr_speed for i in range(len(t))])
+        d = np.array([self.fol_veh.trajectory[0, 1] -
+                      self.fol_veh.curr_speed *
+                      (t[i] - self.fol_veh.trajectory[0, 0]) for i in range(len(t))])
+
+        self.set_follower_trj(t, d, s)
+
+    def set_follower_trj(self, t, d, s):
+
+        self.fol_veh.set_trj(t, d, s)

@@ -18,7 +18,7 @@ import numpy as np
 from src.inter.inter import Intersection
 from src.inpt.sim import Simulator
 from src.inter.veh import Lanes, Vehicle
-from src.inter.mcfopt import SigNet
+from src.inter.mcfopt import SigMinCostNet
 
 if __name__ == "__main__":
     print('Python Path: ', sys.executable)
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     ppi = intersection.get_phs()
     max_speed = intersection.get_max_speed()  # in m/s
 
-    signal = SigNet(num_lanes, ppi)
+    signal = SigMinCostNet(num_lanes, ppi)
 
     lanes = Lanes(num_lanes)
 

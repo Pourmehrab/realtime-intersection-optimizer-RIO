@@ -16,7 +16,7 @@ from ortools.graph import pywrapgraph
 import numpy as np
 
 
-class SigNet:
+class SigMinCostNet:
     '''
     NODES:
     Head of phase-selection arcs: from 0 to |p|-1
@@ -39,8 +39,8 @@ class SigNet:
     M = 999
     CMIN = 1
 
-    def __init__(self, num_lanes, ppi):
-        num_ph = ppi.shape[0]
+    def __init__(self, num_lanes, pli):
+        num_ph = len(pli)
         self.num_lanes = num_lanes
 
         # to find out relevant nodes
@@ -48,8 +48,9 @@ class SigNet:
         # add phase selection arcs
         self.start_nodes = [p for p in range(num_ph)]
         self.end_nodes = [num_ph + p for p in range(num_ph)]
-        max_ph_size = max(np.sum(ppi, 1))
-        self.unit_costs = [int(self.CMIN + max_ph_size - sum(ppi[p]) + 1) for p in range(num_ph)]
+        # find length od biggest phase
+        max_ph_size = max([len(pli[p]) for p in range(num_lanes)])
+        self.unit_costs = [int(self.CMIN + max_ph_size - sum(pli[p]) + 1) for p in range(num_ph)]
         self.capacities = [self.M for p in range(num_ph)]
 
         # add phase activator arcs
@@ -67,14 +68,13 @@ class SigNet:
 
         # add lane to phase arcs
         index = len(self.start_nodes) - 1
-        for p in range(num_ph):
-            for l in range(self.num_lanes):
-                if ppi[p, l]:
-                    index += 1
-                    self.start_nodes.append(2 * num_ph + 1 + l)
-                    self.end_nodes.append(p)
-                    self.unit_costs.append(0)
-                    self.capacities.append(self.M)
+        for p, lanes in pli.items():
+            for l in lanes:
+                index += 1
+                self.start_nodes.append(2 * num_ph + 1 + l)
+                self.end_nodes.append(p)
+                self.unit_costs.append(0)
+                self.capacities.append(self.M)
 
         self.supplies = [0 for n in range(2 * num_ph + self.num_lanes + 1)]
 

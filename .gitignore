@@ -107,3 +107,5 @@ ENV/
 *.csv
 
 log/
+src/vissim/
+IBM_cplex/

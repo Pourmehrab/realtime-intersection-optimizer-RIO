@@ -1,12 +1,15 @@
-from bokeh.plotting import figure
+from bokeh.plotting import figure, ColumnDataSource
 from bokeh.io import export_svgs, show
 from bokeh.models import HoverTool
 
-class MahmoudVis:
+
+class VisTrj:
     def __init__(self, lane):
         hover = HoverTool(tooltips=[
             ("index", "$index"),
-            ("(time,dist)", "($x sec, $y m)"),
+            ("time", "$x{0.0 a} sec"),
+            ("distance", "$y{0.0 a} m"),
+            ("speed", "@s{0.0 a} m/s"),
         ])
         self.fig = figure(width=500, height=500, tools=[hover],
                           title="Mouse over the dots")
@@ -14,14 +17,15 @@ class MahmoudVis:
         self.fig.title.align = "center"
         self.fig.output_backend = "svg"
 
-    def plotrj(self, t, d, l):
-        self.fig.line(t, d, line_width=3)
-
-    def exprtrj(self, fig):
-        export_svgs(self.fig, filename="trj.svg")
-
-    def makeplt(self):
+    def plotrj(self, t, d, s):
+        source = ColumnDataSource(data=dict(
+            x=t, y=d, s=s,
+        ))
+        self.fig.line('x', 'y', line_width=3, source=source)
         show(self.fig)
+
+    def exprtrj(self):
+        export_svgs(self.fig, filename="trj.svg")
 
 # import matplotlib.pyplot as plt
 # from numpy import sqrt as np
