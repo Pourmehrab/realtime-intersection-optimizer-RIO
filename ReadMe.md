@@ -22,8 +22,9 @@ Directory `\data` includes folders named after each intersection of interest. In
 * `MS.txt`: movement share
 * `PLI.txt`: phase-lane incidence matrix (code generates this if not there)
 * `simprms.txt`: simulation parameters
+* `traffic.csv`: includes scenarios to be tested (could come from VISSIM)
 
-# Files
+# Important Files
 ## `runOpt.py`:
 This files is the main file should be run. It moderates all else.
 

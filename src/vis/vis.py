@@ -3,7 +3,7 @@ from bokeh.io import export_svgs, show
 from bokeh.models import HoverTool
 
 
-class MahmoudVisTrj:
+class VisTrj:
     def __init__(self, lane):
         hover = HoverTool(tooltips=[
             ("index", "$index"),

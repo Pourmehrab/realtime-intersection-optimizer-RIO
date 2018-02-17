@@ -2,14 +2,20 @@
 By:     Mahmoud Pourmehrab
 E-mail: mpourmehrab@ufl.edu
 Date:        November 2017
-Last update: Dec/08/2017
+Last update: Feb/15/2018
 '''
-from src.inpt.inpt import read_prms
 
 
-class MahmoudSimulator:
-    def __init__(self, int_name):
-        d = {'simulation_repetition':'_sim_rep',"simulation_duration": "_sim_dur",
-             "warmup_duration": "_warmup", "optimization_frequency": "_freq"}
+class Simulator:
+    STEP = 0.1  # time steps to move the simulation forward
+
+    def __init__(self, t):
         # time : sec
-        read_prms(self, int_name, 'sim', d)
+        self.clock = t
+
+    def next_sim_step(self):
+        # configure sim resolution by changing the increment unit
+        self.clock += self.STEP
+
+    def get_clock(self):
+        return self.clock

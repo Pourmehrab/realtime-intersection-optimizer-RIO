@@ -13,13 +13,19 @@ import numpy as np
 import os
 
 
-def phenum(l, lli, name):
+def phenum(num_lanes, lli_dict, name):
     '''
 
-    :param l: number of lanes
+    :param num_lanes: number of lanes
     :param lli: link lane incidence matrix
     :return:
     '''
+
+    lli = np.zeros((num_lanes, num_lanes))
+
+    for l, conf in lli_dict.items():
+        for j in conf:
+            lli[l, j] = 1
 
     all_combs = []
     phlen = 1
@@ -31,7 +37,7 @@ def phenum(l, lli, name):
 
     while True:
         new_comb = []
-        for ph in combinations(range(0, l), phlen):
+        for ph in combinations(range(0, num_lanes), phlen):
             new_comb.append(ph)
         nall += len(new_comb)
 
@@ -53,7 +59,8 @@ def phenum(l, lli, name):
     print('Phase Generator Report enumerated : {}, conflicting: {}, inclusion: {}, remaining: {}\n'.format(
         nall, ncnf, ninc, len(all_combs)))
 
-    write2txt(all_combs, l, name)
+    write2txt(all_combs, name)
+    print('phases are written to file in log directory. Add them to data.py and rerun')
 
 
 def chkconflict(new_comb, lli):
@@ -97,20 +104,11 @@ def chkinc(all_combs, non_conf_combs, ninc):
     return all_combs, ninc
 
 
-def write2txt(all_combs, l, name):
-    filepath = os.path.join('data/' + name, 'PLI.txt')
+def write2txt(all_combs, name):
+    filepath = os.path.join('log/', name + '_pli_dictionary.txt')
     with open(filepath, "w") as text_file:
-        for ph in range(0, len(all_combs)):
-            lane = 0
-            if lane in all_combs[ph]:
-                text_file.writelines("1")
-            else:
-                text_file.writelines("0")
-            lane = 1
-            while lane < l:
-                if lane in all_combs[ph]:
-                    text_file.writelines(",1")
-                else:
-                    text_file.writelines(",0")
-                lane += 1
-            text_file.writelines("\n")
+        for ph in range(len(all_combs)):
+            text_file.write('{:d} : {{'.format(ph + 1))
+            for lane in all_combs[ph]:
+                text_file.write('{:d}, '.format(lane + 1))
+            text_file.write('},\n')

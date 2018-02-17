@@ -17,7 +17,7 @@ import os
 import numpy as np
 
 
-class MahmoudTikzDirectedGraph:
+class TikzDirectedGraph:
 
     def __init__(self, inter_name, num_lanes, ppi):
         self.inter_name = inter_name

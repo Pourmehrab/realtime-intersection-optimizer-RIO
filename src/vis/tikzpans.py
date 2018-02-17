@@ -15,10 +15,10 @@ Last update: Dec/19/2017
 
 import os
 
-from src.vis.tikz import MahmoudTikzDirectedGraph
+from src.vis.tikz import TikzDirectedGraph
 
 
-class MahmoudTikZpanels(MahmoudTikzDirectedGraph):
+class TikZpanels(TikzDirectedGraph):
 
     def __init__(self, inter_name, num_lanes, ppi):
 
