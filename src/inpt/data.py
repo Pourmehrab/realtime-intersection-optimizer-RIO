@@ -89,9 +89,9 @@ def get_phases(s):
 
 def get_signal_params(s):
     if s == '13th16th':
-        return 1.5, 1, 300
+        return 1.5, 1, 5, 25
     elif s == 'reserv':
-        return 1.5, 1, 300
+        return 1.5, 1, 5, 25
     else:
         return None
 
@@ -101,8 +101,8 @@ def get_general_params(s):
     :return: max speed (m/s), number of incoming lanes
     '''
     if s == '13th16th':
-        return 14, 16
+        return 14, 16,300
     elif s == 'reserv':
-        return 14, 12
+        return 14, 12,300
     else:
         return None

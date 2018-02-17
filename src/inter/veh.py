@@ -173,7 +173,8 @@ class Lanes:
         # todo:(Mahmoud) a lane can have speed limit, opt range and other some other attributes
         # a dictionary of array
         self.vehlist = {l: [] for l in range(num_lanes)}
-        self.last_w_trj = [-1 for l in range(num_lanes)]  # this keeps the indx that all up to that vehicle have trj
+        self.last_w_trj = np.array([-1 for l in range(num_lanes)],
+                                   dtype=np.int)  # this keeps the indx that all up to that vehicle have trj
         # (initialized by -1 meaning no vehicle in this lane has got trajectory)
 
     def increase_indx(self, lane):
@@ -212,7 +213,7 @@ class Vehicle:
         self.max_decel_rate = amax
         self.destination = dest
         self.desired_speed = des_speed
-        self.trajectory = np.zeros((max_num_trajectory_points, 3))
+        self.trajectory = np.zeros((max_num_trajectory_points, 3), dtype=np.float)
         self.first_trj_point_indx = 0
         self.last_trj_point_indx = 0
         # time_diff = 3600 * (det_time[0] - ref_time[0]) + 60 * (det_time[1] - ref_time[1]) + (

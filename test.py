@@ -4,7 +4,7 @@
 # File name: test.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Feb/16/2018       #
+# Last Modified: Feb/17/2018       #
 ####################################
 
 import os
@@ -45,25 +45,25 @@ def mcf_signal_optimizer(intersection, num_lanes, ppi, max_speed, signal, lanes,
     tikzobj = TikZpanels(inter_name, num_lanes, ppi)
 
 
-def stochastic_optimizer(intersection, traffic, num_lanes, use_phase, max_speed, lanes):
+def stochastic_optimizer(intersection, traffic, num_lanes, allowable_phases, max_speed, lanes):
     '''
     Based on the paper submitted to IEEE Intelligent Transportation Systems Magazine
     :param pli: phase lane incidence dictionary
-    :param use_phase: subset of all possible phases is used (one per approach, east/south/west/north bounds
+    :param allowable_phases: subset of all possible phases is used (one per approach, east/south/west/north bounds
     respectively, that covers all movements is suggested)
     '''
 
     # first define what rows of phase-lane incidence matrix should be used
-    signal = Signal(intersection.name, num_lanes)
+    signal = Signal(intersection.name, allowable_phases)
 
     # get the time when first vehicle shows up
     t = traffic.get_first_arrival()
     # set the start time to it
     simulator = Simulator(t)
     # initialize SPaT by giving the first phase 0 second (in general we don't allocate less than min green)
-    signal.enqueue(
-        use_phase[0],
-        0)  # to initialize we set first phase to get green for 0 (note this gets full yellow, all-red duration anyway
+    # signal.enqueue(
+    #     allowable_phases[0],
+    #     0)  # to initialize we set first phase to get green for 0 (note this gets full yellow, all-red duration anyway
 
     while True:  # stops when all rows of csv are processed (a break statement controls this)
         t = simulator.get_clock()  # gets current simulation clock
@@ -80,7 +80,7 @@ def stochastic_optimizer(intersection, traffic, num_lanes, use_phase, max_speed,
         #             trj_planner.solve(1)  # pass 1 for follower vehicle (when first argument is not None)
 
         # DO SIGNAL OPTIMIZATION
-        signal.do_spat_decision(lanes)
+        signal.do_spat_decision(lanes,num_lanes, allowable_phases)
 
         # move sim to next time step
         if traffic.keep_simulating():
@@ -94,8 +94,8 @@ def stochastic_optimizer(intersection, traffic, num_lanes, use_phase, max_speed,
 
                 lanes = Lanes(num_lanes)
 
-                signal = Signal(intersection.name,num_lanes)
-                signal.enqueue(use_phase[0], 0)
+                signal = Signal(intersection.name, allowable_phases)
+                signal.enqueue(allowable_phases[0], 0)
         else:
             # simulation ends save the csv which has travel time column in it
             traffic.save_csv(intersection.name)
