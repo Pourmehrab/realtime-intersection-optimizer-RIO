@@ -99,17 +99,24 @@ class Signal:
         :return:
         '''
         # the goal is to choose the sequence of SPaT which gives more throughput in less time
+        self.flush_upcoming_SPaT()
 
-        # served_vehicle_indx = [0 if bool(lanes.vehlist[lane]) else -1 for lane in range(num_lanes)], or equivalently:
-        served_vehicle_indx = np.zeros(num_lanes, dtype=np.int)
-        served_vehicle_indx.fill(-1)
+        served_vehicle_indx = np.array([0 if bool(lanes.vehlist[lane]) else -1 for lane in range(num_lanes)],
+                                       dtype=np.int)
         # keeps index of last vehicle to be served by progressing SPaT
         # Note bool([]) returns False
 
         last_vehicle_indx = np.array([len(lanes.vehlist[lane]) - 1 for lane in range(num_lanes)], dtype=np.int)
+
         # keeps index of last vehicle to be served by progressing SPaT
 
-        while not np.array_equal(served_vehicle_indx, last_vehicle_indx):  # checks if SPaT did not serve all
+        def all_not_served(a, b):
+            for i in range(len(a)):
+                if b[i] > -1 and a[i] <= b[i]:
+                    return True
+            return False
+
+        while all_not_served(served_vehicle_indx, last_vehicle_indx):  # checks if SPaT did not serve all
 
             best_phase, best_phase_score, best_phase_green_dur = 0, 0, 0
             best_throughput = np.zeros(num_lanes, dtype=np.int)
@@ -126,7 +133,7 @@ class Signal:
 
                     veh_indx = served_vehicle_indx[lane]
                     # check if the lane is not empty and there are vehicles without trj
-                    if last_vehicle_indx[lane] > -1 and veh_indx < last_vehicle_indx[lane]:
+                    if last_vehicle_indx[lane] > -1 and veh_indx <= last_vehicle_indx[lane]:
 
                         while veh_indx <= last_vehicle_indx[lane] and lanes.vehlist[lane][
                             veh_indx].earlst - start_time <= self.max_green:
@@ -152,8 +159,10 @@ class Signal:
 
             else:  # progress SPaT
 
-                served_vehicle_indx[self._pli[phase]] += served_vehicle_indx[self._pli[phase]]
-                self.enqueue(best_phase, best_phase_green_dur)
+                for lane in self._pli[best_phase]:
+                    if best_throughput[lane] > 0:
+                        served_vehicle_indx[lane] += best_throughput[lane]
+                self.enqueue(best_phase, max(self.min_green, best_phase_green_dur))
 
     def enqueue(self, p, g):
         '''
@@ -176,3 +185,10 @@ class Signal:
         del self.SPaT_sequence[0]
         del self.SPaT_green_dur[0]
         del self.SPaT_start[0]
+
+    def flush_upcoming_SPaT(self):
+        if len(self.SPaT_sequence) > 1:
+            self.SPaT_sequence = [self.SPaT_sequence[0]]
+            self.SPaT_green_dur = [self.SPaT_green_dur[0]]
+            self.SPaT_start = [self.SPaT_start[0]]
+            self.SPaT_end = [self.SPaT_end[0]]

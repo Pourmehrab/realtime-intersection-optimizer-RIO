@@ -67,7 +67,13 @@ def stochastic_optimizer(intersection, traffic, num_lanes, allowable_phases, max
 
     while True:  # stops when all rows of csv are processed (a break statement controls this)
         t = simulator.get_clock()  # gets current simulation clock
-        traffic.add_vehicles(lanes, t)  # checks for new vehicles in all incoming lanes (also sets earliest time)
+        traffic.add_vehicles(lanes, t,max_speed)  # checks for new vehicles in all incoming lanes (also sets earliest time)
+
+        # DO SIGNAL OPTIMIZATION
+        signal.do_spat_decision(lanes, num_lanes, allowable_phases)
+        # now we have sufficient SPaT to serve all
+
+        # DO TRAJECTORY OPTIMIZATION
 
         # optimize like lead
         # for l in range(num_lanes):
@@ -79,10 +85,7 @@ def stochastic_optimizer(intersection, traffic, num_lanes, allowable_phases, max
         #             trj_planner = Connected(generic_lead, generic_follower, gs=45)
         #             trj_planner.solve(1)  # pass 1 for follower vehicle (when first argument is not None)
 
-        # DO SIGNAL OPTIMIZATION
-        signal.do_spat_decision(lanes,num_lanes, allowable_phases)
-
-        # move sim to next time step
+        # MOVE SIMULATION FORWARD
         if traffic.keep_simulating():
             if traffic.keep_scenario():
                 simulator.next_sim_step()

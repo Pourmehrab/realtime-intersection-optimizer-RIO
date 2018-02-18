@@ -2,11 +2,91 @@
 # File name: veh.py                #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Feb/16/2018       #
+# Last Modified: Feb/17/2018       #
 ####################################
 
 import numpy as np
 
+
+class Lanes:
+    def __init__(self, num_lanes):
+        '''
+        Data Structure for a dictionary of lanes
+
+        :param num_lanes: number of lanes
+        '''
+        # todo:(Mahmoud) a lane can have speed limit, opt range and other some other attributes
+        # a dictionary of array
+        self.vehlist = {l: [] for l in range(num_lanes)}
+        self.last_w_trj = np.array([-1 for l in range(num_lanes)],
+                                   dtype=np.int)  # this keeps the indx that all up to that vehicle have trj
+        # (initialized by -1 meaning no vehicle in this lane has got trajectory)
+
+    def increase_indx(self, lane):
+        self.last_w_trj[lane] += 1
+
+    def decrease_indx(self, lane):
+        self.last_w_trj[lane] -= 1
+
+
+class Vehicle:
+    def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx,
+                 max_num_trajectory_points=300):
+        '''
+        Data Structure for an individual vehicle
+
+        :param det_id:          the id assigned to this vehicle by radio
+        :param det_type:        0: Conventional, 1: Connected, 2: Automated
+        :param det_time:        detection time in seconds from reference time
+        :param speed:           detection speed in m/s
+        :param dist:            detection distance to stop bar in meter
+        :param length:          length of vehicle in meter
+        :param amin:            desirable deceleration rate in m/s2
+        :param amax:            desired acceleration rate in m/s2
+        :param dest:            destination 0: right turn, 1: through, 2: left
+        :param des_speed:       desired speed in m/s
+        :param trajectory       keeps trajectory of vehicle [time, distance, speed]
+        :param last_trj_point_indx       last index points to last row in trajectory
+        '''
+        self.ID = det_id
+        self.veh_type = det_type
+        self.init_time = det_time
+        self.curr_speed = speed
+        self.distance = dist
+        self.length = length
+        self.max_accel_rate = amin
+        self.max_decel_rate = amax
+        self.destination = dest
+        self.desired_speed = des_speed
+        self.trajectory = np.zeros((max_num_trajectory_points, 3), dtype=np.float)
+        self.first_trj_point_indx = 0
+        self.last_trj_point_indx = 0
+        # time_diff = 3600 * (det_time[0] - ref_time[0]) + 60 * (det_time[1] - ref_time[1]) + (
+        #         det_time[2] - ref_time[2])
+        self.trajectory[0:] = [det_time, dist, speed, ]
+        self.csv_indx = indx  # is used to find vehicle in original csv file
+        self.last_trj_point_indx = -1  # changes in set_trj()
+
+        # assuming green forever and no vehicle in front, when departs
+        self.set_earlst()
+
+    def set_trj(self, t, d, s):
+        '''
+        Sets trajectory of the vehicle. They're computed elsewhere. This is just to set them.
+        '''
+        n = len(t)
+        self.trajectory[0:n, :] = np.transpose([t, d, s])
+        self.last_trj_point_indx = n
+
+    def set_earlst(self):
+        '''
+        get earliest time for last vehicle added to this lane
+        assume no vehicle is in from
+        treat as lead vehicle, however type matters
+        used in Signal class, method do_spat_decision() to avoid assigning green earlier than when vehicle can depart
+        :return: same
+        '''
+        self.earlst = self.trajectory[self.last_trj_point_indx, 0]  # this is the absolute earliest time
 
 # class _DoublyLinkedBase:
 #     class _Node:
@@ -161,88 +241,3 @@ import numpy as np
 #         old_value = original._element
 #         original._element = e
 #         return old_value
-
-
-class Lanes:
-    def __init__(self, num_lanes):
-        '''
-        Data Structure for a dictionary of lanes
-
-        :param num_lanes: number of lanes
-        '''
-        # todo:(Mahmoud) a lane can have speed limit, opt range and other some other attributes
-        # a dictionary of array
-        self.vehlist = {l: [] for l in range(num_lanes)}
-        self.last_w_trj = np.array([-1 for l in range(num_lanes)],
-                                   dtype=np.int)  # this keeps the indx that all up to that vehicle have trj
-        # (initialized by -1 meaning no vehicle in this lane has got trajectory)
-
-    def increase_indx(self, lane):
-        self.last_w_trj[lane] += 1
-
-    def decrease_indx(self, lane):
-        self.last_w_trj[lane] -= 1
-
-
-class Vehicle:
-    def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx,
-                 max_num_trajectory_points=100):
-        '''
-        Data Structure for an individual vehicle
-
-        :param det_id:          the id assigned to this vehicle by radio
-        :param det_type:        0: Conventional, 1: Connected, 2: Automated
-        :param det_time:        detection time in seconds from reference time
-        :param speed:           detection speed in m/s
-        :param dist:            detection distance to stop bar in meter
-        :param length:          length of vehicle in meter
-        :param amin:            desirable deceleration rate in m/s2
-        :param amax:            desired acceleration rate in m/s2
-        :param dest:            destination 0: right turn, 1: through, 2: left
-        :param des_speed:       desired speed in m/s
-        :param trajectory       keeps trajectory of vehicle [time, distance, speed]
-        :param last_trj_point_indx       last index points to last row in trajectory
-        '''
-        self.ID = det_id
-        self.veh_type = det_type
-        self.init_time = det_time
-        self.curr_speed = speed
-        self.distance = dist
-        self.length = length
-        self.max_accel_rate = amin
-        self.max_decel_rate = amax
-        self.destination = dest
-        self.desired_speed = des_speed
-        self.trajectory = np.zeros((max_num_trajectory_points, 3), dtype=np.float)
-        self.first_trj_point_indx = 0
-        self.last_trj_point_indx = 0
-        # time_diff = 3600 * (det_time[0] - ref_time[0]) + 60 * (det_time[1] - ref_time[1]) + (
-        #         det_time[2] - ref_time[2])
-        self.trajectory[0:] = [det_time, dist, speed, ]
-        self.csv_indx = indx  # is used to find vehicle in original csv file
-        self.last_trj_point_indx = -1  # changes in set_trj()
-
-        # assuming green forever and no vehicle in front, when departs
-        self.set_earlst()
-
-    def set_trj(self, t, d, s):
-        '''
-        Sets trajectory of the vehicle
-        '''
-        n = len(t)
-        self.trajectory[1:n, :] = [t, d, s]
-        self.last_trj_point_indx = n
-
-    def set_earlst(self):
-        '''
-        get earliest time for last vehicle added to this lane
-        assume no vehicle is in from
-        treat as lead vehicle, however type matters
-        :return: same
-        '''
-        if self.veh_type == 0:
-            # assume it keeps its speed constant: distance over speed
-            self.earlst = self.trajectory[0, 1] / self.trajectory[0, 2]
-        else:
-            # todo: here do nonlinear opt for lead CAV
-            self.earlst = self.trajectory[0, 1] / self.trajectory[0, 2]
