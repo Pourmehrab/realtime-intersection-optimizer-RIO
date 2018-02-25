@@ -66,7 +66,7 @@ class Traffic:
         cond = self.all_vehicles['sc'] == self.active_sc
         return self.all_vehicles[cond]['arrival time'].iloc[0]
 
-    def add_vehicles(self, lanes, t, max_speed):
+    def update_within_det_range(self, lanes, t, max_speed):
         '''
 
         :param lanes: vehicles are added to this data structure (dictionary of doubly-linked lists)
@@ -76,7 +76,7 @@ class Traffic:
         indx = self.curr_indx + 1
         while self.all_vehicles['arrival time'][indx] <= t and self.all_vehicles['sc'][indx] == self.active_sc:
             lane = self.all_vehicles['lane'][indx]
-            det_id = 'xyz'  # todo (Patrick) this changes when code becomes real-time
+            det_id = 'xyz'  # todo (Patrick) this changes when in real-time mode
             det_type = self.all_vehicles['type'][indx]  # 0: CNV, 1: CAV
             det_time = self.all_vehicles['arrival time'][indx]
             speed = self.all_vehicles['curSpd'][indx]
@@ -86,6 +86,7 @@ class Traffic:
             length = self.all_vehicles['L'][indx]
             amin = self.all_vehicles['maxDec'][indx]
             amax = self.all_vehicles['maxAcc'][indx]
+            print('*** -> A vehicle of type {:d} detection @ {:2.2f} sec'.format(det_type, det_time))
 
             # create the vehicle and get the earliest departure time
             veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx)
@@ -99,12 +100,12 @@ class Traffic:
                     #  happens when a connected vehicle is the first in the lane
                     trj_planner = Connected(None, veh, vmax=max_speed)
                     trj_planner.insight()  # optional: if want to print some overview of follower vehicle
-                    trj_planner.solve(0)  # pass 0 for lead vehicle
+                    trj_planner.solve_earlst(0)  # pass 0 for lead vehicle
                 else:  # case 2: follower vehicle
                     # Case 2: follower connected vehicle
                     # happens when a connected vehicle is NOT the first in the lane
                     trj_planner = Connected(lanes.vehlist[-2], veh, vmax=max_speed)
-                    trj_planner.solve(1)  # pass 1 for follower vehicle (when first argument is not None)
+                    trj_planner.solve_earlst(1)  # pass 1 for follower vehicle (when first argument is not None)
             else:  # type is 1 meaning vehicle is conventional
                 if len(lanes.vehlist[lane]) == 1:  # case 3: lead vehicle
                     # Case 3: lead conventional vehicle
@@ -124,3 +125,25 @@ class Traffic:
 
         # to keep track of how much of csv is processed
         self.curr_indx = indx - 1
+
+    def update_at_stop_bar(self, lanes, t, num_lanes):
+
+        for lane in range(num_lanes):
+
+            if bool(lanes.vehlist[lane]):  # not an empty lane
+
+                veh_indx, upper_veh_indx = 0, len(lanes.vehlist[lane])
+                any_veh_served = False
+                while veh_indx < upper_veh_indx:
+
+                    trj_indx = lanes.vehlist[lane][veh_indx].last_trj_point_indx
+                    dep_time = lanes.vehlist[lane][veh_indx].trajectory[trj_indx, 0]
+                    if dep_time <= t:  # served
+                        any_veh_served = True
+                        self.set_travel_time(dep_time, lanes.vehlist[lane].csv_indx)
+                        veh_indx += 1
+                    else:
+                        break
+
+                if any_veh_served:  # remove them
+                    lanes.purge_served_vehs(lane, veh_indx)

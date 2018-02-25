@@ -7,7 +7,7 @@
 
 
 class Simulator:
-    STEP = 0.1  # time steps to move the simulation forward
+    STEP = 5  # time steps to move the simulation forward in second
 
     def __init__(self, t):
         # time : sec

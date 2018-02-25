@@ -15,8 +15,8 @@ class Conventional(Trajectory):
     Goal: Estimating movement of a conventional vehicle
     '''
 
-    def __init__(self, lead_veh, fol_veh, gs=0, gt=86400):
-        super().__init__(lead_veh, fol_veh, gs, gt)
+    def __init__(self, lead_veh, fol_veh, gs=0, gt=86400, vmax=15, vcont=10):
+        super().__init__(lead_veh, fol_veh, gs, gt, vmax, vcont)
 
     def solve(self, fdeg):
         '''

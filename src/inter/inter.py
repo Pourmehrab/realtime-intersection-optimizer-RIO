@@ -101,14 +101,12 @@ class Signal:
         # the goal is to choose the sequence of SPaT which gives more throughput in less time
         self.flush_upcoming_SPaT()
 
+        # keeps index of last vehicle to be served by progressing SPaT
         served_vehicle_indx = np.array([0 if bool(lanes.vehlist[lane]) else -1 for lane in range(num_lanes)],
                                        dtype=np.int)
-        # keeps index of last vehicle to be served by progressing SPaT
-        # Note bool([]) returns False
 
+        # keeps index of last vehicle to be served by progressing SPaT
         last_vehicle_indx = np.array([len(lanes.vehlist[lane]) - 1 for lane in range(num_lanes)], dtype=np.int)
-
-        # keeps index of last vehicle to be served by progressing SPaT
 
         def all_not_served(a, b):
             for i in range(len(a)):
@@ -136,7 +134,7 @@ class Signal:
                     if last_vehicle_indx[lane] > -1 and veh_indx <= last_vehicle_indx[lane]:
 
                         while veh_indx <= last_vehicle_indx[lane] and lanes.vehlist[lane][
-                            veh_indx].earlst - start_time <= self.max_green:
+                                veh_indx].earlst - start_time <= self.max_green:
                             # count and time processing new vehicles
                             temp_throughput[lane] += 1
                             if lanes.vehlist[lane][veh_indx].earlst > time_phase_ends:
@@ -185,6 +183,7 @@ class Signal:
         del self.SPaT_sequence[0]
         del self.SPaT_green_dur[0]
         del self.SPaT_start[0]
+        del self.SPaT_end[0]
 
     def flush_upcoming_SPaT(self):
         if len(self.SPaT_sequence) > 1:

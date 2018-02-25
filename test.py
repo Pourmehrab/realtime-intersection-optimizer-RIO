@@ -4,7 +4,7 @@
 # File name: test.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Feb/17/2018       #
+# Last Modified: Feb/25/2018       #
 ####################################
 
 import os
@@ -60,14 +60,18 @@ def stochastic_optimizer(intersection, traffic, num_lanes, allowable_phases, max
     t = traffic.get_first_arrival()
     # set the start time to it
     simulator = Simulator(t)
-    # initialize SPaT by giving the first phase 0 second (in general we don't allocate less than min green)
-    # signal.enqueue(
-    #     allowable_phases[0],
-    #     0)  # to initialize we set first phase to get green for 0 (note this gets full yellow, all-red duration anyway
 
     while True:  # stops when all rows of csv are processed (a break statement controls this)
         t = simulator.get_clock()  # gets current simulation clock
-        traffic.add_vehicles(lanes, t,max_speed)  # checks for new vehicles in all incoming lanes (also sets earliest time)
+        print('################################ INQUIRY @ {:2.2f} SEC ################################'.format(t))
+
+        # UPDATE VEHICLES
+        # remove/record served vehicles
+        traffic.update_at_stop_bar(lanes, t,num_lanes)
+
+        # add/update vehicles todo (Patrick): update part will be valid for in real-time mode
+        traffic.update_within_det_range(lanes, t,
+                                        max_speed)  # checks for new vehicles in all incoming lanes (also sets earliest time)
 
         # DO SIGNAL OPTIMIZATION
         signal.do_spat_decision(lanes, num_lanes, allowable_phases)
@@ -98,7 +102,7 @@ def stochastic_optimizer(intersection, traffic, num_lanes, allowable_phases, max
                 lanes = Lanes(num_lanes)
 
                 signal = Signal(intersection.name, allowable_phases)
-                signal.enqueue(allowable_phases[0], 0)
+
         else:
             # simulation ends save the csv which has travel time column in it
             traffic.save_csv(intersection.name)
@@ -141,90 +145,3 @@ if __name__ == "__main__":
     t2 = time.clock()
     print(' Elapsed Time: {} ms'.format(int(1000 * (t2 - t1))), end='')
 
-# HOW TO SOLVE LTVO VIA SCIPY
-# self.bnds = (
-#     (0, self.vmax), (0, self.vcont), (self.fol_veh.amin, self.fol_veh.amax),
-#     (self.fol_veh.amin, self.fol_veh.amax))
-#
-# self.con = (  # const 0: tt greater than equal to gs
-#     {'type': 'ineq',
-#      'fun': lambda x, d0, v0, gs_rel:
-#      np.array((x[3] * (v0 - x[0]) ** 2 + x[2] * (
-#              2 * x[3] * d0 - (x[0] - x[1]) ** 2))
-#               / (2 * x[2] * x[3] * x[0]) - gs_rel),
-#      'jac': self.ttime_der,
-#      'args': (self.fol_veh.dist, self.fol_veh.speed, self.gs-self.fol_veh.det_time,)},
-#     # const 1: tt equal to gs
-#     {'type': 'eq',
-#      'fun': lambda x, d0, v0, t_opt:
-#      np.array((x[3] * (v0 - x[0]) ** 2 + x[2] * (
-#              2 * x[3] * d0 - (x[0] - x[1]) ** 2))
-#               / (2 * x[2] * x[3] * x[0]) - t_opt),
-#      'jac': self.ttime_der,
-#      'args': (self.fol_veh.dist, self.fol_veh.speed, self.tt,)},
-#     # const 2: t1 >=0
-#     {'type': 'ineq',
-#      'fun': lambda x, d0, v0, t_opt:
-#      np.array((x[0] - v0) / x[2]),
-#      'jac': lambda x, d0, v0, t_opt:
-#      np.array([1 / x[2], 0, (v0 - x[0]) / x[2] ** 2, 0]),
-#      'args': (
-#          self.fol_veh.dist, self.fol_veh.speed, self.tt,)},
-#     # const 3: t3 >=0
-#     {'type': 'ineq',
-#      'fun': lambda x, d0, v0, t_opt:
-#      np.array((x[0] - v0) / x[2]),
-#      'jac': lambda x, d0, v0, t_opt:
-#      np.array([-1 / x[3], 1 / x[3], 0, (x[1] - x[0]) / x[3] ** 2]),
-#      'args': (
-#          self.fol_veh.dist, self.fol_veh.speed, self.tt,)},
-#     # const 4: t2 >=0
-#     {'type': 'ineq',
-#      'fun': lambda x, d0, v0, t_opt:
-#      np.array((x[0] ** 2 * (x[2] - x[3]) - x[1] ** 2 * x[2] + (v0 ** 2 + 2 * d0 * x[2]) * x[3]) / (
-#              2 * x[0] * x[2] * x[3])),
-#      'jac': lambda x, d0, v0, t_opt:
-#      np.array([((x[0] ** 2 + x[1] ** 2) * x[2] - (v0 ** 2 + x[0] ** 2 + 2 * d0 * x[2]) * x[3]) / (
-#              2 * x[2] * x[3] * x[0] ** 2), -1 * x[1] / (x[0] * x[3]),
-#                (x[0] - v0) * (v0 + x[0]) / (2 * x[0] * x[2] ** 2),
-#                (x[1] ** 2 - x[0] ** 2) / (2 * x[0] * x[3] ** 2)]),
-#      'args': (
-#          self.fol_veh.dist, self.fol_veh.speed, self.tt,)},
-# )
-# def solve(self):
-#     '''
-#     Solves lead vehicle trajectory optimization problem
-#     '''
-#     min_travel_time_sol = minimize(self.traveltime,
-#                                    np.array([self.vmax, self.vcont, self.fol_veh.amax, self.fol_veh.amax]),
-#                                    args=(self.fol_veh.dist, self.fol_veh.speed, self.gs - self.fol_veh.det_time,),
-#                                    jac=self.ttime_der, bounds=self.bnds,
-#                                    constraints=(self.con[k] for k in (0, 2, 3, 4,)), method='SLSQP',
-#                                    options={'disp': True})
-#     sol = np.round(np.array([min_travel_time_sol.x[k] for k in (0, 1, 2, 3,)]), 3)
-#
-#     if self.weakfeasibility(sol):
-#         if min_travel_time_sol.x[1] < self.vcont - self.EPS:  # see if we can improve discharge speed
-#             self.tt = min_travel_time_sol.fun
-#
-#             def depart_spd(x, d0, v0, t_opt):
-#                 np.array(-1 * x[1])  # since it's minimization
-#
-#             def depart_spd_der(x, d0, v0, t_opt):
-#                 np.array([0, -1, 0, 0])
-#
-#             max_speed_sol = minimize(depart_spd,
-#                                      min_travel_time_sol.x,
-#                                      args=(self.fol_veh.dist, self.fol_veh.speed, min_travel_time_sol.fun,),
-#                                      jac=depart_spd_der, bounds=self.bnds,
-#                                      constraints=(self.con[k] for k in (1, 2, 3, 4,)), method='SLSQP',
-#                                      options={'disp': True})
-#             if self.weakfeasibility(max_speed_sol.x):
-#                 self.setopt(max_speed_sol.x, max_speed_sol.fun)
-#             else:
-#                 self.setopt(min_travel_time_sol.x, min_travel_time_sol.fun)
-#
-#         else:
-#             self.setopt(min_travel_time_sol.x, min_travel_time_sol.fun)
-#     else:
-#         raise Exception('Review arrival info since trj optimizer is infeasible')

@@ -12,6 +12,8 @@ from src.trj.trj import Trajectory
 
 
 class Connected(Trajectory):
+    K = 10  # poly degree
+
     def __init__(self, lead_veh, fol_veh, gs=0, gt=86400, vmax=15, vcont=10):
         '''
         :param lead_veh:        lead vehicle
@@ -22,9 +24,7 @@ class Connected(Trajectory):
         :param vcont:           speed limit at the control point in m/s
         '''
 
-        super().__init__(lead_veh, fol_veh, gs, gt)
-
-        self.vmax, self.vcont = vmax, vcont
+        super().__init__(lead_veh, fol_veh, gs, gt, vmax, vcont)
 
         # solution is of the form v2, v3, a1, a3
         self.x = np.array([vmax, vcont, fol_veh.max_accel_rate, fol_veh.max_decel_rate], dtype=float)
@@ -32,45 +32,27 @@ class Connected(Trajectory):
         self.x[2] = fol_veh.max_accel_rate if vmax > fol_veh.curr_speed else fol_veh.max_decel_rate
         self.x[3] = fol_veh.max_accel_rate if vcont > vmax else fol_veh.max_decel_rate
 
-    def insight(self):
-        print(''' Connected(.) received the following request at {:04.2f} sec:
-                dist: {:04.2f} m             initial speed: {:04.2f} m/s
-                deceleration: {:04.2f} m/s2   acceleration: {:04.2f} m/s2
-                spd limit: {:04.2f} m/s       spd limit @ control: {:04.2f} m/s
-                green interval:            [{:04.2f}, {:04.2f}] sec
-                '''.format(self.fol_veh.trajectory[0, 0], self.fol_veh.trajectory[0, 1], self.fol_veh.curr_speed,
-                           self.fol_veh.max_decel_rate,
-                           self.fol_veh.max_accel_rate, self.vmax, self.vcont, self.gs, self.gt))
+    def solve_earlst(self, fdeg):
 
-        if self.fol_veh.curr_speed > self.vmax:
-            t = (self.vmax - self.fol_veh.curr_speed) / self.fol_veh.max_decel_rate
-            d = (self.vmax ** 2 - self.fol_veh.curr_speed ** 2) / (2 * self.fol_veh.max_decel_rate)
-            print('Vehicle can decelerate to spd limit in {:04.2f} sec, {:04.2f} m'.format(t, d))
-        else:
-            t = (self.vmax - self.fol_veh.curr_speed) / self.fol_veh.max_accel_rate
-            d = (self.vmax ** 2 - self.fol_veh.curr_speed ** 2) / (2 * self.fol_veh.max_accel_rate)
-            print('Vehicle can accelerate to spd limit in {:04.2f} sec, {:04.2f} m'.format(t, d))
-        if self.vcont < self.vmax:
-            t = (self.vcont - self.vmax) / self.fol_veh.max_decel_rate
-            d = (self.vcont ** 2 - self.vmax ** 2) / (2 * self.fol_veh.max_decel_rate)
-            print('then decelerates to control spd limit in {:04.2f} sec, {:04.2f} m'.format(t, d))
-        elif self.vcont > self.vmax:
-            t = (self.vcont - self.vmax) / self.fol_veh.max_accel_rate
-            d = (self.vcont ** 2 - self.vmax ** 2) / (2 * self.fol_veh.max_accel_rate)
-            print('then accelerates to control spd limit in {:04.2f} sec, {:04.2f} m'.format(t, d))
+        t, d, s = self.get_earliest_trj()
+
+        if fdeg > 0 and t < self.lead_veh.earlst + self.SAT:  # follower is objected to saturation headway constraint
+            t = self.lead_veh.earlst + self.SAT
+
+        self.set_trj_points([t], [d], [s])
 
     def solve(self, fdeg):
         '''
         :param fdeg:  0: free (when lead_veh is None), 1: dist-const, 2: time and dist-const (only for the first AV)
         '''
 
-        if fdeg < 1:  # Solve LTVO
+        if fdeg < 1:  # Solve as a lead vehicle
             t, d, s = self.get_one_comp_trj(self.fol_veh.trajectory[0, 0], self.fol_veh.trajectory[0, 1],
                                             self.fol_veh.curr_speed, self.gs, 0, self.vcont)
         else:
             pass
 
-        self.set_follower_trj(t, d, s)
+        self.set_trj_points(t, d, s)
 
     def get_earliest_trj(self):
         # compute the travel time for each component of the trivial solution
@@ -80,31 +62,11 @@ class Connected(Trajectory):
         # compute the total travel time
         tt = self.t1 + self.t2 + self.t3
         # see if it respects time constraint
-        if tt >= self.gs - self.fol_veh.trajectory[0, 0]:  # todo: check for case where tt > gt
-            # trivial solution is optimal
-            self.tt = tt
-            self.stat = True
-            self.get_three_comp_trj()
-        else:  # need to do some more work to find the optimal
-            # set second component to zero
-            self.t2 = 0
-            # compute the acceleration for transition to vcont
-            a_trans = (self.vcont ** 2 - self.fol_veh.curr_speed ** 2) / (2 * self.fol_veh.trajectory[0, 1])
-            # Distance feasible, see if time-feasible
-            tt = self.calct1(self.vcont, a_trans)
-            if tt >= self.gs - self.fol_veh.trajectory[0, 0]:
-                # optimal solution is found
-                # set second component to zero
-                self.t3 = 0
-                # set first component
-                self.x[3] = a_trans
-                self.t1 = tt
-                self.tt = tt
-                self.stat = True
-
-        t, d, s = self.get_three_comp_trj()
-        return t, d, s
-        # self.weakfeasibility(self.x)
+        self.tt = tt
+        # self.get_three_comp_trj()
+        # t, d, s = self.get_three_comp_trj()
+        # return t, d, s
+        return self.tt, 0, self.vcont
 
     def weakfeasibility(self, x):
         if np.sign(x[0] - self.fol_veh.curr_speed) != np.sign(x[2]) or np.sign(x[1] - x[0]) != np.sign(x[3]):
@@ -173,18 +135,18 @@ class Connected(Trajectory):
     def get_three_comp_trj(self):
         tt = self.traveltime(np.array([self.x[0], self.x[1], self.x[2], self.x[3]]),
                              self.fol_veh.trajectory[0, 1], self.fol_veh.curr_speed, self.gs)
-        t1 = self.calct1(self.x[0], self.x[2])
-        t2 = self.calct2(self.x[0], self.x[1], self.x[2], self.x[3])
+        t1 = self.t1
+        t2 = self.t2
 
         tend = self.fol_veh.trajectory[0, 0] + tt
         t = self.create_trj_domain(self.fol_veh.trajectory[0, 0], tend)
 
-        vd = np.vectorize(self.d_three_comp)
+        vd = np.vectorize(self.d_three_comp)  # todo Mahmoud: check this
         d, s = vd(t, t1, t2, self.x[0], self.x[2], self.x[3])
 
         return t, d, s
 
-    def get_one_comp_trj(self, t1, d1, s1, t2, d2, s2, k=10):
+    def get_one_comp_trj(self, t1, d1, s1, t2, d2, s2):
         '''
         Solves:
         Minimize:     c^T * x
@@ -194,10 +156,10 @@ class Connected(Trajectory):
         (https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.linprog.html)
 
         :param t1: start time stamp
-        :param d1: start distance to stopbar
+        :param d1: start distance to stop bar
         :param s1: start speed
         :param t2: end time stamp
-        :param d2: end distance to stopbar
+        :param d2: end distance to stop bar
         :param s2: end speed
         :param k:  poly degree
         :return:   t,d,s vectors
@@ -205,13 +167,13 @@ class Connected(Trajectory):
         tt = t2 - t1
         t = self.create_trj_domain(0, tt)
 
-        c = [round(tt / (n + 1), self.DIG) for n in range(k, -1, -1)]
+        c = [round(tt / (n + 1), self.DIG) for n in range(self.K, -1, -1)]
         a1_coeff_der = round(1 / tt, self.DIG)
         A1 = [
-            [0 for n in range(k, 0, -1)] + [1],
-            [0 for n in range(k, 1, -1)] + [a1_coeff_der, 0],
-            [1 for n in range(k, -1, -1)],
-            [round(n / tt, self.DIG) for n in range(k, 0, -1)] + [0],
+            [0 for n in range(self.K, 0, -1)] + [1],
+            [0 for n in range(self.K, 1, -1)] + [a1_coeff_der, 0],
+            [1 for n in range(self.K, -1, -1)],
+            [round(n / tt, self.DIG) for n in range(self.K, 0, -1)] + [0],
         ]
         b1 = [d1, -s1, d2, -s2, ]
 
@@ -220,28 +182,28 @@ class Connected(Trajectory):
 
         # first set of consts is for non-negative speed
         # second set is for maximum speed
-        A2 = [[round(n * (i * dt) ** (n - 1) / t2, self.DIG) for n in range(k, 1, -1)] + [a1_coeff_der, 0] for i in
+        A2 = [[round(n * (i * dt) ** (n - 1) / t2, self.DIG) for n in range(self.K, 1, -1)] + [a1_coeff_der, 0] for i in
               range(m, 0, -1)] + [
-                 [round(-n * (i * dt) ** (n - 1) / t2, self.DIG) for n in range(k, 1, -1)] + [-a1_coeff_der, 0]
+                 [round(-n * (i * dt) ** (n - 1) / t2, self.DIG) for n in range(self.K, 1, -1)] + [-a1_coeff_der, 0]
                  for i in range(m, 0, -1)]
         b2 = [0 for n in range(m)] + [1.5 * self.vmax for n in range(m)]  # todo: relaxed max speed a little
 
-        bnds = [(None, None) for n in range(k, -1, -1)]
+        bnds = [(None, None) for n in range(self.K, -1, -1)]
 
         print('\nOBJECTIVE:')
-        for i in range(k, -1, -1):
-            print('+{:2.4f}*a{:d} '.format(round(c[i], 1), k - i), end='')
+        for i in range(self.K, -1, -1):
+            print('+{:2.4f}*a{:d} '.format(round(c[i], 1), self.K - i), end='')
 
         print('\nEQUALITY CONSTS:')
         for j in range(4):
-            for i in range(k, -1, -1):
-                print('+{:2.4f}*a{:d} '.format(round(A1[j][i], 4), k - i), end='')
+            for i in range(self.K, -1, -1):
+                print('+{:2.4f}*a{:d} '.format(round(A1[j][i], 4), self.K - i), end='')
             print(' = {:2.2f}'.format(round(b1[j], 4)))
 
         print('\nINEQUALITY CONSTS:')
         for j in range(2 * m):
-            for i in range(k, -1, -1):
-                print('{:2.4f}*a{:d} '.format(round(A2[j][i], 4), k - i), end='')
+            for i in range(self.K, -1, -1):
+                print('{:2.4f}*a{:d} '.format(round(A2[j][i], 4), self.K - i), end='')
             print(' < {:2.2f}'.format(round(b2[j], 4)))
 
         opt_coeffs = linprog(c, A_ub=A2, b_ub=b2, A_eq=A1, b_eq=b1, bounds=bnds, options={"disp": True})
@@ -288,6 +250,94 @@ class Connected(Trajectory):
 
         print_poly(opt_coeffs.x, tt)
 
-        d, s = hornereval(t / tt, opt_coeffs.x, tt, k)
+        d, s = hornereval(t / tt, opt_coeffs.x, tt, self.K)
 
         return np.round(t + self.fol_veh.trajectory[0, 0], self.DIG), np.round(d, self.DIG), np.round(s, self.DIG)
+
+# HOW TO SOLVE LTVO VIA SCIPY
+# self.bnds = (
+#     (0, self.vmax), (0, self.vcont), (self.fol_veh.amin, self.fol_veh.amax),
+#     (self.fol_veh.amin, self.fol_veh.amax))
+#
+# self.con = (  # const 0: tt greater than equal to gs
+#     {'type': 'ineq',
+#      'fun': lambda x, d0, v0, gs_rel:
+#      np.array((x[3] * (v0 - x[0]) ** 2 + x[2] * (
+#              2 * x[3] * d0 - (x[0] - x[1]) ** 2))
+#               / (2 * x[2] * x[3] * x[0]) - gs_rel),
+#      'jac': self.ttime_der,
+#      'args': (self.fol_veh.dist, self.fol_veh.speed, self.gs-self.fol_veh.det_time,)},
+#     # const 1: tt equal to gs
+#     {'type': 'eq',
+#      'fun': lambda x, d0, v0, t_opt:
+#      np.array((x[3] * (v0 - x[0]) ** 2 + x[2] * (
+#              2 * x[3] * d0 - (x[0] - x[1]) ** 2))
+#               / (2 * x[2] * x[3] * x[0]) - t_opt),
+#      'jac': self.ttime_der,
+#      'args': (self.fol_veh.dist, self.fol_veh.speed, self.tt,)},
+#     # const 2: t1 >=0
+#     {'type': 'ineq',
+#      'fun': lambda x, d0, v0, t_opt:
+#      np.array((x[0] - v0) / x[2]),
+#      'jac': lambda x, d0, v0, t_opt:
+#      np.array([1 / x[2], 0, (v0 - x[0]) / x[2] ** 2, 0]),
+#      'args': (
+#          self.fol_veh.dist, self.fol_veh.speed, self.tt,)},
+#     # const 3: t3 >=0
+#     {'type': 'ineq',
+#      'fun': lambda x, d0, v0, t_opt:
+#      np.array((x[0] - v0) / x[2]),
+#      'jac': lambda x, d0, v0, t_opt:
+#      np.array([-1 / x[3], 1 / x[3], 0, (x[1] - x[0]) / x[3] ** 2]),
+#      'args': (
+#          self.fol_veh.dist, self.fol_veh.speed, self.tt,)},
+#     # const 4: t2 >=0
+#     {'type': 'ineq',
+#      'fun': lambda x, d0, v0, t_opt:
+#      np.array((x[0] ** 2 * (x[2] - x[3]) - x[1] ** 2 * x[2] + (v0 ** 2 + 2 * d0 * x[2]) * x[3]) / (
+#              2 * x[0] * x[2] * x[3])),
+#      'jac': lambda x, d0, v0, t_opt:
+#      np.array([((x[0] ** 2 + x[1] ** 2) * x[2] - (v0 ** 2 + x[0] ** 2 + 2 * d0 * x[2]) * x[3]) / (
+#              2 * x[2] * x[3] * x[0] ** 2), -1 * x[1] / (x[0] * x[3]),
+#                (x[0] - v0) * (v0 + x[0]) / (2 * x[0] * x[2] ** 2),
+#                (x[1] ** 2 - x[0] ** 2) / (2 * x[0] * x[3] ** 2)]),
+#      'args': (
+#          self.fol_veh.dist, self.fol_veh.speed, self.tt,)},
+# )
+# def solve(self):
+#     '''
+#     Solves lead vehicle trajectory optimization problem
+#     '''
+#     min_travel_time_sol = minimize(self.traveltime,
+#                                    np.array([self.vmax, self.vcont, self.fol_veh.amax, self.fol_veh.amax]),
+#                                    args=(self.fol_veh.dist, self.fol_veh.speed, self.gs - self.fol_veh.det_time,),
+#                                    jac=self.ttime_der, bounds=self.bnds,
+#                                    constraints=(self.con[k] for k in (0, 2, 3, 4,)), method='SLSQP',
+#                                    options={'disp': True})
+#     sol = np.round(np.array([min_travel_time_sol.x[k] for k in (0, 1, 2, 3,)]), 3)
+#
+#     if self.weakfeasibility(sol):
+#         if min_travel_time_sol.x[1] < self.vcont - self.EPS:  # see if we can improve discharge speed
+#             self.tt = min_travel_time_sol.fun
+#
+#             def depart_spd(x, d0, v0, t_opt):
+#                 np.array(-1 * x[1])  # since it's minimization
+#
+#             def depart_spd_der(x, d0, v0, t_opt):
+#                 np.array([0, -1, 0, 0])
+#
+#             max_speed_sol = minimize(depart_spd,
+#                                      min_travel_time_sol.x,
+#                                      args=(self.fol_veh.dist, self.fol_veh.speed, min_travel_time_sol.fun,),
+#                                      jac=depart_spd_der, bounds=self.bnds,
+#                                      constraints=(self.con[k] for k in (1, 2, 3, 4,)), method='SLSQP',
+#                                      options={'disp': True})
+#             if self.weakfeasibility(max_speed_sol.x):
+#                 self.setopt(max_speed_sol.x, max_speed_sol.fun)
+#             else:
+#                 self.setopt(min_travel_time_sol.x, min_travel_time_sol.fun)
+#
+#         else:
+#             self.setopt(min_travel_time_sol.x, min_travel_time_sol.fun)
+#     else:
+#         raise Exception('Review arrival info since trj optimizer is infeasible')

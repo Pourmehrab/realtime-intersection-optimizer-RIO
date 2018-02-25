@@ -28,6 +28,9 @@ class Lanes:
     def decrease_indx(self, lane):
         self.last_w_trj[lane] -= 1
 
+    def purge_served_vehs(self, lane, indx):
+        del self.vehlist[lane][0:indx]  # todo check if removes indx or one before
+
 
 class Vehicle:
     def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx,
@@ -54,8 +57,8 @@ class Vehicle:
         self.curr_speed = speed
         self.distance = dist
         self.length = length
-        self.max_accel_rate = amin
-        self.max_decel_rate = amax
+        self.max_decel_rate = amin
+        self.max_accel_rate = amax
         self.destination = dest
         self.desired_speed = des_speed
         self.trajectory = np.zeros((max_num_trajectory_points, 3), dtype=np.float)
@@ -63,7 +66,7 @@ class Vehicle:
         self.last_trj_point_indx = 0
         # time_diff = 3600 * (det_time[0] - ref_time[0]) + 60 * (det_time[1] - ref_time[1]) + (
         #         det_time[2] - ref_time[2])
-        self.trajectory[0:] = [det_time, dist, speed, ]
+        self.trajectory[0, :] = [det_time, dist, speed, ]
         self.csv_indx = indx  # is used to find vehicle in original csv file
         self.last_trj_point_indx = -1  # changes in set_trj()
 
@@ -76,7 +79,7 @@ class Vehicle:
         '''
         n = len(t)
         self.trajectory[0:n, :] = np.transpose([t, d, s])
-        self.last_trj_point_indx = n
+        self.last_trj_point_indx = n - 1
 
     def set_earlst(self):
         '''
