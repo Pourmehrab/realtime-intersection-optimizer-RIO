@@ -28,7 +28,8 @@ class Traffic:
         else:
             raise Exception(filepath + ' was not found.')
 
-        self.all_vehicles.sort_values(['sc', 'arrival time'])
+        self.all_vehicles = self.all_vehicles.sort_values(by=['sc', 'arrival time'])
+        self.all_vehicles = self.all_vehicles.reset_index(drop=True)
 
         self.active_sc = self.all_vehicles['sc'].iloc[0]
         # curr_indx points to the last vehicle added (-1 if none has been yet)
@@ -36,7 +37,7 @@ class Traffic:
         self.curr_indx = -1
 
         # the column to compute the travel time
-        self.all_vehicles['departure time'] = 0
+        self.all_vehicles['departure time'] = 'NaN'
 
     def set_travel_time(self, travel_time, indx):
         self.all_vehicles['departure time'][indx] = travel_time
@@ -75,8 +76,9 @@ class Traffic:
         '''
         indx = self.curr_indx + 1
         max_indx = self.all_vehicles.shape[0] - 1
-        while indx <= max_indx and self.all_vehicles['arrival time'][indx] <= t:
-            lane = self.all_vehicles['lane'][indx]
+        while indx <= max_indx and self.all_vehicles['sc'][indx] == self.active_sc and \
+                self.all_vehicles['arrival time'][indx] <= t:
+            lane = self.all_vehicles['lane'][indx] - 1  # csv file has lanes coded in one-based
             det_id = 'xyz'  # todo (Patrick) this changes when in real-time mode
             det_type = self.all_vehicles['type'][indx]  # 0: CNV, 1: CAV
             det_time = self.all_vehicles['arrival time'][indx]
@@ -87,7 +89,7 @@ class Traffic:
             length = self.all_vehicles['L'][indx]
             amin = self.all_vehicles['maxDec'][indx]
             amax = self.all_vehicles['maxAcc'][indx]
-            print('*** -> A vehicle of type {:d} detected @ {:2.2f} sec'.format(det_type, det_time))
+            print('*** A veh of type {:d} detected @ {:2.2f} sec in lane {:d}'.format(det_type, det_time, lane))
 
             # create the vehicle and get the earliest departure time
             veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx)

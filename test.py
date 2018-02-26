@@ -95,6 +95,7 @@ def stochastic_optimizer(intersection, traffic, num_lanes, allowable_phases, max
             if traffic.keep_scenario():
                 simulator.next_sim_step()
             else:
+                print('###### SIMULATION OF THE SCENARIO CONCLUDED ######')
                 traffic.reset_scenario()
 
                 t = traffic.get_first_arrival()

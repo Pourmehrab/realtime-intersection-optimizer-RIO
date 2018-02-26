@@ -39,7 +39,8 @@ class Connected(Trajectory):
         if fdeg > 0 and t < self.lead_veh.earlst + self.SAT:  # follower is objected to saturation headway constraint
             t = self.lead_veh.earlst + self.SAT
 
-        self.set_trj_points([t], [d], [s])
+        t0, d0, s0 = self.fol_veh.trajectory[0, 0], self.fol_veh.trajectory[0, 1], self.fol_veh.trajectory[0, 2]
+        self.set_trj_points([t0, t], [d0, d], [s0, s])
 
     def solve(self, fdeg):
         '''

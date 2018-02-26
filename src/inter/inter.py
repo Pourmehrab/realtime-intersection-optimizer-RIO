@@ -137,7 +137,7 @@ class Signal:
                     if last_vehicle_indx[lane] > -1 and veh_indx <= last_vehicle_indx[lane]:
 
                         while veh_indx <= last_vehicle_indx[lane] and lanes.vehlist[lane][
-                            veh_indx].earlst - start_time <= self.max_green:
+                                veh_indx].earlst - start_time <= self.max_green:
                             # count and time processing new vehicles
                             temp_throughput[lane] += 1
                             if lanes.vehlist[lane][veh_indx].earlst > time_phase_ends:
