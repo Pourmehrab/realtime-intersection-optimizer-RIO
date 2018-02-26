@@ -63,11 +63,12 @@ def stochastic_optimizer(intersection, traffic, num_lanes, allowable_phases, max
 
     while True:  # stops when all rows of csv are processed (a break statement controls this)
         t = simulator.get_clock()  # gets current simulation clock
-        print('################################ INQUIRY @ {:2.2f} SEC ################################'.format(t))
+        print('################################ INQUIRY @ {:2.2f} SEC #################################'.format(t))
 
         # UPDATE VEHICLES
-        # remove/record served vehicles
-        traffic.update_at_stop_bar(lanes, t,num_lanes)
+        # remove/record served vehicles and phases
+        traffic.update_at_stop_bar(lanes, t, num_lanes)
+        signal.update_STaT(t)
 
         # add/update vehicles todo (Patrick): update part will be valid for in real-time mode
         traffic.update_within_det_range(lanes, t,
@@ -143,5 +144,4 @@ if __name__ == "__main__":
     # find more details inside the function
     stochastic_optimizer(intersection, traffic, num_lanes, (17, 9, 8, 15), max_speed, lanes)
     t2 = time.clock()
-    print(' Elapsed Time: {} ms'.format(int(1000 * (t2 - t1))), end='')
-
+    print('### Elapsed Time: {:2.2f} sec ###'.format(int(1000 * (t2 - t1)) / 1000), end='')

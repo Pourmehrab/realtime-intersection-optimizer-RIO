@@ -32,6 +32,8 @@ class Intersection:
 
 
 class Signal:
+    SAT = 1  # saturation headway (also in trj.py)
+
     def __init__(self, int_name, allowable_phases):
         '''
         - sequence keeps the sequence of phases to be executed from 0
@@ -121,29 +123,31 @@ class Signal:
 
             for phase in allowable_phases:  # gives all phases a chance
 
-                time_phase_ends, temp_phase_score = 0, 0
+                temp_phase_score = 0
                 temp_throughput = np.zeros(num_lanes, dtype=np.int)
 
                 # check the length of phase not to exceed the max green
                 start_time = self.SPaT_end[-1] if self.SPaT_sequence[-1] != phase else self.SPaT_start[-1]
+                time_phase_ends = start_time + self.min_green if self.SPaT_sequence[-1] != phase else self.SPaT_end[-1]
 
                 for lane in self._pli[phase]:
 
                     veh_indx = served_vehicle_indx[lane]
-                    # check if the lane is not empty and there are vehicles without trj
+                    # check if the lane is not empty and there are vehicles
                     if last_vehicle_indx[lane] > -1 and veh_indx <= last_vehicle_indx[lane]:
 
                         while veh_indx <= last_vehicle_indx[lane] and lanes.vehlist[lane][
-                                veh_indx].earlst - start_time <= self.max_green:
+                            veh_indx].earlst - start_time <= self.max_green:
                             # count and time processing new vehicles
                             temp_throughput[lane] += 1
                             if lanes.vehlist[lane][veh_indx].earlst > time_phase_ends:
-                                time_phase_ends = lanes.vehlist[lane][veh_indx].earlst
+                                time_phase_ends = max(lanes.vehlist[lane][veh_indx].earlst, time_phase_ends + self.SAT)
 
                             veh_indx += 1
 
                 # make it permanent if it's better than previous temporary SPaT
-                temp_phase_score = np.sum(temp_throughput) / (time_phase_ends - start_time)
+                temp_phase_score = 0 if time_phase_ends <= start_time else np.sum(temp_throughput) / (
+                        time_phase_ends - start_time)
 
                 if temp_phase_score > best_phase_score:
                     best_phase_score, best_phase = temp_phase_score, phase
@@ -156,10 +160,7 @@ class Signal:
                 self.enqueue(remaining_phases.pop(), self.max_green)  # pop gives a random phase which is new
 
             else:  # progress SPaT
-
-                for lane in self._pli[best_phase]:
-                    if best_throughput[lane] > 0:
-                        served_vehicle_indx[lane] += best_throughput[lane]
+                served_vehicle_indx += best_throughput
                 self.enqueue(best_phase, max(self.min_green, best_phase_green_dur))
 
     def enqueue(self, p, g):
@@ -172,22 +173,29 @@ class Signal:
         :return:
         '''
         if self.SPaT_sequence[-1] == p:  # extend this phase
-            self.SPaT_end[-1] = [self.SPaT_start[-1] + g + self._y + self._ar]
+            self.SPaT_end[-1] = self.SPaT_start[-1] + g + self._y + self._ar
+            print('*** Phase {:d} Extended (ends @ {:2.2f} sec)'.format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
         else:  # append a new phase
             self.SPaT_sequence += [p]
             self.SPaT_green_dur += [g]
             self.SPaT_start += [self.SPaT_end[-1]]
             self.SPaT_end += [self.SPaT_start[-1] + g + self._y + self._ar]
-
-    def dequeue(self):
-        del self.SPaT_sequence[0]
-        del self.SPaT_green_dur[0]
-        del self.SPaT_start[0]
-        del self.SPaT_end[0]
+            print('*** Phase {:d} Appended (ends @ {:2.2f} sec)'.format(p, self.SPaT_end[-1]))
 
     def flush_upcoming_SPaT(self):
+
         if len(self.SPaT_sequence) > 1:
             self.SPaT_sequence = [self.SPaT_sequence[0]]
             self.SPaT_green_dur = [self.SPaT_green_dur[0]]
             self.SPaT_start = [self.SPaT_start[0]]
             self.SPaT_end = [self.SPaT_end[0]]
+
+        print('*** SPaT Flushed')
+
+    def update_STaT(self, t):
+        while len(self.SPaT_end) > 1 and t >= self.SPaT_end[0]:
+            print('*** Phase {:d} Purged'.format(self.SPaT_sequence[0]))
+            del self.SPaT_sequence[0]
+            del self.SPaT_green_dur[0]
+            del self.SPaT_start[0]
+            del self.SPaT_end[0]

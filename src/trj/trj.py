@@ -18,7 +18,7 @@ class Trajectory:
     RES = 1  # second (be careful not to exceed max size of trajectory
     EPS = 0.01
     DIG = 4  # number of digits to cut
-    SAT = 1  # saturation headway
+    SAT = 1  # saturation headway (also in inter.py)
 
     def __init__(self, lead_veh, fol_veh, gs, gt, vmax, vcont):
 
