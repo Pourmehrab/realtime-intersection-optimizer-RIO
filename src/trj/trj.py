@@ -2,12 +2,11 @@
 # File name: trj.py                #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Feb/16/2018       #
+# Last Modified: Feb/26/2018       #
 ####################################
 
 
 import numpy as np
-
 
 class Trajectory:
     '''

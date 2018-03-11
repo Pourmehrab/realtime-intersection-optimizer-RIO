@@ -147,7 +147,7 @@ class Connected(Trajectory):
 
         return t, d, s
 
-    def get_one_comp_trj(self, t1, d1, s1, t2, d2, s2):
+    def get_one_comp_trj(self, t1, d1, s1, t2, d2, s2, follower):
         '''
         Solves:
         Minimize:     c^T * x
@@ -162,7 +162,7 @@ class Connected(Trajectory):
         :param t2: end time stamp
         :param d2: end distance to stop bar
         :param s2: end speed
-        :param k:  poly degree
+        :param follower:  True if the vehicle is a follower, 0 otherwise
         :return:   t,d,s vectors
         '''
         tt = t2 - t1
@@ -206,6 +206,9 @@ class Connected(Trajectory):
             for i in range(self.K, -1, -1):
                 print('{:2.4f}*a{:d} '.format(round(A2[j][i], 4), self.K - i), end='')
             print(' < {:2.2f}'.format(round(b2[j], 4)))
+
+        if follower:
+            pass  # add more constraints from lead vehicle
 
         opt_coeffs = linprog(c, A_ub=A2, b_ub=b2, A_eq=A1, b_eq=b1, bounds=bnds, options={"disp": True})
         if not opt_coeffs.success:

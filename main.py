@@ -1,22 +1,26 @@
 #!/usr/bin/python3
 
 ####################################
-# File name: test.py               #
+# File name: main.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Feb/25/2018       #
+# Last Modified: Mar/11/2018       #
 ####################################
+
+'''
+The program is to optimize the performance of an isolated intersection under traffic of AV and conventional vehicles.
+
+By: Mahmoud Pourmehrab
+'''
 
 import os
 # import datetime
 import sys
 import time
-import numpy as np
 
 from src.inpt.sim import Simulator
 from src.inter.inter import Intersection, Signal
-from src.trj.trjopt import Connected
-from src.trj.trjest import Conventional
+from src.trj.trj_planner import trj_planner
 from src.inter.mcfopt import SigMinCostNet
 from src.inter.veh import Lanes, Vehicle
 from src.inpt.get_traffic import Traffic
@@ -26,11 +30,13 @@ from src.vis.vis import VisTrj
 
 def mcf_signal_optimizer(intersection, num_lanes, ppi, max_speed, signal, lanes, sim_prms):
     '''
-    todo: mention what's different here
-    first, we're using min cost flow for signal optimization
+    This function optimizes the scenario under following assumptions:
+
+    - The full set of phases is supported
+    - Uses min cost flow model to pick the duration and seq of phases
     '''
-    # makes min cost flow network
     signal = SigMinCostNet(num_lanes, ppi)
+    # makes min cost flow network
 
     # do sample signal optimization
     lanes_demand = [3, 2, 3, 4, 5, 2, 6, 3, 2, 7, 3, 5, 2, 5, 3, 6]
@@ -47,14 +53,21 @@ def mcf_signal_optimizer(intersection, num_lanes, ppi, max_speed, signal, lanes,
 
 def stochastic_optimizer(intersection, traffic, num_lanes, allowable_phases, max_speed, lanes):
     '''
-    Based on the paper submitted to IEEE Intelligent Transportation Systems Magazine
-    :param pli: phase lane incidence dictionary
+    Based on the paper submitted to IEEE Intelligent Transportation Systems Magazine (March 2018)
+
+    Assumptions:
+    - The set of phases is only limited to the ones included in allowable_phases
+    - The sequence and duration is decided optimally by a vehicle packing algorithm
+    - The trajectories are computed using:
+        - Gipps car following model for conventional vehicles
+        - Polynomial degree k area under curve minimization for Lead/Follower AVs
+
     :param allowable_phases: subset of all possible phases is used (one per approach, east/south/west/north bounds
     respectively, that covers all movements is suggested)
     '''
 
-    # first define what rows of phase-lane incidence matrix should be used
     signal = Signal(intersection.name, allowable_phases)
+    # define what subset of phase-lane incidence matrix should be used
 
     # get the time when first vehicle shows up
     t = traffic.get_first_arrival()
@@ -70,7 +83,7 @@ def stochastic_optimizer(intersection, traffic, num_lanes, allowable_phases, max
         traffic.update_at_stop_bar(lanes, t, num_lanes)
         signal.update_STaT(t)
 
-        # add/update vehicles todo (Patrick): update part will be valid for in real-time mode
+        # add/update vehicles todo (Patrick): update part will be come to play in real-time mode
         traffic.update_within_det_range(lanes, t,
                                         max_speed)  # checks for new vehicles in all incoming lanes (also sets earliest time)
 
@@ -79,16 +92,7 @@ def stochastic_optimizer(intersection, traffic, num_lanes, allowable_phases, max
         # now we have sufficient SPaT to serve all
 
         # DO TRAJECTORY OPTIMIZATION
-
-        # optimize like lead
-        # for l in range(num_lanes):
-        #     last_detected = lanes.vehlist[l].last()
-        #     last_optimized = lanes.vehlist[l].last_indx
-        #     if last_detected != None and last_optimized != last_optimized:  # there are vehicle(s) to optimize
-        #         next_veh_indx = lanes.vehlist[l].after(last_optimized)
-        #         while next_veh_indx != None:
-        #             trj_planner = Connected(generic_lead, generic_follower, gs=45)
-        #             trj_planner.solve(1)  # pass 1 for follower vehicle (when first argument is not None)
+        trj_planner(signal, lanes, num_lanes, max_speed)
 
         # MOVE SIMULATION FORWARD
         if traffic.keep_simulating():
@@ -121,10 +125,10 @@ if __name__ == "__main__":
     print(
         '###########################################################################################################\n')
 
-    # Intersection name
+    inter_name = '13th16th'
+    # Set the intersection name (Options: reserv, 13th16th)
     # there should be a csv file under `data` (refer to readme for details)
     # also look in src/inter/data.py
-    inter_name = '13th16th'  # Options: reserv, 13th16th
 
     # Instantiations of necessary objects
     # intersection keeps lane-lane and phase-lane incidence dictionaries

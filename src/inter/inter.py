@@ -2,15 +2,12 @@
 # File name: inter.py              #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Feb/17/2018       #
+# Last Modified: Mar/11/2018       #
 ####################################
 
 import os
 
 import numpy as np
-import random
-
-from src.inpt.inpt import read_prms
 from src.inter.phs import phenum
 from src.inpt.data import *
 
@@ -92,8 +89,20 @@ class Signal:
             for j in conf:
                 self._pli[l - 1].add(j - 1)  # these are lanes that belong to this phase
 
-    def get_phs(self):
-        return self._pli
+    def lane_in_phase(self, lane, phase_indx):
+        if lane in self._pli[phase_indx]:
+            return True
+        else:
+            return False
+
+    def get_next_phase_indx(self, phase_indx, lane):
+        new_phase_index = phase_indx + 1
+        while new_phase_index < len(self.SPaT_sequence):
+            if self.lane_in_phase(lane, new_phase_index):
+                return new_phase_index
+            else:
+                new_phase_index += 1
+        return -1  # this means no next phase serves this lane
 
     def do_spat_decision(self, lanes, num_lanes, allowable_phases):
         '''
@@ -137,7 +146,7 @@ class Signal:
                     if last_vehicle_indx[lane] > -1 and veh_indx <= last_vehicle_indx[lane]:
 
                         while veh_indx <= last_vehicle_indx[lane] and lanes.vehlist[lane][
-                                veh_indx].earlst - start_time <= self.max_green:
+                            veh_indx].earlst - start_time <= self.max_green:
                             # count and time processing new vehicles
                             temp_throughput[lane] += 1
                             if lanes.vehlist[lane][veh_indx].earlst > time_phase_ends:

@@ -18,15 +18,6 @@ class Lanes:
         # todo:(Mahmoud) a lane can have speed limit, opt range and other some other attributes
         # a dictionary of array
         self.vehlist = {l: [] for l in range(num_lanes)}
-        self.last_w_trj = np.array([-1 for l in range(num_lanes)],
-                                   dtype=np.int)  # this keeps the indx that all up to that vehicle have trj
-        # (initialized by -1 meaning no vehicle in this lane has got trajectory)
-
-    def increase_indx(self, lane):
-        self.last_w_trj[lane] += 1
-
-    def decrease_indx(self, lane):
-        self.last_w_trj[lane] -= 1
 
     def purge_served_vehs(self, lane, indx):
         del self.vehlist[lane][0:indx]  # todo check if removes indx or one before

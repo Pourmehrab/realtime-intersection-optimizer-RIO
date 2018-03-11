@@ -1,7 +1,10 @@
 [TOC]
 
 # General Description
-SI unit, Python 3.6.3 used.
+* SI unit
+* Python 3.6.3 used.
+
+Coded by: Mahmoud Pourmehrab 
 
 ## PyCharm Set up
 * To use Markdown in PyCharm install "Markdown Support" under Plugin menu
@@ -16,22 +19,14 @@ To install:
 * Do `pip3 install -r requirements.txt`
 
 # Input Data
-Directory `\data` includes folders named after each intersection of interest. Includes:
-* `CM.txt`: intersection conflict matrix (LLI: 1 if i,j are conflicting) [may create it by running `test.py>` for 13th and 16th]
-* `intprms.txt`: intersection parameters
-* `MS.txt`: movement share
-* `PLI.txt`: phase-lane incidence matrix (code generates this if not there)
-* `simprms.txt`: simulation parameters
-* `traffic.csv`: includes scenarios to be tested (could come from VISSIM)
+Directory `\data\<intersection name>` includes:
+* `<intersection name>.csv`: includes scenarios to be tested.
 
 # Important Files
-## `runOpt.py`:
-This files is the main file should be run. It moderates all else.
+## `main.py`:
+This files is the main file should be run. It controls all else.
 
 
-## Useful Links
-* Markdown hints [here](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
-* Paper is on overleaf [here](https://www.overleaf.com/9570639sgrcxsbwcxxm)
 
 ## LP Solver for Traj Optimization:
 
@@ -44,3 +39,6 @@ This files is the main file should be run. It moderates all else.
 
 * Microsoft Visual C++ 2015 Redistributable Package (x64) [here](https://www.microsoft.com/en-US/download/details.aspx?id=53587)
 
+## Useful Links
+* Markdown hints [here](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
+* Paper is on overleaf [here](https://www.overleaf.com/9570639sgrcxsbwcxxm)
