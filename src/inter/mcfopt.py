@@ -36,7 +36,7 @@ class SigMinCostNet:
     Lane-assignment arcs are from 3|p| to len(A)
         cost 0 unit / cap of M
 
-    (Note M is a large number implemented as self.M)
+    (Note M is the large constant implemented as self.M)
 
     '''
     M = 999
@@ -118,3 +118,72 @@ class SigMinCostNet:
         #                 cost))
         # else:
         #     raise Exception('There was an issue with the min cost flow input.')
+
+    def do_spat_decision(self, lanes, num_lanes, allowable_phases):
+        '''
+        Gives all phases equal chance but picks the one with highest throughput
+        Similar to GA functionality
+        :return:
+        '''
+        # the goal is to choose the sequence of SPaT which gives more throughput in less time
+        self.flush_upcoming_SPaT()
+
+        # keeps index of last vehicle to be served by progressing SPaT
+        served_vehicle_indx = np.array([0 if bool(lanes.vehlist[lane]) else -1 for lane in range(num_lanes)],
+                                       dtype=np.int)
+
+        # keeps index of last vehicle to be served by progressing SPaT
+        last_vehicle_indx = np.array([len(lanes.vehlist[lane]) - 1 for lane in range(num_lanes)], dtype=np.int)
+
+        def all_not_served(a, b):
+            for i in range(len(a)):
+                if b[i] > -1 and a[i] <= b[i]:
+                    return True
+            return False
+
+        while all_not_served(served_vehicle_indx, last_vehicle_indx):  # checks if SPaT did not serve all
+
+            best_phase, best_phase_score, best_phase_green_dur = 0, 0, 0
+            best_throughput = np.zeros(num_lanes, dtype=np.int)
+
+            for phase in allowable_phases:  # gives all phases a chance
+
+                temp_phase_score = 0
+                temp_throughput = np.zeros(num_lanes, dtype=np.int)
+
+                # check the length of phase not to exceed the max green
+                start_time = self.SPaT_end[-1] if self.SPaT_sequence[-1] != phase else self.SPaT_start[-1]
+                time_phase_ends = start_time + self.min_green if self.SPaT_sequence[-1] != phase else self.SPaT_end[-1]
+
+                for lane in self._pli[phase]:
+
+                    veh_indx = served_vehicle_indx[lane]
+                    # check if the lane is not empty and there are vehicles
+                    if last_vehicle_indx[lane] > -1 and veh_indx <= last_vehicle_indx[lane]:
+
+                        while veh_indx <= last_vehicle_indx[lane] and lanes.vehlist[lane][
+                            veh_indx].earlst - start_time <= self.max_green:
+                            # count and time processing new vehicles
+                            temp_throughput[lane] += 1
+                            if lanes.vehlist[lane][veh_indx].earlst > time_phase_ends:
+                                time_phase_ends = max(lanes.vehlist[lane][veh_indx].earlst, time_phase_ends + self.SAT)
+
+                            veh_indx += 1
+
+                # make it permanent if it's better than previous temporary SPaT
+                temp_phase_score = 0 if time_phase_ends <= start_time else np.sum(temp_throughput) / (
+                        time_phase_ends - start_time)
+
+                if temp_phase_score > best_phase_score:
+                    best_phase_score, best_phase = temp_phase_score, phase
+                    best_phase_green_dur = time_phase_ends - start_time
+                    best_throughput = temp_throughput
+
+            if best_phase_score <= 0:  # vehicles are far away, assign a random phase the max green
+
+                remaining_phases = set(allowable_phases) - {self.SPaT_sequence[-1]}
+                self.enqueue(remaining_phases.pop(), self.max_green)  # pop gives a random phase which is new
+
+            else:  # progress SPaT
+                served_vehicle_indx += best_throughput
+                self.enqueue(best_phase, max(self.min_green, best_phase_green_dur))

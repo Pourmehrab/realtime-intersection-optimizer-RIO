@@ -1,8 +1,8 @@
 [TOC]
 
 # General Description
-* SI unit
-* Python 3.6.3 used.
+* SI units(speed in m/s, length in m, time in sec, acceleration in m/s2)
+* Python 3.5.4 used.
 
 Coded by: Mahmoud Pourmehrab 
 

@@ -4,7 +4,7 @@
 # File name: main.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Mar/11/2018       #
+# Last Modified: Apr/03/2018       #
 ####################################
 
 '''
@@ -17,11 +17,12 @@ import os
 # import datetime
 import sys
 import time
+import warnings
 
 from src.inpt.sim import Simulator
 from src.inter.inter import Intersection, Signal
 from src.trj.trj_planner import trj_planner
-from src.inter.mcfopt import SigMinCostNet
+# from src.inter.mcfopt import SigMinCostNet # todo find out the issue with ortools import
 from src.inter.veh import Lanes, Vehicle
 from src.inpt.get_traffic import Traffic
 from src.vis.tikzpans import TikZpanels, TikzDirectedGraph
@@ -51,19 +52,17 @@ def mcf_signal_optimizer(intersection, num_lanes, ppi, max_speed, signal, lanes,
     tikzobj = TikZpanels(inter_name, num_lanes, ppi)
 
 
-def stochastic_optimizer(intersection, traffic, num_lanes, allowable_phases, max_speed, lanes):
+def stochastic_optimizer_GA(intersection, traffic, num_lanes, allowable_phases, max_speed, lanes):
     '''
-    Based on the paper submitted to IEEE Intelligent Transportation Systems Magazine (March 2018)
+    Based on the paper submitted to XXXXX (April 2018)
 
     Assumptions:
-    - The set of phases is only limited to the ones included in allowable_phases
-    - The sequence and duration is decided optimally by a vehicle packing algorithm
+    - The sequence and duration is decided optimally by a Genetic Algorithms
     - The trajectories are computed using:
         - Gipps car following model for conventional vehicles
         - Polynomial degree k area under curve minimization for Lead/Follower AVs
 
-    :param allowable_phases: subset of all possible phases is used (one per approach, east/south/west/north bounds
-    respectively, that covers all movements is suggested)
+    :param allowable_phases: subset of all possible phases is used (no limitation but it should cover all movements)
     '''
 
     signal = Signal(intersection.name, allowable_phases)
@@ -88,7 +87,7 @@ def stochastic_optimizer(intersection, traffic, num_lanes, allowable_phases, max
                                         max_speed)  # checks for new vehicles in all incoming lanes (also sets earliest time)
 
         # DO SIGNAL OPTIMIZATION
-        signal.do_spat_decision(lanes, num_lanes, allowable_phases)
+        signal.GA_on_SPaT(lanes, num_lanes, allowable_phases)
         # now we have sufficient SPaT to serve all
 
         # DO TRAJECTORY OPTIMIZATION
@@ -99,7 +98,7 @@ def stochastic_optimizer(intersection, traffic, num_lanes, allowable_phases, max
             if traffic.keep_scenario():
                 simulator.next_sim_step()
             else:
-                print('###### SIMULATION OF THE SCENARIO CONCLUDED ######')
+                # simulation of a scenario ended move on to the next scenario
                 traffic.reset_scenario()
 
                 t = traffic.get_first_arrival()
@@ -110,7 +109,7 @@ def stochastic_optimizer(intersection, traffic, num_lanes, allowable_phases, max
                 signal = Signal(intersection.name, allowable_phases)
 
         else:
-            # simulation ends save the csv which has travel time column in it
+            # simulation of all scenarios ended save the csv which has travel time column appended
             traffic.save_csv(intersection.name)
             break
 
@@ -118,21 +117,45 @@ def stochastic_optimizer(intersection, traffic, num_lanes, allowable_phases, max
         # # plot.plotrj(fol_veh.element().trj_t, fol_veh.element().trj_d,fol_veh.element().trj_s)
 
 
+def check_py_ver():
+    # Checks for Python version
+    expect_major, expect_minor, expect_rev = 3, 5, 4
+    if sys.version_info[:3] != (expect_major, expect_minor, expect_rev):
+        print(
+            "INFO: Script developed and tested with Python " + str(expect_major) + "." + str(expect_minor) + "." + str(
+                expect_rev))
+        current_version = str(sys.version_info[0]) + "." + str(sys.version_info[1]) + "." + str(sys.version_info[2])
+        if sys.version_info[:2] != (expect_major, expect_minor):
+            warnings.warn("Current Python version was unexpected: Python " + current_version)
+        else:
+            print("      Current version is different: Python " + current_version)
+        sys.exit(-1)
+    else:
+        print('Python version requirement is met.\n')
+
+
 if __name__ == "__main__":
+    # Check the interpreter to make sure using py version at least 3.5.4
+    check_py_ver()
+
     print('Interpreter Information ###################################################################################')
     print('Python Path: ', sys.executable)
     print('Python Version: ', sys.version)
     print(
-        '###########################################################################################################\n')
+        'University of Florida. Written by Mahmoud Pourmehrab ######################################################\n')
 
-    inter_name = '13th16th'
-    # Set the intersection name (Options: reserv, 13th16th)
-    # there should be a csv file under `data` (refer to readme for details)
-    # also look in src/inter/data.py
+    if len(sys.argv) != 3 or sys.argv[1] not in ['13th16th', 'h-aim', ] or sys.argv[2] not in ['stoch', 'mcf', ]:
+        print("Check the input arguments and try again.")
+        sys.exit(-1)
+    else:
+        # Set the intersection name (Options: reserv, 13th16th)
+        inter_name = sys.argv[1]
+        # optimization method
+        method = sys.argv[2]
+        # also look in src/inter/data.py
 
-    # Instantiations of necessary objects
-    # intersection keeps lane-lane and phase-lane incidence dictionaries
     intersection = Intersection(inter_name)
+    # intersection keeps lane-lane and phase-lane incidence dictionaries
     num_lanes = intersection.get_num_lanes()
     max_speed = intersection.get_max_speed()  # in m/s
 
@@ -143,10 +166,13 @@ if __name__ == "__main__":
     # load entire traffic generated in csv file
     traffic = Traffic(inter_name)
 
-    t1 = time.clock()
-    # here we start doing optimization for all scenarios which exist in the csv file read before
-    # stochastic_optimizer(.) works based on the logic provided in paper submitted to IEEE ITS
-    # find more details inside the function
-    stochastic_optimizer(intersection, traffic, num_lanes, (17, 9, 8, 15), max_speed, lanes)
-    t2 = time.clock()
-    print('### Elapsed Time: {:2.2f} sec ###'.format(int(1000 * (t2 - t1)) / 1000), end='')
+    t_start = time.clock()
+    # here we start doing optimization for all scenarios which exist in the csv file
+
+    if method == 'stoch':
+        stochastic_optimizer_GA(intersection, traffic, num_lanes, (17, 9, 8, 15), max_speed, lanes)
+    elif method == 'mcf':
+        pass
+
+    t_end = time.clock()
+    print('### Elapsed Time: {:2.2f} sec ###'.format(int(1000 * (t_end - t_start)) / 1000), end='')
