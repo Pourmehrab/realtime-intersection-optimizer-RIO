@@ -7,15 +7,12 @@
 
 
 class Simulator:
-    STEP = 20  # time steps to move the simulation forward in second
+    STEP = 20  # simulation resolution: the time steps to move the simulation forward in seconds
 
     def __init__(self, t):
-        # time : sec
-        self.clock = t
+        self.clock = t  # simulation starting clock in seconds (it gets reset for every scenario)
 
     def next_sim_step(self):
-        # configure sim resolution by changing the increment unit
-        # todo (Patrick) this changes when code becomes real-time
         self.clock += self.STEP
 
     def get_clock(self):

@@ -1,9 +1,6 @@
-from src.inpt.sim import Simulator
-from src.inter.inter import Intersection
-from src.trj.trjopt import Connected
-from src.inter.mcfopt import SigMinCostNet
-from src.inter.veh import Lanes, Vehicle
-from src.vis.tikzpans import TikZpanels, TikzDirectedGraph
+from src.optional.trjopt import Connected
+from src.inter.lane import Lanes
+from src.inter.vehicle import Vehicle
 
 lanes = Lanes(1)
 

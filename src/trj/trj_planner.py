@@ -6,9 +6,8 @@
 ####################################
 
 
-from src.trj.trj import Trajectory
-from src.trj.trjopt import Connected
-from src.trj.trjest import Conventional
+from src.trj.trj import Trajectory, Conventional
+from src.optional.trjopt import Connected
 
 
 def trj_planner(signal, lanes, num_lanes, max_speed):

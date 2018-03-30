@@ -15,7 +15,7 @@ Last update: Dec/19/2017
 
 import os
 
-from src.vis.tikz import TikzDirectedGraph
+from src.optional.TikZ.tikz import TikzDirectedGraph
 
 
 class TikZpanels(TikzDirectedGraph):

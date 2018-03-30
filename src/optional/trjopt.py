@@ -14,33 +14,6 @@ from src.trj.trj import Trajectory
 class Connected(Trajectory):
     K = 10  # poly degree
 
-    def __init__(self, lead_veh, fol_veh, gs=0, gt=86400, vmax=15, vcont=10):
-        '''
-        :param lead_veh:        lead vehicle
-        :param fol_veh:         follower vehicle
-        :param gs:              start of green in s (from the reference time)
-        :param gt:              end of green in s (from the reference time)
-        :param vmax:            speed limit in m/s
-        :param vcont:           speed limit at the control point in m/s
-        '''
-
-        super().__init__(lead_veh, fol_veh, gs, gt, vmax, vcont)
-
-        # solution is of the form v2, v3, a1, a3
-        self.x = np.array([vmax, vcont, fol_veh.max_accel_rate, fol_veh.max_decel_rate], dtype=float)
-        # assume maximum acceleration/deceleration is gonna be possible
-        self.x[2] = fol_veh.max_accel_rate if vmax > fol_veh.curr_speed else fol_veh.max_decel_rate
-        self.x[3] = fol_veh.max_accel_rate if vcont > vmax else fol_veh.max_decel_rate
-
-    def solve_earlst(self, fdeg):
-
-        t, d, s = self.get_earliest_trj()
-
-        if fdeg > 0 and t < self.lead_veh.earlst + self.SAT:  # follower is objected to saturation headway constraint
-            t = self.lead_veh.earlst + self.SAT
-
-        t0, d0, s0 = self.fol_veh.trajectory[0, 0], self.fol_veh.trajectory[0, 1], self.fol_veh.trajectory[0, 2]
-        self.set_trj_points([t0, t], [d0, d], [s0, s])
 
     def solve(self, fdeg):
         '''
@@ -55,19 +28,6 @@ class Connected(Trajectory):
 
         self.set_trj_points(t, d, s)
 
-    def get_earliest_trj(self):
-        # compute the travel time for each component of the trivial solution
-        self.t1 = self.calct1(self.x[0], self.x[2])
-        self.t2 = self.calct2(self.x[0], self.x[1], self.x[2], self.x[3])
-        self.t3 = self.calct3(self.x[0], self.x[1], self.x[3])
-        # compute the total travel time
-        tt = self.t1 + self.t2 + self.t3
-        # see if it respects time constraint
-        self.tt = tt
-        # self.get_three_comp_trj()
-        # t, d, s = self.get_three_comp_trj()
-        # return t, d, s
-        return self.tt, 0, self.vcont
 
     def weakfeasibility(self, x):
         if np.sign(x[0] - self.fol_veh.curr_speed) != np.sign(x[2]) or np.sign(x[1] - x[0]) != np.sign(x[3]):
@@ -87,32 +47,6 @@ class Connected(Trajectory):
                             , (x[0] - x[1]) / (x[3] * x[0])
                             , -((v0 - x[0]) ** 2 / (2 * x[2] ** 2 * x[0]))
                             , (x[0] - x[1]) ** 2 / (2 * x[3] ** 2 * x[0])])
-
-    def calct1(self, v2, a1):
-        dv1 = v2 - self.fol_veh.curr_speed
-        if abs(dv1) > self.EPS and abs(a1) > self.EPS:
-            return (v2 - self.fol_veh.curr_speed) / a1
-        else:
-            return 0
-
-    def calct2(self, v2, v3, a1, a3):
-        dv1 = v2 - self.fol_veh.curr_speed
-        dv3 = v3 - v2
-        if abs(dv1) > self.EPS and abs(a1) > self.EPS and abs(dv3) > self.EPS and abs(a3) > self.EPS:
-            return (self.fol_veh.trajectory[0, 1] - (v2 ** 2 - self.fol_veh.curr_speed ** 2) / (2 * a1) - (
-                    v3 ** 2 - v2 ** 2) / (
-                            2 * a3)) / v2
-        elif abs(dv1) <= self.EPS or abs(a1) <= self.EPS:
-            return (self.fol_veh.trajectory[0, 1] - (v3 ** 2 - v2 ** 2) / (2 * a3)) / v2
-        elif abs(dv3) <= self.EPS or abs(a3) <= self.EPS:
-            return (self.fol_veh.trajectory[0, 1] - (v2 ** 2 - self.fol_veh.curr_speed ** 2) / (2 * a1)) / v2
-        else:
-            return self.fol_veh.trajectory[0, 1] / v2
-
-    def calct3(self, v2, v3, a3):
-        dv3 = v3 - v2
-        if abs(dv3) > self.EPS and abs(a3) > self.EPS:
-            return (v3 - v2) / a3
 
     def dv1(self, dt, a1):
         return self.fol_veh.trajectory[
@@ -213,7 +147,7 @@ class Connected(Trajectory):
         opt_coeffs = linprog(c, A_ub=A2, b_ub=b2, A_eq=A1, b_eq=b1, bounds=bnds, options={"disp": True})
         if not opt_coeffs.success:
             print('* trj optimizer did not return value. (Did linear trajectory instead)')
-            self.linear_trj()
+            self.constant_speed_trj()
             return
 
         # def print_matrix(A):

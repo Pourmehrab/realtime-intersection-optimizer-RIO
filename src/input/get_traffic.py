@@ -6,10 +6,11 @@
 ####################################
 
 import os
+
 import pandas as pd
-from src.inter.veh import Vehicle
-from src.trj.trjopt import Connected
-from src.trj.trjest import Conventional
+
+from src.inter.vehicle import Vehicle
+from src.trj.trj import Conventional, Connected
 
 
 class Traffic:
@@ -22,6 +23,7 @@ class Traffic:
     '''
 
     def __init__(self, inter_name):
+        # get the path to the csv file and load up the traffic
         filepath = os.path.join('data/' + inter_name + '.csv')
         if os.path.exists(filepath):
             self.all_vehicles = pd.read_csv(filepath)
@@ -31,22 +33,29 @@ class Traffic:
         self.all_vehicles = self.all_vehicles.sort_values(by=['sc', 'arrival time'])
         self.all_vehicles = self.all_vehicles.reset_index(drop=True)
 
+        # get the scenario number
         self.active_sc = self.all_vehicles['sc'].iloc[0]
+
         # curr_indx points to the last vehicle added (-1 if none has been yet)
-        #  note this is cumulative and won't reset after a scenario is done
+        # note this is cumulative and won't reset after a scenario is done
         self.curr_indx = -1
 
         # the column to compute the travel time
         self.all_vehicles['departure time'] = 'NaN'
+        # the column to store simulation time per scenario
+        self.all_vehicles['elapsed time'] = 'NaN'
 
     def set_travel_time(self, travel_time, indx):
         self.all_vehicles['departure time'][indx] = travel_time
+
+    def set_elapsed_sim_time(self, t):
+        self.all_vehicles['elapsed time'][self.curr_indx] = t
 
     def save_csv(self, inter_name):
         filepath = os.path.join('log/' + inter_name + '_results.csv')
         self.all_vehicles.to_csv(filepath, index=False)
 
-    def keep_simulating(self):
+    def last_veh_in_last_sc_arrived(self):
         if self.curr_indx + 1 >= self.all_vehicles.shape[0]:
             return False
         else:
@@ -64,11 +73,12 @@ class Traffic:
         self.active_sc = self.all_vehicles['sc'].iloc[indx]
 
     def get_first_arrival(self):
-        cond = self.all_vehicles['sc'] == self.active_sc
-        return self.all_vehicles[cond]['arrival time'].iloc[0]
+        filtered_indx = self.all_vehicles['sc'] == self.active_sc
+        return self.all_vehicles[filtered_indx]['arrival time'].iloc[0]
 
-    def update_within_det_range(self, lanes, t, max_speed):
+    def update_on_vehicles(self, lanes, t, max_speed):
         '''
+        Adds vehicles from the csv file
 
         :param lanes: vehicles are added to this data structure (dictionary of doubly-linked lists)
         :param t: current simulation clock (sim_ctrl.get_clock() gives access)
@@ -78,8 +88,10 @@ class Traffic:
         max_indx = self.all_vehicles.shape[0] - 1
         while indx <= max_indx and self.all_vehicles['sc'][indx] == self.active_sc and \
                 self.all_vehicles['arrival time'][indx] <= t:
+
+            # read the arrived vehicle's information
             lane = self.all_vehicles['lane'][indx] - 1  # csv file has lanes coded in one-based
-            det_id = 'xyz'  # todo (Patrick) this changes when in real-time mode
+            det_id = 'xyz'  # todo this changes in real-time mode
             det_type = self.all_vehicles['type'][indx]  # 0: CNV, 1: CAV
             det_time = self.all_vehicles['arrival time'][indx]
             speed = self.all_vehicles['curSpd'][indx]
@@ -87,42 +99,41 @@ class Traffic:
             des_speed = self.all_vehicles['desSpd'][indx]
             dest = self.all_vehicles['dest'][indx]
             length = self.all_vehicles['L'][indx]
-            amin = self.all_vehicles['maxDec'][indx]
-            amax = self.all_vehicles['maxAcc'][indx]
+            amin = self.all_vehicles['maxDec'][indx]  # max deceleration (negative value)
+            amax = self.all_vehicles['maxAcc'][indx]  # max acceleration
             print('*** A veh of type {:d} detected @ {:2.2f} sec in lane {:d}'.format(det_type, det_time, lane))
 
             # create the vehicle and get the earliest departure time
             veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx)
-            # add it
+            # add it to its lane
             lanes.vehlist[lane] += [veh]  # recall it is an array
 
             # compute trajectory to get the earliest departure time
-            if det_type == 1:  # vehicle is connected
-                if len(lanes.vehlist[lane]) == 1:  # case 1: lead vehicle
-                    # Case 1: lead connected vehicle
-                    #  happens when a connected vehicle is the first in the lane
+            if det_type == 1:
+                if len(lanes.vehlist[lane]) == 1:
+                    # vehicles is a lead connected vehicle
+                    # happens when a connected vehicle is the first in the lane
                     trj_planner = Connected(None, veh, vmax=max_speed)
-                    # trj_planner.insight()  # optional: if want to print some overview of follower vehicle
-                    trj_planner.solve_earlst(0)  # pass 0 for lead vehicle
-                else:  # case 2: follower vehicle
-                    # Case 2: follower connected vehicle
+                    trj_planner.estimate_earliest_arrival()  # pass 0 for lead vehicle
+                else:
+                    # vehicles is a follower connected vehicle
                     # happens when a connected vehicle is NOT the first in the lane
                     trj_planner = Connected(lanes.vehlist[lane][-2], veh, vmax=max_speed)
-                    trj_planner.solve_earlst(1)  # pass 1 for follower vehicle (when first argument is not None)
-            else:  # type is 1 meaning vehicle is conventional
-                if len(lanes.vehlist[lane]) == 1:  # case 3: lead vehicle
-                    # Case 3: lead conventional vehicle
+                    trj_planner.estimate_earliest_arrival()  # pass 1 for follower vehicle (when first argument is not None)
+            else:
+                if len(lanes.vehlist[lane]) == 1:
+                    # vehicles is a lead conventional vehicle
                     # happens when a conventional vehicle is the first in the lane
                     trj_planner = Conventional(None, veh)
-                    trj_planner.solve(0)  # pass 0 for lead vehicle
-                else:  # case 4: follower vehicle
-                    # Case 4: lead conventional vehicle
+                    trj_planner.solve()  # pass 0 for lead vehicle
+                else:
+                    # vehicles is a lead conventional vehicle
                     # happens when a conventional vehicle is NOT the first in the lane
                     trj_planner = Conventional(lanes.vehlist[lane][-2], veh)
-                    trj_planner.solve(1)  # pass 1 for follower vehicle (when first argument is not None)
+                    trj_planner.solve()  # pass 1 for follower vehicle (when first argument is not None)
 
             # now that we have a trj, we can set the earliest departure time
-            veh.set_earlst()
+            veh.set_earliest_arrival()
 
             indx += 1
 

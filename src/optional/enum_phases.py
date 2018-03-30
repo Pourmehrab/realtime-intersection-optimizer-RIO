@@ -1,5 +1,5 @@
 ####################################
-# File name: phs.py                #
+# File name: enum_phases.py                #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
 # Last Modified: Feb/16/2018       #

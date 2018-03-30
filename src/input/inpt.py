@@ -1,5 +1,5 @@
 ####################################
-# File name: inpt.py               #
+# File name: input.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
 # Last Modified: Feb/16/2018       #

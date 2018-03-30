@@ -3,6 +3,9 @@
 # General Description
 * SI units(speed in m/s, length in m, time in sec, acceleration in m/s2)
 * Python 3.5.4 used.
+* run `python main <intersection_name> <optimization_algo>`
+*   intersection name could be `13th16th` or `reserv`
+*   optimization algorithm could be `GA` or `MCF`
 
 Coded by: Mahmoud Pourmehrab 
 
@@ -19,16 +22,18 @@ To install:
 * Do `pip3 install -r requirements.txt`
 
 # Input Data
-Directory `\data\<intersection name>` includes:
-* `<intersection name>.csv`: includes scenarios to be tested.
+Directory `\data\` includes:
+* `<intersection name>.csv`: includes scenarios to be tested. Filename should match the intersection name.
 
-# Important Files
-## `main.py`:
-This files is the main file should be run. It controls all else.
+# Output Data
+Directory `\log\` includes:
+* `<intersection name>_results.csv`: includes input csv plus the `departure time` and `elapsed time` columns.
+# Notes
+* `signal.solve()` extends by each optimization method, i.e, `GA` or `MCF`.
+* simulation resolution is set as a class variable `Simulation.STEP` in seconds
+* set the saturation headway and degree of polynomial in class `Connected(Trajectory)` as a class variable
 
-
-
-## LP Solver for Traj Optimization:
+# LP Solver for Traj Optimization:
 
 * Packages can solve LP: `cvxopt, Scipy.minimize, docplex`
 * Requires Microsoft Visual C++ Build Tools [here](http://landinghub.visualstudio.com/visual-cpp-build-tools)
@@ -39,6 +44,3 @@ This files is the main file should be run. It controls all else.
 
 * Microsoft Visual C++ 2015 Redistributable Package (x64) [here](https://www.microsoft.com/en-US/download/details.aspx?id=53587)
 
-## Useful Links
-* Markdown hints [here](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
-* Paper is on overleaf [here](https://www.overleaf.com/9570639sgrcxsbwcxxm)
