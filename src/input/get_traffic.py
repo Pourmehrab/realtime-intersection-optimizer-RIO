@@ -10,7 +10,7 @@ import os
 import pandas as pd
 
 from src.inter.vehicle import Vehicle
-from src.trj.trj import Conventional, Connected
+from src.trj.earliest import earliest_arrival_connected, earliest_arrival_conventional
 
 
 class Traffic:
@@ -76,7 +76,7 @@ class Traffic:
         filtered_indx = self.all_vehicles['sc'] == self.active_sc
         return self.all_vehicles[filtered_indx]['arrival time'].iloc[0]
 
-    def update_on_vehicles(self, lanes, t, max_speed):
+    def update_on_vehicles(self, lanes, t, max_speed, min_headway):
         '''
         Adds vehicles from the csv file
 
@@ -85,6 +85,7 @@ class Traffic:
         :return:
         '''
         indx = self.curr_indx + 1
+        t_earliest = 0  # keeps the earliest arrival at stop bar
         max_indx = self.all_vehicles.shape[0] - 1
         while indx <= max_indx and self.all_vehicles['sc'][indx] == self.active_sc and \
                 self.all_vehicles['arrival time'][indx] <= t:
@@ -110,30 +111,31 @@ class Traffic:
 
             # compute trajectory to get the earliest departure time
             if det_type == 1:
+                # For CAVs, the earliest travel time is computed by invoking the following method
                 if len(lanes.vehlist[lane]) == 1:
                     # vehicles is a lead connected vehicle
                     # happens when a connected vehicle is the first in the lane
-                    trj_planner = Connected(None, veh, vmax=max_speed)
-                    trj_planner.estimate_earliest_arrival()  # pass 0 for lead vehicle
+                    t_earliest = earliest_arrival_connected(det_time, speed, dist,
+                                                            amin, amax, max_speed)
                 else:
                     # vehicles is a follower connected vehicle
                     # happens when a connected vehicle is NOT the first in the lane
-                    trj_planner = Connected(lanes.vehlist[lane][-2], veh, vmax=max_speed)
-                    trj_planner.estimate_earliest_arrival()  # pass 1 for follower vehicle (when first argument is not None)
+                    t_earliest = earliest_arrival_connected(det_time, speed, dist,
+                                                            amin, amax, max_speed,
+                                                            min_headway, t_earliest)
             else:
                 if len(lanes.vehlist[lane]) == 1:
                     # vehicles is a lead conventional vehicle
                     # happens when a conventional vehicle is the first in the lane
-                    trj_planner = Conventional(None, veh)
-                    trj_planner.solve()  # pass 0 for lead vehicle
+                    t_earliest = earliest_arrival_conventional(det_time, speed, dist)
                 else:
                     # vehicles is a lead conventional vehicle
                     # happens when a conventional vehicle is NOT the first in the lane
-                    trj_planner = Conventional(lanes.vehlist[lane][-2], veh)
-                    trj_planner.solve()  # pass 1 for follower vehicle (when first argument is not None)
+                    t_earliest = earliest_arrival_conventional(det_time, speed, dist,
+                                                               min_headway, t_earliest)
 
             # now that we have a trj, we can set the earliest departure time
-            veh.set_earliest_arrival()
+            veh.set_earliest_arrival(t_earliest)
 
             indx += 1
 

@@ -241,46 +241,4 @@ class Connected(Trajectory):
         t0, d0, s0 = self.fol_veh.trajectory[0, 0], self.fol_veh.trajectory[0, 1], self.fol_veh.trajectory[0, 2]
         self.set_trj_points([t0, t], [d0, d], [s0, s])
 
-    def get_earliest_trj(self):
-        # compute the travel time for each component of the trivial solution
-        self.t1 = self.calc_t1(self.x[0], self.x[2])
-        self.t2 = self.calc_t2(self.x[0], self.x[1], self.x[2], self.x[3])
-        self.t3 = self.calc_t3(self.x[0], self.x[1], self.x[3])
-        # compute the total travel time
-        tt = self.t1 + self.t2 + self.t3
-        # see if it respects time constraint
-        self.tt = tt
-        # self.get_three_comp_trj()
-        # t, d, s = self.get_three_comp_trj()
-        # return t, d, s
-        return self.tt, 0, self.vcont
 
-    def calc_t1(self, v2, a1):
-
-        dv1 = v2 - self.fol_veh.curr_speed
-        if abs(dv1) > self.EPS and abs(a1) > self.EPS:
-            return (v2 - self.fol_veh.curr_speed) / a1
-        else:
-            return 0
-
-    def calc_t2(self, v2, v3, a1, a3):
-        dv1 = v2 - self.fol_veh.curr_speed
-        dv3 = v3 - v2
-
-        if abs(dv1) > self.EPS and abs(a1) > self.EPS and abs(dv3) > self.EPS and abs(a3) > self.EPS:
-            return (self.fol_veh.trajectory[0, 1] - (v2 ** 2 - self.fol_veh.curr_speed ** 2) / (2 * a1) - (
-                    v3 ** 2 - v2 ** 2) / (2 * a3)) / v2
-
-        elif abs(dv1) <= self.EPS or abs(a1) <= self.EPS:
-            return (self.fol_veh.trajectory[0, 1] - (v3 ** 2 - v2 ** 2) / (2 * a3)) / v2
-
-        elif abs(dv3) <= self.EPS or abs(a3) <= self.EPS:
-            return (self.fol_veh.trajectory[0, 1] - (v2 ** 2 - self.fol_veh.curr_speed ** 2) / (2 * a1)) / v2
-
-        else:
-            return self.fol_veh.trajectory[0, 1] / v2
-
-    def calc_t3(self, v2, v3, a3):
-        dv3 = v3 - v2
-        if abs(dv3) > self.EPS and abs(a3) > self.EPS:
-            return (v3 - v2) / a3

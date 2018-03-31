@@ -102,11 +102,11 @@ def get_signal_params(inter_name):
 
 def get_general_params(inter_name):
     '''
-    :return: max speed (m/s)
+    :return: max speed (m/s), min_headway (seconds)
     '''
     if inter_name == '13th16th':
-        return 14
+        return 14,2
     elif inter_name == 'reserv':
-        return 14
+        return 14,2
     else:
         return None

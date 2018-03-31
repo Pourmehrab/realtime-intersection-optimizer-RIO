@@ -17,7 +17,7 @@ class Intersection:
     def __init__(self, int_name):
         self.name = int_name
 
-        self._max_speed = get_general_params(int_name)
+        self._max_speed, self._min_headway = get_general_params(int_name)
 
         conf_dict = get_conflict_dict(self.name)
         # number of lanes
@@ -28,3 +28,7 @@ class Intersection:
 
     def get_max_speed(self):
         return self._max_speed
+
+    def get_min_headway(self):
+        return self._min_headway
+

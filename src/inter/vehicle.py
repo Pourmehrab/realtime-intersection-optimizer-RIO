@@ -46,9 +46,6 @@ class Vehicle:
         self.csv_indx = indx  # is used to find vehicle in original csv file
         self.last_trj_point_indx = -1  # changes in set_trj()
 
-        # assuming green forever and no vehicle in front, when departs
-        self.set_earliest_arrival()
-
     def set_trj(self, t, d, s):
         '''
         Sets trajectory of the vehicle. They're computed elsewhere. This is just to set them.
@@ -57,8 +54,8 @@ class Vehicle:
         self.trajectory[0:n, :] = np.transpose([t, d, s])
         self.last_trj_point_indx = n - 1
 
-    def set_earliest_arrival(self):
+    def set_earliest_arrival(self, t_earliest):
         '''
         It gets the earliest arrival time at the stop bar for the last vehicle just added to this lane
         '''
-        self.earliest_arrival = self.trajectory[self.last_trj_point_indx, 0]  # this is the absolute earliest time
+        self.earliest_arrival = t_earliest  # this is the absolute earliest time

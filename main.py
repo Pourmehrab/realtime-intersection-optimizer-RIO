@@ -22,7 +22,7 @@ from src.inter.inter import Intersection
 from src.inter.lane import Lanes
 # Signal Optimizers
 from src.inter.signal import GA_SPaT, MinCostFlow_SPaT
-# from src.optional.TikZ.tikzpans import TikZpanels, TikzDirectedGraph
+from src.optional.TikZ.tikzpans import TikZpanels, TikzDirectedGraph
 
 
 # Trajectory Optimizers
@@ -30,19 +30,12 @@ from src.inter.signal import GA_SPaT, MinCostFlow_SPaT
 
 def mcf_signal_optimizer(intersection, num_lanes, ppi, max_speed, signal, lanes, sim_prms):
     '''
-    todo: merge this to main below
+    todo: UNDER DEVELOPMENT. merge this to main below
     This function optimizes the scenario under following assumptions:
 
     - The full set of phases is supported
     - Uses min cost flow model to pick the duration and seq of phases
     '''
-    signal = MinCostFlow_SPaT(num_lanes, ppi)
-    # makes min cost flow network
-
-    # do sample signal optimization
-    lanes_demand = [3, 2, 3, 4, 5, 2, 6, 3, 2, 7, 3, 5, 2, 5, 3, 6]
-    signal.set_dem(lanes_demand)
-    signal.solve()
 
     # make min cost flow graph
     tikzobj = TikzDirectedGraph(inter_name, num_lanes, ppi)
@@ -91,7 +84,7 @@ if __name__ == "__main__":
     # intersection keeps lane-lane and phase-lane incidence dictionaries
     num_lanes = intersection.get_num_lanes()
     max_speed = intersection.get_max_speed()  # in m/s
-
+    min_headway= intersection.get_min_headway() # in seconds
     # lanes object keeps vehicles in it
     lanes = Lanes(num_lanes)
 
@@ -124,7 +117,7 @@ if __name__ == "__main__":
         signal.update_STaT(t)
 
         # add/update vehicles
-        traffic.update_on_vehicles(lanes, t, max_speed)
+        traffic.update_on_vehicles(lanes, t, max_speed,min_headway)
 
         # DO SIGNAL OPTIMIZATION
         signal.solve(lanes)
