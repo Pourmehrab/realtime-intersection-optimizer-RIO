@@ -1,7 +1,13 @@
 [TOC]
 
 # General Description
-SI unit, Python 3.6.3 used.
+* SI units(speed in m/s, length in m, time in sec, acceleration in m/s2)
+* Python 3.5.4 used.
+* run `python main <intersection_name> <optimization_algo>`
+*   intersection name could be `13th16th` or `reserv`
+*   optimization algorithm could be `GA` or `MCF`
+
+Coded by: Mahmoud Pourmehrab 
 
 ## PyCharm Set up
 * To use Markdown in PyCharm install "Markdown Support" under Plugin menu
@@ -16,24 +22,18 @@ To install:
 * Do `pip3 install -r requirements.txt`
 
 # Input Data
-Directory `\data` includes folders named after each intersection of interest. Includes:
-* `CM.txt`: intersection conflict matrix (LLI: 1 if i,j are conflicting) [may create it by running `test.py>` for 13th and 16th]
-* `intprms.txt`: intersection parameters
-* `MS.txt`: movement share
-* `PLI.txt`: phase-lane incidence matrix (code generates this if not there)
-* `simprms.txt`: simulation parameters
-* `traffic.csv`: includes scenarios to be tested (could come from VISSIM)
+Directory `\data\` includes:
+* `<intersection name>.csv`: includes scenarios to be tested. Filename should match the intersection name.
 
-# Important Files
-## `runOpt.py`:
-This files is the main file should be run. It moderates all else.
+# Output Data
+Directory `\log\` includes:
+* `<intersection name>_results.csv`: includes input csv plus the `departure time` and `elapsed time` columns.
+# Notes
+* `signal.solve()` extends by each optimization method, i.e, `GA` or `MCF`.
+* simulation resolution is set as a class variable `Simulation.STEP` in seconds
+* set the saturation headway and degree of polynomial in class `Connected(Trajectory)` as a class variable
 
-
-## Useful Links
-* Markdown hints [here](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
-* Paper is on overleaf [here](https://www.overleaf.com/9570639sgrcxsbwcxxm)
-
-## LP Solver for Traj Optimization:
+# LP Solver for Traj Optimization:
 
 * Packages can solve LP: `cvxopt, Scipy.minimize, docplex`
 * Requires Microsoft Visual C++ Build Tools [here](http://landinghub.visualstudio.com/visual-cpp-build-tools)

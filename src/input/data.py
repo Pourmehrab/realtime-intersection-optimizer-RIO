@@ -1,29 +1,31 @@
-'''
-By:     Mahmoud Pourmehrab
-E-mail: mpourmehrab@ufl.edu
-Date:        Feb 2018
-Last update: Feb/15/2018
+####################################
+# File name: data.py               #
+# Author: Mahmoud Pourmehrab       #
+# Email: mpourmehrab@ufl.edu       #
+# Last Modified: Feb/16/2018       #
+####################################
 
-stores data of the following intersection:
+'''
+This python file stores data of the following intersection:
 numbers are one-based (get converted to zero-based later)
 
-13th16th: a physical one google it in Gainesville for configuration
-reserv: reservation based model intersection: 12 incoming lanes (3 per approach and all lanes are exclusive)
+    13th16th: a physical one google map it in Gainesville for the image
+
+    reserv: reservation based model intersection: 12 incoming lanes (3 per approach and all lanes are exclusive)
     assume three discharge lanes (http://www.cs.utexas.edu/~aim/)
 
 '''
 
 
-def get_conflict_dict(s):
+def get_conflict_dict(inter_name):
     '''
-    conf_dict has members that key is a lane : values are lanes that are in conflict with key (note numbering
-    starts from 1 not 0)
+    conf_dict has members that key is a lane : values are set of lanes that are in conflict with key lane (note the
+    numbering starts from 1 not 0)
 
-    :param s: name of the intersection
-    :return:
+    :param inter_name: a string that gives the name of the intersection {13th16th, reserv}
     '''
 
-    if s == '13th16th':
+    if inter_name == '13th16th':
         return {1: {7},
                 2: {7, 8, 12, 16, 15, 14, 13},
                 3: {7, 8, 12, 16, 15, 14, 9},
@@ -41,7 +43,7 @@ def get_conflict_dict(s):
                 15: {2, 3, 12, 4, 5, 8, 7, 11, 6},
                 16: {12, 2, 3, 8, 4, 7, 5, 11}}
 
-    elif s == 'reserv':
+    elif inter_name == 'reserv':
         return {1: {4, 5, 6, 7, 8, 9, 10, 11, 12},
                 2: {4, 5, 6, 7, 8, 9, 10, 11, 12},
                 3: {4, 5, 6, 7, 8, 9, 10, 11, 12},
@@ -56,8 +58,8 @@ def get_conflict_dict(s):
                 12: {1, 2, 3, 4, 5, 6, 7, 8, 9}}
 
 
-def get_phases(s):
-    if s == '13th16th':
+def get_phases(inter_name):
+    if inter_name == '13th16th':
         return {1: {1, 10, 16, },
                 2: {6, 7, 12, },
                 3: {1, 2, 6, 9, },
@@ -76,7 +78,8 @@ def get_phases(s):
                 16: {1, 13, 14, 15, 16, },
                 17: {6, 7, 8, 13, 14, },
                 18: {1, 2, 3, 4, 5, 6, }}
-    elif s == 'reserv':
+
+    elif inter_name == 'reserv':
         return {1: {1, 2, 3, },
                 2: {4, 5, 6, },
                 3: {7, 8, 9, },
@@ -85,10 +88,25 @@ def get_phases(s):
         return None
 
 
-def get_intersection_params(s):
-    if s == '13th16th':
-        return 14, 1.5, 1, 300
-    elif s == 'reserv':
-        return 14, 1.5, 1, 300
+def get_signal_params(inter_name):
+    '''
+    yellow, all-red, min green, max green
+    '''
+    if inter_name == '13th16th':
+        return 1.5, 1, 5, 25
+    elif inter_name == 'reserv':
+        return 1.5, 1, 5, 25
+    else:
+        return None
+
+
+def get_general_params(inter_name):
+    '''
+    :return: max speed (m/s)
+    '''
+    if inter_name == '13th16th':
+        return 14
+    elif inter_name == 'reserv':
+        return 14
     else:
         return None
