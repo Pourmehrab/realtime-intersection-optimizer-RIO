@@ -4,7 +4,7 @@
 # File name: main.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Apr/03/2018       #
+# Last Modified: Mar/31/2018       #
 ####################################
 
 '''
@@ -22,7 +22,7 @@ from src.inter.inter import Intersection
 from src.inter.lane import Lanes
 # Signal Optimizers
 from src.inter.signal import GA_SPaT, MinCostFlow_SPaT
-from src.optional.TikZ.tikzpans import TikZpanels, TikzDirectedGraph
+# from src.optional.TikZ.tikzpans import TikZpanels, TikzDirectedGraph
 
 
 # Trajectory Optimizers
