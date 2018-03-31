@@ -29,7 +29,11 @@ class Signal:
         '''
 
         self.name = inter_name
+
         self._y, self._ar, self.min_green, self.max_green = get_signal_params(inter_name)
+        self._ts_min, self._ts_max = self.min_green + self._y + self._ar, self.max_green + self._y + self._ar
+        self._ts_diff = self.max_green - self.min_green
+
         self._set_lane_lane_incidence(num_lanes)
         self._set_phase_lane_incidence(num_lanes)
         self._allowable_phases = allowable_phases
@@ -101,12 +105,12 @@ class Signal:
             self.SPaT_end += [self.SPaT_start[-1] + actual_green + self._y + self._ar]
             print('*** Phase {:d} Appended (ends @ {:2.2f} sec)'.format(phase, self.SPaT_end[-1]))
 
-    def solve(self):
-        '''
-        This is the main method to make SPaT decision
-        It is extended by different methodologies like GA or MCF
-        '''
-        pass
+    # def solve(self):
+    #     '''
+    #     This is the main method to make SPaT decision
+    #     It is extended by different methodologies like GA or MCF
+    #     '''
+    #     pass
 
     def flush_upcoming_SPaT(self):
         if len(self.SPaT_sequence) > 1:
@@ -138,6 +142,8 @@ class Signal:
 # -------------------------------------------------------
 # Genetic Algorithms
 # -------------------------------------------------------
+from sortedcontainers import SortedDict
+
 
 class GA_SPaT(Signal):
     '''
@@ -152,38 +158,124 @@ class GA_SPaT(Signal):
     :param allowable_phases: subset of all possible phases is used (no limitation but it should cover all movements)
     '''
 
+    # do not include more than this in a phase (is exclusive of last: 1,2, ..., MAX_PHASE_LENGTH-1)
+    MAX_PHASE_LENGTH = 5
+
+    POPULATION_SIZE = 20
+    MAX_ITERATION_PER_PHASE = 10
+    CROSSOVER_SIZE = 10
+
     def __init__(self, inter_name, allowable_phases, num_lanes):
         super().__init__(inter_name, allowable_phases, num_lanes)
 
-    def solve(self, lanes, pop_size=20, max_iterations=10):
+    def solve(self, lanes):
         '''
         This runs GA
-        todo uses a sorted data structure
+        todo define vars
         '''
-        phase_length = 3
+        best_SPaT = {'seq': [], 'timing': [], 'throughput': -9999, 'meanTravelTime': 9999}
 
-        phase_seq = self.mutate_seq(phase_length)
-        time_split = self.mutate_timing(phase_length)
+        # correct max phase length in case goes above the range
+        max_phase_length = min(len(self._allowable_phases), self.MAX_PHASE_LENGTH)
 
-        for indx, phase in enumerate(phase_seq):
-            self.enqueue(phase, time_split[indx] - self._y - self._ar)
+        for phase_length in range(1, max_phase_length):
+
+            cycle_length = self.get_optimal_cycle_length()
+
+            # population keeps individuals in each row, and:
+            #   - the sequence in the first columns up to the phase size (first block)
+            #   - the timings in the second block of columns
+            #   - the metrics in the third block of columns up to the number of metrics
+
+            max_col_indx = 2 * phase_length + 2
+            # declare data type
+            # dtype = [('seq_' + str(i), int) if i < phase_length else ('deci_' + str(i), float)
+            #          for i in range(max_col_indx)]
+
+            half_max_indx = int(phase_length / 2)  # for crossover
+
+            population = np.zeros((self.POPULATION_SIZE, max_col_indx), dtype=float)
+
+            for individual in range(self.POPULATION_SIZE):
+                phase_seq = self.mutate_seq(phase_length)
+                time_split = self.mutate_timing(cycle_length, phase_length)
+                # set the individuals
+                population[individual, :phase_length] = phase_seq
+                population[individual, phase_length:-2] = time_split  # leave out last two columns for the metrics
+
+                # evaluate the fitness function
+                population[individual, -2] = np.random.rand()  # todo connect the traj optimizer
+
+            # sort in increasing order of the throughput (column -2)
+            population.sort(axis=-2)
+
+            for i in range(self.MAX_ITERATION_PER_PHASE):  # does GA operations in-place
+                # crossover
+                if phase_length > 1:  # need at least two phases for crossover
+                    for j in range(self.CROSSOVER_SIZE):
+                        parents_indx = np.random.choice(self.POPULATION_SIZE, 2, replace=False)
+                        population[j] = self.cross_over(population[parents_indx[0]], population[parents_indx[1]],
+                                                        phase_length, half_max_indx)
+
+                # elite selection
+                # in the next round, the top ones will automatically be removed when crossover
+                population.sort(axis=-2)
+
+            if best_SPaT['throughput'] < population[-1, -2]:  # this phase length has the fittest so far
+                best_SPaT['throughput'] = np.copy(population[-1, -2])
+                best_SPaT['meanTravelTime'] = np.copy(population[-1, -1])
+                best_SPaT['seq'] = np.copy(population[-1, :phase_length])
+                best_SPaT['timing'] = np.copy(population[-1, phase_length:-2])
+
+        for indx, phase in enumerate(best_SPaT['seq']):
+            self.enqueue(int(phase), best_SPaT['timing'][indx] - self._y - self._ar)
+
+    def cross_over(self, left_parent, right_parent, phase_length, half_max_indx):
+        child = np.copy(right_parent)
+
+        child[0:half_max_indx] = np.copy(left_parent[0:half_max_indx])
+
+        child[phase_length:-2] = (left_parent[phase_length:-2] + right_parent[phase_length:-2]) / 2
+
+        # evaluate the fitness function
+        child[-2] = np.random.rand()  # todo connect the traj optimizer
+
+        return child
 
     def mutate_seq(self, phase_length):
-        return np.random.choice(self._allowable_phases, phase_length, replace=True)
-        # todo: if two same phases follow each other, resample
+        return np.random.choice(self._allowable_phases, phase_length, replace=False)
+        # todo: if two same phases follow each other, resample carefully with replacement
 
-    def mutate_timing(self, phase_length):
-        # todo: write the constrained randomizer
-        return [15 for i in range(phase_length)]
+    def mutate_timing(self, cycle_length, phase_length):
+        '''
+        Creates the random phase split
+        Valid timing should respect the min/max green requirement unless it conflicts with the
+        cycle length which in that case we should adjust the maximum green to avoid the slack
+        in time
+        '''
+        if phase_length == 1:
+            return np.array([cycle_length])
+        else:
+            # under worst case all except one phase get minimum green
+            #  check if in that case still we can specify the last phase
+            min_G_max = cycle_length - (phase_length - 1) * self._ts_min
+            if min_G_max >= self._ts_max:
+                diff = self._ts_diff
+            else:
+                diff = min_G_max - self._ts_min
 
-    def cross_over(self, left_parent, right_parent):
-        pass
+            # create vector of random numbers drawn from uniform distribution
+            rand_vec = np.random.rand(phase_length)
+            # scale it in a way all sum to the cycle length
+            rand_vec *= ((cycle_length - phase_length * self._ts_min) / diff) / rand_vec.sum()
 
-    def elite_selection(self, population):
-        pass
+            time_split = np.array([self._ts_min + rand_vec[i] * diff for i in range(phase_length)],
+                                  dtype=float)
+            return time_split
 
     def get_optimal_cycle_length(self):
-        pass
+        # todo add computator
+        return 60
 
 
 # -------------------------------------------------------
