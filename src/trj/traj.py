@@ -192,28 +192,63 @@ class LeadConnected(Trajectory):
                      [constraint for j in range(1, self.M)] +
                      [constraint for j in range(1, self.M)],
             senses=['G' for j in range(1, self.M)] +
-                    ['L' for j in range(1, self.M)] +
-                    ['G' for j in range(1, self.M)] +
-                    ['L' for j in range(1, self.M)],
+                   ['L' for j in range(1, self.M)] +
+                   ['G' for j in range(1, self.M)] +
+                   ['L' for j in range(1, self.M)],
             rhs=[-max_speed for j in range(1, self.M)] +
-                 [0 for j in range(1, self.M)] +
-                 [1 for j in range(1, self.M)] +
-                 [1 for j in range(1, self.M)],
+                [0 for j in range(1, self.M)] +
+                [1 for j in range(1, self.M)] +
+                [1 for j in range(1, self.M)],
             names=['ub_speed_' + str(j) for j in range(1, self.M)] +
-                   ['lb_speed_' + str(j) for j in range(1, self.M)] +
-                   ['ub_acc_' + str(j) for j in range(1, self.M)] +
-                   ['lb_acc_' + str(j) for j in range(1, self.M)])
+                  ['lb_speed_' + str(j) for j in range(1, self.M)] +
+                  ['ub_acc_' + str(j) for j in range(1, self.M)] +
+                  ['lb_acc_' + str(j) for j in range(1, self.M)])
+
+    def solve(self, trajectory, last_trj_point_indx,
+              arrival_time, arrival_dist,
+              amin, amax,
+              green_start_time, yellow_end_time):
+        det_time, det_dist, det_speed = trajectory[0]
+
+        self._lp_model.objective.set_linear(zip(
+            ["beta_" + str(n) for n in range(self.K)],
+            [arrival_time / (1 + n) for n in range(self.K)]))
+
+        self._lp_model.linear_constraints.set_rhs([('match_det_dist', det_dist),
+                                                   ('match_speed', -det_speed),
+                                                   ('match_dep_dist', arrival_dist), ] +
+                                                  list(zip(['ub_acc_' + str(j) for j in range(1, self.M)],
+                                                           [-amax for j in range(1, self.M)])) +
+                                                  list(zip(['lb_acc_' + str(j) for j in range(1, self.M)],
+                                                           [-amin for j in range(1, self.M)])))
+
+        for j in range(1, self.M):
+            var_name = ["beta_" + str(n) for n in range(self.K)]
+            speed_coeff = [0] + [n * (j / (self.M + 1)) ** (n - 1) / arrival_time for n in range(1, self.K)]
+
+            self._lp_model.linear_constraints.set_coefficients(zip(
+                ['ub_speed_' + str(j) for n in range(self.K)], var_name, speed_coeff))
+
+            self._lp_model.linear_constraints.set_coefficients(zip(
+                ['lb_speed_' + str(j) for n in range(self.K)], var_name, speed_coeff))
+
+            factor = (self.M + 1) / (arrival_time * j)
+            acc_coeff = [0, 0] + [speed_coeff[n] * factor * (n - 1) for n in range(2, self.K)]
+
+            self._lp_model.linear_constraints.set_coefficients(zip(
+                ['ub_acc_' + str(j) for n in range(self.K)], var_name, acc_coeff))
+
+            self._lp_model.linear_constraints.set_coefficients(zip(
+                ['lb_acc_' + str(j) for n in range(self.K)], var_name, acc_coeff))
 
         self._lp_model.write("lead_CAV.lp")
 
-    def solve(self, trajectory, last_trj_point_indx, arrival_time,
-              green_start_time, yellow_end_time):
+        self._lp_model.solve()
         pass
 
-
-# -------------------------------------------------------
-# FOLLOWER CONNECTED AND AUTOMATED TRAJECTORY OPTIMIZER
-# -------------------------------------------------------
+        # -------------------------------------------------------
+        # FOLLOWER CONNECTED AND AUTOMATED TRAJECTORY OPTIMIZER
+        # -------------------------------------------------------
 
 class FollowerConnected(LeadConnected):
     def __init__(self, max_speed, min_headway):

@@ -105,6 +105,7 @@ ENV/
 *.svg
 *.html
 *.csv
+*.lp
 
 log/
 src/optional/

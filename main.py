@@ -4,7 +4,7 @@
 # File name: main.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Mar/31/2018       #
+# Last Modified: Apr/01/2018       #
 ####################################
 
 '''
@@ -94,9 +94,11 @@ if __name__ == "__main__":
 
     # initialize trajectory planners
     lead_conventional_trj_estimator = LeadConventional(max_speed, min_headway)
-    lead_connected_trj_estimator = LeadConnected(max_speed, min_headway)
+    lead_connected_trj_optimizer = LeadConnected(max_speed, min_headway)
     follower_conventional_trj_estimator = FollowerConventional(max_speed, min_headway)
-    follower_connected_trj_estimator = FollowerConnected(max_speed, min_headway)
+    follower_connected_trj_optimizer = FollowerConnected(max_speed, min_headway)
+
+    lead_connected_trj_optimizer.solve([[20, 300, 14]], 0, 35, 1.763, -2.5, 2, 30, 40)
 
     if method == 'GA':
         # define what subset of phase-lane incidence matrix should be used
