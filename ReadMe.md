@@ -31,7 +31,7 @@ Directory `\log\` includes:
 # Notes
 * `signal.solve()` extends by each optimization method, i.e, `GA` or `MCF`.
 * simulation resolution is set as a class variable `Simulation.STEP` in seconds
-* set the saturation headway and degree of polynomial in class `Connected(Trajectory)` as a class variable
+* 
 
 # LP Solver for Traj Optimization:
 

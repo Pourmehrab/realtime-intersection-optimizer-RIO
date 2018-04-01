@@ -21,8 +21,9 @@ from src.input.sim import Simulator
 from src.inter.inter import Intersection
 from src.inter.lane import Lanes
 # Signal Optimizers
-from src.inter.signal import GA_SPaT, MinCostFlow_SPaT
+from src.inter.signal import GA_SPaT
 from src.optional.TikZ.tikzpans import TikZpanels, TikzDirectedGraph
+from src.trj.traj import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
 
 
 # Trajectory Optimizers
@@ -84,12 +85,18 @@ if __name__ == "__main__":
     # intersection keeps lane-lane and phase-lane incidence dictionaries
     num_lanes = intersection.get_num_lanes()
     max_speed = intersection.get_max_speed()  # in m/s
-    min_headway= intersection.get_min_headway() # in seconds
+    min_headway = intersection.get_min_headway()  # in seconds
     # lanes object keeps vehicles in it
     lanes = Lanes(num_lanes)
 
     # load entire traffic generated in csv file
     traffic = Traffic(inter_name)
+
+    # initialize trajectory planners
+    lead_conventional_trj_estimator = LeadConventional(max_speed, min_headway)
+    lead_connected_trj_estimator = LeadConnected(max_speed, min_headway)
+    follower_conventional_trj_estimator = FollowerConventional(max_speed, min_headway)
+    follower_connected_trj_estimator = FollowerConnected(max_speed, min_headway)
 
     if method == 'GA':
         # define what subset of phase-lane incidence matrix should be used
@@ -117,7 +124,7 @@ if __name__ == "__main__":
         signal.update_STaT(t)
 
         # add/update vehicles
-        traffic.update_on_vehicles(lanes, t, max_speed,min_headway)
+        traffic.update_on_vehicles(lanes, t, max_speed, min_headway)
 
         # DO SIGNAL OPTIMIZATION
         signal.solve(lanes)

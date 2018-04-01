@@ -46,13 +46,6 @@ class Vehicle:
         self.csv_indx = indx  # is used to find vehicle in original csv file
         self.last_trj_point_indx = -1  # changes in set_trj()
 
-    def set_trj(self, t, d, s):
-        '''
-        Sets trajectory of the vehicle. They're computed elsewhere. This is just to set them.
-        '''
-        n = len(t)
-        self.trajectory[0:n, :] = np.transpose([t, d, s])
-        self.last_trj_point_indx = n - 1
 
     def set_earliest_arrival(self, t_earliest):
         '''
