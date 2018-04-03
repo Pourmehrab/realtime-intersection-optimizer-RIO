@@ -10,7 +10,7 @@ import numpy as np
 
 class Vehicle:
     def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx,
-                 max_num_trajectory_points=300):
+                 k, max_num_trajectory_points=300):
         '''
         Data Structure for an individual vehicle
 
@@ -37,18 +37,21 @@ class Vehicle:
         self.max_accel_rate = amax
         self.destination = dest
         self.desired_speed = des_speed
-        self.trajectory = np.zeros((max_num_trajectory_points, 3), dtype=np.float)
+        self.trajectory = np.zeros((3, max_num_trajectory_points), dtype=np.float)  # the shape is important
         self.first_trj_point_indx = 0
         self.last_trj_point_indx = 0
-        # time_diff = 3600 * (det_time[0] - ref_time[0]) + 60 * (det_time[1] - ref_time[1]) + (
-        #         det_time[2] - ref_time[2])
-        self.trajectory[0, :] = [det_time, dist, speed, ]
+        self.trajectory[:, 0] = [det_time, dist, speed, ]
         self.csv_indx = indx  # is used to find vehicle in original csv file
-        self.last_trj_point_indx = -1  # changes in set_trj()
+        self.last_trj_point_indx = -1  # -1 means this is not sent to traj planner ever
 
+        if det_type == 1:  # only CAVs trajectories are in the form of polynomials
+            self._poly_coeffs = np.zeros(k)
 
     def set_earliest_arrival(self, t_earliest):
         '''
         It gets the earliest arrival time at the stop bar for the last vehicle just added to this lane
         '''
         self.earliest_arrival = t_earliest  # this is the absolute earliest time
+
+    def set_poly_coeffs(self, beta):
+        self._poly_coeffs = beta

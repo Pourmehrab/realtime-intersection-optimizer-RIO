@@ -76,7 +76,7 @@ class Traffic:
         filtered_indx = self.all_vehicles['sc'] == self.active_sc
         return self.all_vehicles[filtered_indx]['arrival time'].iloc[0]
 
-    def update_on_vehicles(self, lanes, t, max_speed, min_headway):
+    def update_on_vehicles(self, lanes, t, max_speed, min_headway, k):
         '''
         Adds vehicles from the csv file
 
@@ -94,18 +94,19 @@ class Traffic:
             lane = self.all_vehicles['lane'][indx] - 1  # csv file has lanes coded in one-based
             det_id = 'xyz'  # todo this changes in real-time mode
             det_type = self.all_vehicles['type'][indx]  # 0: CNV, 1: CAV
-            det_time = self.all_vehicles['arrival time'][indx]
-            speed = self.all_vehicles['curSpd'][indx]
-            dist = self.all_vehicles['dist'][indx]
-            des_speed = self.all_vehicles['desSpd'][indx]
-            dest = self.all_vehicles['dest'][indx]
-            length = self.all_vehicles['L'][indx]
-            amin = self.all_vehicles['maxDec'][indx]  # max deceleration (negative value)
-            amax = self.all_vehicles['maxAcc'][indx]  # max acceleration
+            det_time = float(self.all_vehicles['arrival time'][indx])
+            speed = float(self.all_vehicles['curSpd'][indx])
+            dist = float(self.all_vehicles['dist'][indx])
+            des_speed = float(self.all_vehicles['desSpd'][indx])
+            dest = int(self.all_vehicles['dest'][indx])
+            length = float(self.all_vehicles['L'][indx])
+            amin = float(self.all_vehicles['maxDec'][indx])  # max deceleration (negative value)
+            amax = float(self.all_vehicles['maxAcc'][indx])  # max acceleration
             print('*** A veh of type {:d} detected @ {:2.2f} sec in lane {:d}'.format(det_type, det_time, lane))
 
             # create the vehicle and get the earliest departure time
-            veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx)
+            veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed,
+                          dest, length, amin, amax, k, indx)
             # add it to its lane
             lanes.vehlist[lane] += [veh]  # recall it is an array
 

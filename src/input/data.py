@@ -102,11 +102,14 @@ def get_signal_params(inter_name):
 
 def get_general_params(inter_name):
     '''
-    :return: max speed (m/s), min_headway (seconds)
+    :return: max speed (m/s), min_headway (seconds),k, m
+        k =  # n will be in 0, ..., k-1
+        m =  # to discretize the time interval
+
     '''
     if inter_name == '13th16th':
-        return 14,2
+        return 15, 2, 10, 15
     elif inter_name == 'reserv':
-        return 14,2
+        return 15, 2, 10, 15
     else:
         return None

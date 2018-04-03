@@ -22,11 +22,10 @@ from src.inter.inter import Intersection
 from src.inter.lane import Lanes
 # Signal Optimizers
 from src.inter.signal import GA_SPaT
+# Visualization
 from src.optional.TikZ.tikzpans import TikZpanels, TikzDirectedGraph
-from src.trj.traj import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
-
-
 # Trajectory Optimizers
+from src.trj.traj import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
 
 
 def mcf_signal_optimizer(intersection, num_lanes, ppi, max_speed, signal, lanes, sim_prms):
@@ -86,6 +85,7 @@ if __name__ == "__main__":
     num_lanes = intersection.get_num_lanes()
     max_speed = intersection.get_max_speed()  # in m/s
     min_headway = intersection.get_min_headway()  # in seconds
+    k, m = intersection.get_poly_params()
     # lanes object keeps vehicles in it
     lanes = Lanes(num_lanes)
 
@@ -94,19 +94,18 @@ if __name__ == "__main__":
 
     # initialize trajectory planners
     lead_conventional_trj_estimator = LeadConventional(max_speed, min_headway)
-    lead_connected_trj_optimizer = LeadConnected(max_speed, min_headway)
+    lead_connected_trj_optimizer = LeadConnected(max_speed, min_headway, k, m)
     follower_conventional_trj_estimator = FollowerConventional(max_speed, min_headway)
-    follower_connected_trj_optimizer = FollowerConnected(max_speed, min_headway)
+    follower_connected_trj_optimizer = FollowerConnected(max_speed, min_headway, k, m)
 
-    lead_connected_trj_optimizer.solve([[20, 300, 14]], 0, 35, 1.763, -2.5, 2, 30, 40)
-
+    # decide on signal optimization scheme
     if method == 'GA':
         # define what subset of phase-lane incidence matrix should be used
         # minimal set of phase indices to cover all movements (17, 9, 8, 15)
-        signal = GA_SPaT(intersection.name, (17, 9, 8, 15,), num_lanes)
+        signal = GA_SPaT(intersection.name, (17, 9, 8, 15,), num_lanes)  # todo allow more phases
 
     elif method == 'MCF':
-        pass
+        pass  # todo develop this
 
     # get the time when first vehicle shows up
     t = traffic.get_first_arrival()
@@ -126,14 +125,25 @@ if __name__ == "__main__":
         signal.update_STaT(t)
 
         # add/update vehicles
-        traffic.update_on_vehicles(lanes, t, max_speed, min_headway)
+        traffic.update_on_vehicles(lanes, t, max_speed, min_headway, k)
 
         # DO SIGNAL OPTIMIZATION
         signal.solve(lanes)
         # now we have sufficient SPaT to serve all
 
         # DO TRAJECTORY OPTIMIZATION
-        # trj_planner(signal, lanes, num_lanes, max_speed)
+        for lane in range(num_lanes):
+            if bool(lanes.vehlist[lane]):  # not an empty lane
+                veh = lanes.vehlist[lane][0]  # this is the first vehicle
+                arrival_time = 55  # todo comes from GA
+                arrival_dist = 0  # todo comes from GA
+                dep_speed = 15  # todo comes from GA
+                green_start_time, yellow_end_time = 30, 40  # todo comes from GA
+                # send to optimizer
+                model = lead_connected_trj_optimizer.set_model(veh, arrival_time, arrival_dist, dep_speed,
+                                                               green_start_time, yellow_end_time)
+                beta = lead_connected_trj_optimizer.solve(veh, model, arrival_time)
+                veh.set_poly_coeffs(beta)  # set the polynomial
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_in_last_sc_arrived():
@@ -156,7 +166,6 @@ if __name__ == "__main__":
 
                 t_start = time.clock()  # reset the timer
 
-
         else:
             if lanes.all_served(num_lanes):
                 # all vehicles in the csv file are served
@@ -166,6 +175,3 @@ if __name__ == "__main__":
             else:
                 # this is the last scenario but still some vehicles have not crossed
                 simulator.next_sim_step()
-
-        # # plot = VisTrj(lane)  # todo:(Mahmoud) do we need lane information in this file?
-        # # plot.plotrj(fol_veh.element().trj_t, fol_veh.element().trj_d,fol_veh.element().trj_s)

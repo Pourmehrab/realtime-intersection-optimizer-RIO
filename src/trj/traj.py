@@ -44,7 +44,7 @@ class Trajectory:
         Sets trajectory of the vehicle. They're computed elsewhere. This is just to set them.
         '''
         n = len(t)
-        trajectory[0:n, :] = np.transpose([t, d, s])
+        trajectory[:, 0:n] = [t, d, s]
         last_trj_point_indx = n - 1
 
 
@@ -155,115 +155,190 @@ class FollowerConventional(Trajectory):
 import cplex
 
 
+# Refer to: IBM(R) ILOG CPLEX Python API Reference Manual
+
 # -------------------------------------------------------
 # LEAD CONNECTED AND AUTOMATED TRAJECTORY OPTIMIZER
 # -------------------------------------------------------
 
 class LeadConnected(Trajectory):
-    K = 10  # n will be in 0, ..., k-1
-    M = 4  # to discretize the time interval
 
-    def __init__(self, max_speed, min_headway):
+    def __init__(self, max_speed, min_headway, k, m):
         super().__init__(max_speed, min_headway)
 
+        self.k, self.m = k, m
+
         self._lp_model = cplex.Cplex()
+        self._lp_model.set_log_stream(None)
+        self._lp_model.set_error_stream(None)
+        self._lp_model.set_warning_stream(None)
+        self._lp_model.set_results_stream(None)
         # We are looking to minimize the are under the trajectory curve
         self._lp_model.objective.set_sense(self._lp_model.objective.sense.minimize)
 
-        self._lp_model.variables.add(obj=[1.0 for n in range(self.K)],
-                                     names=["beta_" + str(n) for n in range(self.K)],
-                                     lb=[-cplex.infinity for n in range(self.K)])
+        var_name = ["beta_" + str(n) for n in range(self.k)]
+        self._lp_model.variables.add(obj=[1.0 for n in range(self.k)],
+                                     names=var_name,
+                                     lb=[-cplex.infinity for n in range(self.k)])
 
         self._lp_model.linear_constraints.add(lin_expr=[[["beta_0"], [1]], [["beta_1"], [1]]],
                                               senses=['E', 'E'],
                                               rhs=[0, 0],
                                               names=['match_det_dist', 'match_speed'])
 
-        constraint = [["beta_" + str(n) for n in range(self.K)], [1 for n in range(self.K)]]
+        constraint = [var_name, [0 for n in range(self.k)]]
         self._lp_model.linear_constraints.add(
-            lin_expr=[constraint],
-            senses=['E'],
-            rhs=[1],
-            names=['match_dep_dist'])
+            lin_expr=[constraint, constraint],
+            senses=['E', 'E'],
+            rhs=[1, 1],
+            names=['match_dep_dist', 'match_dep_speed'])
 
         self._lp_model.linear_constraints.add(
-            lin_expr=[constraint for j in range(1, self.M)] +
-                     [constraint for j in range(1, self.M)] +
-                     [constraint for j in range(1, self.M)] +
-                     [constraint for j in range(1, self.M)],
-            senses=['G' for j in range(1, self.M)] +
-                   ['L' for j in range(1, self.M)] +
-                   ['G' for j in range(1, self.M)] +
-                   ['L' for j in range(1, self.M)],
-            rhs=[-max_speed for j in range(1, self.M)] +
-                [0 for j in range(1, self.M)] +
-                [1 for j in range(1, self.M)] +
-                [1 for j in range(1, self.M)],
-            names=['ub_speed_' + str(j) for j in range(1, self.M)] +
-                  ['lb_speed_' + str(j) for j in range(1, self.M)] +
-                  ['ub_acc_' + str(j) for j in range(1, self.M)] +
-                  ['lb_acc_' + str(j) for j in range(1, self.M)])
+            lin_expr=[constraint for j in range(self.m)] +
+                     [constraint for j in range(self.m)] +
+                     [constraint for j in range(self.m)] +
+                     [constraint for j in range(self.m)],
+            senses=['G' for j in range(self.m)] +
+                   ['L' for j in range(self.m)] +
+                   ['G' for j in range(self.m)] +
+                   ['L' for j in range(self.m)],
+            rhs=[-max_speed for j in range(self.m)] +
+                [0 for j in range(self.m)] +
+                [1 for j in range(self.m)] +
+                [1 for j in range(self.m)],
+            names=['ub_speed_' + str(j) for j in range(self.m)] +
+                  ['lb_speed_' + str(j) for j in range(self.m)] +
+                  ['ub_acc_' + str(j) for j in range(self.m)] +
+                  ['lb_acc_' + str(j) for j in range(self.m)])
 
-    def solve(self, trajectory, last_trj_point_indx,
-              arrival_time, arrival_dist,
-              amin, amax,
-              green_start_time, yellow_end_time):
-        det_time, det_dist, det_speed = trajectory[0]
+    def set_model(self, veh, arrival_time, arrival_dist, dep_speed,
+                  green_start_time, yellow_end_time):
+        '''
+        f(t)   = sum_0^{k-1} b_n t^n
+        f'(t)  = sum_1^{k-1} n b_n t^{n-1}
+        f''(t) = sum_2^{k-1} n (n-1) b_n t^{n-2}
+
+        '''
+
+        trajectory = veh.trajectory
+        amin, amax = veh.max_decel_rate, veh.max_accel_rate
+
+        det_time, det_dist, det_speed = trajectory[:, 0]
+        arrival_time_relative = arrival_time - det_time
 
         self._lp_model.objective.set_linear(zip(
-            ["beta_" + str(n) for n in range(self.K)],
-            [arrival_time / (1 + n) for n in range(self.K)]))
+            ["beta_" + str(n) for n in range(self.k)],
+            [arrival_time_relative ** (1 + n) / (1 + n) for n in range(self.k)]))
 
         self._lp_model.linear_constraints.set_rhs([('match_det_dist', det_dist),
                                                    ('match_speed', -det_speed),
-                                                   ('match_dep_dist', arrival_dist), ] +
-                                                  list(zip(['ub_acc_' + str(j) for j in range(1, self.M)],
-                                                           [-amax for j in range(1, self.M)])) +
-                                                  list(zip(['lb_acc_' + str(j) for j in range(1, self.M)],
-                                                           [-amin for j in range(1, self.M)])))
+                                                   ('match_dep_dist', arrival_dist),
+                                                   ('match_dep_speed', -dep_speed)] +
+                                                  list(zip(['ub_acc_' + str(j) for j in range(self.m)],
+                                                           [-amax for j in range(self.m)])) +
+                                                  list(zip(['lb_acc_' + str(j) for j in range(self.m)],
+                                                           [-amin for j in range(self.m)])))
 
-        for j in range(1, self.M):
-            var_name = ["beta_" + str(n) for n in range(self.K)]
-            speed_coeff = [0] + [n * (j / (self.M + 1)) ** (n - 1) / arrival_time for n in range(1, self.K)]
+        dist_coeff = np.array([arrival_time_relative ** n for n in range(self.k)], dtype=float)
+        var_name = ["beta_" + str(n) for n in range(self.k)]
+        self._lp_model.linear_constraints.set_coefficients(zip(
+            ['match_dep_dist' for n in range(self.k)], var_name, dist_coeff))
 
-            self._lp_model.linear_constraints.set_coefficients(zip(
-                ['ub_speed_' + str(j) for n in range(self.K)], var_name, speed_coeff))
+        control_points = np.linspace(arrival_time_relative / self.m, arrival_time_relative,
+                                     self.m, endpoint=False)
 
-            self._lp_model.linear_constraints.set_coefficients(zip(
-                ['lb_speed_' + str(j) for n in range(self.K)], var_name, speed_coeff))
+        j = 0
+        for time in control_points:
+            speed_coeff = np.array([n * time ** (n - 1) for n in range(self.k)])
+            acc_coeff = np.array([speed_coeff[n] * (n - 1) / time for n in range(self.k)])
 
-            factor = (self.M + 1) / (arrival_time * j)
-            acc_coeff = [0, 0] + [speed_coeff[n] * factor * (n - 1) for n in range(2, self.K)]
+            self._lp_model.linear_constraints.set_coefficients(
+                list(zip(['ub_speed_' + str(j) for n in range(self.k)], var_name, speed_coeff)) +
+                list(zip(['lb_speed_' + str(j) for n in range(self.k)], var_name, speed_coeff)) +
+                list(zip(['ub_acc_' + str(j) for n in range(self.k)], var_name, acc_coeff)) +
+                list(zip(['lb_acc_' + str(j) for n in range(self.k)], var_name, acc_coeff))
+            )
 
-            self._lp_model.linear_constraints.set_coefficients(zip(
-                ['ub_acc_' + str(j) for n in range(self.K)], var_name, acc_coeff))
+            j += 1
+        self._lp_model.linear_constraints.set_coefficients(
+            list(zip(['match_dep_speed' for n in range(self.k)], var_name, speed_coeff)))
 
-            self._lp_model.linear_constraints.set_coefficients(zip(
-                ['lb_acc_' + str(j) for n in range(self.K)], var_name, acc_coeff))
+        return self._lp_model
 
-        self._lp_model.write("lead_CAV.lp")
+    def solve(self, veh, model, arrival_time):
+        trajectory = veh.trajectory
 
-        self._lp_model.solve()
-        pass
+        model.write("model.lp")
 
-        # -------------------------------------------------------
-        # FOLLOWER CONNECTED AND AUTOMATED TRAJECTORY OPTIMIZER
-        # -------------------------------------------------------
+        model.solve()
+
+        try:
+            assert 1 == model.solution.get_status()
+        except:
+            print('LP solution is not optimal. Check the inputs.')
+
+        beta = np.flip(np.array(model.solution.get_values(["beta_" + str(n) for n in range(self.k)])), 0)
+        f = np.poly1d(beta)
+        f_prime = np.polyder(f)
+
+        det_time = trajectory[0, 0]
+
+        t, d, s = self.compute_trj_points(f, f_prime, arrival_time - det_time)
+        t += det_time
+
+        last_trj_point_indx = veh.last_trj_point_indx
+
+        self.set_trajectory(trajectory, last_trj_point_indx, t, d, s)
+
+        return f
+
+    def compute_trj_points(self, f, f_prime, arrival_time_relative):
+        t = self.vectorize_time_interval(0, arrival_time_relative)
+        d = np.polyval(f, t)
+        s = np.polyval(-f_prime, t)
+
+        # df = pd.DataFrame({'time': t, 'distance': d, 'speed': s})
+        # filepath = 'my_excel_file.xlsx'
+        # df.to_excel(filepath, index=False)
+        #
+        # # instantiate the visualizer
+        # myvis = VisualizeSpaceTime(3)
+        # myvis.multi_trj_matplotlib(t, d, lane=0)
+
+        return t, d, s
+
+
+# -------------------------------------------------------
+# FOLLOWER CONNECTED AND AUTOMATED TRAJECTORY OPTIMIZER
+# -------------------------------------------------------
+
 
 class FollowerConnected(LeadConnected):
-    def __init__(self, max_speed, min_headway):
-        super().__init__(max_speed, min_headway)
+    def __init__(self, max_speed, min_headway, k, m):
+        super().__init__(max_speed, min_headway, k, m)
 
-        constraint = [["beta_" + str(n) for n in range(self.K)], [1 for n in range(self.K)]]
+        constraint = [["beta_" + str(n) for n in range(self.k)], [1 for n in range(self.k)]]
         self._lp_model.linear_constraints.add(
-            lin_expr=[constraint for j in range(1, self.M)],
-            senses=['G' for j in range(1, self.M)],
-            rhs=[min_headway for j in range(1, self.M)],
-            names=['min_headway_' + str(j) for j in range(1, self.M)])
+            lin_expr=[constraint for j in range(self.m)],
+            senses=['G' for j in range(self.m)],
+            rhs=[min_headway for j in range(self.m)],
+            names=['min_headway_' + str(j) for j in range(self.m)])
 
-        self._lp_model.write("follower_CAV.lp")
+        self._lp_model.write("model.lp")
 
-    def solve(self, follower_trajectory, follower_last_trj_point_indx,
-              lead_trajectory, lead_last_trj_point_indx,
-              green_start_time, yellow_end_time):
+    def set_model(self, trajectory, last_trj_point_indx,
+                  arrival_time, arrival_dist,
+                  amin, amax,
+                  green_start_time, yellow_end_time):
+        super().set_model(trajectory, last_trj_point_indx,
+                          arrival_time, arrival_dist,
+                          amin, amax,
+                          green_start_time, yellow_end_time)
+        # todo fix this
+        for j in range(self.m):
+            var_name = ["beta_" + str(n) for n in range(self.k)]
+            speed_coeff = [0] + [n * (j / (self.m + 1)) ** (n - 1) / arrival_time for n in range(1, self.k)]
+
+            self._lp_model.linear_constraints.set_coefficients(zip(
+                ['min_headway_' + str(j) for n in range(self.k)], var_name, speed_coeff))
         pass
