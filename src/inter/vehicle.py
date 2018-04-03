@@ -40,10 +40,9 @@ class Vehicle:
         self.desired_speed = des_speed
         self.trajectory = np.zeros((3, max_num_trajectory_points), dtype=np.float)  # the shape is important
         self.first_trj_point_indx = 0
-        self.last_trj_point_indx = 0
         self.trajectory[:, 0] = [det_time, dist, speed, ]
-        self.csv_indx = indx  # is used to find vehicle in original csv file
         self.last_trj_point_indx = -1  # -1 means this is not sent to traj planner ever
+        self.csv_indx = indx  # is used to find vehicle in original csv file
 
         if det_type == 1:  # only CAVs trajectories are in the form of polynomials
             self._poly_coeffs = np.zeros(k)
@@ -54,10 +53,22 @@ class Vehicle:
         '''
         self.earliest_arrival = t_earliest  # this is the absolute earliest time
 
+    def get_earliest_arrival(self):
+        return self.earliest_arrival
+
     def set_poly_coeffs(self, beta):
         self._poly_coeffs = beta
 
-    def save_trj_to_excel(self,inter_name):
+    def get_poly_coeffs(self):
+        return self._poly_coeffs
+
+    def get_last_trj_point_indx(self):
+        return self.last_trj_point_indx
+
+    def set_last_trj_point_indx(self, indx):
+        self.last_trj_point_indx = indx
+
+    def save_trj_to_excel(self, inter_name):
         t, d, s = self.trajectory[:, 0: self.last_trj_point_indx]
         df = pd.DataFrame({'time': t, 'distance': d, 'speed': s})
         df.to_excel('log/' + inter_name + '_trajectory_' + str(self.ID) + '.xlsx', index=False)

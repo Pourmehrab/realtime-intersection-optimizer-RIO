@@ -7,6 +7,7 @@
 
 
 class Lanes:
+
     def __init__(self, num_lanes):
         '''
         Data Structure for keeping vehicles in order in the lanes

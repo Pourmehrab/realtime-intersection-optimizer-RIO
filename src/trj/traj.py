@@ -39,13 +39,13 @@ class Trajectory:
 
         return trj_time_stamps
 
-    def set_trajectory(self, trajectory, last_trj_point_indx, t, d, s):
+    def set_trajectory(self, veh, t, d, s):
         '''
         Sets trajectory of the vehicle. They're computed elsewhere. This is just to set them.
         '''
         n = len(t)
-        trajectory[:, 0:n] = [t, d, s]
-        last_trj_point_indx = n - 1
+        veh.trajectory[:, 0:n] = [t, d, s]
+        veh.set_last_trj_point_indx(n - 1)
 
 
 # -------------------------------------------------------
@@ -280,18 +280,15 @@ class LeadConnected(Trajectory):
         beta = np.flip(np.array(model.solution.get_values(["beta_" + str(n) for n in range(self.k)])), 0)
         f = np.poly1d(beta)
         f_prime = np.polyder(f)
+        # set the polynomial
+        veh.set_poly_coeffs(f)
 
         det_time = trajectory[0, 0]
 
         t, d, s = self.compute_trj_points(f, f_prime, arrival_time - det_time)
         t += det_time
 
-        last_trj_point_indx = veh.last_trj_point_indx
-
-        self.set_trajectory(trajectory, last_trj_point_indx, t, d, s)
-
-        # set the polynomial
-        veh.set_poly_coeffs(f)
+        self.set_trajectory(veh, t, d, s)
 
     def compute_trj_points(self, f, f_prime, arrival_time_relative):
         t = self.vectorize_time_interval(0, arrival_time_relative)
@@ -307,6 +304,9 @@ class LeadConnected(Trajectory):
 
 
 class FollowerConnected(LeadConnected):
+    HEASWAY_CONTROL_START = 2  # in seconds how frequent need to check for speed, acc/dec rate, and headway
+    SAFE_MIN_GAP = 4.8  # minimum safe deistance to keep from lead vehicles todo make it dependent to speed
+
     def __init__(self, max_speed, min_headway, k, m):
         super().__init__(max_speed, min_headway, k, m)
 
@@ -317,21 +317,36 @@ class FollowerConnected(LeadConnected):
             rhs=[min_headway for j in range(self.m)],
             names=['min_headway_' + str(j) for j in range(self.m)])
 
-        self._lp_model.write("model.lp")
+        # self._lp_model.write("model.lp")
 
-    def set_model(self, trajectory, last_trj_point_indx,
-                  arrival_time, arrival_dist,
-                  amin, amax,
-                  green_start_time, yellow_end_time):
-        super().set_model(trajectory, last_trj_point_indx,
-                          arrival_time, arrival_dist,
-                          amin, amax,
-                          green_start_time, yellow_end_time)
-        # todo fix this
-        for j in range(self.m):
+    def set_model(self, veh, arrival_time, arrival_dist, dep_speed,
+                  green_start_time, yellow_end_time,
+                  lead_poly, lead_det_time, lead_arrival_time):
+        self._lp_model = super().set_model(veh, arrival_time, arrival_dist, dep_speed,
+                                           green_start_time, yellow_end_time)
+
+        trajectory = veh.trajectory
+
+        det_time, det_dist, det_speed = trajectory[:, 0]
+
+        start_relative_ctrl_time, end_relative_ctrl_time = self.HEASWAY_CONTROL_START, lead_arrival_time - det_time
+        #  end_relative_ctrl_time is the time lead vehicle leaves relative to the time the follower vehicle was detected
+        if end_relative_ctrl_time > start_relative_ctrl_time:
+            # trajectories dont overlap over time. No need for min headway constraints
+            control_points = np.linspace(start_relative_ctrl_time, end_relative_ctrl_time,
+                                         self.m, endpoint=True)
+            det_time_diff = det_time - lead_det_time
+            min_dist_vec = np.array([np.polyval(lead_poly, control_points[j] + det_time_diff) for j in range(self.m)]) \
+                           + self.SAFE_MIN_GAP
+            self._lp_model.linear_constraints.set_rhs(zip(['min_headway_' + str(j) for j in range(self.m)],
+                                                          min_dist_vec))
+
             var_name = ["beta_" + str(n) for n in range(self.k)]
-            speed_coeff = [0] + [n * (j / (self.m + 1)) ** (n - 1) / arrival_time for n in range(1, self.k)]
+            j = 0
+            for time in control_points:
+                dist_coeff = np.array([time ** n for n in range(self.k)], dtype=float)
+                self._lp_model.linear_constraints.set_coefficients(zip(
+                    ['min_headway_' + str(j) for n in range(self.k)], var_name, dist_coeff))
+                j += 1
 
-            self._lp_model.linear_constraints.set_coefficients(zip(
-                ['min_headway_' + str(j) for n in range(self.k)], var_name, speed_coeff))
-        pass
+        return self._lp_model

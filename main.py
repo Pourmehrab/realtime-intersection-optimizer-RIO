@@ -22,11 +22,11 @@ from src.inter.inter import Intersection
 from src.inter.lane import Lanes
 # Signal Optimizers
 from src.inter.signal import GA_SPaT
-# Trajectory Optimizers
-from src.trj.traj import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
+from src.optional.TikZ.tikzpans import TikZpanels, TikzDirectedGraph
 # Visualization
 from src.optional.vistrj import VisualizeSpaceTime
-from src.optional.TikZ.tikzpans import TikZpanels, TikzDirectedGraph
+# Trajectory Optimizers
+from src.trj.traj import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
 
 
 def mcf_signal_optimizer(intersection, num_lanes, ppi, max_speed, signal, lanes, sim_prms):
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     lanes = Lanes(num_lanes)
 
     # instantiate the visualizer
-    myvis = VisualizeSpaceTime(num_lanes)
+    myvis = VisualizeSpaceTime(num_lanes, det_range=300)
 
     # load entire traffic generated in csv file
     traffic = Traffic(inter_name)
@@ -112,7 +112,7 @@ if __name__ == "__main__":
         pass  # todo develop this
 
     # get the time when first vehicle shows up
-    t = traffic.get_first_arrival()
+    t = traffic.get_first_arrival() + 10  # TODO FIX THIS AFTER TESTING
 
     # set the start time to it
     simulator = Simulator(t)
@@ -138,8 +138,9 @@ if __name__ == "__main__":
         # DO TRAJECTORY OPTIMIZATION
         for lane in range(num_lanes):
             if bool(lanes.vehlist[lane]):  # not an empty lane
-                veh = lanes.vehlist[lane][0]  # this is the first vehicle
-                arrival_time = 55  # todo comes from GA
+                veh = lanes.vehlist[lane][0]
+                veh.set_earliest_arrival(55)  # todo comes from GA
+                arrival_time = veh.get_earliest_arrival()
                 arrival_dist = 0  # todo comes from GA
                 dep_speed = 15  # todo comes from GA
                 green_start_time, yellow_end_time = 30, 40  # todo comes from GA
@@ -149,8 +150,30 @@ if __name__ == "__main__":
                 lead_connected_trj_optimizer.solve(veh, model, arrival_time)
 
                 veh.save_trj_to_excel(inter_name)
+                myvis.add_multi_trj_matplotlib(veh, lane)
 
-                myvis.add_multi_trj_matplotlib(veh, lane=0)
+                for veh_indx in range(1, len(lanes.vehlist[lane])):
+                    veh = lanes.vehlist[lane][veh_indx]
+                    veh.set_earliest_arrival(58)  # todo comes from GA
+                    arrival_time = veh.get_earliest_arrival()
+                    arrival_dist = 0  # todo comes from GA
+                    dep_speed = 15  # todo comes from GA
+                    green_start_time, yellow_end_time = 30, 40  # todo comes from GA
+                    # send to optimizer
+                    lead_veh = lanes.vehlist[lane][veh_indx - 1]
+                    lead_poly = lead_veh.get_poly_coeffs()
+                    lead_arrival_time = lead_veh.get_earliest_arrival()
+                    model = follower_connected_trj_optimizer.set_model(veh, arrival_time, arrival_dist, dep_speed,
+                                                                       green_start_time, yellow_end_time,
+                                                                       lead_poly, lead_veh.init_time, lead_arrival_time)
+
+                    follower_connected_trj_optimizer.solve(veh, model, arrival_time)
+
+                    # veh.save_trj_to_excel(inter_name)
+
+                    myvis.add_multi_trj_matplotlib(veh, lane)
+        # plot trjs todo move this to its place after scenario ends
+        myvis.export_matplot(traffic.active_sc)
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_in_last_sc_arrived():
