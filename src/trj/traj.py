@@ -290,20 +290,13 @@ class LeadConnected(Trajectory):
 
         self.set_trajectory(trajectory, last_trj_point_indx, t, d, s)
 
-        return f
+        # set the polynomial
+        veh.set_poly_coeffs(f)
 
     def compute_trj_points(self, f, f_prime, arrival_time_relative):
         t = self.vectorize_time_interval(0, arrival_time_relative)
         d = np.polyval(f, t)
         s = np.polyval(-f_prime, t)
-
-        # df = pd.DataFrame({'time': t, 'distance': d, 'speed': s})
-        # filepath = 'my_excel_file.xlsx'
-        # df.to_excel(filepath, index=False)
-        #
-        # # instantiate the visualizer
-        # myvis = VisualizeSpaceTime(3)
-        # myvis.multi_trj_matplotlib(t, d, lane=0)
 
         return t, d, s
 

@@ -22,8 +22,10 @@ class Intersection:
         conf_dict = get_conflict_dict(self.name)
         # number of lanes
         self._num_lanes = len(conf_dict)
+
     def get_poly_params(self):
         return self._K, self._M
+
     def get_num_lanes(self):
         return self._num_lanes
 

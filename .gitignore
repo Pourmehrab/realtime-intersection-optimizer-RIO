@@ -108,6 +108,7 @@ ENV/
 *.lp
 *.pdf
 *.xlsx
+note.txt
 
 log/
 src/optional/

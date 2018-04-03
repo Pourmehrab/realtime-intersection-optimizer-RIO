@@ -92,7 +92,7 @@ class Traffic:
 
             # read the arrived vehicle's information
             lane = self.all_vehicles['lane'][indx] - 1  # csv file has lanes coded in one-based
-            det_id = 'xyz'  # todo this changes in real-time mode
+            det_id = 'XYZ' + str(indx)  # todo this changes in real-time mode
             det_type = self.all_vehicles['type'][indx]  # 0: CNV, 1: CAV
             det_time = float(self.all_vehicles['arrival time'][indx])
             speed = float(self.all_vehicles['curSpd'][indx])

@@ -22,10 +22,11 @@ from src.inter.inter import Intersection
 from src.inter.lane import Lanes
 # Signal Optimizers
 from src.inter.signal import GA_SPaT
-# Visualization
-from src.optional.TikZ.tikzpans import TikZpanels, TikzDirectedGraph
 # Trajectory Optimizers
 from src.trj.traj import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
+# Visualization
+from src.optional.vistrj import VisualizeSpaceTime
+from src.optional.TikZ.tikzpans import TikZpanels, TikzDirectedGraph
 
 
 def mcf_signal_optimizer(intersection, num_lanes, ppi, max_speed, signal, lanes, sim_prms):
@@ -89,6 +90,9 @@ if __name__ == "__main__":
     # lanes object keeps vehicles in it
     lanes = Lanes(num_lanes)
 
+    # instantiate the visualizer
+    myvis = VisualizeSpaceTime(num_lanes)
+
     # load entire traffic generated in csv file
     traffic = Traffic(inter_name)
 
@@ -142,8 +146,11 @@ if __name__ == "__main__":
                 # send to optimizer
                 model = lead_connected_trj_optimizer.set_model(veh, arrival_time, arrival_dist, dep_speed,
                                                                green_start_time, yellow_end_time)
-                beta = lead_connected_trj_optimizer.solve(veh, model, arrival_time)
-                veh.set_poly_coeffs(beta)  # set the polynomial
+                lead_connected_trj_optimizer.solve(veh, model, arrival_time)
+
+                veh.save_trj_to_excel(inter_name)
+
+                myvis.add_multi_trj_matplotlib(veh, lane=0)
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_in_last_sc_arrived():

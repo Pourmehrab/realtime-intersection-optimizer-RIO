@@ -6,6 +6,7 @@
 ####################################
 
 import numpy as np
+import pandas as pd
 
 
 class Vehicle:
@@ -55,3 +56,8 @@ class Vehicle:
 
     def set_poly_coeffs(self, beta):
         self._poly_coeffs = beta
+
+    def save_trj_to_excel(self,inter_name):
+        t, d, s = self.trajectory[:, 0: self.last_trj_point_indx]
+        df = pd.DataFrame({'time': t, 'distance': d, 'speed': s})
+        df.to_excel('log/' + inter_name + '_trajectory_' + str(self.ID) + '.xlsx', index=False)
