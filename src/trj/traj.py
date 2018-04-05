@@ -2,7 +2,7 @@
 # File name: traj.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Apr/01/2018       #
+# Last Modified: Apr/03/2018       #
 ####################################
 
 import numpy as np
@@ -56,12 +56,12 @@ class LeadConventional(Trajectory):
     def __init__(self, max_speed, min_headway):
         super().__init__(max_speed, min_headway)
 
-    def solve(self, trajectory, last_trj_point_indx, green_start_time, yellow_end_time):
+    def solve(self, veh, green_start_time, yellow_end_time):
         '''
         Constructs the trajectory of the lead conventional vehicle assuming they maintain their speed
         '''
-
-        det_time, det_dist, det_speed = trajectory[0]
+        trajectory = veh.trajectory
+        det_time, det_dist, det_speed = trajectory[:, 0]
 
         arrival_time = det_time + det_dist / det_speed
 
@@ -79,7 +79,7 @@ class LeadConventional(Trajectory):
         d = np.array([det_dist - det_speed *
                       (t[i] - det_time) for i in range(len(t))])
 
-        self.set_trajectory(trajectory, last_trj_point_indx, t, d, s)
+        self.set_trajectory(veh, t, d, s)
 
 
 # -------------------------------------------------------
@@ -96,10 +96,6 @@ class FollowerConventional(Trajectory):
               green_start_time, yellow_end_time,
               follower_desired_speed, follower_max_acc, follower_max_dec, lead_max_dec,
               lead_length):
-        '''
-        Constructs the trajectory of the lead conventional vehicle assuming they maintain their speed
-        '''
-
         '''
         Gipps car following model
 

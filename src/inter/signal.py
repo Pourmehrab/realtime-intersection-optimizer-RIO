@@ -2,7 +2,7 @@
 # File name: signal.py             #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Mar/31/2018       #
+# Last Modified: Apr/05/2018       #
 ####################################
 
 import numpy as np
@@ -40,6 +40,8 @@ class Signal:
         self.SPaT_sequence, self.SPaT_green_dur, self.SPaT_start, self.SPaT_end = [set(allowable_phases).pop()], [0], \
                                                                                   [0], [self._y + self._ar]
 
+        self._critical_volumes = np.zeros(len(allowable_phases), dtype=float)
+
     def _set_lane_lane_incidence(self, num_lanes):
         '''
             This converts a dictionary of form:
@@ -64,12 +66,12 @@ class Signal:
         if phase_lane_incidence_one_based is None:
             phase_lane_incidence_one_based = phenum(num_lanes, self._lane_lane_incidence, self.name)
 
-        self._pli = {p: set([]) for p in range(len(phase_lane_incidence_one_based))}
+        self._pli = {p: [] for p in range(len(phase_lane_incidence_one_based))}
 
         # the whole following loop makes lanes and phases zero-based
         for l, conf in phase_lane_incidence_one_based.items():
             for j in conf:
-                self._pli[l - 1].add(j - 1)  # these are lanes that belong to this phase
+                self._pli[l - 1].append(j - 1)  # these are lanes that belong to this phase
 
     def lane_in_phase(self, lane, phase_indx):
         if lane in self._pli[phase_indx]:
@@ -105,12 +107,12 @@ class Signal:
             self.SPaT_end += [self.SPaT_start[-1] + actual_green + self._y + self._ar]
             print('*** Phase {:d} Appended (ends @ {:2.2f} sec)'.format(phase, self.SPaT_end[-1]))
 
-    # def solve(self):
-    #     '''
-    #     This is the main method to make SPaT decision
-    #     It is extended by different methodologies like GA or MCF
-    #     '''
-    #     pass
+    def set_critical_volumes(self, volumes):
+        '''
+        not used in GA since the phasing configuration is unknown prior to cycle length formula
+        that is derived from time budget concept
+        '''
+        self._critical_volumes = np.array([max(volumes[self._pli[phase]]) for phase in self._allowable_phases])
 
     def flush_upcoming_SPaT(self):
         if len(self.SPaT_sequence) > 1:
@@ -167,20 +169,25 @@ class GA_SPaT(Signal):
 
     def __init__(self, inter_name, allowable_phases, num_lanes):
         super().__init__(inter_name, allowable_phases, num_lanes)
+        # this dictionary hashes the bad sequences to avoid reevaluating them
+        self._bad_sequences = set([])
 
-    def solve(self, lanes):
+    def solve(self, lanes, critical_volume_ratio):
         '''
         This runs GA
         todo define vars
         '''
-        best_SPaT = {'seq': [], 'timing': [], 'throughput': -9999, 'meanTravelTime': 9999}
+        best_SPaT = {'seq': tuple(), 'timing': tuple(), 'throughput': -9999, 'meanTravelTime': 9999}
+
+        individuals_order = np.array(
+            [[j for j in range(self.POPULATION_SIZE)], [0.0 for j in range(self.POPULATION_SIZE)]])
 
         # correct max phase length in case goes above the range
         max_phase_length = min(len(self._allowable_phases), self.MAX_PHASE_LENGTH)
 
         for phase_length in range(1, max_phase_length):
 
-            cycle_length = self.get_optimal_cycle_length()
+            cycle_length = self.get_optimal_cycle_length(critical_volume_ratio, phase_length)
 
             # population keeps individuals in each row, and:
             #   - the sequence in the first columns up to the phase size (first block)
@@ -188,28 +195,26 @@ class GA_SPaT(Signal):
             #   - the metrics in the third block of columns up to the number of metrics
 
             max_col_indx = 2 * phase_length + 2
-            # declare data type
-            # dtype = [('seq_' + str(i), int) if i < phase_length else ('deci_' + str(i), float)
-            #          for i in range(max_col_indx)]
 
             half_max_indx = int(phase_length / 2)  # for crossover
 
-            population = np.zeros((self.POPULATION_SIZE, max_col_indx), dtype=float)
-
+            population = {str(j): {'seq': tuple(), 'timing': tuple(), 'throughput': 0, 'meanTravelTime': 0}
+                          for j in range(self.POPULATION_SIZE)}
+            # POPULATE THE FIRST GENERATION
             for individual in range(self.POPULATION_SIZE):
-                phase_seq = self.mutate_seq(phase_length)
-                time_split = self.mutate_timing(cycle_length, phase_length)
                 # set the individuals
-                population[individual, :phase_length] = phase_seq
-                population[individual, phase_length:-2] = time_split  # leave out last two columns for the metrics
+                population[str(individual)]['seq'] = self.mutate_seq(phase_length)
+                population[str(individual)]['timing'] = self.mutate_timing(cycle_length, phase_length)
 
                 # evaluate the fitness function
-                population[individual, -2] = np.random.rand()  # todo connect the traj optimizer
+                population[str(individual)]['throughput'] = np.random.rand()  # todo connect the traj optimizer
+                individuals_order[individual, 2] = population[str(individual)]['throughput']
 
-            # sort in increasing order of the throughput (column -2)
-            population.sort(axis=-2)
+            # sort in increasing order of the throughput (column -1: it has two columns [index, fitness])
+            individuals_order.sort(axis=-1)
 
-            for i in range(self.MAX_ITERATION_PER_PHASE):  # does GA operations in-place
+            # does GA operations in-place
+            for i in range(self.MAX_ITERATION_PER_PHASE):
                 # crossover
                 if phase_length > 1:  # need at least two phases for crossover
                     for j in range(self.CROSSOVER_SIZE):
@@ -220,6 +225,9 @@ class GA_SPaT(Signal):
                 # elite selection
                 # in the next round, the top ones will automatically be removed when crossover
                 population.sort(axis=-2)
+                # add bad sequences to avoid them in the next iteration
+                for j in range(self.CROSSOVER_SIZE):
+                    self.bad_sequence.add(population[j][0:phase_length])
 
             if best_SPaT['throughput'] < population[-1, -2]:  # this phase length has the fittest so far
                 best_SPaT['throughput'] = np.copy(population[-1, -2])
@@ -230,20 +238,31 @@ class GA_SPaT(Signal):
         for indx, phase in enumerate(best_SPaT['seq']):
             self.enqueue(int(phase), best_SPaT['timing'][indx] - self._y - self._ar)
 
-    def cross_over(self, left_parent, right_parent, phase_length, half_max_indx):
-        child = np.copy(right_parent)
+    def get_optimal_cycle_length(self, critical_volume_ratio, phase_length):
+        '''
+        hardcoded max/min cycle lengths here
+        refer to HCM 2010 for values
+        '''
+        cycle_length = (phase_length * self._ar) / (1 - critical_volume_ratio)
+        if cycle_length < 60:
+            return 60
+        elif cycle_length > 150:
+            return 150
+        else:
+            return cycle_length
 
-        child[0:half_max_indx] = np.copy(left_parent[0:half_max_indx])
-
-        child[phase_length:-2] = (left_parent[phase_length:-2] + right_parent[phase_length:-2]) / 2
-
-        # evaluate the fitness function
-        child[-2] = np.random.rand()  # todo connect the traj optimizer
-
-        return child
+    def bad_sequence(self, seq):
+        # true if a sequence was found bad previously
+        if seq in self._bad_sequences:
+            return True
+        else:
+            return False
 
     def mutate_seq(self, phase_length):
-        return np.random.choice(self._allowable_phases, phase_length, replace=False)
+        seq = tuple(np.random.choice(self._allowable_phases, phase_length, replace=False))
+        while self.bad_sequence(seq):
+            seq = tuple(np.random.choice(self._allowable_phases, phase_length, replace=False))
+        return seq
         # todo: if two same phases follow each other, resample carefully with replacement
 
     def mutate_timing(self, cycle_length, phase_length):
@@ -271,11 +290,19 @@ class GA_SPaT(Signal):
 
             time_split = np.array([self._ts_min + rand_vec[i] * diff for i in range(phase_length)],
                                   dtype=float)
-            return time_split
+            return tuple(time_split)
 
-    def get_optimal_cycle_length(self):
-        # todo add computator
-        return 60
+    def cross_over(self, left_parent, right_parent, phase_length, half_max_indx):
+        child = np.copy(right_parent)
+
+        child[0:half_max_indx] = np.copy(left_parent[0:half_max_indx])
+
+        child[phase_length:-2] = (left_parent[phase_length:-2] + right_parent[phase_length:-2]) / 2
+
+        # evaluate the fitness function
+        child[-2] = np.random.rand()  # todo connect the traj optimizer
+
+        return child
 
 
 # -------------------------------------------------------

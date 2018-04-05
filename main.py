@@ -4,7 +4,7 @@
 # File name: main.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Apr/01/2018       #
+# Last Modified: Apr/05/2018       #
 ####################################
 
 '''
@@ -86,15 +86,16 @@ if __name__ == "__main__":
     num_lanes = intersection.get_num_lanes()
     max_speed = intersection.get_max_speed()  # in m/s
     min_headway = intersection.get_min_headway()  # in seconds
+    det_range = intersection.get_det_range()  # in meters
     k, m = intersection.get_poly_params()
     # lanes object keeps vehicles in it
     lanes = Lanes(num_lanes)
 
     # instantiate the visualizer
-    myvis = VisualizeSpaceTime(num_lanes, det_range=300)
+    myvis = VisualizeSpaceTime(num_lanes, det_range)
 
     # load entire traffic generated in csv file
-    traffic = Traffic(inter_name)
+    traffic = Traffic(inter_name, num_lanes)
 
     # initialize trajectory planners
     lead_conventional_trj_estimator = LeadConventional(max_speed, min_headway)
@@ -109,7 +110,7 @@ if __name__ == "__main__":
         signal = GA_SPaT(intersection.name, (17, 9, 8, 15,), num_lanes)  # todo allow more phases
 
     elif method == 'MCF':
-        pass  # todo develop this
+        signal = 0  # todo develop MCF method
 
     # get the time when first vehicle shows up
     t = traffic.get_first_arrival() + 10  # TODO FIX THIS AFTER TESTING
@@ -130,24 +131,34 @@ if __name__ == "__main__":
 
         # add/update vehicles
         traffic.update_on_vehicles(lanes, t, max_speed, min_headway, k)
+        # update space mean speed
+        volumes = traffic.get_volumes(lanes, num_lanes, det_range)
+        critical_volume_ratio = 3600 * volumes.max() / min_headway
 
         # DO SIGNAL OPTIMIZATION
-        signal.solve(lanes)
+        signal.set_critical_volumes(volumes)
+        signal.solve(lanes, critical_volume_ratio)
         # now we have sufficient SPaT to serve all
 
         # DO TRAJECTORY OPTIMIZATION
         for lane in range(num_lanes):
             if bool(lanes.vehlist[lane]):  # not an empty lane
                 veh = lanes.vehlist[lane][0]
+                veh_type = veh.get_vehicle_type()
+
                 veh.set_earliest_arrival(55)  # todo comes from GA
                 arrival_time = veh.get_earliest_arrival()
                 arrival_dist = 0  # todo comes from GA
                 dep_speed = 15  # todo comes from GA
                 green_start_time, yellow_end_time = 30, 40  # todo comes from GA
+
                 # send to optimizer
-                model = lead_connected_trj_optimizer.set_model(veh, arrival_time, arrival_dist, dep_speed,
-                                                               green_start_time, yellow_end_time)
-                lead_connected_trj_optimizer.solve(veh, model, arrival_time)
+                if veh_type == 1:
+                    model = lead_connected_trj_optimizer.set_model(veh, arrival_time, arrival_dist, dep_speed,
+                                                                   green_start_time, yellow_end_time)
+                    lead_connected_trj_optimizer.solve(veh, model, arrival_time)
+                else:
+                    lead_conventional_trj_estimator.solve(veh, green_start_time, yellow_end_time)
 
                 veh.save_trj_to_excel(inter_name)
                 myvis.add_multi_trj_matplotlib(veh, lane)
@@ -159,15 +170,24 @@ if __name__ == "__main__":
                     arrival_dist = 0  # todo comes from GA
                     dep_speed = 15  # todo comes from GA
                     green_start_time, yellow_end_time = 30, 40  # todo comes from GA
-                    # send to optimizer
-                    lead_veh = lanes.vehlist[lane][veh_indx - 1]
-                    lead_poly = lead_veh.get_poly_coeffs()
-                    lead_arrival_time = lead_veh.get_earliest_arrival()
-                    model = follower_connected_trj_optimizer.set_model(veh, arrival_time, arrival_dist, dep_speed,
-                                                                       green_start_time, yellow_end_time,
-                                                                       lead_poly, lead_veh.init_time, lead_arrival_time)
 
-                    follower_connected_trj_optimizer.solve(veh, model, arrival_time)
+                    lead_veh = lanes.vehlist[lane][veh_indx - 1]
+
+                    # send to optimizer
+                    if veh_type == 1:
+                        lead_poly = lead_veh.get_poly_coeffs()
+                        lead_arrival_time = lead_veh.get_earliest_arrival()
+                        model = follower_connected_trj_optimizer.set_model(veh, arrival_time, arrival_dist, dep_speed,
+                                                                           green_start_time, yellow_end_time,
+                                                                           lead_poly, lead_veh.init_time,
+                                                                           lead_arrival_time)
+                        follower_connected_trj_optimizer.solve(veh, model, arrival_time)
+                    else:
+                        follower_conventional_trj_estimator.solve(veh, lead_veh,
+                                                                  green_start_time, yellow_end_time,
+                                                                  follower_desired_speed, follower_max_acc,
+                                                                  follower_max_dec, lead_max_dec,
+                                                                  lead_length)
 
                     # veh.save_trj_to_excel(inter_name)
 

@@ -2,12 +2,14 @@
 # File name: get_traffic.py        #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Feb/16/2018       #
+# Last Modified: Apr/03/2018       #
 ####################################
 
 import os
 
 import pandas as pd
+from scipy import stats
+import numpy as np
 
 from src.inter.vehicle import Vehicle
 from src.trj.earliest import earliest_arrival_connected, earliest_arrival_conventional
@@ -22,7 +24,7 @@ class Traffic:
     Goal 3)
     '''
 
-    def __init__(self, inter_name):
+    def __init__(self, inter_name, num_lanes):
         # get the path to the csv file and load up the traffic
         filepath = os.path.join('data/' + inter_name + '.csv')
         if os.path.exists(filepath):
@@ -44,6 +46,9 @@ class Traffic:
         self.all_vehicles['departure time'] = 'NaN'
         # the column to store simulation time per scenario
         self.all_vehicles['elapsed time'] = 'NaN'
+
+        # initialize volumes vector
+        self.volumes = np.zeros(num_lanes, dtype=float)
 
     def set_travel_time(self, travel_time, indx):
         self.all_vehicles['departure time'][indx] = travel_time
@@ -142,6 +147,20 @@ class Traffic:
 
         # to keep track of how much of csv is processed
         self.curr_indx = indx - 1
+
+    def get_volumes(self, lanes, num_lanes, det_range):
+        '''
+        unit of volume is vehicles /second
+        Volume = Density x Space Mean Speed
+        '''
+        for lane in range(num_lanes):
+            num_of_vehs = len(lanes.vehlist[lane])
+            self.volumes[lane] = num_of_vehs / det_range * stats.hmean([lanes.vehlist[lane][veh_indx].curr_speed
+                                                                        for veh_indx in
+                                                                        range(len(lanes.vehlist[lane]))
+                                                                        ]) if num_of_vehs > 0 else 0.0
+
+        return self.volumes
 
     def update_at_stop_bar(self, lanes, t, num_lanes):
 

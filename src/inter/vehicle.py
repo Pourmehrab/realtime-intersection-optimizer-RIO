@@ -2,7 +2,7 @@
 # File name: vehicle.py            #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Mar/29/2018       #
+# Last Modified: Apr/03/2018       #
 ####################################
 
 import numpy as np
@@ -38,7 +38,7 @@ class Vehicle:
         self.max_accel_rate = amax
         self.destination = dest
         self.desired_speed = des_speed
-        self.trajectory = np.zeros((3, max_num_trajectory_points), dtype=np.float)  # the shape is important
+        self.trajectory = np.zeros((3, max_num_trajectory_points), dtype=float)  # the shape is important
         self.first_trj_point_indx = 0
         self.trajectory[:, 0] = [det_time, dist, speed, ]
         self.last_trj_point_indx = -1  # -1 means this is not sent to traj planner ever
@@ -46,6 +46,9 @@ class Vehicle:
 
         if det_type == 1:  # only CAVs trajectories are in the form of polynomials
             self._poly_coeffs = np.zeros(k)
+
+    def get_vehicle_type(self):
+        return self.veh_type
 
     def set_earliest_arrival(self, t_earliest):
         '''
