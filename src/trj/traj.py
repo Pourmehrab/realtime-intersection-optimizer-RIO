@@ -2,7 +2,7 @@
 # File name: traj.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Apr/03/2018       #
+# Last Modified: Apr/06/2018       #
 ####################################
 
 import numpy as np
@@ -69,7 +69,7 @@ class LeadConventional(Trajectory):
 
             # assume vehicle slows down
             arrival_time = green_start_time  # todo check if it makes copies
-            det_speed = det_dist / arrival_time
+            det_speed = det_dist / (arrival_time - det_time)
 
         elif arrival_time > yellow_end_time:
             print('The lead conventional vehicle will be departing after yellow ends!')
@@ -91,11 +91,8 @@ class FollowerConventional(Trajectory):
     def __init__(self, max_speed, min_headway):
         super().__init__(max_speed, min_headway)
 
-    def solve(self, follower_trajectory, follower_last_trj_point_indx,
-              lead_trajectory, lead_last_trj_point_indx,
-              green_start_time, yellow_end_time,
-              follower_desired_speed, follower_max_acc, follower_max_dec, lead_max_dec,
-              lead_length):
+    def solve(self, veh, lead_veh,
+              green_start_time, yellow_end_time):
         '''
         Gipps car following model
 
@@ -105,18 +102,26 @@ class FollowerConventional(Trajectory):
 
         :return: speed profile of follower CNV
         '''
+        follower_trajectory = veh.trajectory
+        follower_desired_speed = veh.desired_speed
+        follower_max_acc = veh.max_accel_rate
+        follower_max_dec = veh.max_decel_rate
+        lead_trajectory = lead_veh.trajectory
+        lead_max_dec = lead_veh.max_decel_rate
+        lead_length = lead_veh.length
+        lead_last_trj_point_indx = lead_veh.last_trj_point_indx
 
         # follower vehicle is set to lead for computational reason
         t, d, s = np.copy(lead_trajectory[:lead_last_trj_point_indx])
 
-        t[0], d[0], s[0] = follower_trajectory[0]
+        t[0], d[0], s[0] = follower_trajectory[:, 0]
 
         trj_indx = 0  # this goes over follower trajectory points as it builds up
 
         while trj_indx < lead_last_trj_point_indx:  # Gipps Car Following Implementation
-            lead_speed = lead_trajectory[trj_indx, 2]
+            lead_speed = lead_trajectory[2, trj_indx]
 
-            gap = d[trj_indx] - lead_trajectory[trj_indx, 1]
+            gap = d[trj_indx] - lead_trajectory[1, trj_indx]
             dt = t[trj_indx + 1] - t[trj_indx]
 
             s1 = 1 / 40 + s[trj_indx] / follower_desired_speed
@@ -134,18 +139,19 @@ class FollowerConventional(Trajectory):
 
             trj_indx += 1
 
-        # This part adds the end part that is out of Gipps CF domain
-        arrival_time = d[-1] / follower_desired_speed
+        trj_indx -= 1
+        # This part adds the end part that is out of Gipps Car Following domain
 
-        t_augment = self.vectorize_time_interval(t[-1], t[-1] + arrival_time)
-        d_augment = [d[-1] - (t_augment[i] - t[-1]) * follower_desired_speed for i in range(len(t_augment))]
+        t_augment = self.vectorize_time_interval(self.RES, d[trj_indx] / follower_desired_speed)
+        d_augment = [d[trj_indx] - t * follower_desired_speed for t in t_augment]
         s_augment = [follower_desired_speed for i in range(len(t_augment))]
 
-        np.append(t, t_augment)
-        np.append(d, d_augment)
-        np.append(s, s_augment)
+        last_index = trj_indx + len(t_augment)
+        t[trj_indx + 1:last_index + 1] = t_augment + t[trj_indx]
+        d[trj_indx + 1:last_index + 1] = d_augment
+        s[trj_indx + 1:last_index + 1] = s_augment
 
-        self.set_trajectory(follower_trajectory, follower_last_trj_point_indx, t, d, s)
+        self.set_trajectory(veh, t[:last_index], d[:last_index], s[:last_index])  # todo check the indexing stuff
 
 
 import cplex

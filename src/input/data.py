@@ -42,6 +42,7 @@ def get_conflict_dict(inter_name):
                 14: {2, 3, 12, 9, 11, 4, 10, 5},
                 15: {2, 3, 12, 4, 5, 8, 7, 11, 6},
                 16: {12, 2, 3, 8, 4, 7, 5, 11}}
+        # (17, 9, 8, 15,) covers all lanes
 
     elif inter_name == 'reserv':
         return {1: {4, 5, 6, 7, 8, 9, 10, 11, 12},
@@ -59,6 +60,9 @@ def get_conflict_dict(inter_name):
 
 
 def get_phases(inter_name):
+    '''
+    this is one based but the allowed set is zero based
+    '''
     if inter_name == '13th16th':
         return {1: {1, 10, 16, },
                 2: {6, 7, 12, },
@@ -108,7 +112,7 @@ def get_general_params(inter_name):
 
     '''
     if inter_name == '13th16th':
-        return 15, 2, 300, 10, 15
+        return 15, 2, 500, 10, 15
     elif inter_name == 'reserv':
         return 15, 2, 300, 10, 15
     else:

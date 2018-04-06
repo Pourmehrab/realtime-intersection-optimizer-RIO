@@ -4,7 +4,7 @@
 # File name: main.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Apr/05/2018       #
+# Last Modified: Apr/06/2018       #
 ####################################
 
 '''
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     if method == 'GA':
         # define what subset of phase-lane incidence matrix should be used
         # minimal set of phase indices to cover all movements (17, 9, 8, 15)
-        signal = GA_SPaT(intersection.name, (17, 9, 8, 15,), num_lanes)  # todo allow more phases
+        signal = GA_SPaT(intersection.name, (0, 1, 2, 3,), num_lanes)  # todo allow more phases
 
     elif method == 'MCF':
         signal = 0  # todo develop MCF method
@@ -146,7 +146,6 @@ if __name__ == "__main__":
                 veh = lanes.vehlist[lane][0]
                 veh_type = veh.get_vehicle_type()
 
-                veh.set_earliest_arrival(55)  # todo comes from GA
                 arrival_time = veh.get_earliest_arrival()
                 arrival_dist = 0  # todo comes from GA
                 dep_speed = 15  # todo comes from GA
@@ -165,7 +164,6 @@ if __name__ == "__main__":
 
                 for veh_indx in range(1, len(lanes.vehlist[lane])):
                     veh = lanes.vehlist[lane][veh_indx]
-                    veh.set_earliest_arrival(58)  # todo comes from GA
                     arrival_time = veh.get_earliest_arrival()
                     arrival_dist = 0  # todo comes from GA
                     dep_speed = 15  # todo comes from GA
@@ -184,15 +182,12 @@ if __name__ == "__main__":
                         follower_connected_trj_optimizer.solve(veh, model, arrival_time)
                     else:
                         follower_conventional_trj_estimator.solve(veh, lead_veh,
-                                                                  green_start_time, yellow_end_time,
-                                                                  follower_desired_speed, follower_max_acc,
-                                                                  follower_max_dec, lead_max_dec,
-                                                                  lead_length)
+                                                                  green_start_time, yellow_end_time)
 
                     # veh.save_trj_to_excel(inter_name)
 
                     myvis.add_multi_trj_matplotlib(veh, lane)
-        # plot trjs todo move this to its place after scenario ends
+        # plot trajectories todo move this to its place after scenario ends
         myvis.export_matplot(traffic.active_sc)
 
         # MOVE SIMULATION FORWARD
