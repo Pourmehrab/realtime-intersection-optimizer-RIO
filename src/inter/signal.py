@@ -326,6 +326,7 @@ class GA_SPaT(Signal):
 
                             veh.set_scheduled_arrival(arrival_time)
                             scheduled_arrivals[lane][veh_indx] = arrival_time
+                any_unserved_vehicle[lane] = False
 
         return scheduled_arrivals
 

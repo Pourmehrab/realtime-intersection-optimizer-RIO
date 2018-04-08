@@ -104,21 +104,30 @@ class FollowerConventional(Trajectory):
         '''
         follower_trajectory = veh.trajectory
         follower_desired_speed = veh.desired_speed
-        follower_max_acc = veh.max_accel_rate
-        follower_max_dec = veh.max_decel_rate
+        follower_max_acc, follower_max_dec = veh.max_accel_rate, veh.max_decel_rate
+        follower_last_trj_point_indx = veh.last_trj_point_indx
+        follower_detection_time = follower_trajectory[0, 0]
+
         lead_trajectory = lead_veh.trajectory
-        lead_max_dec = lead_veh.max_decel_rate
-        lead_length = lead_veh.length
+        lead_max_dec, lead_length = lead_veh.max_decel_rate, lead_veh.length
         lead_last_trj_point_indx = lead_veh.last_trj_point_indx
 
         # follower vehicle is set to lead for computational reason
         t, d, s = np.copy(lead_trajectory[:lead_last_trj_point_indx])
 
-        t[0], d[0], s[0] = follower_trajectory[:, 0]
+        trj_indx = 0  # this starts with followers first and goes to leads last point
+        while trj_indx <= lead_last_trj_point_indx:
+            # this avoids considering the part of lead trajectory before follower showed up
+            if follower_detection_time > lead_trajectory[trj_indx, 0]:
+                trj_indx += 1
+            else:
+                break
+        if trj_indx >= lead_last_trj_point_indx:
+        # the lead vehicle left before detection of this vehicle
+        # check vehicle update process since lead vehicle should have been removed
+        raise
 
-        trj_indx = 0  # this goes over follower trajectory points as it builds up
-
-        while trj_indx < lead_last_trj_point_indx:  # Gipps Car Following Implementation
+        while trj_indx <= lead_last_trj_point_indx:  # Gipps Car Following Implementation
             lead_speed = lead_trajectory[2, trj_indx]
 
             gap = d[trj_indx] - lead_trajectory[1, trj_indx]

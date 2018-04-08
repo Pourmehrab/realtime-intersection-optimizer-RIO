@@ -7,9 +7,9 @@
 
 import os
 
+import numpy as np
 import pandas as pd
 from scipy import stats
-import numpy as np
 
 from src.inter.vehicle import Vehicle
 from src.trj.earliest import earliest_arrival_connected, earliest_arrival_conventional
@@ -77,9 +77,9 @@ class Traffic:
         indx = self.curr_indx + 1
         self.active_sc = self.all_vehicles['sc'].iloc[indx]
 
-    def get_first_arrival(self):
+    def get_first_detection_time(self):
         filtered_indx = self.all_vehicles['sc'] == self.active_sc
-        return self.all_vehicles[filtered_indx]['arrival time'].iloc[0]
+        return np.nanmin(self.all_vehicles[filtered_indx]['arrival time'].values)
 
     def update_on_vehicles(self, lanes, t, max_speed, min_headway, k):
         '''
@@ -162,10 +162,11 @@ class Traffic:
 
         return self.volumes
 
-    def update_at_stop_bar(self, lanes, t, num_lanes):
-
+    def update_at_stop_bar(self, lanes, simulation_time, num_lanes):
+        '''
+        This looks for/removes the served vehicles
+        '''
         for lane in range(num_lanes):
-
             if bool(lanes.vehlist[lane]):  # not an empty lane
 
                 veh_indx, upper_veh_indx = 0, len(lanes.vehlist[lane])
@@ -173,8 +174,8 @@ class Traffic:
                 while veh_indx < upper_veh_indx:
 
                     trj_indx = lanes.vehlist[lane][veh_indx].last_trj_point_indx
-                    dep_time = lanes.vehlist[lane][veh_indx].trajectory[trj_indx, 0]
-                    if dep_time <= t:  # served
+                    dep_time = lanes.vehlist[lane][veh_indx].trajectory[0, trj_indx]
+                    if dep_time <= simulation_time:  # served
                         any_veh_served = True
                         self.set_travel_time(dep_time, lanes.vehlist[lane][veh_indx].csv_indx)
                         veh_indx += 1

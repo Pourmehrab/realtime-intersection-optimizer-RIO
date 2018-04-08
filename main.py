@@ -22,28 +22,10 @@ from src.inter.inter import Intersection
 from src.inter.lane import Lanes
 # Signal Optimizers
 from src.inter.signal import GA_SPaT
-from src.optional.TikZ.tikzpans import TikZpanels, TikzDirectedGraph
-# Visualization
-from src.optional.vistrj import VisualizeSpaceTime
 # Trajectory Optimizers
 from src.trj.traj import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
-
-
-def mcf_signal_optimizer(intersection, num_lanes, ppi, max_speed, signal, lanes, sim_prms):
-    '''
-    todo: UNDER DEVELOPMENT. merge this to main below
-    This function optimizes the scenario under following assumptions:
-
-    - The full set of phases is supported
-    - Uses min cost flow model to pick the duration and seq of phases
-    '''
-
-    # make min cost flow graph
-    tikzobj = TikzDirectedGraph(inter_name, num_lanes, ppi)
-    tikzobj.set_mcf_orig()
-    tikzobj.set_phase_graph()
-    # Make panels of phases
-    tikzobj = TikZpanels(inter_name, num_lanes, ppi)
+# testing
+from unit_tests import SimTest
 
 
 def check_py_ver():
@@ -61,6 +43,7 @@ def check_py_ver():
 
 
 if __name__ == "__main__":
+    test_mode = True  # need to supply unit_tests.py
 
     print('Interpreter Information ###################################################################################')
     print('Python Path: ', sys.executable)
@@ -91,9 +74,6 @@ if __name__ == "__main__":
     # lanes object keeps vehicles in it
     lanes = Lanes(num_lanes)
 
-    # instantiate the visualizer
-    myvis = VisualizeSpaceTime(num_lanes, det_range)
-
     # load entire traffic generated in csv file
     traffic = Traffic(inter_name, num_lanes)
 
@@ -113,24 +93,25 @@ if __name__ == "__main__":
         signal = 0  # todo develop MCF method later
 
     # get the time when first vehicle shows up
-    t = traffic.get_first_arrival() + 10  # TODO FIX THIS AFTER TESTING
+    first_detection_time = traffic.get_first_detection_time()
 
     # set the start time to it
-    simulator = Simulator(t)
+    simulator = Simulator(first_detection_time)
 
     # here we start doing optimization for all scenarios included in the csv file
-    t_start = time.clock()  # to measure total run time
+    t_start = time.clock()  # to measure total run time (IS NOT THE SIMULATION TIME)
     while True:  # stops when all rows of csv are processed (a break statement controls this)
-        t = simulator.get_clock()  # gets current simulation clock
-        print('################################ INQUIRY @ {:2.2f} SEC #################################'.format(t))
+        simulation_time = simulator.get_clock()  # gets current simulation clock
+        print('################################ INQUIRY @ {:2.2f} SEC #################################'.format(
+            simulation_time))
 
         # UPDATE VEHICLES
         # remove/record served vehicles and phases
-        traffic.update_at_stop_bar(lanes, t, num_lanes)
-        signal.update_STaT(t)
+        traffic.update_at_stop_bar(lanes, simulation_time, num_lanes)
+        signal.update_STaT(simulation_time)
 
         # add/update vehicles
-        traffic.update_on_vehicles(lanes, t, max_speed, min_headway, k)
+        traffic.update_on_vehicles(lanes, simulation_time, max_speed, min_headway, k)
         # update space mean speed
         volumes = traffic.get_volumes(lanes, num_lanes, det_range)
         critical_volume_ratio = 3600 * volumes.max() / min_headway
@@ -139,6 +120,9 @@ if __name__ == "__main__":
         signal.set_critical_volumes(volumes)
         signal.solve(lanes, critical_volume_ratio, num_lanes)
         # now we have sufficient SPaT to serve all
+
+        if test_mode:
+            tester = SimTest(num_lanes)
 
         # DO TRAJECTORY OPTIMIZATION
         for lane in range(num_lanes):
@@ -160,7 +144,9 @@ if __name__ == "__main__":
                     lead_conventional_trj_estimator.solve(veh, green_start_time, yellow_end_time)
 
                 veh.save_trj_to_excel(inter_name)
-                myvis.add_multi_trj_matplotlib(veh, lane, veh_type)
+                if test_mode:
+                    veh.save_trj_to_excel(inter_name)
+                    tester.add_traj_to_matplotlib(veh, lane, veh_type)
 
                 for veh_indx in range(1, len(lanes.vehlist[lane])):
                     veh = lanes.vehlist[lane][veh_indx]
@@ -184,26 +170,29 @@ if __name__ == "__main__":
                         follower_conventional_trj_estimator.solve(veh, lead_veh,
                                                                   green_start_time, yellow_end_time)
 
-                    # veh.save_trj_to_excel(inter_name)
-
-                    myvis.add_multi_trj_matplotlib(veh, lane, veh_type)
-        # plot trajectories todo move this to its place after scenario ends
-        myvis.export_matplot(traffic.active_sc)
+                    if test_mode:
+                        veh.save_trj_to_excel(inter_name)
+                        tester.add_traj_to_matplotlib(veh, lane, veh_type)
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_in_last_sc_arrived():
             if traffic.keep_scenario():
                 simulator.next_sim_step()
+                simulation_time = simulator.get_clock()
             else:
                 # simulation of a scenario ended move on to the next scenario
-                t_end = time.clock()
+                t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT'S JUST TIMING THE ALGORITHM
                 traffic.set_elapsed_sim_time(t_end - t_start)
                 # print('### Elapsed Time: {:2.2f} sec ###'.format(int(1000 * (t_end - t_start)) / 1000), end='')
 
-                traffic.reset_scenario()
+                # plot trajectories todo move this to its place after scenario ends
+                if test_mode:
+                    tester.matplotlib_show_save(traffic.active_sc, det_range, first_detection_time, simulation_time)
 
-                t = traffic.get_first_arrival()
-                simulator = Simulator(t)
+                traffic.reset_scenario()
+                first_detection_time = traffic.get_first_detection_time()
+
+                simulator = Simulator(first_detection_time)
 
                 lanes = Lanes(num_lanes)
 
@@ -216,7 +205,9 @@ if __name__ == "__main__":
                 # all vehicles in the csv file are served
                 # save the csv which has travel time column appended
                 traffic.save_csv(intersection.name)
+                if test_mode:
+                    tester.matplotlib_show_save(traffic.active_sc, det_range, first_detection_time, simulation_time)
                 break
             else:
-                # this is the last scenario but still some vehicles have not crossed
+                # this is the last scenario but still some vehicles have not been served
                 simulator.next_sim_step()
