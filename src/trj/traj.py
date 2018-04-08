@@ -2,7 +2,7 @@
 # File name: traj.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Apr/06/2018       #
+# Last Modified: Apr/07/2018       #
 ####################################
 
 import numpy as np

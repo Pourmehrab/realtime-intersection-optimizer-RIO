@@ -2,7 +2,7 @@
 # File name: signal.py             #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Apr/06/2018       #
+# Last Modified: Apr/08/2018       #
 ####################################
 
 import numpy as np
@@ -15,6 +15,7 @@ from src.optional.enum_phases import phenum
 
 class Signal:
     SAT = 1  # saturation headway (also in trj.py)
+    LAG = 1  # lag time from start of green when a vehicle can depart (also used in traj.py)
 
     def __init__(self, inter_name, allowable_phases, num_lanes):
         '''
@@ -147,12 +148,11 @@ class Signal:
 # Genetic Algorithms
 # -------------------------------------------------------
 from sortedcontainers import SortedDict
+from copy import deepcopy
 
 
 class GA_SPaT(Signal):
     '''
-    Based on the paper submitted to XXXXX (April 2018)
-
     Assumptions:
     - The sequence and duration is decided optimally by a Genetic Algorithms
     - The trajectories are computed using:
@@ -169,20 +169,27 @@ class GA_SPaT(Signal):
     MAX_ITERATION_PER_PHASE = 10
     CROSSOVER_SIZE = 10
 
+    ACCURACY_OF_BADNESS_MEASURE = 100  # this is 10**(number of decimals we want to keep)
+
     def __init__(self, inter_name, allowable_phases, num_lanes):
         super().__init__(inter_name, allowable_phases, num_lanes)
         # this dictionary hashes the bad sequences to avoid reevaluating them
         self._bad_sequences = set([])
 
-    def solve(self, lanes, critical_volume_ratio):
+    def solve(self, lanes, critical_volume_ratio, num_lanes):
         '''
         This runs GA
-        the key to the sorted dict is integer part of the travel time times 100
+        the key to the sorted dict is integer part of the travel time times 10
         todo define vars
         '''
 
-        best_SPaT = {'phase_seq': tuple(), 'time_split': tuple(), 'badness_measure': 9999}
+        self.flush_upcoming_SPaT()  # todo make sure of the effect
 
+        best_SPaT = {'phase_seq': tuple(), 'time_split': tuple(), 'badness_measure': 9999}
+        best_all_served = bool()
+
+        self._temporary_scheduled_arrivals = {lane: np.zeros(len(lanes.vehlist[lane]), dtype=float) for lane in
+                                              range(num_lanes)}
         # correct max phase length in case goes above the range
         max_phase_length = min(len(self._allowable_phases), self.MAX_PHASE_LENGTH)
 
@@ -205,27 +212,31 @@ class GA_SPaT(Signal):
                 phase_seq = self.mutate_seq(phase_length)
                 time_split = self.mutate_timing(cycle_length, phase_length)
                 # evaluate the fitness function
-                badness = int(np.random.rand() * 100)  # todo connect the traj optimizer
+                badness, throughput, any_unserved_vehicle = self.evaluate_badness(phase_seq, time_split, lanes,
+                                                                                  num_lanes)
 
                 population[badness] = {'phase_seq': phase_seq, 'time_split': time_split}
 
             # does GA operations in-place
-            if phase_length > 1:  # need at least two phases
+            if phase_length > 1:
                 for i in range(self.MAX_ITERATION_PER_PHASE):
                     for j in range(self.CROSSOVER_SIZE):
                         # ELITE SELECTION
                         # in the next round, the top ones will automatically be removed when crossover
                         sorted_list = list(population.keys())
 
-                        # CROSSOVER
-                        del population[sorted_list[-1]]  # delete the worst member and then add one
-                        parents_indx = np.random.choice(sorted_list[:-1], 2, replace=False)
-                        phase_seq, time_split = self.cross_over(population[parents_indx[0]],
-                                                                population[parents_indx[1]],
-                                                                phase_length, half_max_indx)
-                        # evaluate the fitness function
-                        badness = int(np.random.rand() * 100)  # todo connect the traj optimizer
-                        population[badness] = {'phase_seq': phase_seq, 'time_split': time_split}
+                        if len(population) > 3:
+                            # CROSSOVER
+                            del population[sorted_list[-1]]  # delete the worst member and then add one
+                            parents_indx = np.random.choice(sorted_list[:-1], 2, replace=False)
+                            phase_seq, time_split = self.cross_over(population[parents_indx[0]],
+                                                                    population[parents_indx[1]],
+                                                                    phase_length, half_max_indx)
+                            # evaluate the fitness function
+                            badness, throughput, any_unserved_vehicle = self.evaluate_badness(phase_seq, time_split,
+                                                                                              lanes,
+                                                                                              num_lanes)
+                            population[badness] = {'phase_seq': phase_seq, 'time_split': time_split}
 
             sorted_list = list(population.keys())
             best_temp_indiv = sorted_list[0]
@@ -234,8 +245,89 @@ class GA_SPaT(Signal):
                 best_SPaT['phase_seq'] = tuple(population[best_temp_indiv]['phase_seq'])
                 best_SPaT['time_split'] = tuple(population[best_temp_indiv]['time_split'])
 
+                best_scheduled_arrivals = deepcopy(self._temporary_scheduled_arrivals)
+                best_all_served = any_unserved_vehicle
+
         for indx, phase in enumerate(best_SPaT['phase_seq']):
             self.enqueue(int(phase), best_SPaT['time_split'][indx] - self._y - self._ar)
+
+        if any(any_unserved_vehicle):
+            best_scheduled_arrivals = self.complete_unserved_vehicles(lanes, num_lanes, best_scheduled_arrivals,
+                                                                      any_unserved_vehicle)
+        lanes.set_all_scheduled_arrival(best_scheduled_arrivals)
+
+    def evaluate_badness(self, phase_seq, time_split, lanes, num_lanes):
+        mean_travel_time, throughput = 0.0, 0
+
+        # since we flushed SPaT, no more/less than one phase is there
+        phase = self.SPaT_sequence[0]
+        start_green, end_yellow = self.SPaT_start[0] + self.LAG, self.SPaT_end[0] - self._ar
+
+        # keeps index of last vehicle to be served by progressing SPaT
+        first_unsrvd_indx = np.array([0 for lane in range(num_lanes)], dtype=int)
+        served_vehicle_time = np.array([0.0 for lane in range(num_lanes)], dtype=float)
+        # keeps index of last vehicle to be served by progressing SPaT
+        last_vehicle_indx = np.array([len(lanes.vehlist[lane]) - 1 for lane in range(num_lanes)], dtype=int)
+
+        any_unserved_vehicle = [bool(lanes.vehlist[lane]) for lane in range(num_lanes)]
+        phase_indx, max_phase_indx = -1, len(phase_seq) - 1
+        while any(any_unserved_vehicle):  # serve all with the current phasing
+            for lane in self._pli[phase]:
+                if any_unserved_vehicle[lane]:
+                    while True:
+                        veh_indx = first_unsrvd_indx[lane]
+                        veh = lanes.vehlist[lane][veh_indx]
+                        t_earliest = veh.get_earliest_arrival()
+                        t_scheduled = max(t_earliest, start_green, served_vehicle_time[lane] + self.SAT)
+
+                        if t_scheduled <= end_yellow:
+                            travel_time = t_scheduled - veh.init_time
+                            mean_travel_time = ((mean_travel_time * throughput) + travel_time) / (throughput + 1)
+                            throughput += 1
+
+                            served_vehicle_time[lane] = t_scheduled
+                            self._temporary_scheduled_arrivals[lane][veh_indx] = t_scheduled
+                            if first_unsrvd_indx[lane] < last_vehicle_indx[lane]:
+                                first_unsrvd_indx[lane] += 1
+                            else:
+                                any_unserved_vehicle[lane] = False
+                                break
+                        else:
+                            break
+            if phase_indx < max_phase_indx:
+                phase_indx += 1
+                phase = phase_seq[phase_indx]
+                start_green = end_yellow + self._ar
+                end_yellow = start_green + time_split[phase_indx] - self._ar
+            else:
+                break
+        return int(mean_travel_time * 100), throughput, any_unserved_vehicle
+
+    def complete_unserved_vehicles(self, lanes, num_lanes, scheduled_arrivals, any_unserved_vehicle):
+        '''
+        since we dont consider phases here, this only serves the rest of vehicles one at a time
+        '''
+        max_arrival_time = 0
+        while any(any_unserved_vehicle):  # serve all with the current phasing
+            for lane in range(num_lanes):
+                if any_unserved_vehicle[lane]:
+                    veh_indx, max_veh_indx = 0, len(lanes.vehlist[lane])
+                    veh = lanes.vehlist[lane][veh_indx]
+                    lead_arrival_time = veh.get_scheduled_arrival()
+
+                    for veh_indx in range(1, max_veh_indx):
+
+                        veh = lanes.vehlist[lane][veh_indx]
+                        arrival_time = veh.get_scheduled_arrival()
+
+                        if arrival_time < lead_arrival_time:  # if not set through GA, arrival_time is 0.0
+                            arrival_time = max(lead_arrival_time, max_arrival_time) + self.SAT
+                            max_arrival_time = max(arrival_time, max_arrival_time)
+
+                            veh.set_scheduled_arrival(arrival_time)
+                            scheduled_arrivals[lane][veh_indx] = arrival_time
+
+        return scheduled_arrivals
 
     def get_optimal_cycle_length(self, critical_volume_ratio, phase_length):
         '''
@@ -261,6 +353,7 @@ class GA_SPaT(Signal):
         Valid timing should respect the min/max green requirement unless it conflicts with the
         cycle length which in that case we should adjust the maximum green to avoid the slack
         in time
+        note each timing is between g_min+y+ar and g_max+y+ar
         '''
         if phase_length == 1:
             return np.array([cycle_length])
@@ -292,7 +385,16 @@ class GA_SPaT(Signal):
 
 
 # -------------------------------------------------------
-# min cost flow method
+# ACTUATED SIGNAL CONTROL
+# -------------------------------------------------------
+class ActuatedControl(Signal):
+
+    def __init__(self, inter_name, allowable_phases, num_lanes):
+        super().__init__(inter_name, allowable_phases, num_lanes)
+
+
+# -------------------------------------------------------
+# MIN COST FLOW MODEL
 # -------------------------------------------------------
 
 # from ortools.graph import pywrapgraph

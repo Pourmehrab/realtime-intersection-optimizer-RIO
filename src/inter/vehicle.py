@@ -2,7 +2,7 @@
 # File name: vehicle.py            #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Apr/03/2018       #
+# Last Modified: Apr/07/2018       #
 ####################################
 
 import numpy as np
@@ -10,8 +10,9 @@ import pandas as pd
 
 
 class Vehicle:
-    def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx,
-                 k, max_num_trajectory_points=300):
+    MAX_NUM_TRAJECTORY_POINTS = 300
+
+    def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx, k):
         '''
         Data Structure for an individual vehicle
 
@@ -38,7 +39,7 @@ class Vehicle:
         self.max_accel_rate = amax
         self.destination = dest
         self.desired_speed = des_speed
-        self.trajectory = np.zeros((3, max_num_trajectory_points), dtype=float)  # the shape is important
+        self.trajectory = np.zeros((3, self.MAX_NUM_TRAJECTORY_POINTS), dtype=float)  # the shape is important
         self.first_trj_point_indx = 0
         self.trajectory[:, 0] = [det_time, dist, speed, ]
         self.last_trj_point_indx = -1  # -1 means this is not sent to traj planner ever
@@ -46,6 +47,8 @@ class Vehicle:
 
         if det_type == 1:  # only CAVs trajectories are in the form of polynomials
             self._poly_coeffs = np.zeros(k)
+
+        self.earliest_arrival, self.scheduled_arrival = 0.0, 0.0  # will be set with their set methods
 
     def get_vehicle_type(self):
         return self.veh_type
@@ -58,6 +61,12 @@ class Vehicle:
 
     def get_earliest_arrival(self):
         return self.earliest_arrival
+
+    def set_scheduled_arrival(self, t_scheduled):
+        self.scheduled_arrival = t_scheduled
+
+    def get_scheduled_arrival(self):
+        return self.scheduled_arrival
 
     def set_poly_coeffs(self, beta):
         self._poly_coeffs = beta

@@ -106,11 +106,11 @@ if __name__ == "__main__":
     # decide on signal optimization scheme
     if method == 'GA':
         # define what subset of phase-lane incidence matrix should be used
-        # minimal set of phase indices to cover all movements (17, 9, 8, 15)
-        signal = GA_SPaT(intersection.name, (0, 1, 2, 3,), num_lanes)  # todo allow more phases
+        # minimal set of phase indices to cover all movements (17, 9, 8, 15) for 13th16th intersection
+        signal = GA_SPaT(inter_name, (0, 1, 2, 3,), num_lanes)  # todo allow more phases
 
     elif method == 'MCF':
-        signal = 0  # todo develop MCF method
+        signal = 0  # todo develop MCF method later
 
     # get the time when first vehicle shows up
     t = traffic.get_first_arrival() + 10  # TODO FIX THIS AFTER TESTING
@@ -137,7 +137,7 @@ if __name__ == "__main__":
 
         # DO SIGNAL OPTIMIZATION
         signal.set_critical_volumes(volumes)
-        signal.solve(lanes, critical_volume_ratio)
+        signal.solve(lanes, critical_volume_ratio, num_lanes)
         # now we have sufficient SPaT to serve all
 
         # DO TRAJECTORY OPTIMIZATION
@@ -160,7 +160,7 @@ if __name__ == "__main__":
                     lead_conventional_trj_estimator.solve(veh, green_start_time, yellow_end_time)
 
                 veh.save_trj_to_excel(inter_name)
-                myvis.add_multi_trj_matplotlib(veh, lane)
+                myvis.add_multi_trj_matplotlib(veh, lane, veh_type)
 
                 for veh_indx in range(1, len(lanes.vehlist[lane])):
                     veh = lanes.vehlist[lane][veh_indx]
@@ -186,7 +186,7 @@ if __name__ == "__main__":
 
                     # veh.save_trj_to_excel(inter_name)
 
-                    myvis.add_multi_trj_matplotlib(veh, lane)
+                    myvis.add_multi_trj_matplotlib(veh, lane, veh_type)
         # plot trajectories todo move this to its place after scenario ends
         myvis.export_matplot(traffic.active_sc)
 

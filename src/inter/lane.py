@@ -2,9 +2,8 @@
 # File name: lane.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Mar/29/2018       #
+# Last Modified: Apr/07/2018       #
 ####################################
-
 
 class Lanes:
 
@@ -16,6 +15,16 @@ class Lanes:
         '''
         # a dictionary of arrays
         self.vehlist = {l: [] for l in range(num_lanes)}
+
+    def set_all_scheduled_arrival(self, scheduled_arrivals):
+
+        num_lanes = len(self.vehlist)
+        for lane in range(num_lanes):
+            num_of_vehicles = len(self.vehlist[lane])
+
+            num_vehicles_in_lane = len(self.vehlist[lane])
+            for veh_indx in range(num_vehicles_in_lane):
+                self.vehlist[lane][veh_indx].set_scheduled_arrival(scheduled_arrivals[lane][veh_indx])
 
     def purge_served_vehs(self, lane, indx):
         '''
