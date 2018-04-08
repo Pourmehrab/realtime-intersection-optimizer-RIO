@@ -86,7 +86,6 @@ class LeadConventional(Trajectory):
 # FOLLOWER CONVENTIONAL TRAJECTORY ESTIMATOR
 # -------------------------------------------------------
 class FollowerConventional(Trajectory):
-    LARGE_SPEED = 99999  # when under sqrt goes negative we set this to rule out the speed in min()
 
     def __init__(self, max_speed, min_headway):
         super().__init__(max_speed, min_headway)
@@ -95,6 +94,7 @@ class FollowerConventional(Trajectory):
               green_start_time, yellow_end_time):
         '''
         Gipps car following model
+        It's written in-place (does not set trajectory outside of it)
 
         Refer to:
             Gipps, Peter G. "A behavioural car-following model for computer simulation."
@@ -112,55 +112,70 @@ class FollowerConventional(Trajectory):
         lead_max_dec, lead_length = lead_veh.max_decel_rate, lead_veh.length
         lead_last_trj_point_indx = lead_veh.last_trj_point_indx
 
-        # follower vehicle is set to lead for computational reason
-        t, d, s = np.copy(lead_trajectory[:lead_last_trj_point_indx])
-
-        trj_indx = 0  # this starts with followers first and goes to leads last point
-        while trj_indx <= lead_last_trj_point_indx:
+        lead_trj_indx = 0  # this starts with followers first and goes to leads last point
+        while lead_trj_indx <= lead_last_trj_point_indx:
             # this avoids considering the part of lead trajectory before follower showed up
-            if follower_detection_time > lead_trajectory[trj_indx, 0]:
-                trj_indx += 1
+            if follower_detection_time > lead_trajectory[0, lead_trj_indx]:
+                lead_trj_indx += 1
             else:
                 break
-        if trj_indx >= lead_last_trj_point_indx:
-        # the lead vehicle left before detection of this vehicle
-        # check vehicle update process since lead vehicle should have been removed
-        raise
+        if lead_trj_indx >= lead_last_trj_point_indx:
+            # the lead vehicle left before detection of this vehicle
+            # check vehicle update process since lead vehicle should have been removed
+            raise Exception('The lead vehicle sent to FollowerConventional() should have been removed.')
 
-        while trj_indx <= lead_last_trj_point_indx:  # Gipps Car Following Implementation
-            lead_speed = lead_trajectory[2, trj_indx]
+        follower_trj_indx = 0
+        while lead_trj_indx < lead_last_trj_point_indx:  # less than is used since it computes the next trajectory point
+            next_trj_indx = follower_trj_indx + 1
+            lead_speed = lead_trajectory[2, lead_trj_indx]
+            follower_speed = follower_trajectory[2, follower_trj_indx]
+            gap = follower_trajectory[1, follower_trj_indx] - lead_trajectory[1, lead_trj_indx]
+            dt = lead_trajectory[0, lead_trj_indx + 1] - lead_trajectory[0, lead_trj_indx]
 
-            gap = d[trj_indx] - lead_trajectory[1, trj_indx]
-            dt = t[trj_indx + 1] - t[trj_indx]
+            follower_trajectory[0, next_trj_indx] = lead_trajectory[0, lead_trj_indx + 1]
 
-            s1 = 1 / 40 + s[trj_indx] / follower_desired_speed
+            s1 = 1 / 40 + follower_speed / follower_desired_speed
             s2 = (follower_max_dec * (lead_max_dec * (2 * (lead_length - gap) + dt * (
-                    follower_max_dec * dt + s[trj_indx])) + lead_speed ** 2)) / lead_max_dec
+                    follower_max_dec * dt + follower_speed)) + lead_speed ** 2)) / lead_max_dec
 
-            v1 = s[trj_indx] + (5 / 2) * follower_max_acc * dt * (1 - s[trj_indx] / follower_desired_speed) * np.sqrt(
-                s1) if s1 >= 0 else self.LARGE_SPEED
-            v2 = follower_max_dec * dt + np.sqrt(s2) if s2 >= 0 else self.LARGE_SPEED
+            if s1 >= 0 and s2 >= 0:  # determines followers next speed
+                v1 = follower_speed + 2.5 * follower_max_acc * dt * (
+                        1 - follower_speed / follower_desired_speed) * np.sqrt(s1)
+                v2 = follower_max_dec * dt + np.sqrt(s2)
+                follower_trajectory[2, next_trj_indx] = min(v1, v2)
+            elif s1 >= 0:
+                v1 = follower_speed + 2.5 * follower_max_acc * dt * (
+                        1 - follower_speed / follower_desired_speed) * np.sqrt(s1)
+                follower_trajectory[2, next_trj_indx] = v1
+            elif s2 >= 0:
+                v2 = follower_max_dec * dt + np.sqrt(s2)
+                follower_trajectory[2, next_trj_indx] = v2
+            else:  # not supposed to happen
+                follower_trajectory[2, follower_trj_indx + 1] = follower_speed
 
-            s[trj_indx + 1] = min(v1, v2)
-            a = (s[trj_indx + 1] - s[trj_indx]) / dt
-            d[trj_indx + 1] = d[trj_indx] - (
-                    a * (t[trj_indx + 1] ** 2 - t[trj_indx] ** 2) / 2 + (s[trj_indx + 1] - a * t[trj_indx]) * dt)
+            a = (follower_trajectory[2, next_trj_indx] - follower_speed) / dt
+            follower_trajectory[1, next_trj_indx] = follower_trajectory[1, follower_trj_indx] - (
+                    a * (follower_trajectory[0, next_trj_indx] ** 2 - follower_trajectory[
+                0, follower_trj_indx] ** 2) / 2 + (
+                            follower_trajectory[2, follower_trj_indx] - a * follower_trajectory[
+                        0, follower_trj_indx]) * dt)
 
-            trj_indx += 1
+            follower_trj_indx += 1
+            lead_trj_indx += 1
 
-        trj_indx -= 1
         # This part adds the end part that is out of Gipps Car Following domain
+        d_follower_end = follower_trajectory[1, follower_trj_indx]
+        t_follower_end = follower_trajectory[0, follower_trj_indx]
 
-        t_augment = self.vectorize_time_interval(self.RES, d[trj_indx] / follower_desired_speed)
-        d_augment = [d[trj_indx] - t * follower_desired_speed for t in t_augment]
+        t_augment = self.vectorize_time_interval(self.RES, d_follower_end / follower_desired_speed)
+        d_augment = [d_follower_end - t * follower_desired_speed for t in t_augment]
         s_augment = [follower_desired_speed for i in range(len(t_augment))]
 
-        last_index = trj_indx + len(t_augment)
-        t[trj_indx + 1:last_index + 1] = t_augment + t[trj_indx]
-        d[trj_indx + 1:last_index + 1] = d_augment
-        s[trj_indx + 1:last_index + 1] = s_augment
-
-        self.set_trajectory(veh, t[:last_index], d[:last_index], s[:last_index])  # todo check the indexing stuff
+        last_index = follower_trj_indx + len(t_augment) + 1
+        follower_trajectory[0, follower_trj_indx + 1:last_index] = t_augment + t_follower_end
+        follower_trajectory[1, follower_trj_indx + 1:last_index] = d_augment
+        follower_trajectory[2, follower_trj_indx + 1:last_index] = s_augment
+        veh.set_last_trj_point_indx(last_index - 1)
 
 
 import cplex
