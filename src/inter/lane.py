@@ -29,10 +29,10 @@ class Lanes:
     def purge_served_vehs(self, lane, indx):
         '''
         Deletes vehicles from 0 to indx where indx is the pointer to the last served
-        note deletion includes indx as well
+        note deletion includes indx
         '''
 
-        del self.vehlist[lane][0:indx]  # todo check if removes indx or one before
+        del self.vehlist[lane][0:indx + 1]
 
     def all_served(self, num_lanes):
         '''

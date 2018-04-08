@@ -81,19 +81,27 @@ class Traffic:
         filtered_indx = self.all_vehicles['sc'] == self.active_sc
         return np.nanmin(self.all_vehicles[filtered_indx]['arrival time'].values)
 
-    def update_on_vehicles(self, lanes, t, max_speed, min_headway, k):
+    def update_on_vehicles(self, lanes, num_lanes, simulation_time, max_speed, min_headway, k):
         '''
+        Resets the first trajectory points
         Adds vehicles from the csv file
 
         :param lanes: vehicles are added to this data structure (dictionary of doubly-linked lists)
-        :param t: current simulation clock (sim_ctrl.get_clock() gives access)
+        :param simulation_time: current simulation clock (sim_ctrl.get_clock() gives access)
         :return:
         '''
+        # RESET EXISTING VEHICLES TRAJECTORY
+        for lane in range(num_lanes):
+            if bool(lanes.vehlist[lane]):  # not an empty lane
+                for veh in lanes.vehlist[lane]:
+                    veh.reset_trj_points(simulation_time)
+
+        # SEE IF ANY NEW VEHICLES HAS ARRIVED
         indx = self.curr_indx + 1
         t_earliest = 0  # keeps the earliest arrival at stop bar
         max_indx = self.all_vehicles.shape[0] - 1
         while indx <= max_indx and self.all_vehicles['sc'][indx] == self.active_sc and \
-                self.all_vehicles['arrival time'][indx] <= t:
+                self.all_vehicles['arrival time'][indx] <= simulation_time:
 
             # read the arrived vehicle's information
             lane = self.all_vehicles['lane'][indx] - 1  # csv file has lanes coded in one-based
@@ -171,16 +179,14 @@ class Traffic:
 
                 veh_indx, upper_veh_indx = 0, len(lanes.vehlist[lane])
                 any_veh_served = False
-                while veh_indx < upper_veh_indx:
-
-                    trj_indx = lanes.vehlist[lane][veh_indx].last_trj_point_indx
-                    dep_time = lanes.vehlist[lane][veh_indx].trajectory[0, trj_indx]
+                for veh_indx, veh in enumerate(lanes.vehlist[lane]):
+                    trj_indx = veh.last_trj_point_indx
+                    dep_time = veh.trajectory[0, trj_indx]
                     if dep_time <= simulation_time:  # served
                         any_veh_served = True
-                        self.set_travel_time(dep_time, lanes.vehlist[lane][veh_indx].csv_indx)
-                        veh_indx += 1
+                        self.set_travel_time(dep_time, veh.csv_indx)
                     else:
                         break
 
-                if any_veh_served:  # remove them
+                if any_veh_served:  # removes vehicles 0, 1, ..., veh_indx
                     lanes.purge_served_vehs(lane, veh_indx)

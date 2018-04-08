@@ -43,7 +43,7 @@ def check_py_ver():
 
 
 if __name__ == "__main__":
-    test_mode = True  # need to supply unit_tests.py
+    test_mode = False  # need to supply unit_tests.py
 
     print('Interpreter Information ###################################################################################')
     print('Python Path: ', sys.executable)
@@ -69,8 +69,8 @@ if __name__ == "__main__":
     num_lanes = intersection.get_num_lanes()
     max_speed = intersection.get_max_speed()  # in m/s
     min_headway = intersection.get_min_headway()  # in seconds
-    det_range = intersection.get_det_range()  # in meters
-    k, m = intersection.get_poly_params()
+    det_range = intersection.get_det_range()  # detection range in meters
+    k, m = intersection.get_poly_params()  # polynomial degree and discretization level for trajectory optimization of CAVs
     # lanes object keeps vehicles in it
     lanes = Lanes(num_lanes)
 
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         signal = GA_SPaT(inter_name, (0, 1, 2, 3,), num_lanes)  # todo allow more phases
 
     elif method == 'MCF':
-        signal = 0  # todo develop MCF method later
+        pass  # todo develop MCF method later
 
     # get the time when first vehicle shows up
     first_detection_time = traffic.get_first_detection_time()
@@ -111,7 +111,7 @@ if __name__ == "__main__":
         signal.update_STaT(simulation_time)
 
         # add/update vehicles
-        traffic.update_on_vehicles(lanes, simulation_time, max_speed, min_headway, k)
+        traffic.update_on_vehicles(lanes, num_lanes, simulation_time, max_speed, min_headway, k)
         # update space mean speed
         volumes = traffic.get_volumes(lanes, num_lanes, det_range)
         critical_volume_ratio = 3600 * volumes.max() / min_headway
@@ -130,45 +130,35 @@ if __name__ == "__main__":
                 veh = lanes.vehlist[lane][0]
                 veh_type = veh.get_vehicle_type()
 
-                arrival_time = veh.get_earliest_arrival()
-                arrival_dist = 0  # todo comes from GA
-                dep_speed = 15  # todo comes from GA
-                green_start_time, yellow_end_time = 30, 40  # todo comes from GA
+                arrival_time = veh.get_scheduled_arrival()
 
                 # send to optimizer
                 if veh_type == 1:
-                    model = lead_connected_trj_optimizer.set_model(veh, arrival_time, arrival_dist, dep_speed,
-                                                                   green_start_time, yellow_end_time)
+                    model = lead_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed)
                     lead_connected_trj_optimizer.solve(veh, model, arrival_time)
                 else:
-                    lead_conventional_trj_estimator.solve(veh, green_start_time, yellow_end_time)
+                    lead_conventional_trj_estimator.solve(veh)
 
-                veh.save_trj_to_excel(inter_name)
                 if test_mode:
                     veh.save_trj_to_excel(inter_name)
                     tester.add_traj_to_matplotlib(veh, lane, veh_type)
 
                 for veh_indx in range(1, len(lanes.vehlist[lane])):
                     veh = lanes.vehlist[lane][veh_indx]
-                    arrival_time = veh.get_earliest_arrival()
-                    arrival_dist = 0  # todo comes from GA
-                    dep_speed = 15  # todo comes from GA
-                    green_start_time, yellow_end_time = 30, 40  # todo comes from GA
+                    arrival_time = veh.get_scheduled_arrival()
 
                     lead_veh = lanes.vehlist[lane][veh_indx - 1]
 
                     # send to optimizer
                     if veh_type == 1:
                         lead_poly = lead_veh.get_poly_coeffs()
-                        lead_arrival_time = lead_veh.get_earliest_arrival()
-                        model = follower_connected_trj_optimizer.set_model(veh, arrival_time, arrival_dist, dep_speed,
-                                                                           green_start_time, yellow_end_time,
+                        lead_arrival_time = lead_veh.get_scheduled_arrival()
+                        model = follower_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed,
                                                                            lead_poly, lead_veh.init_time,
                                                                            lead_arrival_time)
                         follower_connected_trj_optimizer.solve(veh, model, arrival_time)
                     else:
-                        follower_conventional_trj_estimator.solve(veh, lead_veh,
-                                                                  green_start_time, yellow_end_time)
+                        follower_conventional_trj_estimator.solve(veh, lead_veh)
 
                     if test_mode:
                         veh.save_trj_to_excel(inter_name)
@@ -183,9 +173,9 @@ if __name__ == "__main__":
                 # simulation of a scenario ended move on to the next scenario
                 t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT'S JUST TIMING THE ALGORITHM
                 traffic.set_elapsed_sim_time(t_end - t_start)
-                # print('### Elapsed Time: {:2.2f} sec ###'.format(int(1000 * (t_end - t_start)) / 1000), end='')
+                print('### Elapsed Time: {:2.2f} sec ###'.format(int(1000 * (t_end - t_start)) / 1000), end='')
 
-                # plot trajectories todo move this to its place after scenario ends
+                # plot trajectories
                 if test_mode:
                     tester.matplotlib_show_save(traffic.active_sc, det_range, first_detection_time, simulation_time)
 

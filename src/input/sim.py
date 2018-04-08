@@ -7,7 +7,7 @@
 
 
 class Simulator:
-    STEP = 20  # simulation resolution: the time steps to move the simulation forward in seconds
+    STEP = 1  # simulation resolution: the time steps to move the simulation forward in seconds
 
     def __init__(self, t):
         self.clock = t  # simulation starting clock in seconds (it gets reset for every scenario)

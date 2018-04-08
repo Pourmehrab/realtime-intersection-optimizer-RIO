@@ -56,7 +56,7 @@ class LeadConventional(Trajectory):
     def __init__(self, max_speed, min_headway):
         super().__init__(max_speed, min_headway)
 
-    def solve(self, veh, green_start_time, yellow_end_time):
+    def solve(self, veh):
         '''
         Constructs the trajectory of the lead conventional vehicle assuming they maintain their speed
         '''
@@ -64,15 +64,6 @@ class LeadConventional(Trajectory):
         det_time, det_dist, det_speed = trajectory[:, 0]
 
         arrival_time = det_time + det_dist / det_speed
-
-        if arrival_time < green_start_time:
-
-            # assume vehicle slows down
-            arrival_time = green_start_time  # todo check if it makes copies
-            det_speed = det_dist / (arrival_time - det_time)
-
-        elif arrival_time > yellow_end_time:
-            print('The lead conventional vehicle will be departing after yellow ends!')
 
         t = self.vectorize_time_interval(det_time, arrival_time)
         s = np.array([det_speed for i in range(len(t))])
@@ -90,8 +81,7 @@ class FollowerConventional(Trajectory):
     def __init__(self, max_speed, min_headway):
         super().__init__(max_speed, min_headway)
 
-    def solve(self, veh, lead_veh,
-              green_start_time, yellow_end_time):
+    def solve(self, veh, lead_veh):
         '''
         Gipps car following model
         It's written in-place (does not set trajectory outside of it)
@@ -237,8 +227,7 @@ class LeadConnected(Trajectory):
                   ['ub_acc_' + str(j) for j in range(self.m)] +
                   ['lb_acc_' + str(j) for j in range(self.m)])
 
-    def set_model(self, veh, arrival_time, arrival_dist, dep_speed,
-                  green_start_time, yellow_end_time):
+    def set_model(self, veh, arrival_time, arrival_dist, dep_speed):
         '''
         f(t)   = sum_0^{k-1} b_n t^n
         f'(t)  = sum_1^{k-1} n b_n t^{n-1}
@@ -346,10 +335,8 @@ class FollowerConnected(LeadConnected):
         # self._lp_model.write("model.lp")
 
     def set_model(self, veh, arrival_time, arrival_dist, dep_speed,
-                  green_start_time, yellow_end_time,
                   lead_poly, lead_det_time, lead_arrival_time):
-        self._lp_model = super().set_model(veh, arrival_time, arrival_dist, dep_speed,
-                                           green_start_time, yellow_end_time)
+        self._lp_model = super().set_model(veh, arrival_time, arrival_dist, dep_speed)
 
         trajectory = veh.trajectory
 

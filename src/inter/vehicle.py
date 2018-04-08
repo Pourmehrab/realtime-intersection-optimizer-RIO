@@ -53,6 +53,32 @@ class Vehicle:
     def get_vehicle_type(self):
         return self.veh_type
 
+    def reset_trj_points(self, time_threshold):
+        '''
+        binary search to reset trajectory
+        todo replace this with updates from fusion code
+        :param time_threshold:
+        :return:
+        '''
+        time = self.trajectory[0, 0]
+        if time_threshold <= time:
+            self.set_last_trj_point_indx(0)
+        else:
+            left_trj_indx, right_trj_indx = 0, self.last_trj_point_indx
+            searching = True
+            while searching:
+                trj_indx = (left_trj_indx + right_trj_indx) // 2
+                time = self.trajectory[0, trj_indx]
+                if abs(time - time_threshold) <= 0.1 or right_trj_indx - left_trj_indx < 3:
+                    self.trajectory[:, 0] = self.trajectory[:, trj_indx]
+                    self.set_last_trj_point_indx(0)
+                    break
+                else:
+                    if time < time_threshold:
+                        left_trj_indx = trj_indx
+                    elif time > time_threshold:
+                        right_trj_indx = trj_indx
+
     def set_earliest_arrival(self, t_earliest):
         '''
         It gets the earliest arrival time at the stop bar for the last vehicle just added to this lane
