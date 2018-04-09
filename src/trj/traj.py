@@ -146,9 +146,8 @@ class FollowerConventional(Trajectory):
             a = (follower_trajectory[2, next_trj_indx] - follower_speed) / dt
             follower_trajectory[1, next_trj_indx] = follower_trajectory[1, follower_trj_indx] - (
                     a * (follower_trajectory[0, next_trj_indx] ** 2 - follower_trajectory[
-                0, follower_trj_indx] ** 2) / 2 + (
-                            follower_trajectory[2, follower_trj_indx] - a * follower_trajectory[
-                        0, follower_trj_indx]) * dt)
+                0, follower_trj_indx] ** 2) / 2 + (follower_trajectory[2, follower_trj_indx] -
+                                                   a * follower_trajectory[0, follower_trj_indx]) * dt)
 
             follower_trj_indx += 1
             lead_trj_indx += 1

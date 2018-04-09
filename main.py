@@ -42,8 +42,18 @@ def check_py_ver():
         sys.exit(-1)
 
 
+def get_max_arrival_time(lanes):
+    t_max = 0.0
+    for lane in range(num_lanes):
+        if bool(lanes.vehlist[lane]):  # not an empty lane
+            for veh in lanes.vehlist[lane]:
+                t = veh.trajectory[0, veh.last_trj_point_indx]
+                if t > t_max:
+                    t_max = t
+    return t_max
+
+
 if __name__ == "__main__":
-    test_mode = False  # need to supply unit_tests.py
 
     print('Interpreter Information ###################################################################################')
     print('Python Path: ', sys.executable)
@@ -63,6 +73,8 @@ if __name__ == "__main__":
         # optimization method
         method = sys.argv[2]
         # also look in src/inter/data.py
+
+    test_mode, test_time = False, 45  # need to supply unit_tests.py
 
     intersection = Intersection(inter_name)
     # intersection keeps lane-lane and phase-lane incidence dictionaries
@@ -139,8 +151,8 @@ if __name__ == "__main__":
                 else:
                     lead_conventional_trj_estimator.solve(veh)
 
-                if test_mode:
-                    veh.save_trj_to_excel(inter_name)
+                if test_mode and simulation_time >= test_time:
+                    # veh.save_trj_to_excel(inter_name)
                     tester.add_traj_to_matplotlib(veh, lane, veh_type)
 
                 for veh_indx in range(1, len(lanes.vehlist[lane])):
@@ -158,12 +170,16 @@ if __name__ == "__main__":
                                                                            lead_arrival_time)
                         follower_connected_trj_optimizer.solve(veh, model, arrival_time)
                     else:
-                        follower_conventional_trj_estimator.solve(veh, lead_veh)
+                        # follower_conventional_trj_estimator.solve(veh, lead_veh) # todo activate this
+                        lead_conventional_trj_estimator.solve(veh)
 
-                    if test_mode:
-                        veh.save_trj_to_excel(inter_name)
+                    if test_mode and simulation_time >= test_time:
+                        # veh.save_trj_to_excel(inter_name)
                         tester.add_traj_to_matplotlib(veh, lane, veh_type)
 
+        if test_mode and simulation_time >= test_time:
+            tester.matplotlib_show_save(traffic.active_sc, det_range, simulation_time,
+                                        get_max_arrival_time(lanes))
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_in_last_sc_arrived():
             if traffic.keep_scenario():
