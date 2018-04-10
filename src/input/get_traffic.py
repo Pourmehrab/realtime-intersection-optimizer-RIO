@@ -6,6 +6,7 @@
 ####################################
 
 import os
+import csv
 
 import numpy as np
 import pandas as pd
@@ -50,6 +51,13 @@ class Traffic:
         # initialize volumes vector
         self.volumes = np.zeros(num_lanes, dtype=float)
 
+        # open a file to store trajectories
+        filepath_trj = os.path.join('data/' + inter_name + '_trjs.csv')
+        self.full_traj_csv_file = open(filepath_trj, 'w', newline='')
+        writer = csv.writer(self.full_traj_csv_file, delimiter=',')
+        writer.writerow(['sc', 'VehID', 'lane', 'time', 'distance', 'speed'])
+        self.full_traj_csv_file.flush()
+
     def set_travel_time(self, travel_time, indx):
         self.all_vehicles['departure time'][indx] = travel_time
 
@@ -59,6 +67,9 @@ class Traffic:
     def save_csv(self, inter_name):
         filepath = os.path.join('log/' + inter_name + '_results.csv')
         self.all_vehicles.to_csv(filepath, index=False)
+
+    def close_trj_csv(self):
+        self.full_traj_csv_file.close()
 
     def last_veh_in_last_sc_arrived(self):
         if self.curr_indx + 1 >= self.all_vehicles.shape[0]:
@@ -94,7 +105,7 @@ class Traffic:
         for lane in range(num_lanes):
             if bool(lanes.vehlist[lane]):  # not an empty lane
                 for veh in lanes.vehlist[lane]:
-                    veh.reset_trj_points(simulation_time)
+                    veh.reset_trj_points(self.active_sc, lane, simulation_time, self.full_traj_csv_file)
 
         # SEE IF ANY NEW VEHICLES HAS ARRIVED
         indx = self.curr_indx + 1

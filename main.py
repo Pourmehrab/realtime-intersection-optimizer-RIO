@@ -4,7 +4,7 @@
 # File name: main.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Apr/06/2018       #
+# Last Modified: Apr/10/2018       #
 ####################################
 
 '''
@@ -43,14 +43,14 @@ def check_py_ver():
 
 
 def get_max_arrival_time(lanes):
-    t_max = 0.0
+    last_served_time_stamp = 0.0
     for lane in range(num_lanes):
         if bool(lanes.vehlist[lane]):  # not an empty lane
             for veh in lanes.vehlist[lane]:
                 t = veh.trajectory[0, veh.last_trj_point_indx]
-                if t > t_max:
-                    t_max = t
-    return t_max
+                if t > last_served_time_stamp:
+                    last_served_time_stamp = t
+    return last_served_time_stamp
 
 
 if __name__ == "__main__":
@@ -211,6 +211,7 @@ if __name__ == "__main__":
                 # all vehicles in the csv file are served
                 # save the csv which has travel time column appended
                 traffic.save_csv(intersection.name)
+                traffic.close_trj_csv()
                 if test_mode:
                     tester.matplotlib_show_save(traffic.active_sc, det_range, first_detection_time, simulation_time)
                 break

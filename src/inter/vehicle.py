@@ -8,6 +8,8 @@
 import numpy as np
 import pandas as pd
 
+import csv
+
 
 class Vehicle:
     MAX_NUM_TRAJECTORY_POINTS = 300
@@ -53,31 +55,31 @@ class Vehicle:
     def get_vehicle_type(self):
         return self.veh_type
 
-    def reset_trj_points(self, time_threshold):
+    def reset_trj_points(self, sc, lane, time_threshold, file):
         '''
-        binary search to reset trajectory
-        todo replace this with updates from fusion code
-        :param time_threshold:
-        :return:
+        writes all traj points before or equal to the time_threshold to a csv file
+        resets traj and its index
+        look for the header in get_traffic.py __init__ method
         '''
-        time = self.trajectory[0, 0]
+        trj_indx = 0
+        time = self.trajectory[0, trj_indx]
+        distance = self.trajectory[1, trj_indx]
+        speed = self.trajectory[2, trj_indx]
         if time_threshold <= time:
             self.set_last_trj_point_indx(0)
         else:
-            left_trj_indx, right_trj_indx = 0, self.last_trj_point_indx
-            searching = True
-            while searching:
-                trj_indx = (left_trj_indx + right_trj_indx) // 2
+            writer = csv.writer(file, delimiter=',')
+            while time <= time_threshold:
+                writer.writerows([[sc, self.veh_type, lane, time, distance, speed]])
+                file.flush()
+
+                trj_indx += 1
                 time = self.trajectory[0, trj_indx]
-                if abs(time - time_threshold) <= 0.1 or right_trj_indx - left_trj_indx < 3:
-                    self.trajectory[:, 0] = self.trajectory[:, trj_indx]
-                    self.set_last_trj_point_indx(0)
-                    break
-                else:
-                    if time < time_threshold:
-                        left_trj_indx = trj_indx
-                    elif time > time_threshold:
-                        right_trj_indx = trj_indx
+                distance = self.trajectory[1, trj_indx]
+                speed = self.trajectory[2, trj_indx]
+
+            self.trajectory[:, 0] = self.trajectory[:, trj_indx]
+            self.set_last_trj_point_indx(0)
 
     def set_earliest_arrival(self, t_earliest):
         '''
@@ -106,7 +108,7 @@ class Vehicle:
     def set_last_trj_point_indx(self, indx):
         self.last_trj_point_indx = indx
 
-    def save_trj_to_excel(self, inter_name):
+    def save_trj_to_csv(self, inter_name):
         t, d, s = self.trajectory[:, 0: self.last_trj_point_indx]
         df = pd.DataFrame({'time': t, 'distance': d, 'speed': s})
         df.to_excel('log/' + inter_name + '_trajectory_' + str(self.ID) + '.xlsx', index=False)
