@@ -42,6 +42,7 @@ def get_conflict_dict(inter_name):
                 14: {2, 3, 12, 9, 11, 4, 10, 5},
                 15: {2, 3, 12, 4, 5, 8, 7, 11, 6},
                 16: {12, 2, 3, 8, 4, 7, 5, 11}}
+        # (17, 9, 8, 15,) covers all lanes
 
     elif inter_name == 'reserv':
         return {1: {4, 5, 6, 7, 8, 9, 10, 11, 12},
@@ -59,6 +60,9 @@ def get_conflict_dict(inter_name):
 
 
 def get_phases(inter_name):
+    '''
+    this is one based but the allowed set is zero based
+    '''
     if inter_name == '13th16th':
         return {1: {1, 10, 16, },
                 2: {6, 7, 12, },
@@ -80,33 +84,54 @@ def get_phases(inter_name):
                 18: {1, 2, 3, 4, 5, 6, }}
 
     elif inter_name == 'reserv':
+        # return None
         return {1: {1, 2, 3, },
                 2: {4, 5, 6, },
                 3: {7, 8, 9, },
                 4: {10, 11, 12, }}
     else:
-        return None
+        raise Exception('Set of phases is not known for this intersection.')
+
+
+def get_pretimed_parameters(inter_name):
+    '''
+    this return the parameters needed for pre-timed logic
+    note the sequence field is zero-based
+    required for pretimed control
+    '''
+    if inter_name == '13th16th':
+        return None  # todo compute these
+
+    elif inter_name == 'reserv':
+        # return None
+        return {'green_dur': (25.0, 25.0, 25.0, 25.0), 'seq': (0, 1, 2, 3,), 'yellow': 1.5, 'all-red': 1.0}
+    else:
+        raise Exception('Pretimed parameters is not known for this intersection.')
 
 
 def get_signal_params(inter_name):
     '''
-    yellow, all-red, min green, max green
+    yellow, all-red, min green, max green all in seconds
+    required for GA
     '''
     if inter_name == '13th16th':
-        return 1.5, 1, 5, 25
+        return 1.5, 1.0, 5.0, 25.0
     elif inter_name == 'reserv':
-        return 1.5, 1, 5, 25
+        return 1.5, 1.0, 5.0, 25.0
     else:
-        return None
+        raise Exception('Signal parameters are not known for this intersection.')
 
 
 def get_general_params(inter_name):
     '''
-    :return: max speed (m/s)
+    :return: max speed (m/s), min_headway (seconds), detection range (meters), k, m
+        k =  # n will be in 0, ..., k-1
+        m =  # to discretize the time interval
+        required for trajectory optimization
     '''
     if inter_name == '13th16th':
-        return 14
+        return 15, 2, 500, 10, 15
     elif inter_name == 'reserv':
-        return 14
+        return 15, 2, 500, 10, 15
     else:
-        return None
+        raise Exception('Simulation parameters are not known for this intersection.')

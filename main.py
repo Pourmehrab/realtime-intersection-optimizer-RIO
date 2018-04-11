@@ -4,7 +4,7 @@
 # File name: main.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Mar/31/2018       #
+# Last Modified: Apr/10/2018       #
 ####################################
 
 '''
@@ -21,35 +21,11 @@ from src.input.sim import Simulator
 from src.inter.inter import Intersection
 from src.inter.lane import Lanes
 # Signal Optimizers
-from src.inter.signal import GA_SPaT, MinCostFlow_SPaT
-# from src.optional.TikZ.tikzpans import TikZpanels, TikzDirectedGraph
-
-
+from src.inter.signal import GA_SPaT, Pretimed
 # Trajectory Optimizers
-
-
-def mcf_signal_optimizer(intersection, num_lanes, ppi, max_speed, signal, lanes, sim_prms):
-    '''
-    todo: merge this to main below
-    This function optimizes the scenario under following assumptions:
-
-    - The full set of phases is supported
-    - Uses min cost flow model to pick the duration and seq of phases
-    '''
-    signal = MinCostFlow_SPaT(num_lanes, ppi)
-    # makes min cost flow network
-
-    # do sample signal optimization
-    lanes_demand = [3, 2, 3, 4, 5, 2, 6, 3, 2, 7, 3, 5, 2, 5, 3, 6]
-    signal.set_dem(lanes_demand)
-    signal.solve()
-
-    # make min cost flow graph
-    tikzobj = TikzDirectedGraph(inter_name, num_lanes, ppi)
-    tikzobj.set_mcf_orig()
-    tikzobj.set_phase_graph()
-    # Make panels of phases
-    tikzobj = TikZpanels(inter_name, num_lanes, ppi)
+from src.trj.traj import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
+# testing
+from unit_tests import SimTest
 
 
 def check_py_ver():
@@ -57,7 +33,7 @@ def check_py_ver():
     expect_major, expect_minor, expect_rev = 3, 5, 2
     if sys.version_info[0] >= expect_major and sys.version_info[1] >= expect_minor and sys.version_info[
         2] >= expect_rev:
-        print('Python version requirement is met.\n')
+        print('Python version requirement is met. ################################')
     else:
         print(
             "INFO: Script developed and tested with Python " + str(expect_major) + "." + str(expect_minor) + "." + str(
@@ -66,18 +42,29 @@ def check_py_ver():
         sys.exit(-1)
 
 
+def get_max_arrival_time(lanes):
+    last_served_time_stamp = 0.0
+    for lane in range(num_lanes):
+        if bool(lanes.vehlist[lane]):  # not an empty lane
+            for veh in lanes.vehlist[lane]:
+                t = veh.trajectory[0, veh.last_trj_point_indx]
+                if t > last_served_time_stamp:
+                    last_served_time_stamp = t
+    return last_served_time_stamp
+
+
 if __name__ == "__main__":
 
-    print('Interpreter Information ###################################################################################')
+    print(
+        'University of Florida. By Mahmoud Pourmehrab ######################\n')
+    print('Interpreter Information ###################################')
     print('Python Path: ', sys.executable)
     print('Python Version: ', sys.version)
-    print(
-        'University of Florida. Written by Mahmoud Pourmehrab ######################################################\n')
-
     # Check the interpreter to make sure using py version at least 3.5.2
     check_py_ver()
 
-    if len(sys.argv) != 3 or sys.argv[1] not in ['13th16th', 'reserv', ] or sys.argv[2] not in ['GA', 'MCF', ]:
+    if len(sys.argv) != 3 or sys.argv[1] not in ['13th16th', 'reserv', ] or sys.argv[2] not in ['GA', 'MCF', 'pretimed',
+                                                                                                'actuated']:
         print("Check the input arguments and try again.")
         sys.exit(-1)
     else:
@@ -87,66 +74,133 @@ if __name__ == "__main__":
         method = sys.argv[2]
         # also look in src/inter/data.py
 
+    test_mode, test_time = True, 0  # need to supply unit_tests.py
+    # if test_mode:
+    #     tester = SimTest(num_lanes)
+    #     tester.add_traj_to_matplotlib(veh, lane, veh_type)
+    # if test_mode and simulation_time >= test_time:
+    #     tester.matplotlib_show_save(traffic.active_sc, det_range, simulation_time,
+    #                                 get_max_arrival_time(lanes))
+
     intersection = Intersection(inter_name)
     # intersection keeps lane-lane and phase-lane incidence dictionaries
     num_lanes = intersection.get_num_lanes()
     max_speed = intersection.get_max_speed()  # in m/s
+    min_headway = intersection.get_min_headway()  # in seconds
+    det_range = intersection.get_det_range()  # detection range in meters
+    k, m = intersection.get_poly_params()  # polynomial degree and discretization level for trajectory optimization of CAVs
 
     # lanes object keeps vehicles in it
     lanes = Lanes(num_lanes)
 
     # load entire traffic generated in csv file
-    traffic = Traffic(inter_name)
+    traffic = Traffic(inter_name, num_lanes)
 
+    # initialize trajectory planners
+    lead_conventional_trj_estimator = LeadConventional(max_speed, min_headway)
+    lead_connected_trj_optimizer = LeadConnected(max_speed, min_headway, k, m)
+    follower_conventional_trj_estimator = FollowerConventional(max_speed, min_headway)
+    follower_connected_trj_optimizer = FollowerConnected(max_speed, min_headway, k, m)
+
+    # Set the signal control method
     if method == 'GA':
         # define what subset of phase-lane incidence matrix should be used
-        # minimal set of phase indices to cover all movements (17, 9, 8, 15)
-        signal = GA_SPaT(intersection.name, (17, 9, 8, 15,), num_lanes)
+        # minimal set of phase indices to cover all movements (17, 9, 8, 15) for 13th16th intersection
+        phase_set =
+        signal = GA_SPaT(inter_name, allowable_phases, num_lanes, min_headway)
+    elif method == 'pretimed':
+        signal = Pretimed(inter_name, num_lanes, min_headway, allowable_phases)
 
-    elif method == 'MCF':
-        pass
+    elif method == 'MCF' or method == 'actuated':
+        raise Exception('This signal control method is not complete yet.')  # todo develop these
 
     # get the time when first vehicle shows up
-    t = traffic.get_first_arrival()
+    first_detection_time = traffic.get_first_detection_time()
 
     # set the start time to it
-    simulator = Simulator(t)
+    simulator = Simulator(first_detection_time)
 
     # here we start doing optimization for all scenarios included in the csv file
-    t_start = time.clock()  # to measure total run time
+    t_start = time.clock()  # to measure total run time (IS NOT THE SIMULATION TIME)
     while True:  # stops when all rows of csv are processed (a break statement controls this)
-        t = simulator.get_clock()  # gets current simulation clock
-        print('################################ INQUIRY @ {:2.2f} SEC #################################'.format(t))
+        simulation_time = simulator.get_clock()  # gets current simulation clock
+        print('\nUPDATE AT CLOCK: {:.2f} SEC #################################'.format(
+            simulation_time))
 
         # UPDATE VEHICLES
         # remove/record served vehicles and phases
-        traffic.update_at_stop_bar(lanes, t, num_lanes)
-        signal.update_STaT(t)
+        traffic.update_at_stop_bar(lanes, simulation_time, num_lanes)
+        signal.update_STaT(simulation_time)
 
         # add/update vehicles
-        traffic.update_on_vehicles(lanes, t, max_speed)
+        traffic.update_on_vehicles(lanes, num_lanes, simulation_time, max_speed, min_headway, k)
+        # update space mean speed
+        volumes = traffic.get_volumes(lanes, num_lanes, det_range)
+        critical_volume_ratio = 3600 * volumes.max() / min_headway
 
         # DO SIGNAL OPTIMIZATION
-        signal.solve(lanes)
+        # signal.set_critical_volumes(volumes) # todo pass over this for GA
+        signal.solve(lanes, critical_volume_ratio, num_lanes)
         # now we have sufficient SPaT to serve all
 
         # DO TRAJECTORY OPTIMIZATION
-        # trj_planner(signal, lanes, num_lanes, max_speed)
+        for lane in range(num_lanes):
+            if bool(lanes.vehlist[lane]):  # not an empty lane
+                veh = lanes.vehlist[lane][0]
+                veh_type = veh.get_vehicle_type()
+
+                arrival_time = veh.get_scheduled_arrival()
+
+                # send to optimizer
+                if veh_type == 1:
+                    model = lead_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed)
+                    lead_connected_trj_optimizer.solve(veh, model, arrival_time)
+                else:
+                    lead_conventional_trj_estimator.solve(veh)
+
+                if test_mode and simulation_time >= test_time:
+                    veh.print_trj_points(lane, 0)
+
+                for veh_indx in range(1, len(lanes.vehlist[lane])):
+                    veh = lanes.vehlist[lane][veh_indx]
+                    arrival_time = veh.get_scheduled_arrival()
+
+                    lead_veh = lanes.vehlist[lane][veh_indx - 1]
+
+                    # send to optimizer
+                    if veh_type == 1:
+                        lead_poly = lead_veh.get_poly_coeffs()
+                        lead_arrival_time = lead_veh.get_scheduled_arrival()
+                        model = follower_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed,
+                                                                           lead_poly, lead_veh.init_time,
+                                                                           lead_arrival_time)
+                        follower_connected_trj_optimizer.solve(veh, model, arrival_time)
+                    else:
+                        # follower_conventional_trj_estimator.solve(veh, lead_veh) # todo activate this
+                        lead_conventional_trj_estimator.solve(veh)
+
+                    if test_mode and simulation_time >= test_time:
+                        veh.print_trj_points(lane, veh_indx)
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_in_last_sc_arrived():
             if traffic.keep_scenario():
                 simulator.next_sim_step()
+                simulation_time = simulator.get_clock()
             else:
                 # simulation of a scenario ended move on to the next scenario
-                t_end = time.clock()
+                t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT'S JUST TIMING THE ALGORITHM
                 traffic.set_elapsed_sim_time(t_end - t_start)
-                # print('### Elapsed Time: {:2.2f} sec ###'.format(int(1000 * (t_end - t_start)) / 1000), end='')
+                print('### Elapsed Time: {:2.2f} sec ###'.format(int(1000 * (t_end - t_start)) / 1000), end='')
+
+                # plot trajectories
+                if test_mode:
+                    tester.matplotlib_show_save(traffic.active_sc, det_range, first_detection_time, simulation_time)
 
                 traffic.reset_scenario()
+                first_detection_time = traffic.get_first_detection_time()
 
-                t = traffic.get_first_arrival()
-                simulator = Simulator(t)
+                simulator = Simulator(first_detection_time)
 
                 lanes = Lanes(num_lanes)
 
@@ -154,16 +208,15 @@ if __name__ == "__main__":
 
                 t_start = time.clock()  # reset the timer
 
-
         else:
             if lanes.all_served(num_lanes):
                 # all vehicles in the csv file are served
                 # save the csv which has travel time column appended
                 traffic.save_csv(intersection.name)
+                traffic.close_trj_csv()
+                if test_mode:
+                    tester.matplotlib_show_save(traffic.active_sc, det_range, first_detection_time, simulation_time)
                 break
             else:
-                # this is the last scenario but still some vehicles have not crossed
+                # this is the last scenario but still some vehicles have not been served
                 simulator.next_sim_step()
-
-        # # plot = VisTrj(lane)  # todo:(Mahmoud) do we need lane information in this file?
-        # # plot.plotrj(fol_veh.element().trj_t, fol_veh.element().trj_d,fol_veh.element().trj_s)

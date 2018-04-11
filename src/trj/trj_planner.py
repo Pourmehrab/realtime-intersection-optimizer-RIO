@@ -6,7 +6,7 @@
 ####################################
 
 
-from src.trj.trj import Trajectory, Conventional
+from src.optional.trj import Trajectory, Conventional
 from src.optional.trjopt import Connected
 
 
@@ -31,7 +31,7 @@ def trj_planner(signal, lanes, num_lanes, max_speed):
                 # trj_planner.insight()  # optional: if want to print some overview of follower vehicle
                 trj_planner.solve(0)  # pass 0 for lead vehicle
             else:
-                trj_planner = Conventional(None, lead_veh, gs=dep_time, vmax=max_speed)
+                trj_planner = Conventional(None, lead_veh, gs=dep_time, max_speed=max_speed)
                 # trj_planner.insight()  # optional: if want to print some overview of follower vehicle
                 trj_planner.solve(0)  # pass 0 for lead vehicle
 
@@ -52,7 +52,7 @@ def trj_planner(signal, lanes, num_lanes, max_speed):
                     # trj_planner.insight()  # optional: if want to print some overview of follower vehicle
                     trj_planner.solve(1)  # pass 0 for lead vehicle
                 else:
-                    trj_planner = Conventional(lead_veh, follower_veh, gs=dep_time, vmax=max_speed)
+                    trj_planner = Conventional(lead_veh, follower_veh, gs=dep_time, max_speed=max_speed)
                     # trj_planner.insight()  # optional: if want to print some overview of follower vehicle
                     trj_planner.solve(1)  # pass 0 for lead vehicle
 
