@@ -106,10 +106,9 @@ if __name__ == "__main__":
     if method == 'GA':
         # define what subset of phase-lane incidence matrix should be used
         # minimal set of phase indices to cover all movements (17, 9, 8, 15) for 13th16th intersection
-        phase_set =
-        signal = GA_SPaT(inter_name, allowable_phases, num_lanes, min_headway)
+        signal = GA_SPaT(inter_name, (0, 1, 2, 3,), num_lanes, min_headway)
     elif method == 'pretimed':
-        signal = Pretimed(inter_name, num_lanes, min_headway, allowable_phases)
+        signal = Pretimed(inter_name, num_lanes, min_headway)
 
     elif method == 'MCF' or method == 'actuated':
         raise Exception('This signal control method is not complete yet.')  # todo develop these
@@ -139,9 +138,14 @@ if __name__ == "__main__":
         critical_volume_ratio = 3600 * volumes.max() / min_headway
 
         # DO SIGNAL OPTIMIZATION
-        # signal.set_critical_volumes(volumes) # todo pass over this for GA
-        signal.solve(lanes, critical_volume_ratio, num_lanes)
-        # now we have sufficient SPaT to serve all
+        if method == 'GA':
+            signal.solve(lanes, critical_volume_ratio, num_lanes)
+        elif method == 'pretimed':
+            signal.solve()
+
+        elif method == 'MCF' or method == 'actuated':
+            raise Exception('This signal control method is not complete yet.')  # todo develop these
+        # now we should have sufficient SPaT to serve all
 
         # DO TRAJECTORY OPTIMIZATION
         for lane in range(num_lanes):

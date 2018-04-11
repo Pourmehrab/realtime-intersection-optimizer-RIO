@@ -104,7 +104,7 @@ def get_pretimed_parameters(inter_name):
 
     elif inter_name == 'reserv':
         # return None
-        return {'green_dur': (25.0, 25.0, 25.0, 25.0), 'seq': (0, 1, 2, 3,), 'yellow': 1.5, 'all-red': 1.0}
+        return {'green_dur': (25.0, 25.0, 25.0, 25.0), 'phase_seq': (0, 1, 2, 3,), 'yellow': 1.5, 'all-red': 1.0}
     else:
         raise Exception('Pretimed parameters is not known for this intersection.')
 

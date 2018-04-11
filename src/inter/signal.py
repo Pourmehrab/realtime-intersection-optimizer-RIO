@@ -9,14 +9,14 @@ import numpy as np
 
 np.random.seed(2018)
 
-from src.input.data import get_conflict_dict, get_phases, get_signal_params
+import src.input.data as data_importer
 from src.optional.enum_phases import phenum
 
 
 class Signal:
     LAG = 1  # lag time from start of green when a vehicle can depart (also used in traj.py)
 
-    def __init__(self, inter_name, num_lanes, min_headway,allowable_phases):
+    def __init__(self, inter_name, num_lanes, min_headway):
         '''
         - sequence keeps the sequence of phases to be executed from 0
         - green_dur keeps the amount of green allocated to each phase
@@ -30,20 +30,13 @@ class Signal:
 
         '''
 
-        self.name = inter_name
+        self._inter_name = inter_name
+        self._num_lanes = num_lanes
 
-        self._y, self._ar, self.min_green, self.max_green = get_signal_params(inter_name)
-        self._ts_min, self._ts_max = self.min_green + self._y + self._ar, self.max_green + self._y + self._ar
-        self._ts_diff = self.max_green - self.min_green
         self._min_headway = min_headway
-        self._allowable_phases=allowable_phases
 
         self._set_lane_lane_incidence(num_lanes)
         self._set_phase_lane_incidence(num_lanes)
-        self.SPaT_sequence, self.SPaT_green_dur, self.SPaT_start, self.SPaT_end = [set(allowable_phases).pop()], [0], \
-                                                                                  [0], [self._y + self._ar]
-
-        self._critical_volumes = np.zeros(len(allowable_phases), dtype=float)
 
     def _set_lane_lane_incidence(self, num_lanes):
         '''
@@ -54,7 +47,7 @@ class Signal:
         :return:
         '''
         # gets the conflict dictionary for this intersection
-        conf_dict = get_conflict_dict(self.name)
+        conf_dict = data_importer.get_conflict_dict(self._inter_name)
 
         # lane-lane incidence dictionary (lane: set of lanes in conflict with lane)
         self._lane_lane_incidence = {l: set([]) for l in range(num_lanes)}
@@ -65,9 +58,9 @@ class Signal:
                 self._lane_lane_incidence[l - 1].add(j - 1)  # these are conflicting lanes
 
     def _set_phase_lane_incidence(self, num_lanes):
-        phase_lane_incidence_one_based = get_phases(self.name)
+        phase_lane_incidence_one_based = data_importer.get_phases(self._inter_name)
         if phase_lane_incidence_one_based is None:  # todo add this to the readme
-            phase_lane_incidence_one_based = phenum(num_lanes, self._lane_lane_incidence, self.name)
+            phase_lane_incidence_one_based = phenum(num_lanes, self._lane_lane_incidence, self._inter_name)
 
         self._pli = {p: [] for p in range(len(phase_lane_incidence_one_based))}
 
@@ -124,17 +117,17 @@ class Signal:
             self.SPaT_start = [self.SPaT_start[0]]
             self.SPaT_end = [self.SPaT_end[0]]
 
-        print('*** SPaT Flushed')
+        print('** SPaT Flushed')
 
     def update_STaT(self, t):
         while len(self.SPaT_end) > 1 and t >= self.SPaT_end[0]:
-            print('*** Phase {:d} Purged'.format(self.SPaT_sequence[0]))
+            print('** Phase {:d} Purged.'.format(self.SPaT_sequence[0]))
             del self.SPaT_sequence[0]
             del self.SPaT_green_dur[0]
             del self.SPaT_start[0]
             del self.SPaT_end[0]
 
-    def reset(self):
+    def reset(self):  # todo fix this
         '''
         Reset signal for the next scenario
         Note it assumes next scenario is still on the same test intersection under same yellow and all-red
@@ -145,28 +138,40 @@ class Signal:
 
 
 # -------------------------------------------------------
-# Pretimed Signal Control
+# Pre-timed Signal Control
 # -------------------------------------------------------
 class Pretimed(Signal):
+    CYCLES_AHEAD = 20  # how many cycles of pre-timed control to be kept in line
     '''
     Assumptions:
-    - The sequence and duration is decided optimally by a Genetic Algorithms
-    - The trajectories are computed using:
-        - Gipps car following model for conventional vehicles
-        - Polynomial degree k area under curve minimization for Lead/Follower AVs
-
-    :param allowable_phases: subset of all possible phases is used (no limitation but it should cover all movements)
+    - The sequence and duration is pre-determined
     '''
 
-    def __init__(self, inter_name, num_lanes, min_headway,allowable_phases):
-        super().__init__(inter_name, num_lanes, min_headway,allowable_phases)
+    def __init__(self, inter_name, num_lanes, min_headway):
+        super().__init__(inter_name, num_lanes, min_headway)
 
-    def solve(self, lanes, critical_volume_ratio, num_lanes):
+        pretimed_signal_plan = data_importer.get_pretimed_parameters(inter_name)
+        self._phase_seq = pretimed_signal_plan['phase_seq']
+        self._green_dur = pretimed_signal_plan['green_dur']
+        self._y, self._ar = pretimed_signal_plan['yellow'], pretimed_signal_plan['all-red']
+
+        # add a dummy phase to initiate
+        self.SPaT_sequence, self.SPaT_green_dur, self.SPaT_start, self.SPaT_end = [self._phase_seq[-1]], [0], \
+                                                                                  [0], [self._y + self._ar]
+
+        for cycle in range(self.CYCLES_AHEAD):
+            for indx, phase in enumerate(self._phase_seq):
+                self.enqueue(int(phase), self._green_dur[indx])
+
+    def solve(self):
         '''
         The phases sequence is exactly as the allowable phases
-
+        this simply adds a cycle once it drops by one
+        Next it provides the departure schedule to be used for trajectory optimization
         '''
-        pass
+        if len(self.SPaT_sequence) // len(self._phase_seq) < self.CYCLES_AHEAD - 1:
+            for indx, phase in enumerate(self._phase_seq):
+                self.enqueue(int(phase), self._green_dur[indx])
 
 
 # -------------------------------------------------------
@@ -197,8 +202,17 @@ class GA_SPaT(Signal):
     ACCURACY_OF_BADNESS_MEASURE = 100  # this is 10**(number of decimals we want to keep)
 
     def __init__(self, inter_name, allowable_phases, num_lanes, min_headway):
-        super().__init__(inter_name, num_lanes, min_headway,allowable_phases)
+        super().__init__(inter_name, num_lanes, min_headway, allowable_phases)
 
+        self._allowable_phases = allowable_phases
+
+        self._y, self._ar, self.min_green, self.max_green = data_importer.get_signal_params(inter_name)
+        self._ts_min, self._ts_max = self.min_green + self._y + self._ar, self.max_green + self._y + self._ar
+        self._ts_diff = self.max_green - self.min_green
+
+        # add a dummy phase to initiate
+        self.SPaT_sequence, self.SPaT_green_dur, self.SPaT_start, self.SPaT_end = [set(allowable_phases).pop()], [0], \
+                                                                                  [0], [self._y + self._ar]
 
     def solve(self, lanes, critical_volume_ratio, num_lanes):
         '''
@@ -228,7 +242,7 @@ class GA_SPaT(Signal):
             #   - the timings in the second block of columns
             #   - the metrics in the third block of columns up to the number of metrics
 
-            half_max_indx = int(phase_length / 2)  # for crossover
+            half_max_indx = phase_length // 2  # for crossover
 
             # POPULATE THE FIRST GENERATION
             for individual in range(self.POPULATION_SIZE):
