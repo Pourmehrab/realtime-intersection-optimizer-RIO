@@ -116,7 +116,7 @@ class Traffic:
 
             # read the arrived vehicle's information
             lane = self.all_vehicles['lane'][indx] - 1  # csv file has lanes coded in one-based
-            det_id = 'XYZ' + str(indx)  # todo this changes in real-time mode
+            det_id = 'xyz' + str(indx)
             det_type = self.all_vehicles['type'][indx]  # 0: CNV, 1: CAV
             det_time = float(self.all_vehicles['arrival time'][indx])
             speed = float(self.all_vehicles['curSpd'][indx])
@@ -126,11 +126,13 @@ class Traffic:
             length = float(self.all_vehicles['L'][indx])
             amin = float(self.all_vehicles['maxDec'][indx])  # max deceleration (negative value)
             amax = float(self.all_vehicles['maxAcc'][indx])  # max acceleration
-            print('*** A veh of type {:d} detected @ {:2.2f} sec in lane {:d}'.format(det_type, det_time, lane))
 
             # create the vehicle and get the earliest departure time
             veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed,
                           dest, length, amin, amax, k, indx)
+            # print('*** A veh of type ' + veh.map_veh_type2str(det_type) + ' detected @ {:2.2f} sec in lane {:d}'.format(
+            #     det_time, lane + 1))
+
             # add it to its lane
             lanes.vehlist[lane] += [veh]  # recall it is an array
 

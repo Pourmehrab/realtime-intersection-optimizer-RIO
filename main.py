@@ -21,7 +21,7 @@ from src.input.sim import Simulator
 from src.inter.inter import Intersection
 from src.inter.lane import Lanes
 # Signal Optimizers
-from src.inter.signal import GA_SPaT
+from src.inter.signal import GA_SPaT, Pretimed
 # Trajectory Optimizers
 from src.trj.traj import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
 # testing
@@ -33,7 +33,7 @@ def check_py_ver():
     expect_major, expect_minor, expect_rev = 3, 5, 2
     if sys.version_info[0] >= expect_major and sys.version_info[1] >= expect_minor and sys.version_info[
         2] >= expect_rev:
-        print('Python version requirement is met.\n')
+        print('Python version requirement is met. ################################')
     else:
         print(
             "INFO: Script developed and tested with Python " + str(expect_major) + "." + str(expect_minor) + "." + str(
@@ -55,16 +55,16 @@ def get_max_arrival_time(lanes):
 
 if __name__ == "__main__":
 
-    print('Interpreter Information ###################################################################################')
+    print(
+        'University of Florida. By Mahmoud Pourmehrab ######################\n')
+    print('Interpreter Information ###################################')
     print('Python Path: ', sys.executable)
     print('Python Version: ', sys.version)
-    print(
-        'University of Florida. Written by Mahmoud Pourmehrab ######################################################\n')
-
     # Check the interpreter to make sure using py version at least 3.5.2
     check_py_ver()
 
-    if len(sys.argv) != 3 or sys.argv[1] not in ['13th16th', 'reserv', ] or sys.argv[2] not in ['GA', 'MCF', ]:
+    if len(sys.argv) != 3 or sys.argv[1] not in ['13th16th', 'reserv', ] or sys.argv[2] not in ['GA', 'MCF', 'pretimed',
+                                                                                                'actuated']:
         print("Check the input arguments and try again.")
         sys.exit(-1)
     else:
@@ -74,7 +74,13 @@ if __name__ == "__main__":
         method = sys.argv[2]
         # also look in src/inter/data.py
 
-    test_mode, test_time = False, 45  # need to supply unit_tests.py
+    test_mode, test_time = True, 0  # need to supply unit_tests.py
+    # if test_mode:
+    #     tester = SimTest(num_lanes)
+    #     tester.add_traj_to_matplotlib(veh, lane, veh_type)
+    # if test_mode and simulation_time >= test_time:
+    #     tester.matplotlib_show_save(traffic.active_sc, det_range, simulation_time,
+    #                                 get_max_arrival_time(lanes))
 
     intersection = Intersection(inter_name)
     # intersection keeps lane-lane and phase-lane incidence dictionaries
@@ -83,6 +89,7 @@ if __name__ == "__main__":
     min_headway = intersection.get_min_headway()  # in seconds
     det_range = intersection.get_det_range()  # detection range in meters
     k, m = intersection.get_poly_params()  # polynomial degree and discretization level for trajectory optimization of CAVs
+
     # lanes object keeps vehicles in it
     lanes = Lanes(num_lanes)
 
@@ -95,14 +102,17 @@ if __name__ == "__main__":
     follower_conventional_trj_estimator = FollowerConventional(max_speed, min_headway)
     follower_connected_trj_optimizer = FollowerConnected(max_speed, min_headway, k, m)
 
-    # decide on signal optimization scheme
+    # Set the signal control method
     if method == 'GA':
         # define what subset of phase-lane incidence matrix should be used
         # minimal set of phase indices to cover all movements (17, 9, 8, 15) for 13th16th intersection
-        signal = GA_SPaT(inter_name, (0, 1, 2, 3,), num_lanes)  # todo allow more phases
+        phase_set =
+        signal = GA_SPaT(inter_name, allowable_phases, num_lanes, min_headway)
+    elif method == 'pretimed':
+        signal = Pretimed(inter_name, num_lanes, min_headway, allowable_phases)
 
-    elif method == 'MCF':
-        pass  # todo develop MCF method later
+    elif method == 'MCF' or method == 'actuated':
+        raise Exception('This signal control method is not complete yet.')  # todo develop these
 
     # get the time when first vehicle shows up
     first_detection_time = traffic.get_first_detection_time()
@@ -114,7 +124,7 @@ if __name__ == "__main__":
     t_start = time.clock()  # to measure total run time (IS NOT THE SIMULATION TIME)
     while True:  # stops when all rows of csv are processed (a break statement controls this)
         simulation_time = simulator.get_clock()  # gets current simulation clock
-        print('################################ INQUIRY @ {:2.2f} SEC #################################'.format(
+        print('\nUPDATE AT CLOCK: {:.2f} SEC #################################'.format(
             simulation_time))
 
         # UPDATE VEHICLES
@@ -129,12 +139,9 @@ if __name__ == "__main__":
         critical_volume_ratio = 3600 * volumes.max() / min_headway
 
         # DO SIGNAL OPTIMIZATION
-        signal.set_critical_volumes(volumes)
+        # signal.set_critical_volumes(volumes) # todo pass over this for GA
         signal.solve(lanes, critical_volume_ratio, num_lanes)
         # now we have sufficient SPaT to serve all
-
-        if test_mode:
-            tester = SimTest(num_lanes)
 
         # DO TRAJECTORY OPTIMIZATION
         for lane in range(num_lanes):
@@ -152,8 +159,7 @@ if __name__ == "__main__":
                     lead_conventional_trj_estimator.solve(veh)
 
                 if test_mode and simulation_time >= test_time:
-                    # veh.save_trj_to_excel(inter_name)
-                    tester.add_traj_to_matplotlib(veh, lane, veh_type)
+                    veh.print_trj_points(lane, 0)
 
                 for veh_indx in range(1, len(lanes.vehlist[lane])):
                     veh = lanes.vehlist[lane][veh_indx]
@@ -174,12 +180,8 @@ if __name__ == "__main__":
                         lead_conventional_trj_estimator.solve(veh)
 
                     if test_mode and simulation_time >= test_time:
-                        # veh.save_trj_to_excel(inter_name)
-                        tester.add_traj_to_matplotlib(veh, lane, veh_type)
+                        veh.print_trj_points(lane, veh_indx)
 
-        if test_mode and simulation_time >= test_time:
-            tester.matplotlib_show_save(traffic.active_sc, det_range, simulation_time,
-                                        get_max_arrival_time(lanes))
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_in_last_sc_arrived():
             if traffic.keep_scenario():

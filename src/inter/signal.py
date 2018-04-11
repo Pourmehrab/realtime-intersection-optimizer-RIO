@@ -14,10 +14,9 @@ from src.optional.enum_phases import phenum
 
 
 class Signal:
-    SAT = 1  # saturation headway (also in trj.py)
     LAG = 1  # lag time from start of green when a vehicle can depart (also used in traj.py)
 
-    def __init__(self, inter_name, allowable_phases, num_lanes):
+    def __init__(self, inter_name, num_lanes, min_headway,allowable_phases):
         '''
         - sequence keeps the sequence of phases to be executed from 0
         - green_dur keeps the amount of green allocated to each phase
@@ -36,10 +35,11 @@ class Signal:
         self._y, self._ar, self.min_green, self.max_green = get_signal_params(inter_name)
         self._ts_min, self._ts_max = self.min_green + self._y + self._ar, self.max_green + self._y + self._ar
         self._ts_diff = self.max_green - self.min_green
+        self._min_headway = min_headway
+        self._allowable_phases=allowable_phases
 
         self._set_lane_lane_incidence(num_lanes)
         self._set_phase_lane_incidence(num_lanes)
-        self._allowable_phases = allowable_phases
         self.SPaT_sequence, self.SPaT_green_dur, self.SPaT_start, self.SPaT_end = [set(allowable_phases).pop()], [0], \
                                                                                   [0], [self._y + self._ar]
 
@@ -66,7 +66,7 @@ class Signal:
 
     def _set_phase_lane_incidence(self, num_lanes):
         phase_lane_incidence_one_based = get_phases(self.name)
-        if phase_lane_incidence_one_based is None:
+        if phase_lane_incidence_one_based is None:  # todo add this to the readme
             phase_lane_incidence_one_based = phenum(num_lanes, self._lane_lane_incidence, self.name)
 
         self._pli = {p: [] for p in range(len(phase_lane_incidence_one_based))}
@@ -145,6 +145,31 @@ class Signal:
 
 
 # -------------------------------------------------------
+# Pretimed Signal Control
+# -------------------------------------------------------
+class Pretimed(Signal):
+    '''
+    Assumptions:
+    - The sequence and duration is decided optimally by a Genetic Algorithms
+    - The trajectories are computed using:
+        - Gipps car following model for conventional vehicles
+        - Polynomial degree k area under curve minimization for Lead/Follower AVs
+
+    :param allowable_phases: subset of all possible phases is used (no limitation but it should cover all movements)
+    '''
+
+    def __init__(self, inter_name, num_lanes, min_headway,allowable_phases):
+        super().__init__(inter_name, num_lanes, min_headway,allowable_phases)
+
+    def solve(self, lanes, critical_volume_ratio, num_lanes):
+        '''
+        The phases sequence is exactly as the allowable phases
+
+        '''
+        pass
+
+
+# -------------------------------------------------------
 # Genetic Algorithms
 # -------------------------------------------------------
 from sortedcontainers import SortedDict
@@ -171,10 +196,9 @@ class GA_SPaT(Signal):
 
     ACCURACY_OF_BADNESS_MEASURE = 100  # this is 10**(number of decimals we want to keep)
 
-    def __init__(self, inter_name, allowable_phases, num_lanes):
-        super().__init__(inter_name, allowable_phases, num_lanes)
-        # this dictionary hashes the bad sequences to avoid reevaluating them
-        self._bad_sequences = set([])
+    def __init__(self, inter_name, allowable_phases, num_lanes, min_headway):
+        super().__init__(inter_name, num_lanes, min_headway,allowable_phases)
+
 
     def solve(self, lanes, critical_volume_ratio, num_lanes):
         '''
@@ -278,7 +302,7 @@ class GA_SPaT(Signal):
                         veh_indx = first_unsrvd_indx[lane]
                         veh = lanes.vehlist[lane][veh_indx]
                         t_earliest = veh.get_earliest_arrival()
-                        t_scheduled = max(t_earliest, start_green, served_vehicle_time[lane] + self.SAT)
+                        t_scheduled = max(t_earliest, start_green, served_vehicle_time[lane] + self._min_headway)
 
                         if t_scheduled <= end_yellow:
                             travel_time = t_scheduled - veh.init_time
@@ -573,7 +597,8 @@ class Enumerate_SpaT(Signal):
                             # count and time processing new vehicles
                             temp_throughput[lane] += 1
                             if lanes.vehlist[lane][veh_indx].earlst > time_phase_ends:
-                                time_phase_ends = max(lanes.vehlist[lane][veh_indx].earlst, time_phase_ends + self.SAT)
+                                time_phase_ends = max(lanes.vehlist[lane][veh_indx].earlst,
+                                                      time_phase_ends + self._min_headway)
 
                             veh_indx += 1
 

@@ -61,22 +61,18 @@ class Vehicle:
         resets traj and its index
         look for the header in get_traffic.py __init__ method
         '''
-        trj_indx = 0
-        time = self.trajectory[0, trj_indx]
-        distance = self.trajectory[1, trj_indx]
-        speed = self.trajectory[2, trj_indx]
+        trj_indx, max_trj_indx = 0, self.last_trj_point_indx
+        time, distance, speed = self.trajectory[:, trj_indx]
         if time_threshold <= time:
             self.set_last_trj_point_indx(0)
         else:
             writer = csv.writer(file, delimiter=',')
-            while time <= time_threshold:
+            while time <= time_threshold and trj_indx <= max_trj_indx:
                 writer.writerows([[sc, self.veh_type, lane, time, distance, speed]])
                 file.flush()
 
                 trj_indx += 1
-                time = self.trajectory[0, trj_indx]
-                distance = self.trajectory[1, trj_indx]
-                speed = self.trajectory[2, trj_indx]
+                time, distance, speed = self.trajectory[:, trj_indx]
 
             self.trajectory[:, 0] = self.trajectory[:, trj_indx]
             self.set_last_trj_point_indx(0)
@@ -107,6 +103,27 @@ class Vehicle:
 
     def set_last_trj_point_indx(self, indx):
         self.last_trj_point_indx = indx
+
+    def map_veh_type2str(self, code):
+        if code == 1:
+            return 'Automated'
+        elif code == 0:
+            return 'Conventional'
+        else:
+            raise Exception('The numeric code of vehicle type is not known.')
+
+    def print_trj_points(self, lane, veh_indx):
+        veh_type_str = self.map_veh_type2str(self.veh_type)
+        last_trj_indx = self.last_trj_point_indx
+        rank = '1st' if veh_indx == 0 else ('2nd' if veh_indx == 1 else str(veh_indx + 1) + 'th')
+        lane_rank = rank + ' in lane ' + str(lane + 1)
+        print(
+            '* ' + veh_type_str + ' Vehicle ' + str(
+                self.ID) + ' ' + lane_rank + ': DETECETED ({:.2f} sec, {:.2f} m, {:.2f} m/s), SCHEDULED ({:.2f} sec, {:.2f} m, {:.2f} m/s), {:d} points'.format(
+                self.trajectory[0, 0], self.trajectory[1, 0], self.trajectory[2, 0],
+                self.trajectory[0, last_trj_indx], self.trajectory[1, last_trj_indx], self.trajectory[2, last_trj_indx],
+                last_trj_indx + 1
+            ))
 
     def save_trj_to_csv(self, inter_name):
         t, d, s = self.trajectory[:, 0: self.last_trj_point_indx]
