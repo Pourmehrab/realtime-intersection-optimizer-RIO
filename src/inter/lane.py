@@ -32,7 +32,7 @@ class Lanes:
         note deletion includes indx
         '''
 
-        del self.vehlist[lane][0:indx + 1]
+        del self.vehlist[lane][0:indx]
 
     def all_served(self, num_lanes):
         '''

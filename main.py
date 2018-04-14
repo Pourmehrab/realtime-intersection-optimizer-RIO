@@ -126,11 +126,11 @@ if __name__ == "__main__":
 
         # UPDATE VEHICLES
         # remove/record served vehicles and phases
-        traffic.update_at_stop_bar(lanes, simulation_time, num_lanes)
+        traffic.serve_at_stop_bar(lanes, simulation_time, num_lanes)
         signal.update_STaT(simulation_time)
 
         # add/update vehicles
-        traffic.update_on_vehicles(lanes, num_lanes, simulation_time, max_speed, min_headway, k)
+        traffic.update_vehicles_info(lanes, num_lanes, simulation_time, max_speed, min_headway, k)
         # update space mean speed
         volumes = traffic.get_volumes(lanes, num_lanes, det_range)
         critical_volume_ratio = 3600 * volumes.max() / min_headway
@@ -186,7 +186,7 @@ if __name__ == "__main__":
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_in_last_sc_arrived():
-            if traffic.keep_scenario():
+            if not lanes.all_served(num_lanes) or traffic.unarrived_vehicles():
                 simulator.next_sim_step()
                 simulation_time = simulator.get_clock()
             else:
