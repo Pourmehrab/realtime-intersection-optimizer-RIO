@@ -130,8 +130,8 @@ def get_general_params(inter_name):
         required for trajectory optimization
     '''
     if inter_name == '13th16th':
-        return 15, 2, 500, 10, 15
+        return 15.0, 2.0, 500.0, 10, 15
     elif inter_name == 'reserv':
-        return 15, 2, 500, 10, 15
+        return 15.0, 2.0, 500.0, 10, 15
     else:
         raise Exception('Simulation parameters are not known for this intersection.')

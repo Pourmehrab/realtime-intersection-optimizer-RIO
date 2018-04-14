@@ -127,13 +127,94 @@ class Signal:
             del self.SPaT_start[0]
             del self.SPaT_end[0]
 
-    def reset(self):  # todo fix this
+    def evaluate_badness(self, phase_seq, time_split, lanes, num_lanes):
+        '''
+        :return: 100 X average travel time by this SPaT
+        '''
+        mean_travel_time, throughput = 0.0, 0
+        temporary_scheduled_arrivals = {lane: np.zeros(len(lanes.vehlist[lane]), dtype=float) for lane in
+                                        range(num_lanes)}
+
+        # since we flushed SPaT, no more/less than one phase is there
+        phase = self.SPaT_sequence[0]
+        start_green, end_yellow = self.SPaT_start[0] + self.LAG, self.SPaT_end[0] - self._ar
+
+        # keeps index of last vehicle to be served by progressing SPaT
+        first_unsrvd_indx = np.array([0 for lane in range(num_lanes)], dtype=int)
+        served_vehicle_time = np.array([0.0 for lane in range(num_lanes)], dtype=float)
+        # keeps index of last vehicle to be served by progressing SPaT
+        last_vehicle_indx = np.array([len(lanes.vehlist[lane]) - 1 for lane in range(num_lanes)], dtype=int)
+
+        any_unserved_vehicle = [bool(lanes.vehlist[lane]) for lane in range(num_lanes)]
+        phase_indx, max_phase_indx = -1, len(phase_seq) - 1
+        while any(any_unserved_vehicle):  # serve all with the current phasing
+            for lane in self._pli[phase]:
+                if any_unserved_vehicle[lane]:
+                    while True:
+                        veh_indx = first_unsrvd_indx[lane]
+                        veh = lanes.vehlist[lane][veh_indx]
+                        t_earliest = veh.get_earliest_arrival()
+                        t_scheduled = max(t_earliest, start_green, served_vehicle_time[lane] + self._min_headway)
+
+                        if t_scheduled <= end_yellow:
+                            travel_time = t_scheduled - veh.init_time
+                            mean_travel_time = ((mean_travel_time * throughput) + travel_time) / (throughput + 1)
+                            throughput += 1
+
+                            served_vehicle_time[lane] = t_scheduled
+                            temporary_scheduled_arrivals[lane][veh_indx] = t_scheduled
+                            if first_unsrvd_indx[lane] < last_vehicle_indx[lane]:
+                                first_unsrvd_indx[lane] += 1
+                            else:
+                                any_unserved_vehicle[lane] = False
+                                break
+                        else:
+                            break
+            if phase_indx < max_phase_indx:
+                phase_indx += 1
+                phase = phase_seq[phase_indx]
+                start_green = end_yellow + self._ar
+                end_yellow = start_green + time_split[phase_indx] - self._ar
+            else:
+                break
+        return int(mean_travel_time * 100), throughput, any_unserved_vehicle, temporary_scheduled_arrivals
+
+    def complete_unserved_vehicles(self, lanes, num_lanes, scheduled_arrivals, any_unserved_vehicle):
+        '''
+        Since we don't consider phases here, this only serves the rest of vehicles one at a time
+        '''
+        max_arrival_time = 0
+        while any(any_unserved_vehicle):  # serve all with the current phasing
+            for lane in range(num_lanes):
+                if any_unserved_vehicle[lane]:
+                    veh_indx, max_veh_indx = 0, len(lanes.vehlist[lane])
+                    veh = lanes.vehlist[lane][veh_indx]
+                    lead_arrival_time = veh.get_scheduled_arrival()
+
+                    for veh_indx in range(1, max_veh_indx):
+
+                        veh = lanes.vehlist[lane][veh_indx]
+                        arrival_time = veh.get_scheduled_arrival()
+
+                        if arrival_time < lead_arrival_time:  # if not set through GA, arrival_time is 0.0
+                            arrival_time = max(lead_arrival_time, max_arrival_time) + self._min_headway
+                            max_arrival_time = max(arrival_time, max_arrival_time)
+
+                            # veh.set_scheduled_arrival(arrival_time)
+                            scheduled_arrivals[lane][veh_indx] = arrival_time
+                any_unserved_vehicle[lane] = False
+
+        return scheduled_arrivals
+
+    def reset(self):
         '''
         Reset signal for the next scenario
         Note it assumes next scenario is still on the same test intersection under same yellow and all-red
         Therefore it only resets the SPaT variables
+        Not important if the phase index even does not exists because the zero green duration removes this
+        instantly in the next iteration.
         '''
-        self.SPaT_sequence, self.SPaT_green_dur, self.SPaT_start, self.SPaT_end = [set(self._allowable_phases).pop()], [
+        self.SPaT_sequence, self.SPaT_green_dur, self.SPaT_start, self.SPaT_end = [0], [
             0], [0], [self._y + self._ar]
 
 
@@ -141,7 +222,7 @@ class Signal:
 # Pre-timed Signal Control
 # -------------------------------------------------------
 class Pretimed(Signal):
-    CYCLES_AHEAD = 20  # how many cycles of pre-timed control to be kept in line
+    NUM_CYCLES = 4  # keeps this many cycles in queue (at least 2)
     '''
     Assumptions:
     - The sequence and duration is pre-determined
@@ -155,23 +236,36 @@ class Pretimed(Signal):
         self._green_dur = pretimed_signal_plan['green_dur']
         self._y, self._ar = pretimed_signal_plan['yellow'], pretimed_signal_plan['all-red']
 
-        # add a dummy phase to initiate
+        # add a dummy phase to initiate (note this is the last phase in the sequence to make the order right)
         self.SPaT_sequence, self.SPaT_green_dur, self.SPaT_start, self.SPaT_end = [self._phase_seq[-1]], [0], \
                                                                                   [0], [self._y + self._ar]
 
-        for cycle in range(self.CYCLES_AHEAD):
+        for cycle in range(self.NUM_CYCLES):
             for indx, phase in enumerate(self._phase_seq):
                 self.enqueue(int(phase), self._green_dur[indx])
 
-    def solve(self):
+    def solve(self, lanes, num_lanes):
         '''
         The phases sequence is exactly as the allowable phases
         this simply adds a cycle once it drops by one
         Next it provides the departure schedule to be used for trajectory optimization
         '''
-        if len(self.SPaT_sequence) // len(self._phase_seq) < self.CYCLES_AHEAD - 1:
+        if len(self.SPaT_sequence) // len(self._phase_seq) < self.NUM_CYCLES - 1:
             for indx, phase in enumerate(self._phase_seq):
                 self.enqueue(int(phase), self._green_dur[indx])
+
+        # regardless of change in future SPaT, the following gets the arrival schedule
+        # scheduled_arrivals = {lane: np.zeros(len(lanes.vehlist[lane]), dtype=float) for lane in
+        #                       range(num_lanes)}
+
+        badness, throughput, any_unserved_vehicle, scheduled_arrivals = self.evaluate_badness(self.SPaT_sequence,
+                                                                                              self.SPaT_green_dur,
+                                                                                              lanes, num_lanes)
+
+        if any(any_unserved_vehicle):
+            scheduled_arrivals = self.complete_unserved_vehicles(lanes, num_lanes, scheduled_arrivals,
+                                                                 any_unserved_vehicle)
+        lanes.set_all_scheduled_arrival(scheduled_arrivals)
 
 
 # -------------------------------------------------------
@@ -226,8 +320,6 @@ class GA_SPaT(Signal):
         best_SPaT = {'phase_seq': tuple(), 'time_split': tuple(), 'badness_measure': 9999}
         best_all_served = bool()
 
-        self._temporary_scheduled_arrivals = {lane: np.zeros(len(lanes.vehlist[lane]), dtype=float) for lane in
-                                              range(num_lanes)}
         # correct max phase length in case goes above the range
         max_phase_length = min(len(self._allowable_phases), self.MAX_PHASE_LENGTH)
 
@@ -250,8 +342,9 @@ class GA_SPaT(Signal):
                 phase_seq = self.mutate_seq(phase_length)
                 time_split = self.mutate_timing(cycle_length, phase_length)
                 # evaluate the fitness function
-                badness, throughput, any_unserved_vehicle = self.evaluate_badness(phase_seq, time_split, lanes,
-                                                                                  num_lanes)
+                badness, throughput, any_unserved_vehicle, temporary_scheduled_arrivals = self.evaluate_badness(
+                    phase_seq, time_split, lanes,
+                    num_lanes)
 
                 population[badness] = {'phase_seq': phase_seq, 'time_split': time_split}
 
@@ -271,9 +364,10 @@ class GA_SPaT(Signal):
                                                                     population[parents_indx[1]],
                                                                     phase_length, half_max_indx)
                             # evaluate the fitness function
-                            badness, throughput, any_unserved_vehicle = self.evaluate_badness(phase_seq, time_split,
-                                                                                              lanes,
-                                                                                              num_lanes)
+                            badness, throughput, any_unserved_vehicle, temporary_scheduled_arrivals = self.evaluate_badness(
+                                phase_seq, time_split,
+                                lanes,
+                                num_lanes)
                             population[badness] = {'phase_seq': phase_seq, 'time_split': time_split}
 
             sorted_list = list(population.keys())
@@ -283,7 +377,7 @@ class GA_SPaT(Signal):
                 best_SPaT['phase_seq'] = tuple(population[best_temp_indiv]['phase_seq'])
                 best_SPaT['time_split'] = tuple(population[best_temp_indiv]['time_split'])
 
-                best_scheduled_arrivals = deepcopy(self._temporary_scheduled_arrivals)
+                best_scheduled_arrivals = deepcopy(temporary_scheduled_arrivals)
                 best_all_served = any_unserved_vehicle
 
         for indx, phase in enumerate(best_SPaT['phase_seq']):
@@ -293,80 +387,6 @@ class GA_SPaT(Signal):
             best_scheduled_arrivals = self.complete_unserved_vehicles(lanes, num_lanes, best_scheduled_arrivals,
                                                                       any_unserved_vehicle)
         lanes.set_all_scheduled_arrival(best_scheduled_arrivals)
-
-    def evaluate_badness(self, phase_seq, time_split, lanes, num_lanes):
-        mean_travel_time, throughput = 0.0, 0
-
-        # since we flushed SPaT, no more/less than one phase is there
-        phase = self.SPaT_sequence[0]
-        start_green, end_yellow = self.SPaT_start[0] + self.LAG, self.SPaT_end[0] - self._ar
-
-        # keeps index of last vehicle to be served by progressing SPaT
-        first_unsrvd_indx = np.array([0 for lane in range(num_lanes)], dtype=int)
-        served_vehicle_time = np.array([0.0 for lane in range(num_lanes)], dtype=float)
-        # keeps index of last vehicle to be served by progressing SPaT
-        last_vehicle_indx = np.array([len(lanes.vehlist[lane]) - 1 for lane in range(num_lanes)], dtype=int)
-
-        any_unserved_vehicle = [bool(lanes.vehlist[lane]) for lane in range(num_lanes)]
-        phase_indx, max_phase_indx = -1, len(phase_seq) - 1
-        while any(any_unserved_vehicle):  # serve all with the current phasing
-            for lane in self._pli[phase]:
-                if any_unserved_vehicle[lane]:
-                    while True:
-                        veh_indx = first_unsrvd_indx[lane]
-                        veh = lanes.vehlist[lane][veh_indx]
-                        t_earliest = veh.get_earliest_arrival()
-                        t_scheduled = max(t_earliest, start_green, served_vehicle_time[lane] + self._min_headway)
-
-                        if t_scheduled <= end_yellow:
-                            travel_time = t_scheduled - veh.init_time
-                            mean_travel_time = ((mean_travel_time * throughput) + travel_time) / (throughput + 1)
-                            throughput += 1
-
-                            served_vehicle_time[lane] = t_scheduled
-                            self._temporary_scheduled_arrivals[lane][veh_indx] = t_scheduled
-                            if first_unsrvd_indx[lane] < last_vehicle_indx[lane]:
-                                first_unsrvd_indx[lane] += 1
-                            else:
-                                any_unserved_vehicle[lane] = False
-                                break
-                        else:
-                            break
-            if phase_indx < max_phase_indx:
-                phase_indx += 1
-                phase = phase_seq[phase_indx]
-                start_green = end_yellow + self._ar
-                end_yellow = start_green + time_split[phase_indx] - self._ar
-            else:
-                break
-        return int(mean_travel_time * 100), throughput, any_unserved_vehicle
-
-    def complete_unserved_vehicles(self, lanes, num_lanes, scheduled_arrivals, any_unserved_vehicle):
-        '''
-        since we dont consider phases here, this only serves the rest of vehicles one at a time
-        '''
-        max_arrival_time = 0
-        while any(any_unserved_vehicle):  # serve all with the current phasing
-            for lane in range(num_lanes):
-                if any_unserved_vehicle[lane]:
-                    veh_indx, max_veh_indx = 0, len(lanes.vehlist[lane])
-                    veh = lanes.vehlist[lane][veh_indx]
-                    lead_arrival_time = veh.get_scheduled_arrival()
-
-                    for veh_indx in range(1, max_veh_indx):
-
-                        veh = lanes.vehlist[lane][veh_indx]
-                        arrival_time = veh.get_scheduled_arrival()
-
-                        if arrival_time < lead_arrival_time:  # if not set through GA, arrival_time is 0.0
-                            arrival_time = max(lead_arrival_time, max_arrival_time) + self.SAT
-                            max_arrival_time = max(arrival_time, max_arrival_time)
-
-                            veh.set_scheduled_arrival(arrival_time)
-                            scheduled_arrivals[lane][veh_indx] = arrival_time
-                any_unserved_vehicle[lane] = False
-
-        return scheduled_arrivals
 
     def get_optimal_cycle_length(self, critical_volume_ratio, phase_length):
         '''

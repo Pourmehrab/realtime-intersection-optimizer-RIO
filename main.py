@@ -24,8 +24,10 @@ from src.inter.lane import Lanes
 from src.inter.signal import GA_SPaT, Pretimed
 # Trajectory Optimizers
 from src.trj.traj import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
+
+
 # testing
-from unit_tests import SimTest
+# from unit_tests import SimTest
 
 
 def check_py_ver():
@@ -74,14 +76,6 @@ if __name__ == "__main__":
         method = sys.argv[2]
         # also look in src/inter/data.py
 
-    test_mode, test_time = True, 0  # need to supply unit_tests.py
-    # if test_mode:
-    #     tester = SimTest(num_lanes)
-    #     tester.add_traj_to_matplotlib(veh, lane, veh_type)
-    # if test_mode and simulation_time >= test_time:
-    #     tester.matplotlib_show_save(traffic.active_sc, det_range, simulation_time,
-    #                                 get_max_arrival_time(lanes))
-
     intersection = Intersection(inter_name)
     # intersection keeps lane-lane and phase-lane incidence dictionaries
     num_lanes = intersection.get_num_lanes()
@@ -113,6 +107,10 @@ if __name__ == "__main__":
     elif method == 'MCF' or method == 'actuated':
         raise Exception('This signal control method is not complete yet.')  # todo develop these
 
+    print_trj_info, test_time = False, 0  # need to supply unit_tests.py
+    # if print_trj_info:
+    #     tester = SimTest(num_lanes)
+
     # get the time when first vehicle shows up
     first_detection_time = traffic.get_first_detection_time()
 
@@ -141,7 +139,7 @@ if __name__ == "__main__":
         if method == 'GA':
             signal.solve(lanes, critical_volume_ratio, num_lanes)
         elif method == 'pretimed':
-            signal.solve()
+            signal.solve(lanes, num_lanes)
 
         elif method == 'MCF' or method == 'actuated':
             raise Exception('This signal control method is not complete yet.')  # todo develop these
@@ -162,7 +160,7 @@ if __name__ == "__main__":
                 else:
                     lead_conventional_trj_estimator.solve(veh)
 
-                if test_mode and simulation_time >= test_time:
+                if print_trj_info and simulation_time >= test_time:
                     veh.print_trj_points(lane, 0)
 
                 for veh_indx in range(1, len(lanes.vehlist[lane])):
@@ -183,7 +181,7 @@ if __name__ == "__main__":
                         # follower_conventional_trj_estimator.solve(veh, lead_veh) # todo activate this
                         lead_conventional_trj_estimator.solve(veh)
 
-                    if test_mode and simulation_time >= test_time:
+                    if print_trj_info and simulation_time >= test_time:
                         veh.print_trj_points(lane, veh_indx)
 
         # MOVE SIMULATION FORWARD
@@ -196,10 +194,6 @@ if __name__ == "__main__":
                 t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT'S JUST TIMING THE ALGORITHM
                 traffic.set_elapsed_sim_time(t_end - t_start)
                 print('### Elapsed Time: {:2.2f} sec ###'.format(int(1000 * (t_end - t_start)) / 1000), end='')
-
-                # plot trajectories
-                if test_mode:
-                    tester.matplotlib_show_save(traffic.active_sc, det_range, first_detection_time, simulation_time)
 
                 traffic.reset_scenario()
                 first_detection_time = traffic.get_first_detection_time()
@@ -218,8 +212,6 @@ if __name__ == "__main__":
                 # save the csv which has travel time column appended
                 traffic.save_csv(intersection.name)
                 traffic.close_trj_csv()
-                if test_mode:
-                    tester.matplotlib_show_save(traffic.active_sc, det_range, first_detection_time, simulation_time)
                 break
             else:
                 # this is the last scenario but still some vehicles have not been served

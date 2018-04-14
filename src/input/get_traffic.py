@@ -52,7 +52,7 @@ class Traffic:
         self.volumes = np.zeros(num_lanes, dtype=float)
 
         # open a file to store trajectories
-        filepath_trj = os.path.join('data/' + inter_name + '_trjs.csv')
+        filepath_trj = os.path.join('log/' + inter_name + '_trjs.csv')
         self.full_traj_csv_file = open(filepath_trj, 'w', newline='')
         writer = csv.writer(self.full_traj_csv_file, delimiter=',')
         writer.writerow(['sc', 'VehID', 'lane', 'time', 'distance', 'speed'])
