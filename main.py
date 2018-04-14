@@ -4,7 +4,7 @@
 # File name: main.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Apr/10/2018       #
+# Last Modified: Apr/14/2018       #
 ####################################
 
 '''
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     elif method == 'MCF' or method == 'actuated':
         raise Exception('This signal control method is not complete yet.')  # todo develop these
 
-    print_trj_info, test_time = False, 0  # need to supply unit_tests.py
+    print_trj_info, test_time = True, 0  # need to supply unit_tests.py
     # if print_trj_info:
     #     tester = SimTest(num_lanes)
 
@@ -209,6 +209,8 @@ if __name__ == "__main__":
         else:
             if lanes.all_served(num_lanes):
                 # all vehicles in the csv file are served
+                t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT'S JUST TIMING THE ALGORITHM
+                traffic.set_elapsed_sim_time(t_end - t_start)
                 # save the csv which has travel time column appended
                 traffic.save_csv(intersection.name)
                 traffic.close_trj_csv()

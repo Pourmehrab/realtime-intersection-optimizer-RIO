@@ -2,11 +2,11 @@
 # File name: get_traffic.py        #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Apr/07/2018       #
+# Last Modified: Apr/14/2018       #
 ####################################
 
-import os
 import csv
+import os
 
 import numpy as np
 import pandas as pd
@@ -129,7 +129,7 @@ class Traffic:
 
             # create the vehicle and get the earliest departure time
             veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed,
-                          dest, length, amin, amax, k, indx)
+                          dest, length, amin, amax, indx, k)
             # print('*** A veh of type ' + veh.map_veh_type2str(det_type) + ' detected @ {:2.2f} sec in lane {:d}'.format(
             #     det_time, lane + 1))
 

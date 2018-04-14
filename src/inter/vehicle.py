@@ -5,10 +5,10 @@
 # Last Modified: Apr/07/2018       #
 ####################################
 
+import csv
+
 import numpy as np
 import pandas as pd
-
-import csv
 
 
 class Vehicle:
@@ -65,7 +65,7 @@ class Vehicle:
         time, distance, speed = self.trajectory[:, trj_indx]
         if time_threshold <= time:
             self.set_last_trj_point_indx(0)
-        else:
+        else:  # write trajectory points in the csv file and then remove them and then set the first trj point
             writer = csv.writer(file, delimiter=',')
             while time <= time_threshold and trj_indx <= max_trj_indx:
                 writer.writerows([[sc, self.veh_type, lane, time, distance, speed]])
