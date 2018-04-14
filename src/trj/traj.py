@@ -47,6 +47,24 @@ class Trajectory:
         veh.trajectory[:, 0:n] = [t, d, s]
         veh.set_last_trj_point_indx(n - 1)
 
+    def necessary(self, veh):
+        '''
+        checks if the trajectory model should solve be run (returns True) or not (False)
+        :return:
+        '''
+
+        trajectory = veh.trajectory
+        last_trj_point_indx = veh.get_last_trj_point_indx()
+        if last_trj_point_indx < 0:
+            return True
+
+        curr_dist = trajectory[1, 0]
+        if curr_dist <= self.EPS:
+            return False
+        # else:
+        #
+        #     if
+
 
 # -------------------------------------------------------
 # LEAD CONVENTIONAL TRAJECTORY ESTIMATOR
@@ -60,17 +78,33 @@ class LeadConventional(Trajectory):
         '''
         Constructs the trajectory of the lead conventional vehicle assuming they maintain their speed
         '''
-        trajectory = veh.trajectory
-        det_time, det_dist, det_speed = trajectory[:, 0]
+        if self.necessary(veh):
+            trajectory = veh.trajectory
+            det_time, det_dist, det_speed = trajectory[:, 0]
+            scheduled_arrival = veh.get_scheduled_arrival()  # the time this vehicle departs the stop bar
 
-        arrival_time = det_time + det_dist / det_speed
+            arrival_time = det_time + det_dist / det_speed
 
-        t = self.vectorize_time_interval(det_time, arrival_time)
-        s = np.array([det_speed for i in range(len(t))])
-        d = np.array([det_dist - det_speed *
-                      (t[i] - det_time) for i in range(len(t))])
+            t = self.vectorize_time_interval(det_time, arrival_time)
+            s = np.array([det_speed for i in range(len(t))])
+            d = np.array([det_dist - det_speed *
+                          (t[i] - det_time) for i in range(len(t))])
 
-        self.set_trajectory(veh, t, d, s)
+            if arrival_time > scheduled_arrival:
+                raise Exception('earliest arrival of a lead conventional is later than the scheduled time.')
+            else:
+
+                t_augment = self.vectorize_time_interval(t[-1], scheduled_arrival)
+                d_augment = [0 for t in t_augment]
+                s_augment = [0 for t in t_augment]
+
+                t = np.append(t, t_augment)
+                d = np.append(d, d_augment)
+                s = np.append(s, s_augment)
+
+                veh.set_last_trj_point_indx(len(t) + len(t_augment))
+
+                self.set_trajectory(veh, t, d, s)
 
 
 # -------------------------------------------------------
@@ -100,7 +134,7 @@ class FollowerConventional(Trajectory):
 
         lead_trajectory = lead_veh.trajectory
         lead_max_dec, lead_length = lead_veh.max_decel_rate, lead_veh.length
-        lead_last_trj_point_indx = lead_veh.last_trj_point_indx
+        lead_last_trj_point_indx = lead_veh.get_last_trj_point_indx()
 
         lead_trj_indx = 0  # this starts with followers first and goes to leads last point
         while lead_trj_indx <= lead_last_trj_point_indx:

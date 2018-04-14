@@ -267,6 +267,14 @@ class Pretimed(Signal):
                                                                  any_unserved_vehicle)
         lanes.set_all_scheduled_arrival(scheduled_arrivals)
 
+    def reset(self):
+        # add a dummy phase to initiate (note this is the last phase in the sequence to make the order right)
+        self.SPaT_sequence, self.SPaT_green_dur, self.SPaT_start, self.SPaT_end = [self._phase_seq[-1]], [0], \
+                                                                                  [0], [self._y + self._ar]
+        for cycle in range(self.NUM_CYCLES):
+            for indx, phase in enumerate(self._phase_seq):
+                self.enqueue(int(phase), self._green_dur[indx])
+
 
 # -------------------------------------------------------
 # Genetic Algorithms
