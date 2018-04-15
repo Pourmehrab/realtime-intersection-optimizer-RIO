@@ -74,7 +74,7 @@ class LeadConventional(Trajectory):
         d = np.array([det_dist - det_speed *
                       (t[i] - det_time) for i in range(len(t))])
 
-        if arrival_time > scheduled_arrival:
+        if arrival_time > scheduled_arrival + self.EPS:
             raise Exception('earliest arrival of a lead conventional is later than the scheduled time.')
         else:
 
@@ -116,7 +116,7 @@ class FollowerConventional(Trajectory):
 
         lead_trajectory = lead_veh.trajectory
         lead_max_dec, lead_length = lead_veh.max_decel_rate, lead_veh.length
-        lead_trj_indx = lead_veh.get_first_trj_point_indx() # this starts with followers first and goes to leads last point
+        lead_trj_indx = lead_veh.get_first_trj_point_indx()  # this starts with followers first and goes to leads last point
         lead_last_trj_point_indx = lead_veh.get_last_trj_point_indx()
 
         while lead_trj_indx <= lead_last_trj_point_indx:

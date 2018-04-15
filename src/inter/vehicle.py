@@ -41,7 +41,7 @@ class Vehicle:
         self.max_accel_rate = amax
         self.destination = dest
         self.desired_speed = des_speed
-        self.trajectory = np.zeros((3, self.MAX_NUM_TRAJECTORY_POINTS), dtype=float)  # the shape is important
+        self.trajectory = np.zeros((3, self.MAX_NUM_TRAJECTORY_POINTS), dtype=np.float)  # the shape is important
         self.first_trj_point_indx = 0
         self.trajectory[:, 0] = [det_time, dist, speed, ]
         self.last_trj_point_indx = -1  # last index < first index means no traj have computed
@@ -64,13 +64,18 @@ class Vehicle:
 
         # write trajectory points in the csv file and then remove them and then set the first trj point
         if time < time_threshold:
-            writer = csv.writer(file, delimiter=',')
-            while time < time_threshold and trj_indx <= max_trj_indx:
-                time, distance, speed = self.trajectory[:, trj_indx]
-                writer.writerows([[sc, self.ID, self.veh_type, lane, time, distance, speed]])
-                file.flush()
+            if file is None:  # don't have to write csv
+                while time < time_threshold and trj_indx <= max_trj_indx:
+                    time = self.trajectory[0, trj_indx]
+                    trj_indx += 1
 
-                trj_indx += 1
+            else:  # get full info and write trj points in the csv
+                writer = csv.writer(file, delimiter=',')
+                while time < time_threshold and trj_indx <= max_trj_indx:
+                    time, distance, speed = self.trajectory[:, trj_indx]
+                    writer.writerows([[sc, self.ID, self.veh_type, lane, time, distance, speed]])
+                    file.flush()
+                    trj_indx += 1
 
             self.set_first_trj_point_indx(trj_indx - 1)
 

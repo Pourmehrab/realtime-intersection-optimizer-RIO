@@ -76,6 +76,13 @@ if __name__ == "__main__":
         method = sys.argv[2]
         # also look in src/inter/data.py
 
+    # ################## SET SOME PARAMS
+    log_at_vehicle_level = False
+    log_at_trj_point_level = True  # can make the code much slower
+    print_trj_info, test_time = True, 0  # need to supply unit_tests.py
+    # if print_trj_info:
+    #     tester = SimTest(num_lanes)
+
     intersection = Intersection(inter_name)
     # intersection keeps lane-lane and phase-lane incidence dictionaries
     num_lanes = intersection.get_num_lanes()
@@ -88,7 +95,7 @@ if __name__ == "__main__":
     lanes = Lanes(num_lanes)
 
     # load entire traffic generated in csv file
-    traffic = Traffic(inter_name, num_lanes)
+    traffic = Traffic(inter_name, num_lanes, log_at_vehicle_level, log_at_trj_point_level)
 
     # initialize trajectory planners
     lead_conventional_trj_estimator = LeadConventional(max_speed, min_headway)
@@ -107,10 +114,6 @@ if __name__ == "__main__":
     elif method == 'MCF' or method == 'actuated':
         raise Exception('This signal control method is not complete yet.')  # todo develop these
 
-    print_trj_info, test_time = True, 0  # need to supply unit_tests.py
-    # if print_trj_info:
-    #     tester = SimTest(num_lanes)
-
     # get the time when first vehicle shows up
     first_detection_time = traffic.get_first_detection_time()
 
@@ -118,7 +121,9 @@ if __name__ == "__main__":
     simulator = Simulator(first_detection_time)
 
     # here we start doing optimization for all scenarios included in the csv file
-    t_start = time.clock()  # to measure total run time (IS NOT THE SIMULATION TIME)
+    if log_at_vehicle_level:
+        t_start = time.clock()  # to measure total run time (IS NOT THE SIMULATION TIME)
+
     while True:  # stops when all rows of csv are processed (a break statement controls this)
         simulation_time = simulator.get_clock()  # gets current simulation clock
         print('\nUPDATE AT CLOCK: {:.2f} SEC #################################'.format(
@@ -180,11 +185,11 @@ if __name__ == "__main__":
             if not lanes.all_served(num_lanes) or traffic.unarrived_vehicles():
                 simulator.next_sim_step()
                 simulation_time = simulator.get_clock()
-            else:
-                # simulation of a scenario ended move on to the next scenario
-                t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT'S JUST TIMING THE ALGORITHM
-                traffic.set_elapsed_sim_time(t_end - t_start)
-                print('### ELAPSED TIME: {:2.2f} sec ###'.format(int(1000 * (t_end - t_start)) / 1000), end='')
+            else:  # simulation of a scenario ended move on to the next scenario
+                if log_at_vehicle_level:
+                    t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT'S JUST TIMING THE ALGORITHM
+                    traffic.set_elapsed_sim_time(t_end - t_start)
+                    print('### ELAPSED TIME: {:2.2f} sec ###'.format(int(1000 * (t_end - t_start)) / 1000), end='')
 
                 traffic.reset_scenario()
                 first_detection_time = traffic.get_first_detection_time()
@@ -195,17 +200,18 @@ if __name__ == "__main__":
 
                 signal.reset()
 
-                t_start = time.clock()  # reset the timer
-
+                if log_at_vehicle_level:
+                    t_start = time.clock()  # reset the timer
         else:
-            if lanes.all_served(num_lanes):
-                # all vehicles in the csv file are served
-                t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT'S JUST TIMING THE ALGORITHM
-                traffic.set_elapsed_sim_time(t_end - t_start)
-                # save the csv which has travel time column appended
-                traffic.save_csv(intersection.name)
-                traffic.close_trj_csv()
+            if lanes.all_served(num_lanes):  # all vehicles in the csv file are served
+                if log_at_vehicle_level:
+                    t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT'S JUST TIMING THE ALGORITHM
+                    traffic.set_elapsed_sim_time(t_end - t_start)
+
+                    # save the csv which has travel time column appended
+                    traffic.save_csv(intersection.name)
+                if log_at_trj_point_level:
+                    traffic.close_trj_csv()
                 break
-            else:
-                # this is the last scenario but still some vehicles have not been served
+            else:  # this is the last scenario but still some vehicles have not been served
                 simulator.next_sim_step()

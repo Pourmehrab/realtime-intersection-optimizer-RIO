@@ -2,7 +2,7 @@
 # File name: signal.py             #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Apr/08/2018       #
+# Last Modified: Apr/15/2018       #
 ####################################
 
 import numpy as np

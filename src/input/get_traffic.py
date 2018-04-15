@@ -2,7 +2,7 @@
 # File name: get_traffic.py        #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Apr/14/2018       #
+# Last Modified: Apr/15/2018       #
 ####################################
 
 import csv
@@ -25,7 +25,10 @@ class Traffic:
     Goal 3)
     '''
 
-    def __init__(self, inter_name, num_lanes):
+    def __init__(self, inter_name, num_lanes, log_at_vehicle_level, log_at_trj_point_level):
+        self.log_at_vehicle_level = log_at_vehicle_level
+        self.log_at_trj_point_level = log_at_trj_point_level
+
         # get the path to the csv file and load up the traffic
         filepath = os.path.join('data/' + inter_name + '.csv')
         if os.path.exists(filepath):
@@ -43,21 +46,25 @@ class Traffic:
         # note this is cumulative and won't reset after a scenario is done
         self.curr_indx = -1
 
-        # the column to compute the travel time
-        self.all_vehicles['departure time'] = 'NaN'
-        self.all_vehicles['ID'] = 'NaN'
-        # the column to store simulation time per scenario
-        self.all_vehicles['elapsed time'] = 'NaN'
+        if log_at_vehicle_level:
+            # the column to compute the travel time
+            self.all_vehicles['departure time'] = 'NaN'
+            self.all_vehicles['ID'] = 'NaN'
+            # the column to store simulation time per scenario
+            self.all_vehicles['elapsed time'] = 'NaN'
 
         # initialize volumes vector
         self.volumes = np.zeros(num_lanes, dtype=float)
 
-        # open a file to store trajectories
-        filepath_trj = os.path.join('log/' + inter_name + '_trjs.csv')
-        self.full_traj_csv_file = open(filepath_trj, 'w', newline='')
-        writer = csv.writer(self.full_traj_csv_file, delimiter=',')
-        writer.writerow(['sc', 'VehID', 'type', 'lane', 'time', 'distance', 'speed'])
-        self.full_traj_csv_file.flush()
+        if log_at_trj_point_level:
+            # open a file to store trajectories
+            filepath_trj = os.path.join('log/' + inter_name + '_trjs.csv')
+            self.full_traj_csv_file = open(filepath_trj, 'w', newline='')
+            writer = csv.writer(self.full_traj_csv_file, delimiter=',')
+            writer.writerow(['sc', 'VehID', 'type', 'lane', 'time', 'distance', 'speed'])
+            self.full_traj_csv_file.flush()
+        else:
+            self.full_traj_csv_file = None
 
     def set_travel_time(self, travel_time, indx, id):
         self.all_vehicles['departure time'][indx] = travel_time
@@ -199,7 +206,8 @@ class Traffic:
                     if dep_time <= simulation_time:  # served
                         any_veh_served = True
                         veh_indx += 1
-                        self.set_travel_time(dep_time, veh.csv_indx, veh.ID)
+                        if self.log_at_vehicle_level:
+                            self.set_travel_time(dep_time, veh.csv_indx, veh.ID)
                     else:
                         break
 
