@@ -58,7 +58,7 @@ class Traffic:
 
         if log_at_trj_point_level:
             # open a file to store trajectories
-            filepath_trj = os.path.join('log/' + inter_name + '_trjs.csv')
+            filepath_trj = os.path.join('log/' + inter_name + '_trj_point_level.csv')
             self.full_traj_csv_file = open(filepath_trj, 'w', newline='')
             writer = csv.writer(self.full_traj_csv_file, delimiter=',')
             writer.writerow(['sc', 'VehID', 'type', 'lane', 'time', 'distance', 'speed'])
@@ -74,7 +74,7 @@ class Traffic:
         self.all_vehicles['elapsed time'][self.curr_indx] = t
 
     def save_csv(self, inter_name):
-        filepath = os.path.join('log/' + inter_name + '_results.csv')
+        filepath = os.path.join('log/' + inter_name + '_vehicle_level.csv')
         self.all_vehicles.to_csv(filepath, index=False)
 
     def close_trj_csv(self):

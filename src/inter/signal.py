@@ -16,7 +16,7 @@ from src.optional.enum_phases import phenum
 class Signal:
     LAG = 1  # lag time from start of green when a vehicle can depart (also used in traj.py)
 
-    def __init__(self, inter_name, num_lanes, min_headway):
+    def __init__(self, inter_name, num_lanes, min_headway, print_signal_detail):
         '''
         - sequence keeps the sequence of phases to be executed from 0
         - green_dur keeps the amount of green allocated to each phase
@@ -37,6 +37,8 @@ class Signal:
 
         self._set_lane_lane_incidence(num_lanes)
         self._set_phase_lane_incidence(num_lanes)
+
+        self._print_signal_detail = print_signal_detail
 
     def _set_lane_lane_incidence(self, num_lanes):
         '''
@@ -95,13 +97,15 @@ class Signal:
         '''
         if self.SPaT_sequence[-1] == phase:  # extend this phase
             self.SPaT_end[-1] = self.SPaT_start[-1] + actual_green + self._y + self._ar
-            print('*** Phase {:d} Extended (ends @ {:2.2f} sec)'.format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
+            if self._print_signal_detail:
+                print('*** Phase {:d} Extended (ends @ {:2.2f} sec)'.format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
         else:  # append a new phase
             self.SPaT_sequence += [phase]
             self.SPaT_green_dur += [actual_green]
             self.SPaT_start += [self.SPaT_end[-1]]
             self.SPaT_end += [self.SPaT_start[-1] + actual_green + self._y + self._ar]
-            print('*** Phase {:d} Appended (ends @ {:2.2f} sec)'.format(phase, self.SPaT_end[-1]))
+            if self._print_signal_detail:
+                print('*** Phase {:d} Appended (ends @ {:2.2f} sec)'.format(phase, self.SPaT_end[-1]))
 
     def set_critical_volumes(self, volumes):
         '''
@@ -117,11 +121,13 @@ class Signal:
             self.SPaT_start = [self.SPaT_start[0]]
             self.SPaT_end = [self.SPaT_end[0]]
 
-        print('** SPaT Flushed')
+        if self._print_signal_detail:
+            print('** SPaT Flushed')
 
     def update_STaT(self, t):
         while len(self.SPaT_end) > 1 and t >= self.SPaT_end[0]:
-            print('** Phase {:d} Purged.'.format(self.SPaT_sequence[0]))
+            if self._print_signal_detail:
+                print('** Phase {:d} Purged.'.format(self.SPaT_sequence[0]))
             del self.SPaT_sequence[0]
             del self.SPaT_green_dur[0]
             del self.SPaT_start[0]
@@ -153,8 +159,11 @@ class Signal:
                     while True:
                         veh_indx = first_unsrvd_indx[lane]
                         veh = lanes.vehlist[lane][veh_indx]
-                        t_earliest = veh.get_earliest_arrival()
-                        t_scheduled = max(t_earliest, start_green, served_vehicle_time[lane] + self._min_headway)
+
+                        t_earliest = veh.earliest_arrival
+                        # depending on if we are keeping the prev trajectory or not, schedule or reschedule departure
+                        t_scheduled = max(t_earliest, start_green, served_vehicle_time[
+                            lane] + self._min_headway) if veh.redo_trj() else veh.scheduled_arrival
 
                         if t_scheduled <= end_yellow:
                             travel_time = t_scheduled - veh.init_time
@@ -228,8 +237,8 @@ class Pretimed(Signal):
     - The sequence and duration is pre-determined
     '''
 
-    def __init__(self, inter_name, num_lanes, min_headway):
-        super().__init__(inter_name, num_lanes, min_headway)
+    def __init__(self, inter_name, num_lanes, min_headway, print_signal_detail):
+        super().__init__(inter_name, num_lanes, min_headway, print_signal_detail)
 
         pretimed_signal_plan = data_importer.get_pretimed_parameters(inter_name)
         self._phase_seq = pretimed_signal_plan['phase_seq']
@@ -303,8 +312,8 @@ class GA_SPaT(Signal):
 
     ACCURACY_OF_BADNESS_MEASURE = 100  # this is 10**(number of decimals we want to keep)
 
-    def __init__(self, inter_name, allowable_phases, num_lanes, min_headway):
-        super().__init__(inter_name, num_lanes, min_headway, allowable_phases)
+    def __init__(self, inter_name, allowable_phases, num_lanes, min_headway, print_signal_detail):
+        super().__init__(inter_name, num_lanes, min_headway, print_signal_detail)
 
         self._allowable_phases = allowable_phases
 

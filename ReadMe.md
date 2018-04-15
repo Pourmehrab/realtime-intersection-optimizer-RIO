@@ -27,7 +27,7 @@ Directory `\data\` includes:
 
 # Output Data
 Directory `\log\` includes:
-* `<intersection name>_results.csv`: includes input csv plus the `departure time` and `elapsed time` columns.
+* `<intersection name>_vehicle_level, _trj_point_level.csv`: includes input csv plus the `departure time` and `elapsed time` columns.
 # Notes
 * `signal.solve()` extends by each optimization method, i.e, `GA` or `MCF`.
 * simulation resolution is set as a class variable `Simulation.STEP` in seconds

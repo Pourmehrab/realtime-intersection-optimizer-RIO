@@ -56,9 +56,17 @@ def get_max_arrival_time(lanes):
 
 
 if __name__ == "__main__":
+    ################### SET SOME PARAMETERS PN LOGGING AND PRINTING BEHAVIOUR
+    log_at_vehicle_level = True  # writes the <inter_name>_vehicle_level.csv
+    log_at_trj_point_level = False  # writes the <inter_name>_trj_point_level.csv
+    print_trj_info, test_time = False, 0  # prints arrival departures in command line
+    print_signal_detail = False  # prints signal info in command line
+    print_clock = False  # prints the timer in command line
+    # if print_trj_info:
+    #     tester = SimTest(num_lanes)
 
     print(
-        'University of Florida. By Mahmoud Pourmehrab ######################\n')
+        'University of Florida.\nBy Mahmoud Pourmehrab ######################\n')
     print('Interpreter Information ###################################')
     print('Python Path: ', sys.executable)
     print('Python Version: ', sys.version)
@@ -75,13 +83,6 @@ if __name__ == "__main__":
         # optimization method
         method = sys.argv[2]
         # also look in src/inter/data.py
-
-    # ################## SET SOME PARAMS
-    log_at_vehicle_level = False
-    log_at_trj_point_level = True  # can make the code much slower
-    print_trj_info, test_time = True, 0  # need to supply unit_tests.py
-    # if print_trj_info:
-    #     tester = SimTest(num_lanes)
 
     intersection = Intersection(inter_name)
     # intersection keeps lane-lane and phase-lane incidence dictionaries
@@ -107,9 +108,9 @@ if __name__ == "__main__":
     if method == 'GA':
         # define what subset of phase-lane incidence matrix should be used
         # minimal set of phase indices to cover all movements (17, 9, 8, 15) for 13th16th intersection
-        signal = GA_SPaT(inter_name, (0, 1, 2, 3,), num_lanes, min_headway)
+        signal = GA_SPaT(inter_name, (0, 1, 2, 3,), num_lanes, min_headway, print_signal_detail)
     elif method == 'pretimed':
-        signal = Pretimed(inter_name, num_lanes, min_headway)
+        signal = Pretimed(inter_name, num_lanes, min_headway, print_signal_detail)
 
     elif method == 'MCF' or method == 'actuated':
         raise Exception('This signal control method is not complete yet.')  # todo develop these
@@ -126,8 +127,9 @@ if __name__ == "__main__":
 
     while True:  # stops when all rows of csv are processed (a break statement controls this)
         simulation_time = simulator.get_clock()  # gets current simulation clock
-        print('\nUPDATE AT CLOCK: {:.2f} SEC #################################'.format(
-            simulation_time))
+        if print_clock:
+            print('\nUPDATE AT CLOCK: {:.2f} SEC #################################'.format(
+                simulation_time))
 
         # UPDATE VEHICLES
         # remove/record served vehicles and phases
@@ -156,10 +158,10 @@ if __name__ == "__main__":
                 for veh_indx, veh in enumerate(lanes.vehlist[lane]):
                     if veh.redo_trj():  # false if we want to keep previous trajectory
                         veh_type = veh.veh_type
-                        arrival_time = veh.get_scheduled_arrival()
+                        arrival_time = veh.scheduled_arrival
                         if veh_indx > 0 and veh_type == 1:  # follower CAV
                             lead_veh = lanes.vehlist[lane][veh_indx - 1]
-                            lead_poly = lead_veh.get_poly_coeffs()
+                            lead_poly = lead_veh._poly_coeffs
                             lead_arrival_time = lead_veh.get_scheduled_arrival()
                             model = follower_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed,
                                                                                lead_poly, lead_veh.init_time,
@@ -167,8 +169,7 @@ if __name__ == "__main__":
                             follower_connected_trj_optimizer.solve(veh, model, arrival_time)
                         elif veh_indx > 0 and veh_type == 0:  # follower conventional
                             lead_veh = lanes.vehlist[lane][veh_indx - 1]
-                            # follower_conventional_trj_estimator.solve(veh, lead_veh) # todo activate this
-                            lead_conventional_trj_estimator.solve(veh)
+                            follower_conventional_trj_estimator.solve(veh, lead_veh)
                         elif veh_indx == 0 and veh_type == 1:  # lead CAV
                             model = lead_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed)
                             lead_connected_trj_optimizer.solve(veh, model, arrival_time)

@@ -65,7 +65,7 @@ class LeadConventional(Trajectory):
         '''
         trajectory = veh.trajectory
         det_time, det_dist, det_speed = trajectory[:, 0]
-        scheduled_arrival = veh.get_scheduled_arrival()  # the time this vehicle departs the stop bar
+        scheduled_arrival = veh.scheduled_arrival  # the time this vehicle departs the stop bar
 
         arrival_time = det_time + det_dist / det_speed
 
@@ -116,8 +116,8 @@ class FollowerConventional(Trajectory):
 
         lead_trajectory = lead_veh.trajectory
         lead_max_dec, lead_length = lead_veh.max_decel_rate, lead_veh.length
-        lead_trj_indx = lead_veh.get_first_trj_point_indx()  # this starts with followers first and goes to leads last point
-        lead_last_trj_point_indx = lead_veh.get_last_trj_point_indx()
+        lead_trj_indx = lead_veh.first_trj_point_indx  # this starts with followers first and goes to leads last point
+        lead_last_trj_point_indx = lead_veh.last_trj_point_indx
 
         while lead_trj_indx <= lead_last_trj_point_indx:
             # this avoids considering the part of lead trajectory before follower showed up
@@ -130,7 +130,7 @@ class FollowerConventional(Trajectory):
             # check vehicle update process since lead vehicle should have been removed
             raise Exception('The lead vehicle sent to FollowerConventional() should have been removed.')
 
-        follower_trj_indx = veh.get_first_trj_point_indx()
+        follower_trj_indx = veh.first_trj_point_indx
         while lead_trj_indx < lead_last_trj_point_indx:  # less than is used since it computes the next trajectory point
             next_trj_indx = follower_trj_indx + 1
             lead_speed = lead_trajectory[2, lead_trj_indx]

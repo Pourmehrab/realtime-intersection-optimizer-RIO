@@ -85,32 +85,17 @@ class Vehicle:
         '''
         self.earliest_arrival = t_earliest  # this is the absolute earliest time
 
-    def get_earliest_arrival(self):
-        return self.earliest_arrival
-
     def set_scheduled_arrival(self, t_scheduled):
         self.scheduled_arrival = t_scheduled
-
-    def get_scheduled_arrival(self):
-        return self.scheduled_arrival
 
     def set_poly_coeffs(self, beta):
         self._poly_coeffs = beta
 
-    def get_poly_coeffs(self):
-        return self._poly_coeffs
-
     def set_first_trj_point_indx(self, indx):
         self.first_trj_point_indx = indx
 
-    def get_first_trj_point_indx(self, indx):
-        self.get_trj_point_indx = indx
-
     def set_last_trj_point_indx(self, indx):
         self.last_trj_point_indx = indx
-
-    def get_last_trj_point_indx(self):
-        return self.last_trj_point_indx
 
     def map_veh_type2str(self, code):
         if code == 1:
