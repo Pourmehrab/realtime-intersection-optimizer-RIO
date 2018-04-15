@@ -2,7 +2,7 @@
 # File name: vehicle.py            #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Apr/07/2018       #
+# Last Modified: Apr/15/2018       #
 ####################################
 
 import csv
@@ -52,9 +52,6 @@ class Vehicle:
 
         self.earliest_arrival, self.scheduled_arrival = 0.0, 0.0  # will be set with their set methods
         self._do_trj = True
-
-    def get_vehicle_type(self):
-        return self.veh_type
 
     def reset_trj_points(self, sc, lane, time_threshold, file):
         '''
