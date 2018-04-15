@@ -149,40 +149,42 @@ if __name__ == "__main__":
         for lane in range(num_lanes):
             if bool(lanes.vehlist[lane]):  # not an empty lane
                 veh = lanes.vehlist[lane][0]
-                veh_type = veh.get_vehicle_type()
+                if veh.redo_trj():
+                    veh_type = veh.get_vehicle_type()
 
-                arrival_time = veh.get_scheduled_arrival()
-
-                # send to optimizer
-                if veh_type == 1:
-                    model = lead_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed)
-                    lead_connected_trj_optimizer.solve(veh, model, arrival_time)
-                else:
-                    lead_conventional_trj_estimator.solve(veh)
-
-                if print_trj_info and simulation_time >= test_time:
-                    veh.print_trj_points(lane, 0)
-
-                for veh_indx in range(1, len(lanes.vehlist[lane])):
-                    veh = lanes.vehlist[lane][veh_indx]
                     arrival_time = veh.get_scheduled_arrival()
-
-                    lead_veh = lanes.vehlist[lane][veh_indx - 1]
 
                     # send to optimizer
                     if veh_type == 1:
-                        lead_poly = lead_veh.get_poly_coeffs()
-                        lead_arrival_time = lead_veh.get_scheduled_arrival()
-                        model = follower_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed,
-                                                                           lead_poly, lead_veh.init_time,
-                                                                           lead_arrival_time)
-                        follower_connected_trj_optimizer.solve(veh, model, arrival_time)
+                        model = lead_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed)
+                        lead_connected_trj_optimizer.solve(veh, model, arrival_time)
                     else:
-                        # follower_conventional_trj_estimator.solve(veh, lead_veh) # todo activate this
                         lead_conventional_trj_estimator.solve(veh)
-
+                    veh.set_redo_trj_false()  # todo after changes with the fusion outputs
                     if print_trj_info and simulation_time >= test_time:
-                        veh.print_trj_points(lane, veh_indx)
+                        veh.print_trj_points(lane, 0)
+
+                    for veh_indx in range(1, len(lanes.vehlist[lane])):
+                        veh = lanes.vehlist[lane][veh_indx]
+                        arrival_time = veh.get_scheduled_arrival()
+
+                        lead_veh = lanes.vehlist[lane][veh_indx - 1]
+
+                        # send to optimizer
+                        if veh_type == 1:
+                            lead_poly = lead_veh.get_poly_coeffs()
+                            lead_arrival_time = lead_veh.get_scheduled_arrival()
+                            model = follower_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed,
+                                                                               lead_poly, lead_veh.init_time,
+                                                                               lead_arrival_time)
+                            follower_connected_trj_optimizer.solve(veh, model, arrival_time)
+                        else:
+                            # follower_conventional_trj_estimator.solve(veh, lead_veh) # todo activate this
+                            lead_conventional_trj_estimator.solve(veh)
+                        veh.set_redo_trj_false()  # todo after changes with the fusion outputs
+
+                        if print_trj_info and simulation_time >= test_time:
+                            veh.print_trj_points(lane, veh_indx)
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_in_last_sc_arrived():

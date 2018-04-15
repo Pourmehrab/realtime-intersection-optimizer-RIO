@@ -32,7 +32,9 @@ class Trajectory:
         '''
         vectorize by RES
         '''
-        if end_time - start_time % self.RES > self.EPS:
+        if end_time <= start_time:
+            return np.array([])
+        elif end_time - start_time % self.RES > self.EPS:
             trj_time_stamps = np.append(np.arange(start_time, end_time, Trajectory.RES, dtype=float), end_time)
         else:
             trj_time_stamps = np.arange(start_time, end_time, Trajectory.RES, dtype=float)
@@ -45,25 +47,8 @@ class Trajectory:
         '''
         n = len(t)
         veh.trajectory[:, 0:n] = [t, d, s]
+        veh.set_first_trj_point_indx(0)
         veh.set_last_trj_point_indx(n - 1)
-
-    def necessary(self, veh):
-        '''
-        checks if the trajectory model should solve be run (returns True) or not (False)
-        :return:
-        '''
-
-        trajectory = veh.trajectory
-        last_trj_point_indx = veh.get_last_trj_point_indx()
-        if last_trj_point_indx < 0:
-            return True
-
-        curr_dist = trajectory[1, 0]
-        if curr_dist <= self.EPS:
-            return False
-        # else:
-        #
-        #     if
 
 
 # -------------------------------------------------------
@@ -78,33 +63,30 @@ class LeadConventional(Trajectory):
         '''
         Constructs the trajectory of the lead conventional vehicle assuming they maintain their speed
         '''
-        if self.necessary(veh):
-            trajectory = veh.trajectory
-            det_time, det_dist, det_speed = trajectory[:, 0]
-            scheduled_arrival = veh.get_scheduled_arrival()  # the time this vehicle departs the stop bar
+        trajectory = veh.trajectory
+        det_time, det_dist, det_speed = trajectory[:, 0]
+        scheduled_arrival = veh.get_scheduled_arrival()  # the time this vehicle departs the stop bar
 
-            arrival_time = det_time + det_dist / det_speed
+        arrival_time = det_time + det_dist / det_speed
 
-            t = self.vectorize_time_interval(det_time, arrival_time)
-            s = np.array([det_speed for i in range(len(t))])
-            d = np.array([det_dist - det_speed *
-                          (t[i] - det_time) for i in range(len(t))])
+        t = self.vectorize_time_interval(det_time, arrival_time)
+        s = np.array([det_speed for i in range(len(t))])
+        d = np.array([det_dist - det_speed *
+                      (t[i] - det_time) for i in range(len(t))])
 
-            if arrival_time > scheduled_arrival:
-                raise Exception('earliest arrival of a lead conventional is later than the scheduled time.')
-            else:
+        if arrival_time > scheduled_arrival:
+            raise Exception('earliest arrival of a lead conventional is later than the scheduled time.')
+        else:
 
-                t_augment = self.vectorize_time_interval(t[-1], scheduled_arrival)
-                d_augment = [0 for t in t_augment]
-                s_augment = [0 for t in t_augment]
+            t_augment = self.vectorize_time_interval(t[-1] + self.RES, scheduled_arrival)
+            d_augment = [0 for t in t_augment]
+            s_augment = [0 for t in t_augment]
 
-                t = np.append(t, t_augment)
-                d = np.append(d, d_augment)
-                s = np.append(s, s_augment)
+            t = np.append(t, t_augment)
+            d = np.append(d, d_augment)
+            s = np.append(s, s_augment)
 
-                veh.set_last_trj_point_indx(len(t) + len(t_augment))
-
-                self.set_trajectory(veh, t, d, s)
+            self.set_trajectory(veh, t, d, s)
 
 
 # -------------------------------------------------------
@@ -129,14 +111,14 @@ class FollowerConventional(Trajectory):
         follower_trajectory = veh.trajectory
         follower_desired_speed = veh.desired_speed
         follower_max_acc, follower_max_dec = veh.max_accel_rate, veh.max_decel_rate
-        follower_last_trj_point_indx = veh.last_trj_point_indx
+        # follower_last_trj_point_indx = veh.last_trj_point_indx
         follower_detection_time = follower_trajectory[0, 0]
 
         lead_trajectory = lead_veh.trajectory
         lead_max_dec, lead_length = lead_veh.max_decel_rate, lead_veh.length
+        lead_trj_indx = lead_veh.get_first_trj_point_indx() # this starts with followers first and goes to leads last point
         lead_last_trj_point_indx = lead_veh.get_last_trj_point_indx()
 
-        lead_trj_indx = 0  # this starts with followers first and goes to leads last point
         while lead_trj_indx <= lead_last_trj_point_indx:
             # this avoids considering the part of lead trajectory before follower showed up
             if follower_detection_time > lead_trajectory[0, lead_trj_indx]:
@@ -148,7 +130,7 @@ class FollowerConventional(Trajectory):
             # check vehicle update process since lead vehicle should have been removed
             raise Exception('The lead vehicle sent to FollowerConventional() should have been removed.')
 
-        follower_trj_indx = 0
+        follower_trj_indx = veh.get_first_trj_point_indx()
         while lead_trj_indx < lead_last_trj_point_indx:  # less than is used since it computes the next trajectory point
             next_trj_indx = follower_trj_indx + 1
             lead_speed = lead_trajectory[2, lead_trj_indx]
@@ -182,6 +164,8 @@ class FollowerConventional(Trajectory):
                     a * (follower_trajectory[0, next_trj_indx] ** 2 - follower_trajectory[
                 0, follower_trj_indx] ** 2) / 2 + (follower_trajectory[2, follower_trj_indx] -
                                                    a * follower_trajectory[0, follower_trj_indx]) * dt)
+            if np.any(np.isnan(follower_trajectory[1, :])):
+                raise Exception('nan in time stamp of follower conventional')
 
             follower_trj_indx += 1
             lead_trj_indx += 1

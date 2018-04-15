@@ -56,7 +56,7 @@ class Traffic:
         filepath_trj = os.path.join('log/' + inter_name + '_trjs.csv')
         self.full_traj_csv_file = open(filepath_trj, 'w', newline='')
         writer = csv.writer(self.full_traj_csv_file, delimiter=',')
-        writer.writerow(['sc', 'VehID', 'lane', 'time', 'distance', 'speed'])
+        writer.writerow(['sc', 'VehID', 'type', 'lane', 'time', 'distance', 'speed'])
         self.full_traj_csv_file.flush()
 
     def set_travel_time(self, travel_time, indx, id):
