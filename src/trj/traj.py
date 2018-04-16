@@ -64,7 +64,8 @@ class LeadConventional(Trajectory):
         Constructs the trajectory of the lead conventional vehicle assuming they maintain their speed
         '''
         trajectory = veh.trajectory
-        det_time, det_dist, det_speed = trajectory[:, 0]
+        first_trj_point_indx = veh.first_trj_point_indx
+        det_time, det_dist, det_speed = trajectory[:, first_trj_point_indx]
         scheduled_arrival = veh.scheduled_arrival  # the time this vehicle departs the stop bar
 
         arrival_time = det_time + det_dist / det_speed
@@ -111,8 +112,9 @@ class FollowerConventional(Trajectory):
         follower_trajectory = veh.trajectory
         follower_desired_speed = veh.desired_speed
         follower_max_acc, follower_max_dec = veh.max_accel_rate, veh.max_decel_rate
+        follower_trj_indx = veh.first_trj_point_indx  # first trajectory point stays the same in the process
         # follower_last_trj_point_indx = veh.last_trj_point_indx
-        follower_detection_time = follower_trajectory[0, 0]
+        follower_detection_time = follower_trajectory[0, follower_trj_indx]
 
         lead_trajectory = lead_veh.trajectory
         lead_max_dec, lead_length = lead_veh.max_decel_rate, lead_veh.length
@@ -125,50 +127,57 @@ class FollowerConventional(Trajectory):
                 lead_trj_indx += 1
             else:
                 break
-        if lead_trj_indx >= lead_last_trj_point_indx:
+        if lead_trj_indx > lead_last_trj_point_indx:
             # the lead vehicle left before detection of this vehicle
             # check vehicle update process since lead vehicle should have been removed
             raise Exception('The lead vehicle sent to FollowerConventional() should have been removed.')
+        else:
+            while lead_trj_indx < lead_last_trj_point_indx:  # less than is used since it computes the next trajectory point
+                next_trj_indx = follower_trj_indx + 1
+                lead_speed = lead_trajectory[2, lead_trj_indx]
+                follower_speed = follower_trajectory[2, follower_trj_indx]
+                gap = follower_trajectory[1, follower_trj_indx] - lead_trajectory[1, lead_trj_indx]
+                dt = lead_trajectory[0, lead_trj_indx + 1] - lead_trajectory[0, lead_trj_indx]
+                if lead_speed <= self.EPS:  # Gipps doesn't work well for near zero speed
+                    follower_trajectory[0, next_trj_indx] = lead_trajectory[0, lead_trj_indx + 1]
+                    v_get_behind = (gap - lead_length) / dt
+                    v = min(v_get_behind, follower_desired_speed) if v_get_behind >= 0 else 0.0
+                    follower_trajectory[1, next_trj_indx] = follower_trajectory[1, follower_trj_indx] - v * dt
+                    follower_trajectory[2, next_trj_indx] = 0.0
 
-        follower_trj_indx = veh.first_trj_point_indx
-        while lead_trj_indx < lead_last_trj_point_indx:  # less than is used since it computes the next trajectory point
-            next_trj_indx = follower_trj_indx + 1
-            lead_speed = lead_trajectory[2, lead_trj_indx]
-            follower_speed = follower_trajectory[2, follower_trj_indx]
-            gap = follower_trajectory[1, follower_trj_indx] - lead_trajectory[1, lead_trj_indx]
-            dt = lead_trajectory[0, lead_trj_indx + 1] - lead_trajectory[0, lead_trj_indx]
+                else:
+                    follower_trajectory[0, next_trj_indx] = lead_trajectory[0, lead_trj_indx + 1]
 
-            follower_trajectory[0, next_trj_indx] = lead_trajectory[0, lead_trj_indx + 1]
+                    s1 = 1 / 40 + follower_speed / follower_desired_speed
+                    s2 = (follower_max_dec * (lead_max_dec * (2 * (lead_length - gap) + dt * (
+                            follower_max_dec * dt + follower_speed)) + lead_speed ** 2)) / lead_max_dec
 
-            s1 = 1 / 40 + follower_speed / follower_desired_speed
-            s2 = (follower_max_dec * (lead_max_dec * (2 * (lead_length - gap) + dt * (
-                    follower_max_dec * dt + follower_speed)) + lead_speed ** 2)) / lead_max_dec
+                    if s1 >= 0 and s2 >= 0:  # determines followers next speed
+                        v1 = follower_speed + 2.5 * follower_max_acc * dt * (
+                                1 - follower_speed / follower_desired_speed) * np.sqrt(s1)
+                        v2 = follower_max_dec * dt + np.sqrt(s2)  # might get negative
+                        follower_trajectory[2, next_trj_indx] = min(v1, v2) if v2 >= 0 else v1
+                    elif s1 >= 0:
+                        v1 = follower_speed + 2.5 * follower_max_acc * dt * (
+                                1 - follower_speed / follower_desired_speed) * np.sqrt(s1)
+                        follower_trajectory[2, next_trj_indx] = v1
+                    elif s2 >= 0:
+                        v2 = follower_max_dec * dt + np.sqrt(s2)  # might get negative
+                        follower_trajectory[2, next_trj_indx] = max(0.0, v2)
+                    else:  # not supposed to happen
+                        follower_trajectory[2, follower_trj_indx + 1] = follower_speed
 
-            if s1 >= 0 and s2 >= 0:  # determines followers next speed
-                v1 = follower_speed + 2.5 * follower_max_acc * dt * (
-                        1 - follower_speed / follower_desired_speed) * np.sqrt(s1)
-                v2 = follower_max_dec * dt + np.sqrt(s2)
-                follower_trajectory[2, next_trj_indx] = min(v1, v2)
-            elif s1 >= 0:
-                v1 = follower_speed + 2.5 * follower_max_acc * dt * (
-                        1 - follower_speed / follower_desired_speed) * np.sqrt(s1)
-                follower_trajectory[2, next_trj_indx] = v1
-            elif s2 >= 0:
-                v2 = follower_max_dec * dt + np.sqrt(s2)
-                follower_trajectory[2, next_trj_indx] = v2
-            else:  # not supposed to happen
-                follower_trajectory[2, follower_trj_indx + 1] = follower_speed
+                    a = (follower_trajectory[2, next_trj_indx] - follower_speed) / dt
+                    follower_trajectory[1, next_trj_indx] = max(follower_trajectory[1, follower_trj_indx] - (
+                            a * (follower_trajectory[0, next_trj_indx] ** 2 - follower_trajectory[
+                        0, follower_trj_indx] ** 2) / 2 + (follower_trajectory[2, follower_trj_indx] -
+                                                           a * follower_trajectory[0, follower_trj_indx]) * dt), 0.0)
+                    # todo remove the max and see why distance may get zero
+                    if np.any(np.isnan(follower_trajectory[1, :])):
+                        raise Exception('nan in time stamp of follower conventional')
 
-            a = (follower_trajectory[2, next_trj_indx] - follower_speed) / dt
-            follower_trajectory[1, next_trj_indx] = follower_trajectory[1, follower_trj_indx] - (
-                    a * (follower_trajectory[0, next_trj_indx] ** 2 - follower_trajectory[
-                0, follower_trj_indx] ** 2) / 2 + (follower_trajectory[2, follower_trj_indx] -
-                                                   a * follower_trajectory[0, follower_trj_indx]) * dt)
-            if np.any(np.isnan(follower_trajectory[1, :])):
-                raise Exception('nan in time stamp of follower conventional')
-
-            follower_trj_indx += 1
-            lead_trj_indx += 1
+                follower_trj_indx += 1
+                lead_trj_indx += 1
 
         # This part adds the end part that is out of Gipps Car Following domain
         d_follower_end = follower_trajectory[1, follower_trj_indx]

@@ -12,6 +12,7 @@ import pandas as pd
 
 
 class Vehicle:
+    EPS = 0.01  # small number that lower than that is approximated by zero
     MAX_NUM_TRAJECTORY_POINTS = 300
 
     def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx, k):
@@ -48,7 +49,7 @@ class Vehicle:
         self.csv_indx = indx  # is used to find vehicle in original csv file
 
         if det_type == 1:  # only CAVs trajectories are in the form of polynomials
-            self._poly_coeffs = np.zeros(k)
+            self.poly_coeffs = np.zeros(k)
 
         self.earliest_arrival, self.scheduled_arrival = 0.0, 0.0  # will be set with their set methods
         self._do_trj = True
@@ -77,7 +78,7 @@ class Vehicle:
                     file.flush()
                     trj_indx += 1
 
-            self.set_first_trj_point_indx(trj_indx - 1)
+            self.set_first_trj_point_indx(trj_indx)
 
     def set_earliest_arrival(self, t_earliest):
         '''
@@ -89,7 +90,7 @@ class Vehicle:
         self.scheduled_arrival = t_scheduled
 
     def set_poly_coeffs(self, beta):
-        self._poly_coeffs = beta
+        self.poly_coeffs = beta
 
     def set_first_trj_point_indx(self, indx):
         self.first_trj_point_indx = indx
@@ -151,3 +152,16 @@ class Vehicle:
         :return:
         '''
         self._do_trj = False
+
+    def test_trj_points(self, simulation_time):
+        trj_point_indx = self.first_trj_point_indx
+        last_trj_point_indx = self.last_trj_point_indx
+        if last_trj_point_indx - trj_point_indx > 0:  # if there are at least two points, check them
+            trajectory = self.trajectory
+            while trj_point_indx <= last_trj_point_indx:
+                time, dist, speed = trajectory[:, trj_point_indx]
+                if speed < -self.EPS:
+                    raise Exception('Negative speed, veh: ' + str(self.ID))
+                elif dist < -self.EPS:
+                    raise Exception('Traj point after the stop bar, veh: ' + str(self.ID))
+                trj_point_indx += 1

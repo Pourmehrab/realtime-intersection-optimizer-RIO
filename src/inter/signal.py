@@ -124,7 +124,7 @@ class Signal:
         if self._print_signal_detail:
             print('** SPaT Flushed')
 
-    def update_STaT(self, t):
+    def update_SPaT(self, t):
         while len(self.SPaT_end) > 1 and t >= self.SPaT_end[0]:
             if self._print_signal_detail:
                 print('** Phase {:d} Purged.'.format(self.SPaT_sequence[0]))

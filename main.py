@@ -57,7 +57,7 @@ def get_max_arrival_time(lanes):
 
 if __name__ == "__main__":
     ################### SET SOME PARAMETERS PN LOGGING AND PRINTING BEHAVIOUR
-    log_at_vehicle_level = True  # writes the <inter_name>_vehicle_level.csv
+    log_at_vehicle_level = False  # writes the <inter_name>_vehicle_level.csv
     log_at_trj_point_level = False  # writes the <inter_name>_trj_point_level.csv
     print_trj_info, test_time = False, 0  # prints arrival departures in command line
     print_signal_detail = False  # prints signal info in command line
@@ -134,7 +134,7 @@ if __name__ == "__main__":
         # UPDATE VEHICLES
         # remove/record served vehicles and phases
         traffic.serve_at_stop_bar(lanes, simulation_time, num_lanes)
-        signal.update_STaT(simulation_time)
+        signal.update_SPaT(simulation_time)
 
         # add/update vehicles
         traffic.update_vehicles_info(lanes, num_lanes, simulation_time, max_speed, min_headway, k)
@@ -161,7 +161,7 @@ if __name__ == "__main__":
                         arrival_time = veh.scheduled_arrival
                         if veh_indx > 0 and veh_type == 1:  # follower CAV
                             lead_veh = lanes.vehlist[lane][veh_indx - 1]
-                            lead_poly = lead_veh._poly_coeffs
+                            lead_poly = lead_veh.poly_coeffs
                             lead_arrival_time = lead_veh.get_scheduled_arrival()
                             model = follower_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed,
                                                                                lead_poly, lead_veh.init_time,
@@ -176,7 +176,8 @@ if __name__ == "__main__":
                         elif veh_indx == 0 and veh_type == 0:  # lead conventional
                             lead_conventional_trj_estimator.solve(veh)
 
-                    veh.set_redo_trj_false()  # todo eventually works with the fusion outputs
+                        veh.test_trj_points(simulation_time)  # todo remove if not testing
+                        veh.set_redo_trj_false()  # todo eventually works with the fusion outputs
 
                     if print_trj_info and simulation_time >= test_time:
                         veh.print_trj_points(lane, veh_indx)
