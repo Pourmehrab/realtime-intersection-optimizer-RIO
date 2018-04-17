@@ -34,7 +34,7 @@ class Vehicle:
         '''
         self.ID = det_id
         self.veh_type = det_type
-        self.init_time = det_time
+        self.init_time = det_time  # needed to compute the travel time
         self.curr_speed = speed
         self.distance = dist
         self.length = length
@@ -160,8 +160,8 @@ class Vehicle:
             trajectory = self.trajectory
             while trj_point_indx <= last_trj_point_indx:
                 time, dist, speed = trajectory[:, trj_point_indx]
-                if speed < -self.EPS:
+                if speed < -3:  # the polynomial may oscillate near zero so let it
                     raise Exception('Negative speed, veh: ' + str(self.ID))
-                elif dist < -self.EPS:
+                elif dist < -3:  # the polynomial may oscillate near zero so let it
                     raise Exception('Traj point after the stop bar, veh: ' + str(self.ID))
                 trj_point_indx += 1

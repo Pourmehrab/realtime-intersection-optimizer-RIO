@@ -163,8 +163,9 @@ if __name__ == "__main__":
                             lead_veh = lanes.vehlist[lane][veh_indx - 1]
                             lead_poly = lead_veh.poly_coeffs
                             lead_arrival_time = lead_veh.get_scheduled_arrival()
+                            lead_det_time = lead_veh.trajectory[0:, lead_veh.first_trj_point_indx]
                             model = follower_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed,
-                                                                               lead_poly, lead_veh.init_time,
+                                                                               lead_poly, lead_det_time,
                                                                                lead_arrival_time)
                             follower_connected_trj_optimizer.solve(veh, model, arrival_time)
                         elif veh_indx > 0 and veh_type == 0:  # follower conventional

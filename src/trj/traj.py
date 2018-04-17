@@ -194,10 +194,8 @@ class FollowerConventional(Trajectory):
         veh.set_last_trj_point_indx(last_index - 1)
 
 
-import cplex
+import cplex  # Refer to: IBM(R) ILOG CPLEX Python API Reference Manual
 
-
-# Refer to: IBM(R) ILOG CPLEX Python API Reference Manual
 
 # -------------------------------------------------------
 # LEAD CONNECTED AND AUTOMATED TRAJECTORY OPTIMIZER
@@ -264,12 +262,13 @@ class LeadConnected(Trajectory):
         trajectory = veh.trajectory
         amin, amax = veh.max_decel_rate, veh.max_accel_rate
 
-        det_time, det_dist, det_speed = trajectory[:, 0]
+        first_trj_point_indx = veh.first_trj_point_indx
+        det_time, det_dist, det_speed = trajectory[:, first_trj_point_indx]
         arrival_time_relative = arrival_time - det_time
 
         self._lp_model.objective.set_linear(zip(
             ["beta_" + str(n) for n in range(self.k)],
-            [arrival_time_relative ** (1 + n) / (1 + n) for n in range(self.k)]))
+            [arrival_time_relative ** n / n for n in range(1, self.k + 1)]))
 
         self._lp_model.linear_constraints.set_rhs([('match_det_dist', det_dist),
                                                    ('match_speed', -det_speed),
@@ -304,19 +303,16 @@ class LeadConnected(Trajectory):
         self._lp_model.linear_constraints.set_coefficients(
             list(zip(['match_dep_speed' for n in range(self.k)], var_name, speed_coeff)))
 
-        return self._lp_model
+        return self._lp_model  # should return the model since the follower optimizer is extending this class
 
     def solve(self, veh, model, arrival_time):
         trajectory = veh.trajectory
-
-        model.write("model.lp")
-
+        # self._lp_model.write("model.lp")
         model.solve()
-
         try:
             assert 1 == model.solution.get_status()
         except:
-            print('LP solution is not optimal. Check the inputs.')
+            raise Exception('CPLEX failed to find optimal to vehicle ' + str(veh.ID))
 
         beta = np.flip(np.array(model.solution.get_values(["beta_" + str(n) for n in range(self.k)])), 0)
         f = np.poly1d(beta)
@@ -324,7 +320,8 @@ class LeadConnected(Trajectory):
         # set the polynomial
         veh.set_poly_coeffs(f)
 
-        det_time = trajectory[0, 0]
+        first_trj_point_indx = veh.first_trj_point_indx
+        det_time = trajectory[0, first_trj_point_indx]
 
         t, d, s = self.compute_trj_points(f, f_prime, arrival_time - det_time)
         t += det_time
@@ -365,8 +362,9 @@ class FollowerConnected(LeadConnected):
         self._lp_model = super().set_model(veh, arrival_time, arrival_dist, dep_speed)
 
         trajectory = veh.trajectory
+        first_trj_point_indx = veh.first_trj_point_indx
 
-        det_time, det_dist, det_speed = trajectory[:, 0]
+        det_time, det_dist, det_speed = trajectory[:, first_trj_point_indx]
 
         start_relative_ctrl_time, end_relative_ctrl_time = self.HEASWAY_CONTROL_START, lead_arrival_time - det_time
         #  end_relative_ctrl_time is the time lead vehicle leaves relative to the time the follower vehicle was detected

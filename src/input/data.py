@@ -125,13 +125,13 @@ def get_signal_params(inter_name):
 def get_general_params(inter_name):
     '''
     :return: max speed (m/s), min_headway (seconds), detection range (meters), k, m
-        k =  # n will be in 0, ..., k-1
+        k =  # n will be in 0, ..., k-1 (odd degree of polynomial is preferred: k to be even)
         m =  # to discretize the time interval
         required for trajectory optimization
     '''
     if inter_name == '13th16th':
-        return 15.0, 2.0, 500.0, 10, 15
+        return 15.0, 2.0, 500.0, 10, 20
     elif inter_name == 'reserv':
-        return 15.0, 2.0, 500.0, 10, 15
+        return 15.0, 2.0, 500.0, 10, 20
     else:
         raise Exception('Simulation parameters are not known for this intersection.')
