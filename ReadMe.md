@@ -5,21 +5,19 @@
 * Python 3.5.4 used.
 * run `python main <intersection_name> <optimization_algo>`
 *   intersection name could be `13th16th` or `reserv`
-*   optimization algorithm could be `GA` or `MCF`
+*   optimization algorithm could be `GA, pretimed` or `MCF`
 
-Coded by: Mahmoud Pourmehrab 
+Coded by: Mahmoud Pourmehrab (mpourmehrab@ufl.edu)
 
-## PyCharm Set up
-* To use Markdown in PyCharm install "Markdown Support" under Plugin menu
 
 ## Package Dependencies
-To create:
-* Do `pip3 install pipreqs` or `conda install pipreqs` 
-* Requrement.txt is created using `pipreqs /path/to/project`
-(Warp the address with "")
-
 To install:
 * Do `pip3 install -r requirements.txt`
+
+[//]: # (To create:
+* Do `pip3 install pipreqs` or `conda install pipreqs` 
+* `requirements.txt` is created using `pipreqs /path/to/project`.
+Warp the address with "".)
 
 # Input Data
 Directory `\data\` includes:
@@ -33,14 +31,16 @@ Directory `\log\` includes:
 * simulation resolution is set as a class variable `Simulation.STEP` in seconds
 * 
 
-# LP Solver for Traj Optimization:
+# LP Solver:
 
 * Packages can solve LP: `cvxopt, Scipy.minimize, docplex`
 * Requires Microsoft Visual C++ Build Tools [here](http://landinghub.visualstudio.com/visual-cpp-build-tools)
-* IBM ILOG CPLEX Optimization Studio Version 12.8.0
+* IBM ILOG CPLEX Optimization Studio Version 12.8.0 (students can request free license)
 	* Do `pip install docplex`. Find more here:
 		*  [Documentation](http://ibmdecisionoptimization.github.io/docplex-doc/)
 		* [Examples](https://github.com/IBMDecisionOptimization/docplex-examples)
 
 * Microsoft Visual C++ 2015 Redistributable Package (x64) [here](https://www.microsoft.com/en-US/download/details.aspx?id=53587)
 
+## PyCharm
+* Some useful plugins are `Markdown Support`, `CSV Plugin`, `RainGlow`, and `CodeGlance`.

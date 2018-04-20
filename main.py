@@ -7,11 +7,6 @@
 # Last Modified: Apr/15/2018       #
 ####################################
 
-'''
-The program is to optimize the performance of an isolated intersection under traffic of AV and conventional vehicles.
-
-By: Mahmoud Pourmehrab
-'''
 
 import sys
 import time
@@ -24,10 +19,8 @@ from src.inter.lane import Lanes
 from src.inter.signal import GA_SPaT, Pretimed
 # Trajectory Optimizers
 from src.trj.traj import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
-
-
 # testing
-# from unit_tests import SimTest
+from unit_tests import test_scheduled_arrivals
 
 
 def check_py_ver():
@@ -35,12 +28,12 @@ def check_py_ver():
     expect_major, expect_minor, expect_rev = 3, 5, 2
     if sys.version_info[0] >= expect_major and sys.version_info[1] >= expect_minor and sys.version_info[
         2] >= expect_rev:
-        print('Python version requirement is met. ################################')
+        print("Python version requirement is met. ################################")
     else:
         print(
             "INFO: Script developed and tested with Python " + str(expect_major) + "." + str(expect_minor) + "." + str(
                 expect_rev))
-        print('Please update Python')
+        print("Please update Python")
         sys.exit(-1)
 
 
@@ -56,6 +49,10 @@ def get_max_arrival_time(lanes):
 
 
 if __name__ == "__main__":
+    """ The program is to optimize the performance of an isolated intersection under traffic of AV and conventional 
+    vehicles.
+
+    By: Mahmoud Pourmehrab """
     ################### SET SOME PARAMETERS PN LOGGING AND PRINTING BEHAVIOUR
     log_at_vehicle_level = False  # writes the <inter_name>_vehicle_level.csv
     log_at_trj_point_level = False  # writes the <inter_name>_trj_point_level.csv
@@ -66,15 +63,15 @@ if __name__ == "__main__":
     #     tester = SimTest(num_lanes)
 
     print(
-        'University of Florida.\nBy Mahmoud Pourmehrab ######################\n')
-    print('Interpreter Information ###################################')
-    print('Python Path: ', sys.executable)
-    print('Python Version: ', sys.version)
+        "University of Florida.\nBy Mahmoud Pourmehrab ######################\n")
+    print("Interpreter Information ###################################")
+    print("Python Path: ", sys.executable)
+    print("Python Version: ", sys.version)
     # Check the interpreter to make sure using py version at least 3.5.2
     check_py_ver()
 
-    if len(sys.argv) != 3 or sys.argv[1] not in ['13th16th', 'reserv', ] or sys.argv[2] not in ['GA', 'MCF', 'pretimed',
-                                                                                                'actuated']:
+    if len(sys.argv) != 3 or sys.argv[1] not in ["13th16th", "reserv", ] or sys.argv[2] not in ["GA", "MCF", "pretimed",
+                                                                                                "actuated"]:
         print("Check the input arguments and try again.")
         sys.exit(-1)
     else:
@@ -105,15 +102,15 @@ if __name__ == "__main__":
     follower_connected_trj_optimizer = FollowerConnected(max_speed, min_headway, k, m)
 
     # Set the signal control method
-    if method == 'GA':
+    if method == "GA":
         # define what subset of phase-lane incidence matrix should be used
         # minimal set of phase indices to cover all movements (17, 9, 8, 15) for 13th16th intersection
         signal = GA_SPaT(inter_name, (0, 1, 2, 3,), num_lanes, min_headway, print_signal_detail)
-    elif method == 'pretimed':
+    elif method == "pretimed":
         signal = Pretimed(inter_name, num_lanes, min_headway, print_signal_detail)
 
-    elif method == 'MCF' or method == 'actuated':
-        raise Exception('This signal control method is not complete yet.')  # todo develop these
+    elif method == "MCF" or method == "actuated":
+        raise Exception("This signal control method is not complete yet.")  # todo develop these
 
     # get the time when first vehicle shows up
     first_detection_time = traffic.get_first_detection_time()
@@ -128,7 +125,7 @@ if __name__ == "__main__":
     while True:  # stops when all rows of csv are processed (a break statement controls this)
         simulation_time = simulator.get_clock()  # gets current simulation clock
         if print_clock:
-            print('\nUPDATE AT CLOCK: {:.2f} SEC #################################'.format(
+            print("\nUPDATE AT CLOCK: {:.2f} SEC #################################".format(
                 simulation_time))
 
         # UPDATE VEHICLES
@@ -143,13 +140,15 @@ if __name__ == "__main__":
         critical_volume_ratio = 3600 * volumes.max() / min_headway
 
         # DO SIGNAL OPTIMIZATION
-        if method == 'GA':
+        if method == "GA":
             signal.solve(lanes, critical_volume_ratio, num_lanes)
-        elif method == 'pretimed':
+        elif method == "pretimed":
             signal.solve(lanes, num_lanes)
 
-        elif method == 'MCF' or method == 'actuated':
-            raise Exception('This signal control method is not complete yet.')  # todo develop these
+        elif method == "MCF" or method == "actuated":
+            raise Exception("This signal control method is not complete yet.")  # todo develop these
+
+        test_scheduled_arrivals(lanes, num_lanes)  # just for testing purpose
         # now we should have sufficient SPaT to serve all
 
         # DO TRAJECTORY OPTIMIZATION
@@ -167,13 +166,13 @@ if __name__ == "__main__":
                             model = follower_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed,
                                                                                lead_poly, lead_det_time,
                                                                                lead_arrival_time)
-                            follower_connected_trj_optimizer.solve(veh, model, arrival_time)
+                            follower_connected_trj_optimizer.solve(veh, model, arrival_time, max_speed)
                         elif veh_indx > 0 and veh_type == 0:  # follower conventional
                             lead_veh = lanes.vehlist[lane][veh_indx - 1]
                             follower_conventional_trj_estimator.solve(veh, lead_veh)
                         elif veh_indx == 0 and veh_type == 1:  # lead CAV
                             model = lead_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed)
-                            lead_connected_trj_optimizer.solve(veh, model, arrival_time)
+                            lead_connected_trj_optimizer.solve(veh, model, arrival_time, max_speed)
                         elif veh_indx == 0 and veh_type == 0:  # lead conventional
                             lead_conventional_trj_estimator.solve(veh)
 
@@ -190,9 +189,9 @@ if __name__ == "__main__":
                 simulation_time = simulator.get_clock()
             else:  # simulation of a scenario ended move on to the next scenario
                 if log_at_vehicle_level:
-                    t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT'S JUST TIMING THE ALGORITHM
+                    t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT"S JUST TIMING THE ALGORITHM
                     traffic.set_elapsed_sim_time(t_end - t_start)
-                    print('### ELAPSED TIME: {:2.2f} sec ###'.format(int(1000 * (t_end - t_start)) / 1000), end='')
+                    print("### ELAPSED TIME: {:2.2f} sec ###".format(int(1000 * (t_end - t_start)) / 1000), end="")
 
                 traffic.reset_scenario()
                 first_detection_time = traffic.get_first_detection_time()
@@ -208,7 +207,7 @@ if __name__ == "__main__":
         else:
             if lanes.all_served(num_lanes):  # all vehicles in the csv file are served
                 if log_at_vehicle_level:
-                    t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT'S JUST TIMING THE ALGORITHM
+                    t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT"S JUST TIMING THE ALGORITHM
                     traffic.set_elapsed_sim_time(t_end - t_start)
 
                     # save the csv which has travel time column appended

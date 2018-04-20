@@ -23,14 +23,13 @@ def earliest_arrival_connected(det_time, speed, dist, amin, amax, max_speed, min
 
     if dist_to_max_speed <= dist:
         return max(
-            (max_speed - speed) / a + (dist - dist_to_max_speed) / max_speed  # min time to get to stop bar
-            , t_earliest + min_headway
-        )
+            det_time + (max_speed - speed) / a + (dist - dist_to_max_speed) / max_speed  # min time to get to stop bar
+            , t_earliest + min_headway)
 
     else:  # not enough time and distance to accelerate/decelerate to max speed
         v_dest = np.sqrt(speed ** 2 + 2 * a * dist)
         return max(
-            (max_speed - v_dest) / a  # min time to get to stop bar
+            det_time + (max_speed - v_dest) / a  # min time to get to stop bar
             , t_earliest + min_headway
         )
 
