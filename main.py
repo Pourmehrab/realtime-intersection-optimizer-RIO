@@ -54,7 +54,8 @@ if __name__ == "__main__":
 
     By: Mahmoud Pourmehrab """
     ################### SET SOME PARAMETERS PN LOGGING AND PRINTING BEHAVIOUR
-    log_at_vehicle_level = False  # writes the <inter_name>_vehicle_level.csv
+    do_traj_computation = False  # speeds up
+    log_at_vehicle_level = True  # writes the <inter_name>_vehicle_level.csv
     log_at_trj_point_level = False  # writes the <inter_name>_trj_point_level.csv
     print_trj_info, test_time = False, 0  # prints arrival departures in command line
     print_signal_detail = False  # prints signal info in command line
@@ -130,7 +131,7 @@ if __name__ == "__main__":
 
         # UPDATE VEHICLES
         # remove/record served vehicles and phases
-        traffic.serve_at_stop_bar(lanes, simulation_time, num_lanes)
+        traffic.serve_update_at_stop_bar(lanes, simulation_time, num_lanes)
         signal.update_SPaT(simulation_time)
 
         # add/update vehicles
@@ -143,44 +144,44 @@ if __name__ == "__main__":
         if method == "GA":
             signal.solve(lanes, critical_volume_ratio, num_lanes)
         elif method == "pretimed":
-            signal.solve(lanes, num_lanes)
+            signal.solve(lanes, num_lanes, max_speed)
 
         elif method == "MCF" or method == "actuated":
             raise Exception("This signal control method is not complete yet.")  # todo develop these
 
         test_scheduled_arrivals(lanes, num_lanes)  # just for testing purpose
         # now we should have sufficient SPaT to serve all
+        if do_traj_computation:
+            # DO TRAJECTORY OPTIMIZATION
+            for lane in range(num_lanes):
+                if bool(lanes.vehlist[lane]):  # not an empty lane
+                    for veh_indx, veh in enumerate(lanes.vehlist[lane]):
+                        if veh.redo_trj():  # false if we want to keep previous trajectory
+                            veh_type = veh.veh_type
+                            arrival_time = veh.scheduled_arrival
+                            if veh_indx > 0 and veh_type == 1:  # follower CAV
+                                lead_veh = lanes.vehlist[lane][veh_indx - 1]
+                                lead_poly = lead_veh.poly_coeffs
+                                lead_arrival_time = lead_veh.scheduled_arrival
+                                lead_det_time = lead_veh.trajectory[0:, lead_veh.first_trj_point_indx]
+                                model = follower_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed,
+                                                                                   lead_poly, lead_det_time,
+                                                                                   lead_arrival_time)
+                                follower_connected_trj_optimizer.solve(veh, model, arrival_time, max_speed)
+                            elif veh_indx > 0 and veh_type == 0:  # follower conventional
+                                lead_veh = lanes.vehlist[lane][veh_indx - 1]
+                                follower_conventional_trj_estimator.solve(veh, lead_veh)
+                            elif veh_indx == 0 and veh_type == 1:  # lead CAV
+                                model = lead_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed, True)
+                                lead_connected_trj_optimizer.solve(veh, model, arrival_time, max_speed)
+                            elif veh_indx == 0 and veh_type == 0:  # lead conventional
+                                lead_conventional_trj_estimator.solve(veh)
 
-        # DO TRAJECTORY OPTIMIZATION
-        for lane in range(num_lanes):
-            if bool(lanes.vehlist[lane]):  # not an empty lane
-                for veh_indx, veh in enumerate(lanes.vehlist[lane]):
-                    if veh.redo_trj():  # false if we want to keep previous trajectory
-                        veh_type = veh.veh_type
-                        arrival_time = veh.scheduled_arrival
-                        if veh_indx > 0 and veh_type == 1:  # follower CAV
-                            lead_veh = lanes.vehlist[lane][veh_indx - 1]
-                            lead_poly = lead_veh.poly_coeffs
-                            lead_arrival_time = lead_veh.get_scheduled_arrival()
-                            lead_det_time = lead_veh.trajectory[0:, lead_veh.first_trj_point_indx]
-                            model = follower_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed,
-                                                                               lead_poly, lead_det_time,
-                                                                               lead_arrival_time)
-                            follower_connected_trj_optimizer.solve(veh, model, arrival_time, max_speed)
-                        elif veh_indx > 0 and veh_type == 0:  # follower conventional
-                            lead_veh = lanes.vehlist[lane][veh_indx - 1]
-                            follower_conventional_trj_estimator.solve(veh, lead_veh)
-                        elif veh_indx == 0 and veh_type == 1:  # lead CAV
-                            model = lead_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed)
-                            lead_connected_trj_optimizer.solve(veh, model, arrival_time, max_speed)
-                        elif veh_indx == 0 and veh_type == 0:  # lead conventional
-                            lead_conventional_trj_estimator.solve(veh)
+                            veh.test_trj_points(simulation_time)  # todo remove if not testing
+                            veh.set_redo_trj_false()  # todo eventually works with the fusion outputs
 
-                        veh.test_trj_points(simulation_time)  # todo remove if not testing
-                        veh.set_redo_trj_false()  # todo eventually works with the fusion outputs
-
-                    if print_trj_info and simulation_time >= test_time:
-                        veh.print_trj_points(lane, veh_indx)
+                        if print_trj_info and simulation_time >= test_time:
+                            veh.print_trj_points(lane, veh_indx)
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_in_last_sc_arrived():
@@ -191,7 +192,8 @@ if __name__ == "__main__":
                 if log_at_vehicle_level:
                     t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT"S JUST TIMING THE ALGORITHM
                     traffic.set_elapsed_sim_time(t_end - t_start)
-                    print("### ELAPSED TIME: {:2.2f} sec ###".format(int(1000 * (t_end - t_start)) / 1000), end="")
+                    if print_clock:
+                        print("### ELAPSED TIME: {:2.2f} sec ###".format(int(1000 * (t_end - t_start)) / 1000), end="")
 
                 traffic.reset_scenario()
                 first_detection_time = traffic.get_first_detection_time()

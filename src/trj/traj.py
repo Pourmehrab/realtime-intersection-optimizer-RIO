@@ -203,6 +203,7 @@ import cplex  # Refer to: IBM(R) ILOG CPLEX Python API Reference Manual
 
 class LeadConnected(Trajectory):
     NUM_DIGS = 3
+
     def __init__(self, max_speed, min_headway, k, m):
         """
         Trajectory function:
@@ -267,7 +268,7 @@ class LeadConnected(Trajectory):
                   ["ub_acc_" + str(j) for j in range(self.m)] +
                   ["lb_acc_" + str(j) for j in range(self.m)])
 
-    def set_model(self, veh, arrival_time, arrival_dist, dep_speed):
+    def set_model(self, veh, arrival_time, arrival_dist, dep_speed, is_lead=False):
         """
         Modifies the generic coefficients to build the specific model
 
@@ -276,90 +277,121 @@ class LeadConnected(Trajectory):
         :param arrival_dist:    distance vehicle is scheduled to reach the stop bar
         :param dep_speed:       speed vehicle is scheduled to reach the stop bar
         """
+        delay = veh.scheduled_arrival - veh.earliest_arrival
 
-        trajectory = veh.trajectory
-        amin, amax = veh.max_decel_rate, veh.max_accel_rate
+        if delay < self.EPS and is_lead:  # do not have to solve LP since the earliest trj works
+            return None
+        else:  # solve LP
+            trajectory = veh.trajectory
+            amin, amax = veh.max_decel_rate, veh.max_accel_rate
 
-        first_trj_point_indx = veh.first_trj_point_indx
-        det_time, det_dist, det_speed = trajectory[:, first_trj_point_indx]
-        arrival_time_relative = arrival_time - det_time  # traj will be from t in [0, t_rel]
+            first_trj_point_indx = veh.first_trj_point_indx
+            det_time, det_dist, det_speed = trajectory[:, first_trj_point_indx]
+            arrival_time_relative = arrival_time - det_time  # traj will be from t in [0, t_rel]
 
-        # We are looking to minimize the are under the trajectory curve
-        # obj func = sum_0^{k-1} b_n t^{n+1}/(n+1) | 0 to t_rel
-        # set the obj function coefficients
-        self._lp_model.objective.set_linear(zip(
-            ["beta_" + str(n) for n in range(self.k)],
-            [arrival_time_relative ** n / n for n in range(1, self.k + 1)]))
+            # We are looking to minimize the are under the trajectory curve
+            # obj func = sum_0^{k-1} b_n t^{n+1}/(n+1) | 0 to t_rel
+            # set the obj function coefficients
+            self._lp_model.objective.set_linear(zip(
+                ["beta_" + str(n) for n in range(self.k)],
+                [arrival_time_relative ** n / n for n in range(1, self.k + 1)]))
 
-        # set four rhs values for the equality constraints, and acceleration/decelerations for inequality constrains
-        self._lp_model.linear_constraints.set_rhs([("match_det_dist", det_dist),
-                                                   ("match_speed", -det_speed),
-                                                   ("match_dep_dist", arrival_dist),
-                                                   ("match_dep_speed", -dep_speed)] +
-                                                  list(zip(["ub_acc_" + str(j) for j in range(self.m)],
-                                                           [-amax for j in range(self.m)])) +
-                                                  list(zip(["lb_acc_" + str(j) for j in range(self.m)],
-                                                           [-amin for j in range(self.m)])))
-        # f(t_rel) = sum_{n=0}^{k-1} b_n * t_rel^n
-        # set the coefficients matching the departure distance
-        dist_coeff = np.array([arrival_time_relative ** n for n in range(self.k)], dtype=float)
-        var_name = ["beta_" + str(n) for n in range(self.k)]
-        self._lp_model.linear_constraints.set_coefficients(zip(
-            ["match_dep_dist" for n in range(self.k)], var_name, dist_coeff))
+            # set four rhs values for the equality constraints, and acceleration/decelerations for inequality constrains
+            self._lp_model.linear_constraints.set_rhs([("match_det_dist", det_dist),
+                                                       ("match_speed", -det_speed),
+                                                       ("match_dep_dist", arrival_dist),
+                                                       ("match_dep_speed", -dep_speed)] +
+                                                      list(zip(["ub_acc_" + str(j) for j in range(self.m)],
+                                                               [-amax for j in range(self.m)])) +
+                                                      list(zip(["lb_acc_" + str(j) for j in range(self.m)],
+                                                               [-amin for j in range(self.m)])))
+            # f(t_rel) = sum_{n=0}^{k-1} b_n * t_rel^n
+            # set the coefficients matching the departure distance
+            dist_coeff = np.array([arrival_time_relative ** n for n in range(self.k)], dtype=float)
+            var_name = ["beta_" + str(n) for n in range(self.k)]
+            self._lp_model.linear_constraints.set_coefficients(zip(
+                ["match_dep_dist" for n in range(self.k)], var_name, dist_coeff))
 
-        # set the coefficients matching the departure speed
-        speed_coeff = np.array([n * arrival_time_relative ** (n - 1) for n in range(self.k)])
-        self._lp_model.linear_constraints.set_coefficients(
-            list(zip(["match_dep_speed" for n in range(self.k)], var_name, speed_coeff)))
-
-        # construct the m control points (exclusive of boundaries)
-        control_points = np.linspace(arrival_time_relative / self.m, arrival_time_relative,
-                                     self.m, endpoint=False)
-
-        # adjust the coefficients for the control constraints
-        for j, time in enumerate(control_points):
-            speed_coeff = np.array([n * time ** (n - 1) for n in range(self.k)])
-            acc_coeff = np.array([speed_coeff[n] * (n - 1) / time for n in range(self.k)])
-
+            # set the coefficients matching the departure speed
+            speed_coeff = np.array([n * arrival_time_relative ** (n - 1) for n in range(self.k)])
             self._lp_model.linear_constraints.set_coefficients(
-                list(zip(["ub_speed_" + str(j) for n in range(self.k)], var_name, speed_coeff)) +
-                list(zip(["lb_speed_" + str(j) for n in range(self.k)], var_name, speed_coeff)) +
-                list(zip(["ub_acc_" + str(j) for n in range(self.k)], var_name, acc_coeff)) +
-                list(zip(["lb_acc_" + str(j) for n in range(self.k)], var_name, acc_coeff))
-            )
+                list(zip(["match_dep_speed" for n in range(self.k)], var_name, speed_coeff)))
 
-        return self._lp_model  # should return the model since the follower optimizer is extending this class
+            # construct the m control points (exclusive of boundaries)
+            control_points = np.linspace(arrival_time_relative / self.m, arrival_time_relative,
+                                         self.m, endpoint=False)
+
+            # adjust the coefficients for the control constraints
+            for j, time in enumerate(control_points):
+                speed_coeff = np.array([n * time ** (n - 1) for n in range(self.k)])
+                acc_coeff = np.array([speed_coeff[n] * (n - 1) / time for n in range(self.k)])
+
+                self._lp_model.linear_constraints.set_coefficients(
+                    list(zip(["ub_speed_" + str(j) for n in range(self.k)], var_name, speed_coeff)) +
+                    list(zip(["lb_speed_" + str(j) for n in range(self.k)], var_name, speed_coeff)) +
+                    list(zip(["ub_acc_" + str(j) for n in range(self.k)], var_name, acc_coeff)) +
+                    list(zip(["lb_acc_" + str(j) for n in range(self.k)], var_name, acc_coeff))
+                )
+
+            return self._lp_model  # should return the model since the follower optimizer is extending this class
 
     def solve(self, veh, model, arrival_time, max_speed):
-        trajectory = veh.trajectory
-        # self._lp_model.write("model.lp")
-        model.solve()
 
-        dv = max_speed / 10
-        dep_speed = max_speed - dv
+        if model is None:
+            trajectory = veh.trajectory
+            first_trj_point_indx = veh.first_trj_point_indx
+            det_time, det_dist, det_speed = trajectory[:, first_trj_point_indx]
+            arrival_time_relative = arrival_time - det_time  # traj will be from t in [0, t_rel]
 
-        while model.solution.get_status() != 1 and dep_speed >= 0:
-            model.linear_constraints.set_rhs([("match_dep_speed", -dep_speed)])
+            a = veh.max_accel_rate if det_speed <= max_speed else veh.max_decel_rate
+            dist_to_max_speed = (max_speed ** 2 - det_speed ** 2) / (2 * a)
+            if dist_to_max_speed <= det_dist:
+                t_acc_or_dec = (max_speed - det_speed) / a
+                d_acc_or_dec = det_dist - (0.5 * a * t_acc_or_dec ** 2 + det_speed * t_acc_or_dec)
+
+                t = self.vectorize_time_interval(0, arrival_time_relative)
+                d = [det_dist - (0.5 * a * ti ** 2 + det_speed * ti) if ti <= t_acc_or_dec
+                     else d_acc_or_dec - max_speed * (ti - t_acc_or_dec) for ti in t]
+                s = [min(det_speed + a * ti, max_speed) for ti in t]
+            else:  # not enough time and distance to accelerate/decelerate to max speed
+                v_dest = np.sqrt(det_speed ** 2 + 2 * a * det_dist)
+                t_acc_or_dec = (v_dest - det_speed) / a
+
+                t = self.vectorize_time_interval(0, t_acc_or_dec)
+                d = [det_dist - (0.5 * a * ti ** 2 + det_speed * ti) for ti in t]
+                s = [det_speed + a * ti for ti in t]
+
+            self.set_trajectory(veh, t + det_time, d, s)
+        else:
+            trajectory = veh.trajectory
             # self._lp_model.write("model.lp")
             model.solve()
 
-            dep_speed -= dv
-        if dep_speed < 0:  # no optimal found in the while loop above
-            raise Exception("CPLEX failed to find optimal trj for vehicle " + str(veh.ID))
-            # refer to: https://www.ibm.com/support/knowledgecenter/SSSA5P_12.8.0/ilog.odms.cplex.help/refcallablelibrary/macros/Solution_status_codes.html
-        beta = np.flip(np.array(model.solution.get_values(["beta_" + str(n) for n in range(self.k)])), 0)
-        f = np.poly1d(beta)
-        f_prime = np.polyder(f)
-        # set the polynomial
-        veh.set_poly_coeffs(f)
+            dv = max_speed / 10
+            dep_speed = max_speed - dv
 
-        first_trj_point_indx = veh.first_trj_point_indx
-        det_time = trajectory[0, first_trj_point_indx]
+            while model.solution.get_status() != 1 and dep_speed >= 0:
+                model.linear_constraints.set_rhs([("match_dep_speed", -dep_speed)])
+                # self._lp_model.write("model.lp")
+                model.solve()
 
-        t, d, s = self.compute_trj_points(f, f_prime, arrival_time - det_time)
-        t += det_time
+                dep_speed -= dv
+            if dep_speed < 0:  # no optimal found in the while loop above
+                raise Exception("CPLEX failed to find optimal trj for vehicle " + str(veh.ID))
+                # refer to: https://www.ibm.com/support/knowledgecenter/SSSA5P_12.8.0/ilog.odms.cplex.help/refcallablelibrary/macros/Solution_status_codes.html
+            beta = np.flip(np.array(model.solution.get_values(["beta_" + str(n) for n in range(self.k)])), 0)
+            f = np.poly1d(beta)
+            f_prime = np.polyder(f)
+            # set the polynomial
+            veh.set_poly_coeffs(f)
 
-        self.set_trajectory(veh, t, d, s)
+            first_trj_point_indx = veh.first_trj_point_indx
+            det_time = trajectory[0, first_trj_point_indx]
+
+            t, d, s = self.compute_trj_points(f, f_prime, arrival_time - det_time)
+            t += det_time
+
+            self.set_trajectory(veh, t, d, s)
 
     def compute_trj_points(self, f, f_prime, arrival_time_relative):
         t = self.vectorize_time_interval(0, arrival_time_relative)

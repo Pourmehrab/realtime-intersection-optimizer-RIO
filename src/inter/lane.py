@@ -16,7 +16,7 @@ class Lanes:
         # a dictionary of arrays
         self.vehlist = {l: [] for l in range(num_lanes)}
 
-    def set_all_scheduled_arrival(self, scheduled_arrivals):
+    def set_all_scheduled_arrival(self, scheduled_arrivals, max_speed):
 
         num_lanes = len(self.vehlist)
         for lane in range(num_lanes):
@@ -24,7 +24,7 @@ class Lanes:
 
             num_vehicles_in_lane = len(self.vehlist[lane])
             for veh_indx in range(num_vehicles_in_lane):
-                self.vehlist[lane][veh_indx].set_scheduled_arrival(scheduled_arrivals[lane][veh_indx])
+                self.vehlist[lane][veh_indx].set_scheduled_arrival(scheduled_arrivals[lane][veh_indx], 0, max_speed)
 
     def purge_served_vehs(self, lane, indx):
         '''

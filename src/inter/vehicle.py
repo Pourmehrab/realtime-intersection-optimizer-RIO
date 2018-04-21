@@ -78,7 +78,7 @@ class Vehicle:
                     file.flush()
                     trj_indx += 1
 
-            self.set_first_trj_point_indx(trj_indx)
+            self.set_first_trj_point_indx(trj_indx - 1)
 
     def set_earliest_arrival(self, t_earliest):
         '''
@@ -86,8 +86,10 @@ class Vehicle:
         '''
         self.earliest_arrival = t_earliest  # this is the absolute earliest time
 
-    def set_scheduled_arrival(self, t_scheduled):
+    def set_scheduled_arrival(self, t_scheduled, d_scheduled, s_scheduled):
         self.scheduled_arrival = t_scheduled
+        self.last_trj_point_indx = 1
+        self.trajectory[:, self.last_trj_point_indx] = [t_scheduled, d_scheduled, s_scheduled]
 
     def set_poly_coeffs(self, beta):
         self.poly_coeffs = beta

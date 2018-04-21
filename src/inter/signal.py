@@ -165,6 +165,8 @@ class Signal:
                         t_scheduled = max(t_earliest, start_green, served_vehicle_time[
                             lane] + self._min_headway) if veh.redo_trj() else veh.scheduled_arrival
 
+                        delay = t_scheduled - t_earliest
+
                         if t_scheduled <= end_yellow:
                             travel_time = t_scheduled - veh.init_time
                             mean_travel_time = ((mean_travel_time * throughput) + travel_time) / (throughput + 1)
@@ -198,12 +200,12 @@ class Signal:
                 if any_unserved_vehicle[lane]:
                     veh_indx, max_veh_indx = 0, len(lanes.vehlist[lane])
                     veh = lanes.vehlist[lane][veh_indx]
-                    lead_arrival_time = veh.get_scheduled_arrival()
+                    lead_arrival_time = veh.scheduled_arrival
 
                     for veh_indx in range(1, max_veh_indx):
 
                         veh = lanes.vehlist[lane][veh_indx]
-                        arrival_time = veh.get_scheduled_arrival()
+                        arrival_time = veh.scheduled_arrival
 
                         if arrival_time < lead_arrival_time:  # if not set through GA, arrival_time is 0.0
                             arrival_time = max(lead_arrival_time, max_arrival_time) + self._min_headway
@@ -253,7 +255,7 @@ class Pretimed(Signal):
             for indx, phase in enumerate(self._phase_seq):
                 self.enqueue(int(phase), self._green_dur[indx])
 
-    def solve(self, lanes, num_lanes):
+    def solve(self, lanes, num_lanes, max_speed):
         '''
         The phases sequence is exactly as the allowable phases
         this simply adds a cycle once it drops by one
@@ -274,7 +276,7 @@ class Pretimed(Signal):
         if any(any_unserved_vehicle):
             scheduled_arrivals = self.complete_unserved_vehicles(lanes, num_lanes, scheduled_arrivals,
                                                                  any_unserved_vehicle)
-        lanes.set_all_scheduled_arrival(scheduled_arrivals)
+        lanes.set_all_scheduled_arrival(scheduled_arrivals, max_speed)
 
     def reset(self):
         # add a dummy phase to initiate (note this is the last phase in the sequence to make the order right)

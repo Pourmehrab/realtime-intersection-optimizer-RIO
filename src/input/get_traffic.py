@@ -48,10 +48,10 @@ class Traffic:
 
         if log_at_vehicle_level:
             # the column to compute the travel time
-            self.all_vehicles['departure time'] = 'NaN'
-            self.all_vehicles['ID'] = 'NaN'
-            # the column to store simulation time per scenario
-            self.all_vehicles['elapsed time'] = 'NaN'
+            df_size = len(self.all_vehicles)
+            self._auxilary_departure_times = np.zeros(df_size, dtype=np.float)
+            self._axilary_elapsed_time = np.zeros(df_size, dtype=np.float)
+            self._auxilary_ID = ['' for i in range(df_size)]
 
         # initialize volumes vector
         self.volumes = np.zeros(num_lanes, dtype=float)
@@ -67,13 +67,18 @@ class Traffic:
             self.full_traj_csv_file = None
 
     def set_travel_time(self, travel_time, indx, id):
-        self.all_vehicles['departure time'][indx] = travel_time
-        self.all_vehicles['ID'][indx] = id
+        self._auxilary_departure_times[indx] = travel_time
+        self._auxilary_ID[indx] = id
 
     def set_elapsed_sim_time(self, t):
-        self.all_vehicles['elapsed time'][self.curr_indx] = t
+        self._axilary_elapsed_time[self.curr_indx] = t
 
     def save_csv(self, inter_name):
+        self.all_vehicles['departure time'] = self._auxilary_departure_times
+        self.all_vehicles['ID'] = self._auxilary_ID
+        # the column to store simulation time per scenario
+        self.all_vehicles['elapsed time'] = self._axilary_elapsed_time
+
         filepath = os.path.join('log/' + inter_name + '_vehicle_level.csv')
         self.all_vehicles.to_csv(filepath, index=False)
 
@@ -103,18 +108,12 @@ class Traffic:
 
     def update_vehicles_info(self, lanes, num_lanes, simulation_time, max_speed, min_headway, k):
         '''
-        Resets the first trajectory points
         Adds vehicles from the csv file
 
         :param lanes: vehicles are added to this data structure (dictionary of doubly-linked lists)
         :param simulation_time: current simulation clock (sim_ctrl.get_clock() gives access)
         :return:
         '''
-        # RESET EXISTING VEHICLES TRAJECTORY
-        for lane in range(num_lanes):
-            if bool(lanes.vehlist[lane]):  # not an empty lane
-                for veh in lanes.vehlist[lane]:
-                    veh.reset_trj_points(self.active_sc, lane, simulation_time, self.full_traj_csv_file)
 
         # SEE IF ANY NEW VEHICLES HAS ARRIVED
         indx = self.curr_indx + 1
@@ -192,15 +191,18 @@ class Traffic:
 
         return self.volumes
 
-    def serve_at_stop_bar(self, lanes, simulation_time, num_lanes):
+    def serve_update_at_stop_bar(self, lanes, simulation_time, num_lanes):
         '''
         This looks for/removes the served vehicles
         '''
+
         for lane in range(num_lanes):
             if bool(lanes.vehlist[lane]):  # not an empty lane
-
                 veh_indx, any_veh_served = 0, False
                 for veh in lanes.vehlist[lane]:
+                    # RESET EXISTING VEHICLES TRAJECTORY
+                    veh.reset_trj_points(self.active_sc, lane, simulation_time, self.full_traj_csv_file)
+
                     trj_indx = veh.last_trj_point_indx
                     dep_time = veh.trajectory[0, trj_indx]
                     if dep_time <= simulation_time:  # served
@@ -208,8 +210,8 @@ class Traffic:
                         veh_indx += 1
                         if self.log_at_vehicle_level:
                             self.set_travel_time(dep_time, veh.csv_indx, veh.ID)
-                    else:
-                        break
+                    # else:
+                    #     break
 
                 if any_veh_served:  # removes vehicles 0, 1, ..., veh_indx
                     lanes.purge_served_vehs(lane, veh_indx)
