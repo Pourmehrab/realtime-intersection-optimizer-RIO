@@ -323,6 +323,7 @@ class GA_SPaT(Signal):
         super().__init__(inter_name, num_lanes, min_headway, print_signal_detail)
 
         self._allowable_phases = allowable_phases
+        # conf_dict = get_conflict_dict(inter_name)
 
         self._y, self._ar, self.min_green, self.max_green = data_importer.get_signal_params(inter_name)
         self._ts_min, self._ts_max = self.min_green + self._y + self._ar, self.max_green + self._y + self._ar

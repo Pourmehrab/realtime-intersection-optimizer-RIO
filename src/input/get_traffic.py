@@ -18,7 +18,16 @@ from src.trj.earliest import earliest_arrival_connected, earliest_arrival_conven
 
 class Traffic:
     """
+    Goals:
+        1) Add new vehicles from the csv file to the lanes.vehlist structure
+        2) Append travel time, ID, and elapsed time columns and save csv
+        3) Manages scenario indexing, resetting, and more
+        4) Compute volumes in lanes
+        5) remove/record served vehicles
 
+    Notes:
+        1) the csv should be located under the data/ directory with the valid name consistent to what inputted as an
+        argument and what exists in the data.py file.
     """
 
     def __init__(self, inter_name, num_lanes, log_at_vehicle_level, log_at_trj_point_level):
@@ -150,6 +159,7 @@ class Traffic:
         # SEE IF ANY NEW VEHICLES HAS ARRIVED
         indx = self._current_row_indx + 1
         max_indx = self.__all_vehicles.shape[0] - 1
+        t_earliest = 0.0  # keep this since in the loop it gets updated (necessary here)
         while indx <= max_indx and self.__all_vehicles['sc'][indx] == self._active_sc and \
                 self.__all_vehicles['arrival time'][indx] <= simulation_time:
 

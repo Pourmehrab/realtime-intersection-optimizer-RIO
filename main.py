@@ -12,7 +12,7 @@ import sys
 import time
 
 from src.input.get_traffic import Traffic
-from src.input.sim import Simulator
+from src.input.time_keeper import TimeKeeper
 from src.inter.inter import Intersection
 from src.inter.lane import Lanes
 # Signal Optimizers
@@ -167,14 +167,14 @@ if __name__ == "__main__":
     # get the time when first vehicle shows up
     first_detection_time = traffic.get_first_detection_time()
     # set the start time to it
-    simulator = Simulator(first_detection_time)
+    time_keeper = TimeKeeper(first_detection_time)
 
     # here we start doing optimization for all scenarios included in the csv file
     if log_at_vehicle_level:
         t_start = time.clock()  # to measure total run time (IS NOT THE SIMULATION TIME)
 
     while True:  # stops when all rows of csv are processed (a break statement controls this)
-        simulation_time = simulator.get_clock()  # gets current simulation clock
+        simulation_time = time_keeper.clock  # gets current simulation clock
         if print_clock:
             print("\nUPDATE AT CLOCK: {:.2f} SEC #################################".format(
                 simulation_time))
@@ -235,8 +235,8 @@ if __name__ == "__main__":
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_in_last_sc_arrived():
             if not lanes.all_served(num_lanes) or traffic.unarrived_vehicles_in_sc():
-                simulator.next_sim_step()
-                simulation_time = simulator.get_clock()
+                time_keeper.next_sim_step()
+                simulation_time = time_keeper.clock
             else:  # simulation of a scenario ended move on to the next scenario
                 if log_at_vehicle_level:
                     t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT"S JUST TIMING THE ALGORITHM
@@ -247,7 +247,7 @@ if __name__ == "__main__":
                 traffic.reset_scenario()
                 first_detection_time = traffic.get_first_detection_time()
 
-                simulator = Simulator(first_detection_time)
+                time_keeper = TimeKeeper(first_detection_time)
 
                 lanes = Lanes(num_lanes)
 
@@ -267,4 +267,4 @@ if __name__ == "__main__":
                     traffic.close_trj_csv()
                 break
             else:  # this is the last scenario but still some vehicles have not been served
-                simulator.next_sim_step()
+                time_keeper.next_sim_step()

@@ -8,15 +8,15 @@
 # GENERAL PARAMETERS
 def get_general_params(inter_name):
     """
-    Returns max speed (m/s), min_headway (seconds), detection range (meters), k, m
+    Returns max speed (m/s), min_headway (seconds), detection range (meters), k, m, number of lanes
         k =  # n will be in 0, ..., k-1 (odd degree of polynomial is preferred: k to be even)
         m =  # to discretize the time interval
     Required for trajectory optimization
     """
     if inter_name == '13th16th':
-        return 15.0, 2.0, 500.0, 10, 20
+        return 15.0, 2.0, 500.0, 10, 20, 16
     elif inter_name == 'reserv':
-        return 15.0, 2.0, 500.0, 10, 20
+        return 15.0, 2.0, 500.0, 10, 20, 12
     else:
         raise Exception('Simulation parameters are not known for this intersection.')
 
