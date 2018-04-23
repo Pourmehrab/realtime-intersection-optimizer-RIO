@@ -104,7 +104,7 @@ def get_pretimed_parameters(inter_name):
 
     elif inter_name == 'reserv':
         # return None
-        return {'green_dur': (25.0, 25.0, 25.0, 25.0), 'phase_seq': (0, 1, 2, 3,), 'yellow': 1.5, 'all-red': 1.0}
+        return {'green_dur': (25.0, 25.0, 25.0, 25.0), 'phase_seq': (0, 1, 2, 3,), 'yellow': 3.0, 'all-red': 1.5}
     else:
         raise Exception('Pretimed parameters is not known for this intersection.')
 
@@ -117,7 +117,7 @@ def get_signal_params(inter_name):
     if inter_name == '13th16th':
         return 1.5, 1.0, 5.0, 25.0
     elif inter_name == 'reserv':
-        return 1.5, 1.0, 5.0, 25.0
+        return 3.0, 1.5, 2.0, 40.0
     else:
         raise Exception('Signal parameters are not known for this intersection.')
 

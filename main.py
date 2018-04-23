@@ -55,11 +55,11 @@ if __name__ == "__main__":
     By: Mahmoud Pourmehrab """
     ################### SET SOME PARAMETERS PN LOGGING AND PRINTING BEHAVIOUR
     do_traj_computation = False  # speeds up
-    log_at_vehicle_level = True  # writes the <inter_name>_vehicle_level.csv
+    log_at_vehicle_level = False  # writes the <inter_name>_vehicle_level.csv
     log_at_trj_point_level = False  # writes the <inter_name>_trj_point_level.csv
-    print_trj_info, test_time = False, 0  # prints arrival departures in command line
-    print_signal_detail = False  # prints signal info in command line
-    print_clock = False  # prints the timer in command line
+    print_trj_info, test_time = True, 0  # prints arrival departures in command line
+    print_signal_detail = True  # prints signal info in command line
+    print_clock = True  # prints the timer in command line
     # if print_trj_info:
     #     tester = SimTest(num_lanes)
 
@@ -142,7 +142,7 @@ if __name__ == "__main__":
 
         # DO SIGNAL OPTIMIZATION
         if method == "GA":
-            signal.solve(lanes, critical_volume_ratio, num_lanes)
+            signal.solve(lanes, critical_volume_ratio, num_lanes, max_speed)
         elif method == "pretimed":
             signal.solve(lanes, num_lanes, max_speed)
 
@@ -193,7 +193,7 @@ if __name__ == "__main__":
                     t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT"S JUST TIMING THE ALGORITHM
                     traffic.set_elapsed_sim_time(t_end - t_start)
                     if print_clock:
-                        print("### ELAPSED TIME: {:2.2f} sec ###".format(int(1000 * (t_end - t_start)) / 1000), end="")
+                        print("### ELAPSED TIME: {:2.2f} sec ###".format(int(1000 * (t_end - t_start)) / 1000))
 
                 traffic.reset_scenario()
                 first_detection_time = traffic.get_first_detection_time()

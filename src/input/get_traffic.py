@@ -143,6 +143,7 @@ class Traffic:
 
             # add it to its lane
             lanes.vehlist[lane] += [veh]  # recall it is an array
+            lanes.increment_last_veh_indx(lane)
 
             # compute trajectory to get the earliest departure time
             if det_type == 1:

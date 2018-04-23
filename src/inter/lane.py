@@ -5,6 +5,9 @@
 # Last Modified: Apr/07/2018       #
 ####################################
 
+import numpy as np
+
+
 class Lanes:
 
     def __init__(self, num_lanes):
@@ -15,24 +18,23 @@ class Lanes:
         '''
         # a dictionary of arrays
         self.vehlist = {l: [] for l in range(num_lanes)}
+        self.last_vehicle_indx = np.zeros(num_lanes, dtype=np.int) - 1
 
-    def set_all_scheduled_arrival(self, scheduled_arrivals, max_speed):
+    def increment_last_veh_indx(self, lane):
+        self.last_vehicle_indx[lane] += 1
 
-        num_lanes = len(self.vehlist)
-        for lane in range(num_lanes):
-            num_of_vehicles = len(self.vehlist[lane])
+    def decrement_last_veh_indx(self, lane, n):
+        self.last_vehicle_indx[lane] -= n
 
-            num_vehicles_in_lane = len(self.vehlist[lane])
-            for veh_indx in range(num_vehicles_in_lane):
-                self.vehlist[lane][veh_indx].set_scheduled_arrival(scheduled_arrivals[lane][veh_indx], 0, max_speed)
 
     def purge_served_vehs(self, lane, indx):
         '''
         Deletes vehicles from 0 to indx where indx is the pointer to the last served
-        note deletion includes indx
+        note deletion also includes indx
         '''
 
         del self.vehlist[lane][0:indx]
+        self.decrement_last_veh_indx(lane, indx + 1)
 
     def all_served(self, num_lanes):
         '''
