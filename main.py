@@ -4,7 +4,7 @@
 # File name: main.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Apr/15/2018       #
+# Last Modified: Apr/22/2018       #
 ####################################
 
 
@@ -24,7 +24,7 @@ from unit_tests import test_scheduled_arrivals
 
 
 def check_py_ver():
-    # Checks for Python version
+    """ checks the python version to meet the requirement (ver 3.5.2)"""
     expect_major, expect_minor, expect_rev = 3, 5, 2
     if sys.version_info[0] >= expect_major and sys.version_info[1] >= expect_minor and sys.version_info[
         2] >= expect_rev:
@@ -38,21 +38,76 @@ def check_py_ver():
 
 
 def get_max_arrival_time(lanes):
+    """
+    this is useful to know the max time when plotting trajectories
+
+    :param lanes: the data structure that includes all vehicle objects in the order they are in physical lanes
+    :type lanes: dictionary of arrays of type Lane()
+    :return last_served_time_stamp: time stamp of last vehicle that gets served
+    """
     last_served_time_stamp = 0.0
     for lane in range(num_lanes):
         if bool(lanes.vehlist[lane]):  # not an empty lane
-            for veh in lanes.vehlist[lane]:
-                t = veh.trajectory[0, veh.last_trj_point_indx]
-                if t > last_served_time_stamp:
-                    last_served_time_stamp = t
+            veh = lanes.vehlist[lane][-1]  # to get the last vehicle
+            last_veh_in_lane_dep_time = veh.trajectory[0, veh.last_trj_point_indx]
+            last_served_time_stamp = max(last_veh_in_lane_dep_time, last_served_time_stamp)
     return last_served_time_stamp
 
 
 if __name__ == "__main__":
-    """ The program is to optimize the performance of an isolated intersection under traffic of AV and conventional 
-    vehicles.
+    """ The program is to simulate the performance of an isolated intersection under traffic of AV and conventional 
+    vehicles with variety of signal control methods.
+    
+    For simulating a 12 lane four leg intersection (reservation intersection) with pretimed control do
+    >>> python reserv pretimed
+    
+    For simulating intersection of 13th and 16th in Gainesville with GA do
+    >>> python 13th16th GA
+    
+    You can add any intersection in the `rc/inter/data.py`. The list of all available intersections is:
+    1) reserv
+    2) 13th16th
+    
+    You also can choose from the following signal control methods:
+    1) GA
+    2) pretimed
+    3) MCF      (under development)
+    4) actuated (under development)
+    
+    For logging and printing of information set boolean variables:
+    :param log_at_trj_point_level: saves a csv under \log directory that contains all trajectory points for all vehicles
+    :param log_at_vehicle_level: saves a csv file under \log directory that contains departure times and elapsed times 
+    and vehicle IDs
+    
+    The flow is as the following:
+    > Tests for python version
+	> Checks the input arguments to be valid
+	> Instantiate:
+		Intersection: keeps lane-lane and phase-lane incidence dictionaries
+		Lanes: 
+		Traffic:
+		trajectory planners: all bellow
+			LeadConventional:
+			LeadConnected:
+			FollowerConventional:
+			FollowerConnected:
+		signal: one of followings
+			GA_SPaT:
+			Pretimed:
+	> set simulation start time to when first vehicle shows up
+		Simulator:
+	> main loop stops only when all vehicles in the provided input traffic csv file are assigned a departure time.
+		> remove vehicles that are served
+		> update SPaT
+		> update vehicle information (includes addition too)
+		> do signal
+		> plan trajectories
+		> update time and check of termination
 
-    By: Mahmoud Pourmehrab """
+
+
+    By: Mahmoud Pourmehrab, Date: April 22, 2018
+    """
     ################### SET SOME PARAMETERS PN LOGGING AND PRINTING BEHAVIOUR
     do_traj_computation = False  # speeds up
     log_at_vehicle_level = False  # writes the <inter_name>_vehicle_level.csv
@@ -73,24 +128,19 @@ if __name__ == "__main__":
 
     if len(sys.argv) != 3 or sys.argv[1] not in ["13th16th", "reserv", ] or sys.argv[2] not in ["GA", "MCF", "pretimed",
                                                                                                 "actuated"]:
-        print("Check the input arguments and try again.")
-        sys.exit(-1)
+        raise Exception("Check the input arguments and try again.")  # you can halt also by sys.exit(-1)
     else:
-        # Set the intersection name (Options: reserv, 13th16th)
-        inter_name = sys.argv[1]
-        # optimization method
-        method = sys.argv[2]
-        # also look in src/inter/data.py
+        # Set the intersection name, optimization method
+        inter_name, method = sys.argv[1], sys.argv[2]
 
     intersection = Intersection(inter_name)
-    # intersection keeps lane-lane and phase-lane incidence dictionaries
+    # get useful some values
     num_lanes = intersection.get_num_lanes()
     max_speed = intersection.get_max_speed()  # in m/s
     min_headway = intersection.get_min_headway()  # in seconds
     det_range = intersection.get_det_range()  # detection range in meters
     k, m = intersection.get_poly_params()  # polynomial degree and discretization level for trajectory optimization of CAVs
 
-    # lanes object keeps vehicles in it
     lanes = Lanes(num_lanes)
 
     # load entire traffic generated in csv file
@@ -115,7 +165,6 @@ if __name__ == "__main__":
 
     # get the time when first vehicle shows up
     first_detection_time = traffic.get_first_detection_time()
-
     # set the start time to it
     simulator = Simulator(first_detection_time)
 
@@ -132,24 +181,23 @@ if __name__ == "__main__":
         # UPDATE VEHICLES
         # remove/record served vehicles and phases
         traffic.serve_update_at_stop_bar(lanes, simulation_time, num_lanes)
-        signal.update_SPaT(simulation_time)
-
         # add/update vehicles
         traffic.update_vehicles_info(lanes, num_lanes, simulation_time, max_speed, min_headway, k)
+        # update SPaT
+        signal.update_SPaT(simulation_time)
+
         # update space mean speed
         volumes = traffic.get_volumes(lanes, num_lanes, det_range)
         critical_volume_ratio = 3600 * volumes.max() / min_headway
 
         # DO SIGNAL OPTIMIZATION
-        if method == "GA":
+        if method == "GA":  # change the one inside the while loop as well
             signal.solve(lanes, critical_volume_ratio, num_lanes, max_speed)
         elif method == "pretimed":
             signal.solve(lanes, num_lanes, max_speed)
 
-        elif method == "MCF" or method == "actuated":
-            raise Exception("This signal control method is not complete yet.")  # todo develop these
-
         test_scheduled_arrivals(lanes, num_lanes)  # just for testing purpose
+
         # now we should have sufficient SPaT to serve all
         if do_traj_computation:
             # DO TRAJECTORY OPTIMIZATION
