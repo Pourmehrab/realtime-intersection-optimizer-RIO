@@ -2,28 +2,57 @@
 # File name: data.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Feb/16/2018       #
+# Last Modified: Apr/22/2018       #
 ####################################
 
-'''
-This python file stores data of the following intersection:
-numbers are one-based (get converted to zero-based later)
+# GENERAL PARAMETERS
+def get_general_params(inter_name):
+    """
+    Returns max speed (m/s), min_headway (seconds), detection range (meters), k, m
+        k =  # n will be in 0, ..., k-1 (odd degree of polynomial is preferred: k to be even)
+        m =  # to discretize the time interval
+    Required for trajectory optimization
+    """
+    if inter_name == '13th16th':
+        return 15.0, 2.0, 500.0, 10, 20
+    elif inter_name == 'reserv':
+        return 15.0, 2.0, 500.0, 10, 20
+    else:
+        raise Exception('Simulation parameters are not known for this intersection.')
 
-    13th16th: a physical one google map it in Gainesville for the image
 
-    reserv: reservation based model intersection: 12 incoming lanes (3 per approach and all lanes are exclusive)
-    assume three discharge lanes (http://www.cs.utexas.edu/~aim/)
+# PRETIMED CONTROL PARAMETERS
+def get_pretimed_parameters(inter_name):
+    """
+    This return the parameters needed for pre-timed control
+    Note the sequence field includes the phases and is zero-based
+    Compute green splits and yellows, all-reds based on traffic flow theory
+    """
 
-'''
+    if inter_name == '13th16th':
+        return None  # todo compute these
+
+    elif inter_name == 'reserv':
+        return {'green_dur': (25.0, 25.0, 25.0, 25.0), 'phase_seq': (0, 1, 2, 3,), 'yellow': 3.0, 'all-red': 1.5}
+
+    else:
+        raise Exception('Pretimed parameters is not known for this intersection.')
 
 
+# GA CONTROL PARAMETERS
 def get_conflict_dict(inter_name):
-    '''
-    conf_dict has members that key is a lane : values are set of lanes that are in conflict with key lane (note the
-    numbering starts from 1 not 0)
+    """
+    Returns a dictionary of sets
+    The keys are lane numbers and must be coded in one-based
+T   he value for each key is a set of lane numbers that are in conflict with the key lane (again must be one based)
 
-    :param inter_name: a string that gives the name of the intersection {13th16th, reserv}
-    '''
+    Available intersections:
+
+    1) 13th16th: a physical one, google map it in Gainesville for the image and lane assignment detail
+
+    2) reserv: reservation based model intersection: 12 incoming lanes (3 per approach and all lanes are exclusive).
+    Assumes three exclusive discharge lanes (http://www.cs.utexas.edu/~aim/)
+    """
 
     if inter_name == '13th16th':
         return {1: {7},
@@ -42,7 +71,7 @@ def get_conflict_dict(inter_name):
                 14: {2, 3, 12, 9, 11, 4, 10, 5},
                 15: {2, 3, 12, 4, 5, 8, 7, 11, 6},
                 16: {12, 2, 3, 8, 4, 7, 5, 11}}
-        # (17, 9, 8, 15,) covers all lanes
+        # note (17, 9, 8, 15,) covers all lanes
 
     elif inter_name == 'reserv':
         return {1: {4, 5, 6, 7, 8, 9, 10, 11, 12},
@@ -60,9 +89,15 @@ def get_conflict_dict(inter_name):
 
 
 def get_phases(inter_name):
-    '''
-    this is one based but the allowed set is zero based
-    '''
+    """
+    Returns a dictionary of sets
+    The key is the phase number is one-based
+    The value to a key is set of lanes included in that phase (lanes are one-based too)
+    Use the phase enumerator for new intersections of refine manually
+    The rule is each set must include non-conflicting lanes
+    # todo add the phase enumarator to the project
+    """
+
     if inter_name == '13th16th':
         return {1: {1, 10, 16, },
                 2: {6, 7, 12, },
@@ -93,45 +128,17 @@ def get_phases(inter_name):
         raise Exception('Set of phases is not known for this intersection.')
 
 
-def get_pretimed_parameters(inter_name):
-    '''
-    this return the parameters needed for pre-timed logic
-    note the sequence field is zero-based
-    required for pretimed control
-    '''
-    if inter_name == '13th16th':
-        return None  # todo compute these
-
-    elif inter_name == 'reserv':
-        # return None
-        return {'green_dur': (25.0, 25.0, 25.0, 25.0), 'phase_seq': (0, 1, 2, 3,), 'yellow': 3.0, 'all-red': 1.5}
-    else:
-        raise Exception('Pretimed parameters is not known for this intersection.')
-
-
 def get_signal_params(inter_name):
-    '''
-    yellow, all-red, min green, max green all in seconds
-    required for GA
-    '''
+    """
+    Required for GA signal control
+    ALL yellow, all-red, min green, max green times are in seconds
+    """
+
     if inter_name == '13th16th':
         return 1.5, 1.0, 5.0, 25.0
+
     elif inter_name == 'reserv':
         return 3.0, 1.5, 2.0, 40.0
+
     else:
         raise Exception('Signal parameters are not known for this intersection.')
-
-
-def get_general_params(inter_name):
-    '''
-    :return: max speed (m/s), min_headway (seconds), detection range (meters), k, m
-        k =  # n will be in 0, ..., k-1 (odd degree of polynomial is preferred: k to be even)
-        m =  # to discretize the time interval
-        required for trajectory optimization
-    '''
-    if inter_name == '13th16th':
-        return 15.0, 2.0, 500.0, 10, 20
-    elif inter_name == 'reserv':
-        return 15.0, 2.0, 500.0, 10, 20
-    else:
-        raise Exception('Simulation parameters are not known for this intersection.')

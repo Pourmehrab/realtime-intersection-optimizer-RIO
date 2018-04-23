@@ -156,6 +156,7 @@ if __name__ == "__main__":
     if method == "GA":
         # define what subset of phase-lane incidence matrix should be used
         # minimal set of phase indices to cover all movements (17, 9, 8, 15) for 13th16th intersection
+        # NOTE TEH SET OF ALLOABALE PHASES IS ZERO-BASED (not like what inputted in data.py)
         signal = GA_SPaT(inter_name, (0, 1, 2, 3,), num_lanes, min_headway, print_signal_detail)
     elif method == "pretimed":
         signal = Pretimed(inter_name, num_lanes, min_headway, print_signal_detail)
@@ -182,7 +183,7 @@ if __name__ == "__main__":
         # remove/record served vehicles and phases
         traffic.serve_update_at_stop_bar(lanes, simulation_time, num_lanes)
         # add/update vehicles
-        traffic.update_vehicles_info(lanes, num_lanes, simulation_time, max_speed, min_headway, k)
+        traffic.update_vehicles_info(lanes, simulation_time, max_speed, min_headway, k)
         # update SPaT
         signal.update_SPaT(simulation_time)
 
@@ -233,7 +234,7 @@ if __name__ == "__main__":
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_in_last_sc_arrived():
-            if not lanes.all_served(num_lanes) or traffic.unarrived_vehicles():
+            if not lanes.all_served(num_lanes) or traffic.unarrived_vehicles_in_sc():
                 simulator.next_sim_step()
                 simulation_time = simulator.get_clock()
             else:  # simulation of a scenario ended move on to the next scenario
