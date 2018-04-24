@@ -112,4 +112,5 @@ note.txt
 unit_tests.py
 
 log/
+sphinx/
 src/optional/
