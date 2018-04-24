@@ -2,7 +2,7 @@
 # File name: traj.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Apr/07/2018       #
+# Last Modified: Apr/23/2018       #
 ####################################
 
 import numpy as np
@@ -16,7 +16,7 @@ class Trajectory:
     """
     Abstract class for trajectories
 
-    four subclasses (LeadConnected, FollowerConnected, LeadConventional, and FollowerConventional) are
+    Four subclasses (LeadConnected, FollowerConnected, LeadConventional, and FollowerConventional) are
     inherited from this class
     """
 

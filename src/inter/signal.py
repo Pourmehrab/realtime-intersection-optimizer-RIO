@@ -2,7 +2,7 @@
 # File name: signal.py             #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
-# Last Modified: Apr/15/2018       #
+# Last Modified: Apr/23/2018       #
 ####################################
 
 import numpy as np
@@ -434,7 +434,7 @@ class GA_SPaT(Signal):
                         t_earliest = veh.earliest_arrival
                         # depending on if we are keeping the prev trajectory or not, schedule or reschedule departure
                         t_scheduled = max(t_earliest, start_green, served_vehicle_time[
-                            lane] + self._min_headway) if veh.redo_trj() else veh.scheduled_arrival
+                            lane] + self._min_headway) if veh.redo_trj_allowed else veh.scheduled_arrival
 
                         if t_scheduled <= end_yellow:
                             first_unsrvd_indx[lane] += 1

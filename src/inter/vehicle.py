@@ -8,15 +8,30 @@
 import csv
 
 import numpy as np
-import pandas as pd
 
 
 class Vehicle:
+    """
+        Goals:
+        1) Defines the vehicle object that keeps all necessary information
+            1-1) Those which are coming from fusion
+            1-2) Those which are defined to be decided in the program:
+            `trajectory[time, distance, speed], earliest_arrival, scheduled_arrival, poly_coeffs, _do_trj`
+        2) Update/record the trajectory points once they are expired
+        3) Keep trajectory indexes updated
+        4) Print useful info once a plan is scheduled
+        5) Decides if a trajectory re-computation is needed
+        6) Quality controls the assigned trajectory
+
+
+    Note:
+        1) Make sure the MAX_NUM_TRAJECTORY_POINTS to preallocate the trajectories is enough for given problem
+    """
     EPS = 0.01  # small number that lower than that is approximated by zero
-    MAX_NUM_TRAJECTORY_POINTS = 300
+    MAX_NUM_TRAJECTORY_POINTS = 300  # check if it's enough to preallocate the trajectory
 
     def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx, k):
-        '''
+        """
         Data Structure for an individual vehicle
 
         :param det_id:          the id assigned to this vehicle by radio
@@ -24,14 +39,14 @@ class Vehicle:
         :param det_time:        detection time in seconds from reference time
         :param speed:           detection speed in m/s
         :param dist:            detection distance to stop bar in meter
+        :param des_speed:       desired speed in m/s
+        :param dest:            destination 0: right turn, 1: through, 2: left
         :param length:          length of vehicle in meter
         :param amin:            desirable deceleration rate in m/s2
         :param amax:            desired acceleration rate in m/s2
-        :param dest:            destination 0: right turn, 1: through, 2: left
-        :param des_speed:       desired speed in m/s
-        :param trajectory       keeps trajectory of vehicle [time, distance, speed]
-        :param last_trj_point_indx       last index points to last row in trajectory
-        '''
+        :param indx:            the original row index in the input csv file
+        :param k:               number of coefficients to represent the trajectory if vehicle is connected
+        """
         self.ID = det_id
         self.veh_type = det_type
         self.init_time = det_time  # needed to compute the travel time
@@ -45,62 +60,85 @@ class Vehicle:
         self.trajectory = np.zeros((3, self.MAX_NUM_TRAJECTORY_POINTS), dtype=np.float)  # the shape is important
         self.first_trj_point_indx = 0
         self.trajectory[:, 0] = [det_time, dist, speed, ]
-        self.last_trj_point_indx = -1  # last index < first index means no traj have computed
+        self.last_trj_point_indx = -1  # last index < first index means no traj has been computed yet
         self.csv_indx = indx  # is used to find vehicle in original csv file
 
-        if det_type == 1:  # only CAVs trajectories are in the form of polynomials
+        if det_type == 1:  # only CAVs trajectories are in the form of polynomials (the also have trajectory matrix)
             self.poly_coeffs = np.zeros(k)
 
         self.earliest_arrival, self.scheduled_arrival = 0.0, 0.0  # will be set with their set methods
-        self._do_trj = True
+        self.redo_trj_allowed = True  # default value
 
     def reset_trj_points(self, sc, lane, time_threshold, file):
-        '''
-        writes all traj points before or equal to the time_threshold to a csv file
-        resets traj and its index
-        look for the header in get_traffic.py __init__ method
-        '''
+        """
+        Write trajectory points in the csv file if their time stamp is before the `time_threshold` and then remove them
+        by updating the first trj point.
+
+        :param sc: scenario number being simulated
+        :param lane: lane number that is zero-based  (it records it one-based)
+        :param time_threshold: any trajectory point before this is considered expired (normally its simulation time)
+        :param file: initialized in `Traffic.__init__()` method
+        :return:
+        """
         trj_indx, max_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx
         time = self.trajectory[0, trj_indx]
 
-        # write trajectory points in the csv file and then remove them and then set the first trj point
         if time < time_threshold:
             if file is None:  # don't have to write csv
                 while time < time_threshold and trj_indx <= max_trj_indx:
                     time = self.trajectory[0, trj_indx]
                     trj_indx += 1
 
-            else:  # get full info and write trj points in the csv
+            else:  # get full info and write trj points to the csv file
                 writer = csv.writer(file, delimiter=',')
                 while time < time_threshold and trj_indx <= max_trj_indx:
                     time, distance, speed = self.trajectory[:, trj_indx]
-                    writer.writerows([[sc, self.ID, self.veh_type, lane, time, distance, speed]])
+                    writer.writerows([[sc, self.ID, self.veh_type, lane + 1, time, distance, speed]])
                     file.flush()
                     trj_indx += 1
 
             self.set_first_trj_point_indx(trj_indx - 1)
 
     def set_earliest_arrival(self, t_earliest):
-        '''
-        It gets the earliest arrival time at the stop bar for the last vehicle just added to this lane
-        '''
+        """
+        Sets the earliest arrival time at the stop bar
+        Called under Traffic.update_vehicles_info() method
+        """
         self.earliest_arrival = t_earliest  # this is the absolute earliest time
 
     def set_scheduled_arrival(self, t_scheduled, d_scheduled, s_scheduled):
+        """
+        Note when a new vehicle is scheduled, it has two trajectory points
+            One for the current state
+            One for the final state
+
+        :param t_scheduled: scheduled departure time (s)
+        :param d_scheduled: scheduled departure distance (m)
+        :param s_scheduled: scheduled departure speed (m/s)
+        :return:
+        """
         self.scheduled_arrival = t_scheduled
-        self.last_trj_point_indx = 1
+        self.last_trj_point_indx = self.first_trj_point_indx + 1
         self.trajectory[:, self.last_trj_point_indx] = [t_scheduled, d_scheduled, s_scheduled]
 
     def set_poly_coeffs(self, beta):
+        """Sets the coefficients that define the polynomial that defines trajectory of a connected vehicle"""
         self.poly_coeffs = beta
 
     def set_first_trj_point_indx(self, indx):
+        """Sets the fist column index that points to the trajectory start"""
         self.first_trj_point_indx = indx
 
     def set_last_trj_point_indx(self, indx):
+        """Sets the last column index that points to the trajectory start"""
         self.last_trj_point_indx = indx
 
     def map_veh_type2str(self, code):
+        """
+        For the purpose of printing, this method translates the vehicle codes. Currently it supports:
+            0 : Conventional vehicles
+            1 : Automated/Connected vehicles
+        """
         if code == 1:
             return 'Automated'
         elif code == 0:
@@ -109,6 +147,13 @@ class Vehicle:
             raise Exception('The numeric code of vehicle type is not known.')
 
     def print_trj_points(self, lane, veh_indx):
+        """
+        Print the first and last trajectory points information.
+        This may be used either when a plan is scheduled or a trajectory is computed.
+
+        :param lane: zero-based lane number
+        :param veh_indx: index to find the vehicle in its lane array
+        """
         veh_type_str = self.map_veh_type2str(self.veh_type)
         first_trj_indx, last_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx
         rank = '1st' if veh_indx == 0 else ('2nd' if veh_indx == 1 else str(veh_indx + 1) + 'th')
@@ -122,40 +167,36 @@ class Vehicle:
                 last_trj_indx - first_trj_indx + 1
             ))
 
-    # def save_trj_to_csv(self, inter_name):
-    #     t, d, s = self.trajectory[:, 0: self.last_trj_point_indx]
-    #     df = pd.DataFrame({'time': t, 'distance': d, 'speed': s})
-    #     df.to_excel('log/' + inter_name + '_trajectory_' + str(self.ID) + '.xlsx', index=False)
-
     def test_trj_redo_needed(self, min_dist=50):
-        '''
-            checks if the trajectory model should solve be run (returns True) or not (False)
-            :min_curr_dist: for lower than this (in meters), no trajectory optimization or car following will be applied
-            :return:
-            '''
+        """
+        Checks if the trajectory model should be run (returns True) or not (False). Cases:
+            1) if last trj point is not assigned yet, do the trajectory.
+            2) if vehicle is closer than a certain distance, do NOT update the trajectory.
 
-        # last_trj_point_indx = self.last_trj_point_indx
-        # if last_trj_point_indx < 0:
-        #     return True
-
-        curr_dist = self.trajectory[1, 0]
-        if curr_dist <= min_dist:
-            self._do_trj = False
-        else:
-            self._do_trj = True
-
-    def redo_trj(self):
-        return self._do_trj
-
-    def set_redo_trj_false(self):
-        '''
-        to bypass the reoptimization for now
-        when fusion is added this will be merged with test_trj_redo_needed()
+        :param min_dist: for lower than this (in meters), no trajectory optimization or car following will be applied
         :return:
-        '''
-        self._do_trj = False
+        """
+
+        if self.last_trj_point_indx < 0:
+            return True  # dont have to set self._do_trj to True since it's already True
+
+        curr_dist = self.trajectory[1, self.first_trj_point_indx]
+        if curr_dist <= min_dist:
+            self.redo_trj_allowed = False
+        else:
+            self.redo_trj_allowed = True
 
     def test_trj_points(self, simulation_time):
+        """
+        Verifies the trajectory points for following cases:
+            1) Non-negative speed (threshold is set to -3 m/s)
+            2) Non-negative distance (threshold is set to -3 m)
+            3) Expired trajectory point is not removed
+
+            todo add more tests
+        :param simulation_time: the current simulation clock
+        """
+
         trj_point_indx = self.first_trj_point_indx
         last_trj_point_indx = self.last_trj_point_indx
         if last_trj_point_indx - trj_point_indx > 0:  # if there are at least two points, check them
@@ -166,4 +207,6 @@ class Vehicle:
                     raise Exception('Negative speed, veh: ' + str(self.ID))
                 elif dist < -3:  # the polynomial may oscillate near zero so let it
                     raise Exception('Traj point after the stop bar, veh: ' + str(self.ID))
+                elif time < simulation_time:
+                    raise Exception('Expired trajectory point is not purged, veh: ' + str(self.ID))
                 trj_point_indx += 1

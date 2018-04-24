@@ -11,7 +11,7 @@
 import sys
 import time
 
-from src.input.get_traffic import Traffic
+from src.input.traffic import Traffic
 from src.input.time_keeper import TimeKeeper
 from src.inter.inter import Intersection
 from src.inter.lane import Lanes

@@ -1,5 +1,5 @@
 ####################################
-# File name: get_traffic.py        #
+# File name: traffic.py            #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
 # Last Modified: Apr/22/2018       #
