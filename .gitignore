@@ -103,7 +103,6 @@ ENV/
 # pycharm
 .idea/
 *.svg
-*.html
 *.csv
 *.lp
 *.pdf
