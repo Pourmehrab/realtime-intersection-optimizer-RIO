@@ -133,7 +133,8 @@ class Vehicle:
         """Sets the last column index that points to the trajectory start"""
         self.last_trj_point_indx = indx
 
-    def map_veh_type2str(self, code):
+    @staticmethod
+    def map_veh_type2str(code):
         """
         For the purpose of printing, this method translates the vehicle codes. Currently it supports:
             0 : Conventional vehicles

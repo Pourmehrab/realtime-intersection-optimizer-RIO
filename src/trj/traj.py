@@ -14,23 +14,41 @@ import numpy as np
 
 class Trajectory:
     """
-    Abstract class for trajectories
+    Abstract class for computing the trajectory points. Four subclasses inherited from Trajectory():
+        * LeadConventional
+        * FollowerConnected
+        * LeadConnected
+        * FollowerConventional
 
-    Four subclasses (LeadConnected, FollowerConnected, LeadConventional, and FollowerConventional) are
-    inherited from this class
+    Note if want to omit the trajectory planning, there are two options:
+        * If a particular vehicle is intended to be skipped, simply invoke veh.set_redo_trj_false() whenever needed
+        * If the whole simulation is intended to be run without trajectory planer, set do_traj_computation in main.py
+        to False.
+
+    Any solve method under each class shall invoke set_trajectory() method at the end or does the assignment in-place.
+
+    :param LAG: the lag time from start of green when a vehicle can depart
+    :param RES: time difference between two consecutive trajectory points in second (be careful not to exceed max size
+     of trajectory
+    :param EPS: small number that lower than that is approximated by zero
     """
 
-    LAG = 1  # lag time from start of green when a vehicle can depart
-    RES = 1  # second (be careful not to exceed max size of trajectory
-    EPS = 0.01  # small number that lower than that is approximated by zero
+    LAG = 1
+    RES = 1
+    EPS = 0.01
 
     def __init__(self, max_speed, min_headway):
+        """
+        :param max_speed: Trajectories are designed to respect the this speed limit (in m/s).
+        :param min_headway: This is the minimum headway that vehicles in a lane can be served (in sec/veh)
+        """
         self._max_speed = max_speed
         self._min_headway = min_headway
 
-    def vectorize_time_interval(self, start_time, end_time):
+    def discretize_time_interval(self, start_time, end_time):
         """
-        vectorize by RES
+        Discretize the given time interval to a numpy array of time stamps
+        The resolution is equal to the :param RES: (sec)
         """
         if end_time <= start_time:
             return np.array([])
@@ -41,9 +59,15 @@ class Trajectory:
 
         return trj_time_stamps
 
-    def set_trajectory(self, veh, t, d, s):
+    @staticmethod
+    def set_trajectory(veh, t, d, s):
         """
-        Sets trajectory of the vehicle. They"re computed elsewhere. This is just to set them.
+        Sets trajectory of the vehicle and updates the first and last trajectory point index.
+
+        :param veh: the vehicle object that is owns the trajectory
+        :param t: time stamps (seconds from the reference time)
+        :param d: distances at each time stamp (in meters from the stop bar)
+        :param s: speed at each time stamp (in m/s)
         """
         n = len(t)
         veh.trajectory[:, 0:n] = [t, d, s]
@@ -55,13 +79,18 @@ class Trajectory:
 # LEAD CONVENTIONAL TRAJECTORY ESTIMATOR
 # -------------------------------------------------------
 class LeadConventional(Trajectory):
+    """
+    Computes the trajectory for a lead conventional vehicle assuming the vehicle tends to maintain its arrival speed.
+    """
 
     def __init__(self, max_speed, min_headway):
         super().__init__(max_speed, min_headway)
 
     def solve(self, veh):
         """
-        Constructs the trajectory of the lead conventional vehicle assuming they maintain their speed
+        Constructs the trajectory of a lead conventional vehicle assuming the driver maintains its speed
+
+        :param veh: the lead conventional vehicle
         """
         trajectory = veh.trajectory
         first_trj_point_indx = veh.first_trj_point_indx
@@ -70,16 +99,16 @@ class LeadConventional(Trajectory):
 
         arrival_time = det_time + det_dist / det_speed
 
-        t = self.vectorize_time_interval(det_time, arrival_time)
+        t = self.discretize_time_interval(det_time, arrival_time)
         s = np.array([det_speed for i in range(len(t))])
         d = np.array([det_dist - det_speed *
                       (t[i] - det_time) for i in range(len(t))])
 
         if arrival_time > scheduled_arrival + self.EPS:
-            raise Exception("earliest arrival of a lead conventional is later than the scheduled time.")
+            raise Exception("the computed earliest arrival of a lead conventional is later than the scheduled time.")
         else:
 
-            t_augment = self.vectorize_time_interval(t[-1] + self.RES, scheduled_arrival)
+            t_augment = self.discretize_time_interval(t[-1] + self.RES, scheduled_arrival)
             d_augment = [0 for t in t_augment]
             s_augment = [0 for t in t_augment]
 
@@ -94,26 +123,28 @@ class LeadConventional(Trajectory):
 # FOLLOWER CONVENTIONAL TRAJECTORY ESTIMATOR
 # -------------------------------------------------------
 class FollowerConventional(Trajectory):
+    """
+    Computes the trajectory for a follower conventional vehicle assuming a car following model.
+
+    """
 
     def __init__(self, max_speed, min_headway):
         super().__init__(max_speed, min_headway)
 
     def solve(self, veh, lead_veh):
         """
-        Gipps car following model
-        It"s written in-place (does not set trajectory outside of it)
+        Gipps car following model is assumed here.
+        It is written in-place (does not call set_trajectory)
 
         Refer to:
             Gipps, Peter G. "A behavioural car-following model for computer simulation."
             Transportation Research Part B: Methodological 15.2 (1981): 105-111.
-
-        :return: speed profile of follower CNV
+        Note the only trajectory point index that changes is follower's last one
         """
         follower_trajectory = veh.trajectory
         follower_desired_speed = veh.desired_speed
         follower_max_acc, follower_max_dec = veh.max_accel_rate, veh.max_decel_rate
-        follower_trj_indx = veh.first_trj_point_indx  # first trajectory point stays the same in the process
-        # follower_last_trj_point_indx = veh.last_trj_point_indx
+        follower_trj_indx = veh.first_trj_point_indx
         follower_detection_time = follower_trajectory[0, follower_trj_indx]
 
         lead_trajectory = lead_veh.trajectory
@@ -183,7 +214,7 @@ class FollowerConventional(Trajectory):
         d_follower_end = follower_trajectory[1, follower_trj_indx]
         t_follower_end = follower_trajectory[0, follower_trj_indx]
 
-        t_augment = self.vectorize_time_interval(self.RES, d_follower_end / follower_desired_speed)
+        t_augment = self.discretize_time_interval(self.RES, d_follower_end / follower_desired_speed)
         d_augment = [d_follower_end - t * follower_desired_speed for t in t_augment]
         s_augment = [follower_desired_speed for i in range(len(t_augment))]
 
@@ -194,7 +225,7 @@ class FollowerConventional(Trajectory):
         veh.set_last_trj_point_indx(last_index - 1)
 
 
-import cplex  # Refer to: IBM(R) ILOG CPLEX Python API Reference Manual
+import cplex
 
 
 # -------------------------------------------------------
@@ -202,11 +233,8 @@ import cplex  # Refer to: IBM(R) ILOG CPLEX Python API Reference Manual
 # -------------------------------------------------------
 
 class LeadConnected(Trajectory):
-    NUM_DIGS = 3
-
-    def __init__(self, max_speed, min_headway, k, m):
-        """
-        Trajectory function:
+    """
+    Trajectory function:
         f(t)   = sum_{n=0}^{k-1} b_n t^n
 
         Negative of speed profile:
@@ -215,6 +243,15 @@ class LeadConnected(Trajectory):
         Negative of acceleration profile:
         f''(t) = sum_{n=2}^{k-1} n (n-1) b_n t^{n-2}
 
+    Refer to "IBM(R) ILOG CPLEX Python API Reference Manual" for CPLEX usage using Python
+    For solver status codes: https://www.ibm.com/support/knowledgecenter/SSSA5P_12.8.0/ilog.odms.cplex.help/refcallablelibrary/macros/Solution_status_codes.html
+    To write the model use 'write("model.lp")' on it.
+
+    """
+    NUM_DIGS = 3  # the accuracy to keep decimals
+
+    def __init__(self, max_speed, min_headway, k, m):
+        """
 
         :param k: the size of array that keeps the polynomial (k-1 is the degree of polynomial)
         :param m: number of points (exclusive of boundaries) to control speed/acceleration magnitude
@@ -270,7 +307,7 @@ class LeadConnected(Trajectory):
 
     def set_model(self, veh, arrival_time, arrival_dist, dep_speed, is_lead=False):
         """
-        Modifies the generic coefficients to build the specific model
+        Overrides the generic coefficients to build the specific model
 
         :param veh:             vehicle object that its trajectory is meant to be computed
         :param arrival_time:    time vehicle is scheduled to reach the stop bar
@@ -336,6 +373,15 @@ class LeadConnected(Trajectory):
             return self._lp_model  # should return the model since the follower optimizer is extending this class
 
     def solve(self, veh, model, arrival_time, max_speed):
+        """
+        Solves for connected vehicle (both lead and follower)
+
+        :param veh:
+        :param model:
+        :param arrival_time:
+        :param max_speed:
+        :return: coefficients of the polynomial to the veh object and trajectory points to the trajectory attribute of it
+        """
 
         if model is None:
             trajectory = veh.trajectory
@@ -349,7 +395,7 @@ class LeadConnected(Trajectory):
                 t_acc_or_dec = (max_speed - det_speed) / a
                 d_acc_or_dec = det_dist - (0.5 * a * t_acc_or_dec ** 2 + det_speed * t_acc_or_dec)
 
-                t = self.vectorize_time_interval(0, arrival_time_relative)
+                t = self.discretize_time_interval(0, arrival_time_relative)
                 d = [det_dist - (0.5 * a * ti ** 2 + det_speed * ti) if ti <= t_acc_or_dec
                      else d_acc_or_dec - max_speed * (ti - t_acc_or_dec) for ti in t]
                 s = [min(det_speed + a * ti, max_speed) for ti in t]
@@ -357,7 +403,7 @@ class LeadConnected(Trajectory):
                 v_dest = np.sqrt(det_speed ** 2 + 2 * a * det_dist)
                 t_acc_or_dec = (v_dest - det_speed) / a
 
-                t = self.vectorize_time_interval(0, t_acc_or_dec)
+                t = self.discretize_time_interval(0, t_acc_or_dec)
                 d = [det_dist - (0.5 * a * ti ** 2 + det_speed * ti) for ti in t]
                 s = [det_speed + a * ti for ti in t]
 
@@ -378,7 +424,7 @@ class LeadConnected(Trajectory):
                 dep_speed -= dv
             if dep_speed < 0:  # no optimal found in the while loop above
                 raise Exception("CPLEX failed to find optimal trj for vehicle " + str(veh.ID))
-                # refer to: https://www.ibm.com/support/knowledgecenter/SSSA5P_12.8.0/ilog.odms.cplex.help/refcallablelibrary/macros/Solution_status_codes.html
+
             beta = np.flip(np.array(model.solution.get_values(["beta_" + str(n) for n in range(self.k)])), 0)
             f = np.poly1d(beta)
             f_prime = np.polyder(f)
@@ -394,7 +440,7 @@ class LeadConnected(Trajectory):
             self.set_trajectory(veh, t, d, s)
 
     def compute_trj_points(self, f, f_prime, arrival_time_relative):
-        t = self.vectorize_time_interval(0, arrival_time_relative)
+        t = self.discretize_time_interval(0, arrival_time_relative)
         d = np.polyval(f, t)
         s = np.polyval(-f_prime, t)
 
@@ -411,6 +457,13 @@ class FollowerConnected(LeadConnected):
     SAFE_MIN_GAP = 4.8  # minimum safe distance to keep from lead vehicles todo make it dependent to speed
 
     def __init__(self, max_speed, min_headway, k, m):
+        """
+        adds the safe headway constraints at the control points to the inherited model.
+        :param max_speed:
+        :param min_headway:
+        :param k:
+        :param m:
+        """
         super().__init__(max_speed, min_headway, k, m)
 
         constraint = [["beta_" + str(n) for n in range(self.k)], [1 for n in range(self.k)]]
@@ -420,10 +473,20 @@ class FollowerConnected(LeadConnected):
             rhs=[min_headway for j in range(self.m)],
             names=["min_headway_" + str(j) for j in range(self.m)])
 
-        # self._lp_model.write("model.lp")
-
     def set_model(self, veh, arrival_time, arrival_dist, dep_speed,
                   lead_poly, lead_det_time, lead_arrival_time):
+        """
+        Sets the LP model using the extra constraints to enforce the safe headway
+
+        :param veh: follower connected vehicle that the trajectory model is constructed for
+        :param arrival_time: scheduled arrival time for this vehicle
+        :param arrival_dist: scheduled arrival distance for this vehicle
+        :param dep_speed: scheduled arrival speed for this vehicle
+        :param lead_poly: the lead vehicle polynomial to regenerate necessary info at the control points
+        :param lead_det_time: lead vehicle departure time
+        :param lead_arrival_time: scheduled arrival time for lead vehicle
+        :return: the LP model to be solved by solve() method
+        """
         self._lp_model = super().set_model(veh, arrival_time, arrival_dist, dep_speed)
 
         trajectory = veh.trajectory

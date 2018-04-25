@@ -221,7 +221,8 @@ class Traffic:
         # to keep track of how much of csv is processed
         self._current_row_indx = indx - 1
 
-    def get_volumes(self, lanes, num_lanes, det_range):
+    @staticmethod
+    def get_volumes(lanes, num_lanes, det_range):
         """
         Unit of volume in each lane is veh/sec/lane
         Volume = Density x Space Mean Speed

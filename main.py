@@ -11,8 +11,8 @@
 import sys
 import time
 
-from src.input.traffic import Traffic
 from src.input.time_keeper import TimeKeeper
+from src.input.traffic import Traffic
 from src.inter.inter import Intersection
 from src.inter.lane import Lanes
 # Signal Optimizers
@@ -208,7 +208,7 @@ if __name__ == "__main__":
                         if veh.redo_trj():  # false if we want to keep previous trajectory
                             veh_type = veh.veh_type
                             arrival_time = veh.scheduled_arrival
-                            if veh_indx > 0 and veh_type == 1:  # follower CAV
+                            if veh_indx > 0 and veh_type == 1:  # Follower CAV
                                 lead_veh = lanes.vehlist[lane][veh_indx - 1]
                                 lead_poly = lead_veh.poly_coeffs
                                 lead_arrival_time = lead_veh.scheduled_arrival
@@ -217,13 +217,13 @@ if __name__ == "__main__":
                                                                                    lead_poly, lead_det_time,
                                                                                    lead_arrival_time)
                                 follower_connected_trj_optimizer.solve(veh, model, arrival_time, max_speed)
-                            elif veh_indx > 0 and veh_type == 0:  # follower conventional
+                            elif veh_indx > 0 and veh_type == 0:  # Follower Conventional
                                 lead_veh = lanes.vehlist[lane][veh_indx - 1]
                                 follower_conventional_trj_estimator.solve(veh, lead_veh)
-                            elif veh_indx == 0 and veh_type == 1:  # lead CAV
+                            elif veh_indx == 0 and veh_type == 1:  # Lead CAV
                                 model = lead_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed, True)
                                 lead_connected_trj_optimizer.solve(veh, model, arrival_time, max_speed)
-                            elif veh_indx == 0 and veh_type == 0:  # lead conventional
+                            elif veh_indx == 0 and veh_type == 0:  # Lead Conventional
                                 lead_conventional_trj_estimator.solve(veh)
 
                             veh.test_trj_points(simulation_time)  # todo remove if not testing
