@@ -54,87 +54,61 @@ def get_max_arrival_time(lanes):
     return last_served_time_stamp
 
 
-if __name__ == "__main__":
-    """ The program is to simulate the performance of an isolated intersection under traffic of AV and conventional 
-    vehicles with variety of signal control methods.
-    
-    For simulating a 12 lane four leg intersection (reservation intersection) with pretimed control do
-    >>> python reserv pretimed
-    
-    For simulating intersection of 13th and 16th in Gainesville with GA do
-    >>> python 13th16th GA
-    
-    You can add any intersection in the `rc/inter/data.py`. The list of all available intersections is:
-    1) reserv
-    2) 13th16th
-    
-    You also can choose from the following signal control methods:
-    1) GA
-    2) pretimed
-    3) MCF      (under development)
-    4) actuated (under development)
-    
-    For logging and printing of information set boolean variables:
-    :param log_at_trj_point_level: saves a csv under \log directory that contains all trajectory points for all vehicles
-    :param log_at_vehicle_level: saves a csv file under \log directory that contains departure times and elapsed times 
-    and vehicle IDs
-    
-    The flow is as the following:
-    > Tests for python version
-	> Checks the input arguments to be valid
-	> Instantiate:
-		Intersection: keeps lane-lane and phase-lane incidence dictionaries
-		Lanes: 
-		Traffic:
-		trajectory planners: all bellow
-			LeadConventional:
-			LeadConnected:
-			FollowerConventional:
-			FollowerConnected:
-		signal: one of followings
-			GA_SPaT:
-			Pretimed:
-	> set simulation start time to when first vehicle shows up
-		Simulator:
-	> main loop stops only when all vehicles in the provided input traffic csv file are assigned a departure time.
-		> remove vehicles that are served
-		> update SPaT
-		> update vehicle information (includes addition too)
-		> do signal
-		> plan trajectories
-		> update time and check of termination
-
-
-
-    By: Mahmoud Pourmehrab, Date: April 22, 2018
+def run_AVIAN(inter_name, method):
     """
-    ################### SET SOME PARAMETERS PN LOGGING AND PRINTING BEHAVIOUR
-    do_traj_computation = False  # speeds up
-    log_at_vehicle_level = False  # writes the <inter_name>_vehicle_level.csv
-    log_at_trj_point_level = False  # writes the <inter_name>_trj_point_level.csv
-    print_trj_info, test_time = True, 0  # prints arrival departures in command line
-    print_signal_detail = True  # prints signal info in command line
-    print_clock = True  # prints the timer in command line
-    # if print_trj_info:
-    #     tester = SimTest(num_lanes)
+    For simulating a 12 lane four leg intersection (reservation intersection) with pretimed control do::
+        >>> python reserv pretimed
 
-    print(
-        "University of Florida.\nBy Mahmoud Pourmehrab ######################\n")
-    print("Interpreter Information ###################################")
-    print("Python Path: ", sys.executable)
-    print("Python Version: ", sys.version)
-    # Check the interpreter to make sure using py version at least 3.5.2
-    check_py_ver()
+    For simulating intersection of 13th and 16th in Gainesville with GA do::
+        >>> python 13th16th GA
 
-    if len(sys.argv) != 3 or sys.argv[1] not in ["13th16th", "reserv", ] or sys.argv[2] not in ["GA", "MCF", "pretimed",
-                                                                                                "actuated"]:
-        raise Exception("Check the input arguments and try again.")  # you can halt also by sys.exit(-1)
-    else:
-        # Set the intersection name, optimization method
-        inter_name, method = sys.argv[1], sys.argv[2]
+    You can add any intersection in the ``src/inter/data.py``. The list of all available intersections is:
+        * reserv
+        * 13th16th
+
+    You also can choose from the following signal control methods:
+        * GA
+        * pretimed
+        * MCF      (under development)
+        * actuated (under development)
+
+    For logging and printing of information set boolean variables:
+        - ``log_at_trj_point_level`` saves a csv under ``\log directory`` that contains all trajectory points for all
+            vehicles
+        - ``log_at_vehicle_level`` saves a csv file under ``\log directory`` that contains departure times and elapsed
+            times and vehicle IDs
+
+    The flow is as the following:
+    - Tests for python version
+    - Checks the input arguments to be valid
+    - Instantiate:
+        - Intersection: keeps lane-lane and phase-lane incidence dictionaries
+        - Lanes:
+        - Traffic:
+        - trajectory planners: all bellow
+            - LeadConventional:
+            - LeadConnected:
+            - FollowerConventional:
+            - FollowerConnected:
+        - signal: one of followings
+            - GA_SPaT:
+            - Pretimed:
+    - set simulation start time to when first vehicle shows up
+        - Simulator:
+    - main loop stops only when all vehicles in the provided input traffic csv file are assigned a departure time.
+        - remove vehicles that are served
+        - update SPaT
+        - update vehicle information (includes addition too)
+        - do signal
+        - plan trajectories
+        - update time and check of termination
+
+
+
+    """
 
     intersection = Intersection(inter_name)
-    # get useful some values
+    # get some useful values
     num_lanes = intersection.get_num_lanes()
     max_speed = intersection.get_max_speed()  # in m/s
     min_headway = intersection.get_min_headway()  # in seconds
@@ -268,3 +242,33 @@ if __name__ == "__main__":
                 break
             else:  # this is the last scenario but still some vehicles have not been served
                 time_keeper.next_sim_step()
+
+
+if __name__ == "__main__":
+
+    ################### SET SOME PARAMETERS PN LOGGING AND PRINTING BEHAVIOUR
+    do_traj_computation = False  # speeds up
+    log_at_vehicle_level = False  # writes the <inter_name>_vehicle_level.csv
+    log_at_trj_point_level = False  # writes the <inter_name>_trj_point_level.csv
+    print_trj_info, test_time = True, 0  # prints arrival departures in command line
+    print_signal_detail = True  # prints signal info in command line
+    print_clock = True  # prints the timer in command line
+    # if print_trj_info:
+    #     tester = SimTest(num_lanes)
+
+    print(
+        "University of Florida.\nBy Mahmoud Pourmehrab ######################\n")
+    print("Interpreter Information ###################################")
+    print("Python Path: ", sys.executable)
+    print("Python Version: ", sys.version)
+    # Check the interpreter to make sure using py version at least 3.5.2
+    check_py_ver()
+
+    if len(sys.argv) != 3 or sys.argv[1] not in ["13th16th", "reserv", ] or sys.argv[2] not in ["GA", "MCF", "pretimed",
+                                                                                                "actuated"]:
+        raise Exception("Check the input arguments and try again.")  # you can halt also by sys.exit(-1)
+    else:
+        # Set the intersection name, optimization method
+        inter_name, method = sys.argv[1], sys.argv[2]
+
+    run_AVIAN(inter_name, method)

@@ -234,18 +234,16 @@ import cplex
 
 class LeadConnected(Trajectory):
     """
-    Trajectory function:
-        f(t)   = sum_{n=0}^{k-1} b_n t^n
+    Trajectory function: :math:`f(t)   = \sum_{n=0}^{k-1} b_n t^n`
 
-        Negative of speed profile:
-        f'(t)  = sum_{n=1}^{k-1} n b_n t^{n-1}
+        Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n b_n t^{n-1}`
 
-        Negative of acceleration profile:
-        f''(t) = sum_{n=2}^{k-1} n (n-1) b_n t^{n-2}
+        Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n (n-1) b_n t^{n-2}`
 
-    Refer to "IBM(R) ILOG CPLEX Python API Reference Manual" for CPLEX usage using Python
-    For solver status codes: https://www.ibm.com/support/knowledgecenter/SSSA5P_12.8.0/ilog.odms.cplex.help/refcallablelibrary/macros/Solution_status_codes.html
-    To write the model use 'write("model.lp")' on it.
+    Refer to ``IBM(R) ILOG CPLEX Python API Reference Manual`` for CPLEX usage using Python
+
+    `Docs for solver status codes <https://www.ibm.com/support/knowledgecenter/SSSA5P_12.8.0/ilog.odms.cplex.help/refcallablelibrary/macros/Solution_status_codes.html>`_
+
 
     """
     NUM_DIGS = 3  # the accuracy to keep decimals
