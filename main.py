@@ -20,11 +20,11 @@ from src.inter.signal import GA_SPaT, Pretimed
 # Trajectory Optimizers
 from src.trj.traj import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
 # testing
-from unit_tests import test_scheduled_arrivals
+from src.optional.test.unit_tests import test_scheduled_arrivals
 
 
 def check_py_ver():
-    """ checks the python version to meet the requirement (ver 3.5.2)"""
+    """ checks the python version to meet the requirement (``ver 3.5.2``)"""
     expect_major, expect_minor, expect_rev = 3, 5, 2
     if sys.version_info[0] >= expect_major and sys.version_info[1] >= expect_minor and sys.version_info[
         2] >= expect_rev:
@@ -37,29 +37,13 @@ def check_py_ver():
         sys.exit(-1)
 
 
-def get_max_arrival_time(lanes):
+def run_avian(inter_name, method, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level, print_clock,
+              print_signal_detail, print_trj_info, test_time):
     """
-    this is useful to know the max time when plotting trajectories
-
-    :param lanes: the data structure that includes all vehicle objects in the order they are in physical lanes
-    :type lanes: dictionary of arrays of type Lane()
-    :return last_served_time_stamp: time stamp of last vehicle that gets served
-    """
-    last_served_time_stamp = 0.0
-    for lane in range(num_lanes):
-        if bool(lanes.vehlist[lane]):  # not an empty lane
-            veh = lanes.vehlist[lane][-1]  # to get the last vehicle
-            last_veh_in_lane_dep_time = veh.trajectory[0, veh.last_trj_point_indx]
-            last_served_time_stamp = max(last_veh_in_lane_dep_time, last_served_time_stamp)
-    return last_served_time_stamp
-
-
-def run_AVIAN(inter_name, method):
-    """
-    For simulating a 12 lane four leg intersection (reservation intersection) with pretimed control do::
+    For simulating a 12 lane four leg intersection (reservation intersection) with pretimed control do:
         >>> python reserv pretimed
 
-    For simulating intersection of 13th and 16th in Gainesville with GA do::
+    For simulating intersection of 13th and 16th in Gainesville with GA do:
         >>> python 13th16th GA
 
     You can add any intersection in the ``src/inter/data.py``. The list of all available intersections is:
@@ -104,9 +88,17 @@ def run_AVIAN(inter_name, method):
         - update time and check of termination
 
 
-
+    :param inter_name: intersection name
+    :type inter_name: str
+    :param method: Pretimed, GA, ...
+    :param do_traj_computation:
+    :param log_at_vehicle_level:
+    :param log_at_trj_point_level:
+    :param print_clock: prints the simulation clock
+    :param print_signal_detail:
+    :param print_trj_info:
+    :param test_time: in seconds from start of simulation
     """
-
     intersection = Intersection(inter_name)
     # get some useful values
     num_lanes = intersection.get_num_lanes()
@@ -118,7 +110,7 @@ def run_AVIAN(inter_name, method):
     lanes = Lanes(num_lanes)
 
     # load entire traffic generated in csv file
-    traffic = Traffic(inter_name, num_lanes, log_at_vehicle_level, log_at_trj_point_level)
+    traffic = Traffic(inter_name, log_at_vehicle_level, log_at_trj_point_level)
 
     # initialize trajectory planners
     lead_conventional_trj_estimator = LeadConventional(max_speed, min_headway)
@@ -130,7 +122,7 @@ def run_AVIAN(inter_name, method):
     if method == "GA":
         # define what subset of phase-lane incidence matrix should be used
         # minimal set of phase indices to cover all movements (17, 9, 8, 15) for 13th16th intersection
-        # NOTE TEH SET OF ALLOABALE PHASES IS ZERO-BASED (not like what inputted in data.py)
+        # NOTE TEH SET OF ALLOWABLE PHASE ARRAY IS ZERO-BASED (not like what inputted in data.py)
         signal = GA_SPaT(inter_name, (0, 1, 2, 3,), num_lanes, min_headway, print_signal_detail)
     elif method == "pretimed":
         signal = Pretimed(inter_name, num_lanes, min_headway, print_signal_detail)
@@ -167,7 +159,7 @@ def run_AVIAN(inter_name, method):
 
         # DO SIGNAL OPTIMIZATION
         if method == "GA":  # change the one inside the while loop as well
-            signal.solve(lanes, critical_volume_ratio, num_lanes, max_speed)
+            signal.solve(lanes, num_lanes, max_speed, critical_volume_ratio)
         elif method == "pretimed":
             signal.solve(lanes, num_lanes, max_speed)
 
@@ -179,7 +171,7 @@ def run_AVIAN(inter_name, method):
             for lane in range(num_lanes):
                 if bool(lanes.vehlist[lane]):  # not an empty lane
                     for veh_indx, veh in enumerate(lanes.vehlist[lane]):
-                        if veh.redo_trj():  # false if we want to keep previous trajectory
+                        if veh.redredo_trj_allowed:  # false if we want to keep previous trajectory
                             veh_type = veh.veh_type
                             arrival_time = veh.scheduled_arrival
                             if veh_indx > 0 and veh_type == 1:  # Follower CAV
@@ -204,7 +196,7 @@ def run_AVIAN(inter_name, method):
                             veh.set_redo_trj_false()  # todo eventually works with the fusion outputs
 
                         if print_trj_info and simulation_time >= test_time:
-                            veh.print_trj_points(lane, veh_indx)
+                            veh.print_trj_points(lane, veh_indx, 'trj solve()')
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_in_last_sc_arrived():
@@ -246,29 +238,29 @@ def run_AVIAN(inter_name, method):
 
 if __name__ == "__main__":
 
-    ################### SET SOME PARAMETERS PN LOGGING AND PRINTING BEHAVIOUR
+    ################### SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR
     do_traj_computation = False  # speeds up
     log_at_vehicle_level = False  # writes the <inter_name>_vehicle_level.csv
     log_at_trj_point_level = False  # writes the <inter_name>_trj_point_level.csv
     print_trj_info, test_time = True, 0  # prints arrival departures in command line
     print_signal_detail = True  # prints signal info in command line
     print_clock = True  # prints the timer in command line
-    # if print_trj_info:
-    #     tester = SimTest(num_lanes)
 
     print(
         "University of Florida.\nBy Mahmoud Pourmehrab ######################\n")
     print("Interpreter Information ###################################")
     print("Python Path: ", sys.executable)
     print("Python Version: ", sys.version)
+
     # Check the interpreter to make sure using py version at least 3.5.2
     check_py_ver()
 
     if len(sys.argv) != 3 or sys.argv[1] not in ["13th16th", "reserv", ] or sys.argv[2] not in ["GA", "MCF", "pretimed",
                                                                                                 "actuated"]:
-        raise Exception("Check the input arguments and try again.")  # you can halt also by sys.exit(-1)
+        raise Exception("Check the input arguments and try again.")
     else:
         # Set the intersection name, optimization method
         inter_name, method = sys.argv[1], sys.argv[2]
 
-    run_AVIAN(inter_name, method)
+        run_avian(inter_name, method, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level, print_clock,
+                  print_signal_detail, print_trj_info, test_time)

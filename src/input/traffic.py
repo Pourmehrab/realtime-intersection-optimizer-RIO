@@ -30,7 +30,7 @@ class Traffic:
         argument and what exists in the data.py file.
     """
 
-    def __init__(self, inter_name, num_lanes, log_at_vehicle_level, log_at_trj_point_level):
+    def __init__(self, inter_name, log_at_vehicle_level, log_at_trj_point_level):
         """
         Goals:
             1) Set the logging behaviour for outputting requested CSV files and auxiliary output vectors

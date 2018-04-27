@@ -147,13 +147,14 @@ class Vehicle:
         else:
             raise Exception('The numeric code of vehicle type is not known.')
 
-    def print_trj_points(self, lane, veh_indx):
+    def print_trj_points(self, lane, veh_indx, source):
         """
         Print the first and last trajectory points information.
         This may be used either when a plan is scheduled or a trajectory is computed.
 
         :param lane: zero-based lane number
         :param veh_indx: index to find the vehicle in its lane array
+        :param source: specifies which method has called the print
         """
         veh_type_str = self.map_veh_type2str(self.veh_type)
         first_trj_indx, last_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx
@@ -161,12 +162,12 @@ class Vehicle:
         lane_rank = rank + ' in lane ' + str(lane + 1)
         print(
             '* ' + veh_type_str + ' Vehicle ' + str(
-                self.ID) + ' ' + lane_rank + ': DETECETED ({:.2f} sec, {:.2f} m, {:.2f} m/s), SCHEDULED ({:.2f} sec, {:.2f} m, {:.2f} m/s), {:d} points'.format(
+                self.ID) + ' ' + lane_rank + ': DETECETED ({:.2f} sec, {:.2f} m, {:.2f} m/s), SCHEDULED ({:.2f} sec, {:.2f} m, {:.2f} m/s), {:d} points, called by '.format(
                 self.trajectory[0, first_trj_indx], self.trajectory[1, first_trj_indx],
                 self.trajectory[2, first_trj_indx],
                 self.trajectory[0, last_trj_indx], self.trajectory[1, last_trj_indx], self.trajectory[2, last_trj_indx],
                 last_trj_indx - first_trj_indx + 1
-            ))
+            ) + source)
 
     def test_trj_redo_needed(self, min_dist=50):
         """
