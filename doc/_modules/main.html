@@ -1,0 +1,335 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>main &#8212; AVIAN 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../ReadMe.html">AVIAN 1.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for main</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python3</span>
+
+<span class="c1">####################################</span>
+<span class="c1"># File name: main.py               #</span>
+<span class="c1"># Author: Mahmoud Pourmehrab       #</span>
+<span class="c1"># Email: mpourmehrab@ufl.edu       #</span>
+<span class="c1"># Last Modified: Apr/22/2018       #</span>
+<span class="c1">####################################</span>
+
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">src.input.time_keeper</span> <span class="k">import</span> <span class="n">TimeKeeper</span>
+<span class="kn">from</span> <span class="nn">src.input.traffic</span> <span class="k">import</span> <span class="n">Traffic</span>
+<span class="kn">from</span> <span class="nn">src.inter.inter</span> <span class="k">import</span> <span class="n">Intersection</span>
+<span class="kn">from</span> <span class="nn">src.inter.lane</span> <span class="k">import</span> <span class="n">Lanes</span>
+<span class="c1"># Signal Optimizers</span>
+<span class="kn">from</span> <span class="nn">src.inter.signal</span> <span class="k">import</span> <span class="n">GA_SPaT</span><span class="p">,</span> <span class="n">Pretimed</span>
+<span class="c1"># Trajectory Optimizers</span>
+<span class="kn">from</span> <span class="nn">src.trj.traj</span> <span class="k">import</span> <span class="n">FollowerConnected</span><span class="p">,</span> <span class="n">FollowerConventional</span><span class="p">,</span> <span class="n">LeadConnected</span><span class="p">,</span> <span class="n">LeadConventional</span>
+<span class="c1"># testing</span>
+<span class="kn">from</span> <span class="nn">src.optional.test.unit_tests</span> <span class="k">import</span> <span class="n">test_scheduled_arrivals</span>
+
+
+<div class="viewcode-block" id="check_py_ver"><a class="viewcode-back" href="../[0].overview.html#main.check_py_ver">[docs]</a><span class="k">def</span> <span class="nf">check_py_ver</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; checks the python version to meet the requirement (``ver 3.5.2``)&quot;&quot;&quot;</span>
+    <span class="n">expect_major</span><span class="p">,</span> <span class="n">expect_minor</span><span class="p">,</span> <span class="n">expect_rev</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span>
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">expect_major</span> <span class="ow">and</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">expect_minor</span> <span class="ow">and</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span>
+        <span class="mi">2</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">expect_rev</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Python version requirement is met. ################################&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="s2">&quot;INFO: Script developed and tested with Python &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">expect_major</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">expect_minor</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span>
+                <span class="n">expect_rev</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Please update Python&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="run_avian"><a class="viewcode-back" href="../[0].overview.html#main.run_avian">[docs]</a><span class="k">def</span> <span class="nf">run_avian</span><span class="p">(</span><span class="n">inter_name</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">do_traj_computation</span><span class="p">,</span> <span class="n">log_at_vehicle_level</span><span class="p">,</span> <span class="n">log_at_trj_point_level</span><span class="p">,</span> <span class="n">print_clock</span><span class="p">,</span>
+              <span class="n">print_signal_detail</span><span class="p">,</span> <span class="n">print_trj_info</span><span class="p">,</span> <span class="n">test_time</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    For simulating a 12 lane four leg intersection (reservation intersection) with pretimed control do:</span>
+<span class="sd">        &gt;&gt;&gt; python reserv pretimed simulation</span>
+
+<span class="sd">    For simulating intersection of 13th and 16th in Gainesville with GA do:</span>
+<span class="sd">        &gt;&gt;&gt; python 13th16th GA simulation</span>
+
+<span class="sd">    You can add any intersection in the ``src/inter/data.py``. The list of all available intersections is:</span>
+<span class="sd">        * reserv</span>
+<span class="sd">        * 13th16th</span>
+
+<span class="sd">    You also can choose from the following signal control methods:</span>
+<span class="sd">        * GA</span>
+<span class="sd">        * pretimed</span>
+<span class="sd">        * MCF      (under development)</span>
+<span class="sd">        * actuated (under development)</span>
+
+<span class="sd">    You can run in either of the following modes (*each has certain requirements though*):</span>
+<span class="sd">        * simulation</span>
+<span class="sd">        * realtime</span>
+
+<span class="sd">    For logging and printing of information set boolean variables:</span>
+<span class="sd">        - ``log_at_trj_point_level`` saves a csv under ``\log directory`` that contains all trajectory points for all vehicles</span>
+<span class="sd">        - ``log_at_vehicle_level`` saves a csv file under ``\log directory`` that contains departure times and elapsed times and vehicle IDs</span>
+
+<span class="sd">    The work flow is as the following:</span>
+<span class="sd">        - Tests for python version</span>
+<span class="sd">        - Checks the input arguments to be valid</span>
+<span class="sd">        - Instantiate:</span>
+<span class="sd">            - Intersection: keeps lane-lane and phase-lane incidence dictionaries</span>
+<span class="sd">            - Lanes:</span>
+<span class="sd">            - Traffic:</span>
+<span class="sd">            - trajectory planners: all bellow</span>
+<span class="sd">                - LeadConventional:</span>
+<span class="sd">                - LeadConnected:</span>
+<span class="sd">                - FollowerConventional:</span>
+<span class="sd">                - FollowerConnected:</span>
+<span class="sd">            - signal: one of followings</span>
+<span class="sd">                - GA_SPaT:</span>
+<span class="sd">                - Pretimed:</span>
+<span class="sd">        - set simulation start time to when first vehicle shows up</span>
+<span class="sd">            - Simulator:</span>
+<span class="sd">        - main loop stops only when all vehicles in the provided input traffic csv file are assigned a departure time.</span>
+<span class="sd">            - remove vehicles that are served</span>
+<span class="sd">            - update SPaT</span>
+<span class="sd">            - update vehicle information (includes addition too)</span>
+<span class="sd">            - do signal</span>
+<span class="sd">            - plan trajectories</span>
+<span class="sd">            - update time and check of termination</span>
+
+
+<span class="sd">    :param inter_name: intersection name</span>
+<span class="sd">    :type inter_name: str</span>
+<span class="sd">    :param method: Pretimed, GA, ...</span>
+<span class="sd">    :param sc: scenario number (*should match the appendix of the input csv file*)</span>
+<span class="sd">    :param do_traj_computation:</span>
+<span class="sd">    :param log_at_vehicle_level:</span>
+<span class="sd">    :param log_at_trj_point_level:</span>
+<span class="sd">    :param print_clock: prints the simulation clock</span>
+<span class="sd">    :param print_signal_detail:</span>
+<span class="sd">    :param print_trj_info:</span>
+<span class="sd">    :param test_time: in seconds from start of simulation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">intersection</span> <span class="o">=</span> <span class="n">Intersection</span><span class="p">(</span><span class="n">inter_name</span><span class="p">)</span>
+    <span class="c1"># get some useful values</span>
+    <span class="n">num_lanes</span> <span class="o">=</span> <span class="n">intersection</span><span class="o">.</span><span class="n">get_num_lanes</span><span class="p">()</span>
+    <span class="n">max_speed</span> <span class="o">=</span> <span class="n">intersection</span><span class="o">.</span><span class="n">get_max_speed</span><span class="p">()</span>  <span class="c1"># in m/s</span>
+    <span class="n">min_headway</span> <span class="o">=</span> <span class="n">intersection</span><span class="o">.</span><span class="n">get_min_headway</span><span class="p">()</span>  <span class="c1"># in seconds</span>
+    <span class="n">det_range</span> <span class="o">=</span> <span class="n">intersection</span><span class="o">.</span><span class="n">get_det_range</span><span class="p">()</span>  <span class="c1"># detection range in meters</span>
+    <span class="n">k</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="n">intersection</span><span class="o">.</span><span class="n">get_poly_params</span><span class="p">()</span>  <span class="c1"># polynomial degree and discretization level for trajectory optimization of CAVs</span>
+
+    <span class="n">lanes</span> <span class="o">=</span> <span class="n">Lanes</span><span class="p">(</span><span class="n">num_lanes</span><span class="p">)</span>
+
+    <span class="c1"># load entire traffic generated in csv file</span>
+    <span class="n">traffic</span> <span class="o">=</span> <span class="n">Traffic</span><span class="p">(</span><span class="n">inter_name</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">log_at_vehicle_level</span><span class="p">,</span> <span class="n">log_at_trj_point_level</span><span class="p">)</span>
+
+    <span class="c1"># initialize trajectory planners</span>
+    <span class="n">lead_conventional_trj_estimator</span> <span class="o">=</span> <span class="n">LeadConventional</span><span class="p">(</span><span class="n">max_speed</span><span class="p">,</span> <span class="n">min_headway</span><span class="p">)</span>
+    <span class="n">lead_connected_trj_optimizer</span> <span class="o">=</span> <span class="n">LeadConnected</span><span class="p">(</span><span class="n">max_speed</span><span class="p">,</span> <span class="n">min_headway</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
+    <span class="n">follower_conventional_trj_estimator</span> <span class="o">=</span> <span class="n">FollowerConventional</span><span class="p">(</span><span class="n">max_speed</span><span class="p">,</span> <span class="n">min_headway</span><span class="p">)</span>
+    <span class="n">follower_connected_trj_optimizer</span> <span class="o">=</span> <span class="n">FollowerConnected</span><span class="p">(</span><span class="n">max_speed</span><span class="p">,</span> <span class="n">min_headway</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
+
+    <span class="c1"># Set the signal control method</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;GA&quot;</span><span class="p">:</span>
+        <span class="c1"># define what subset of phase-lane incidence matrix should be used</span>
+        <span class="c1"># minimal set of phase indices to cover all movements (17, 9, 8, 15) for 13th16th intersection</span>
+        <span class="c1"># NOTE TEH SET OF ALLOWABLE PHASE ARRAY IS ZERO-BASED (not like what inputted in data.py)</span>
+        <span class="n">signal</span> <span class="o">=</span> <span class="n">GA_SPaT</span><span class="p">(</span><span class="n">inter_name</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,),</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">min_headway</span><span class="p">,</span> <span class="n">print_signal_detail</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;pretimed&quot;</span><span class="p">:</span>
+        <span class="n">signal</span> <span class="o">=</span> <span class="n">Pretimed</span><span class="p">(</span><span class="n">inter_name</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">min_headway</span><span class="p">,</span> <span class="n">print_signal_detail</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;MCF&quot;</span> <span class="ow">or</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;actuated&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;This signal control method is not complete yet.&quot;</span><span class="p">)</span>  <span class="c1"># todo develop these</span>
+
+    <span class="c1"># get the time when first vehicle shows up</span>
+    <span class="n">first_detection_time</span> <span class="o">=</span> <span class="n">traffic</span><span class="o">.</span><span class="n">get_first_detection_time</span><span class="p">()</span>
+    <span class="c1"># set the start time to it</span>
+    <span class="n">time_keeper</span> <span class="o">=</span> <span class="n">TimeKeeper</span><span class="p">(</span><span class="n">first_detection_time</span><span class="p">)</span>
+
+    <span class="c1"># here we start doing optimization for all scenarios included in the csv file</span>
+    <span class="k">if</span> <span class="n">log_at_vehicle_level</span><span class="p">:</span>
+        <span class="n">t_start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>  <span class="c1"># to measure total run time (IS NOT THE SIMULATION TIME)</span>
+
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>  <span class="c1"># stops when all rows of csv are processed (a break statement controls this)</span>
+        <span class="n">simulation_time</span> <span class="o">=</span> <span class="n">time_keeper</span><span class="o">.</span><span class="n">clock</span>  <span class="c1"># gets current simulation clock</span>
+        <span class="k">if</span> <span class="n">print_clock</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">UPDATE AT CLOCK: </span><span class="si">{:.2f}</span><span class="s2"> SEC #################################&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">simulation_time</span><span class="p">))</span>
+
+        <span class="c1"># UPDATE VEHICLES</span>
+        <span class="c1"># remove/record served vehicles and phases</span>
+        <span class="n">traffic</span><span class="o">.</span><span class="n">serve_update_at_stop_bar</span><span class="p">(</span><span class="n">lanes</span><span class="p">,</span> <span class="n">simulation_time</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">)</span>
+        <span class="c1"># add/update vehicles</span>
+        <span class="n">traffic</span><span class="o">.</span><span class="n">update_vehicles_info</span><span class="p">(</span><span class="n">lanes</span><span class="p">,</span> <span class="n">simulation_time</span><span class="p">,</span> <span class="n">max_speed</span><span class="p">,</span> <span class="n">min_headway</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+        <span class="c1"># update SPaT</span>
+        <span class="n">signal</span><span class="o">.</span><span class="n">update_SPaT</span><span class="p">(</span><span class="n">simulation_time</span><span class="p">)</span>
+
+        <span class="c1"># update space mean speed</span>
+        <span class="n">volumes</span> <span class="o">=</span> <span class="n">traffic</span><span class="o">.</span><span class="n">get_volumes</span><span class="p">(</span><span class="n">lanes</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">det_range</span><span class="p">)</span>
+        <span class="n">critical_volume_ratio</span> <span class="o">=</span> <span class="mi">3600</span> <span class="o">*</span> <span class="n">volumes</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">/</span> <span class="n">min_headway</span>
+
+        <span class="c1"># DO SIGNAL OPTIMIZATION</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;GA&quot;</span><span class="p">:</span>  <span class="c1"># change the one inside the while loop as well</span>
+            <span class="n">signal</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">lanes</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">max_speed</span><span class="p">,</span> <span class="n">critical_volume_ratio</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;pretimed&quot;</span><span class="p">:</span>
+            <span class="n">signal</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">lanes</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">max_speed</span><span class="p">)</span>
+
+        <span class="n">test_scheduled_arrivals</span><span class="p">(</span><span class="n">lanes</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">)</span>  <span class="c1"># just for testing purpose</span>
+
+        <span class="c1"># now we should have sufficient SPaT to serve all</span>
+        <span class="k">if</span> <span class="n">do_traj_computation</span><span class="p">:</span>
+            <span class="c1"># DO TRAJECTORY OPTIMIZATION</span>
+            <span class="k">for</span> <span class="n">lane</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_lanes</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">bool</span><span class="p">(</span><span class="n">lanes</span><span class="o">.</span><span class="n">vehlist</span><span class="p">[</span><span class="n">lane</span><span class="p">]):</span>  <span class="c1"># not an empty lane</span>
+                    <span class="k">for</span> <span class="n">veh_indx</span><span class="p">,</span> <span class="n">veh</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lanes</span><span class="o">.</span><span class="n">vehlist</span><span class="p">[</span><span class="n">lane</span><span class="p">]):</span>
+                        <span class="k">if</span> <span class="n">veh</span><span class="o">.</span><span class="n">redredo_trj_allowed</span><span class="p">:</span>  <span class="c1"># false if we want to keep previous trajectory</span>
+                            <span class="n">veh_type</span> <span class="o">=</span> <span class="n">veh</span><span class="o">.</span><span class="n">veh_type</span>
+                            <span class="n">arrival_time</span> <span class="o">=</span> <span class="n">veh</span><span class="o">.</span><span class="n">scheduled_arrival</span>
+                            <span class="k">if</span> <span class="n">veh_indx</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">veh_type</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># Follower CAV</span>
+                                <span class="n">lead_veh</span> <span class="o">=</span> <span class="n">lanes</span><span class="o">.</span><span class="n">vehlist</span><span class="p">[</span><span class="n">lane</span><span class="p">][</span><span class="n">veh_indx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+                                <span class="n">lead_poly</span> <span class="o">=</span> <span class="n">lead_veh</span><span class="o">.</span><span class="n">poly_coeffs</span>
+                                <span class="n">lead_arrival_time</span> <span class="o">=</span> <span class="n">lead_veh</span><span class="o">.</span><span class="n">scheduled_arrival</span>
+                                <span class="n">lead_det_time</span> <span class="o">=</span> <span class="n">lead_veh</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[</span><span class="mi">0</span><span class="p">:,</span> <span class="n">lead_veh</span><span class="o">.</span><span class="n">first_trj_point_indx</span><span class="p">]</span>
+                                <span class="n">model</span> <span class="o">=</span> <span class="n">follower_connected_trj_optimizer</span><span class="o">.</span><span class="n">set_model</span><span class="p">(</span><span class="n">veh</span><span class="p">,</span> <span class="n">arrival_time</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">max_speed</span><span class="p">,</span>
+                                                                                   <span class="n">lead_poly</span><span class="p">,</span> <span class="n">lead_det_time</span><span class="p">,</span>
+                                                                                   <span class="n">lead_arrival_time</span><span class="p">)</span>
+                                <span class="n">follower_connected_trj_optimizer</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">veh</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">arrival_time</span><span class="p">,</span> <span class="n">max_speed</span><span class="p">)</span>
+                            <span class="k">elif</span> <span class="n">veh_indx</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">veh_type</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># Follower Conventional</span>
+                                <span class="n">lead_veh</span> <span class="o">=</span> <span class="n">lanes</span><span class="o">.</span><span class="n">vehlist</span><span class="p">[</span><span class="n">lane</span><span class="p">][</span><span class="n">veh_indx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+                                <span class="n">follower_conventional_trj_estimator</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">veh</span><span class="p">,</span> <span class="n">lead_veh</span><span class="p">)</span>
+                            <span class="k">elif</span> <span class="n">veh_indx</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">veh_type</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># Lead CAV</span>
+                                <span class="n">model</span> <span class="o">=</span> <span class="n">lead_connected_trj_optimizer</span><span class="o">.</span><span class="n">set_model</span><span class="p">(</span><span class="n">veh</span><span class="p">,</span> <span class="n">arrival_time</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">max_speed</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+                                <span class="n">lead_connected_trj_optimizer</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">veh</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">arrival_time</span><span class="p">,</span> <span class="n">max_speed</span><span class="p">)</span>
+                            <span class="k">elif</span> <span class="n">veh_indx</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">veh_type</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># Lead Conventional</span>
+                                <span class="n">lead_conventional_trj_estimator</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">veh</span><span class="p">)</span>
+
+                            <span class="n">veh</span><span class="o">.</span><span class="n">test_trj_points</span><span class="p">(</span><span class="n">simulation_time</span><span class="p">)</span>  <span class="c1"># todo remove if not testing</span>
+                            <span class="n">veh</span><span class="o">.</span><span class="n">set_redo_trj_false</span><span class="p">()</span>  <span class="c1"># todo eventually works with the fusion outputs</span>
+
+                        <span class="k">if</span> <span class="n">print_trj_info</span> <span class="ow">and</span> <span class="n">simulation_time</span> <span class="o">&gt;=</span> <span class="n">test_time</span><span class="p">:</span>
+                            <span class="n">veh</span><span class="o">.</span><span class="n">print_trj_points</span><span class="p">(</span><span class="n">lane</span><span class="p">,</span> <span class="n">veh_indx</span><span class="p">,</span> <span class="s1">&#39;trj solve()&#39;</span><span class="p">)</span>
+
+        <span class="c1"># MOVE SIMULATION FORWARD</span>
+        <span class="k">if</span> <span class="n">traffic</span><span class="o">.</span><span class="n">last_veh_arrived</span><span class="p">()</span> <span class="ow">and</span> <span class="n">lanes</span><span class="o">.</span><span class="n">all_served</span><span class="p">(</span><span class="n">num_lanes</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">log_at_vehicle_level</span><span class="p">:</span>
+                <span class="n">t_end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>  <span class="c1"># THIS IS NOT SIMULATION TIME! IT&quot;S JUST TIMING THE ALGORITHM</span>
+                <span class="n">traffic</span><span class="o">.</span><span class="n">set_elapsed_sim_time</span><span class="p">(</span><span class="n">t_end</span> <span class="o">-</span> <span class="n">t_start</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">print_clock</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;### ELAPSED TIME: </span><span class="si">{:2.2f}</span><span class="s2"> sec ###&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mi">1000</span> <span class="o">*</span> <span class="p">(</span><span class="n">t_end</span> <span class="o">-</span> <span class="n">t_start</span><span class="p">))</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">))</span>
+
+                <span class="c1"># save the csv which has travel time column appended</span>
+                <span class="n">traffic</span><span class="o">.</span><span class="n">save_csv</span><span class="p">(</span><span class="n">inter_name</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">log_at_trj_point_level</span><span class="p">:</span>
+                <span class="n">traffic</span><span class="o">.</span><span class="n">close_trj_csv</span><span class="p">()</span>  <span class="c1"># cus this is written line y line</span>
+
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># this is the last scenario but still some vehicles have not been served</span>
+            <span class="n">time_keeper</span><span class="o">.</span><span class="n">next_sim_step</span><span class="p">()</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+
+    <span class="c1"># ################## SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR</span>
+    <span class="n">do_traj_computation</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># speeds up</span>
+    <span class="n">log_at_vehicle_level</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># writes the &lt;inter_name&gt;_vehicle_level.csv</span>
+    <span class="n">log_at_trj_point_level</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># writes the &lt;inter_name&gt;_trj_point_level.csv</span>
+    <span class="n">print_trj_info</span><span class="p">,</span> <span class="n">test_time</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="mf">0.0</span>  <span class="c1"># prints arrival departures in command line</span>
+    <span class="n">print_signal_detail</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># prints signal info in command line</span>
+    <span class="n">print_clock</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># prints the timer in command line</span>
+
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="s2">&quot;University of Florida.</span><span class="se">\n</span><span class="s2">By Mahmoud Pourmehrab ######################</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Interpreter Information ###################################&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Python Path: &quot;</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Python Version: &quot;</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span><span class="p">)</span>
+
+    <span class="c1"># Check the interpreter to make sure using py version at least 3.5.2</span>
+    <span class="n">check_py_ver</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span> <span class="ow">or</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;13th16th&quot;</span><span class="p">,</span> <span class="s2">&quot;reserv&quot;</span><span class="p">,</span> <span class="p">]</span> <span class="ow">or</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;GA&quot;</span><span class="p">,</span> <span class="s2">&quot;MCF&quot;</span><span class="p">,</span> <span class="s2">&quot;pretimed&quot;</span><span class="p">,</span>
+                                                                                                <span class="s2">&quot;actuated&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span>
+        <span class="mi">3</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;simulation&quot;</span><span class="p">,</span> <span class="s2">&quot;realtime&quot;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Check the input arguments and try again.&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Set the intersection name, optimization method</span>
+        <span class="n">inter_name</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">run_mode</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">run_mode</span> <span class="o">==</span> <span class="s1">&#39;simulation&#39;</span><span class="p">:</span>
+            <span class="n">sc</span> <span class="o">=</span> <span class="mi">353</span>  <span class="c1"># 237</span>
+            <span class="n">run_avian</span><span class="p">(</span><span class="n">inter_name</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">do_traj_computation</span><span class="p">,</span> <span class="n">log_at_vehicle_level</span><span class="p">,</span> <span class="n">log_at_trj_point_level</span><span class="p">,</span>
+                      <span class="n">print_clock</span><span class="p">,</span> <span class="n">print_signal_detail</span><span class="p">,</span> <span class="n">print_trj_info</span><span class="p">,</span> <span class="n">test_time</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">run_mode</span> <span class="o">==</span> <span class="s1">&#39;realtime&#39;</span><span class="p">:</span>
+            <span class="k">pass</span>  <span class="c1"># todo we may define realtime functionality here</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../ReadMe.html">AVIAN 1.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Mahmoud Pourmehrab.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+    </div>
+  </body>
+</html>

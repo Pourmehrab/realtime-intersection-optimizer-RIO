@@ -1,0 +1,271 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Overview &#8212; AVIAN 1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Input/Output" href="[1].traffic.html" />
+    <link rel="prev" title="Welcome to AVIAN’s documentation!" href="ReadMe.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="[1].traffic.html" title="Input/Output"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ReadMe.html" title="Welcome to AVIAN’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="ReadMe.html">AVIAN 1.0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>The program is to simulate the performance of an isolated intersection under traffic of AV and conventional
+vehicles with variety of signal control methods.</p>
+<p>Coded by: Mahmoud Pourmehrab (<a class="reference external" href="mailto:mpourmehrab&#37;&#52;&#48;ufl&#46;edu">mpourmehrab<span>&#64;</span>ufl<span>&#46;</span>edu</a>)</p>
+<p class="last">Visit the project website <a class="reference external" href="http://avian.essie.ufl.edu">here</a></p>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<ul class="last simple">
+<li>The Python requirement is set to 3.5.2</li>
+<li>Install packages using <code class="docutils literal notranslate"><span class="pre">pip3</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">requirements.txt</span></code></li>
+<li><dl class="first docutils">
+<dt>For simulation, the directory <code class="docutils literal notranslate"><span class="pre">\data\</span></code> shall includes <code class="docutils literal notranslate"><span class="pre">&lt;intersection</span> <span class="pre">name&gt;.csv</span></code> which has the scenarios</dt>
+<dd>to be tested. Note the filename should match the intersection name.</dd>
+</dl>
+</li>
+<li>SI units(speed in m/s, length in <span class="math notranslate nohighlight">\(m\)</span>, time in <span class="math notranslate nohighlight">\(s\)</span>, acceleration in <span class="math notranslate nohighlight">\(m/s^2\)</span>)</li>
+<li><dl class="first docutils">
+<dt>Run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">main</span> <span class="pre">&lt;intersection_name&gt;</span> <span class="pre">&lt;optimization_algo&gt;</span></code></dt>
+<dd><ul class="first last">
+<li>intersection name could be <code class="docutils literal notranslate"><span class="pre">13th16th</span></code> or <code class="docutils literal notranslate"><span class="pre">reserv</span></code></li>
+<li>optimization algorithm could be <code class="docutils literal notranslate"><span class="pre">GA,</span> <span class="pre">pretimed</span></code> or <code class="docutils literal notranslate"><span class="pre">MCF</span></code></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Outputs are populated under <code class="docutils literal notranslate"><span class="pre">\log</span></code>:</dt>
+<dd><ul class="first last">
+<li><dl class="first docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">&lt;intersection</span> <span class="pre">name&gt;_vehicle_level</span></code> includes input csv plus the <code class="docutils literal notranslate"><span class="pre">departure</span> <span class="pre">time</span></code> and</dt>
+<dd><code class="docutils literal notranslate"><span class="pre">elapsed</span> <span class="pre">time</span></code> columns.</dd>
+</dl>
+</li>
+<li><code class="docutils literal notranslate"><span class="pre">&lt;intersection</span> <span class="pre">name&gt;_trj_point_level.csv</span></code> includes the trajectory points.</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<p>The <strong>UML diagram</strong> of the project is as the following (<em>Eagle eyes required, otherwise right-click and save as the image so you can zoom in</em>):</p>
+<img alt="_images/UML.JPG" src="_images/UML.JPG" />
+<span class="target" id="module-main"></span><dl class="function">
+<dt id="main.check_py_ver">
+<code class="descclassname">main.</code><code class="descname">check_py_ver</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#check_py_ver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.check_py_ver" title="Permalink to this definition">¶</a></dt>
+<dd><p>checks the python version to meet the requirement (<code class="docutils literal notranslate"><span class="pre">ver</span> <span class="pre">3.5.2</span></code>)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="main.run_avian">
+<code class="descclassname">main.</code><code class="descname">run_avian</code><span class="sig-paren">(</span><em>inter_name</em>, <em>method</em>, <em>sc</em>, <em>do_traj_computation</em>, <em>log_at_vehicle_level</em>, <em>log_at_trj_point_level</em>, <em>print_clock</em>, <em>print_signal_detail</em>, <em>print_trj_info</em>, <em>test_time</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#run_avian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.run_avian" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>For simulating a 12 lane four leg intersection (reservation intersection) with pretimed control do:</dt>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">python</span> <span class="n">reserv</span> <span class="n">pretimed</span> <span class="n">simulation</span>
+</pre></div>
+</div>
+</dd>
+<dt>For simulating intersection of 13th and 16th in Gainesville with GA do:</dt>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">python</span> <span class="mi">13</span><span class="n">th16th</span> <span class="n">GA</span> <span class="n">simulation</span>
+</pre></div>
+</div>
+</dd>
+<dt>You can add any intersection in the <code class="docutils literal notranslate"><span class="pre">src/inter/data.py</span></code>. The list of all available intersections is:</dt>
+<dd><ul class="first last simple">
+<li>reserv</li>
+<li>13th16th</li>
+</ul>
+</dd>
+<dt>You also can choose from the following signal control methods:</dt>
+<dd><ul class="first last simple">
+<li>GA</li>
+<li>pretimed</li>
+<li>MCF      (under development)</li>
+<li>actuated (under development)</li>
+</ul>
+</dd>
+<dt>You can run in either of the following modes (<em>each has certain requirements though</em>):</dt>
+<dd><ul class="first last simple">
+<li>simulation</li>
+<li>realtime</li>
+</ul>
+</dd>
+<dt>For logging and printing of information set boolean variables:</dt>
+<dd><ul class="first last simple">
+<li><code class="docutils literal notranslate"><span class="pre">log_at_trj_point_level</span></code> saves a csv under <code class="docutils literal notranslate"><span class="pre">\log</span> <span class="pre">directory</span></code> that contains all trajectory points for all vehicles</li>
+<li><code class="docutils literal notranslate"><span class="pre">log_at_vehicle_level</span></code> saves a csv file under <code class="docutils literal notranslate"><span class="pre">\log</span> <span class="pre">directory</span></code> that contains departure times and elapsed times and vehicle IDs</li>
+</ul>
+</dd>
+<dt>The work flow is as the following:</dt>
+<dd><ul class="first last simple">
+<li>Tests for python version</li>
+<li>Checks the input arguments to be valid</li>
+<li><dl class="first docutils">
+<dt>Instantiate:</dt>
+<dd><ul class="first last">
+<li>Intersection: keeps lane-lane and phase-lane incidence dictionaries</li>
+<li>Lanes:</li>
+<li>Traffic:</li>
+<li><dl class="first docutils">
+<dt>trajectory planners: all bellow</dt>
+<dd><ul class="first last">
+<li>LeadConventional:</li>
+<li>LeadConnected:</li>
+<li>FollowerConventional:</li>
+<li>FollowerConnected:</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>signal: one of followings</dt>
+<dd><ul class="first last">
+<li>GA_SPaT:</li>
+<li>Pretimed:</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>set simulation start time to when first vehicle shows up</dt>
+<dd><ul class="first last">
+<li>Simulator:</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>main loop stops only when all vehicles in the provided input traffic csv file are assigned a departure time.</dt>
+<dd><ul class="first last">
+<li>remove vehicles that are served</li>
+<li>update SPaT</li>
+<li>update vehicle information (includes addition too)</li>
+<li>do signal</li>
+<li>plan trajectories</li>
+<li>update time and check of termination</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>inter_name</strong> (<em>str</em>) – intersection name</li>
+<li><strong>method</strong> – Pretimed, GA, …</li>
+<li><strong>sc</strong> – scenario number (<em>should match the appendix of the input csv file</em>)</li>
+<li><strong>do_traj_computation</strong> – </li>
+<li><strong>log_at_vehicle_level</strong> – </li>
+<li><strong>log_at_trj_point_level</strong> – </li>
+<li><strong>print_clock</strong> – prints the simulation clock</li>
+<li><strong>print_signal_detail</strong> – </li>
+<li><strong>print_trj_info</strong> – </li>
+<li><strong>test_time</strong> – in seconds from start of simulation</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ReadMe.html"
+                        title="previous chapter">Welcome to AVIAN’s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="[1].traffic.html"
+                        title="next chapter">Input/Output</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="[1].traffic.html" title="Input/Output"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ReadMe.html" title="Welcome to AVIAN’s documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="ReadMe.html">AVIAN 1.0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Mahmoud Pourmehrab.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.
+    </div>
+  </body>
+</html>
