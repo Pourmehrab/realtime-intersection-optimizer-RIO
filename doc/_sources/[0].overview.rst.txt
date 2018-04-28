@@ -1,0 +1,35 @@
+Overview
+============
+.. note::
+   The program is to simulate the performance of an isolated intersection under traffic of AV and conventional
+   vehicles with variety of signal control methods.
+
+   Coded by: Mahmoud Pourmehrab (mpourmehrab@ufl.edu)
+
+   Visit the project website `here <http://avian.essie.ufl.edu>`_
+
+
+.. warning::
+   - The Python requirement is set to 3.5.2
+   - Install packages using ``pip3 install -r requirements.txt``
+   - For simulation, the directory ``\data\`` shall includes ``<intersection name>.csv`` which has the scenarios
+      to be tested. Note the filename should match the intersection name.
+   - SI units(speed in m/s, length in :math:`m`, time in :math:`s`, acceleration in :math:`m/s^2`)
+   - Run ``python main <intersection_name> <optimization_algo>``
+       * intersection name could be ``13th16th`` or ``reserv``
+       * optimization algorithm could be ``GA, pretimed`` or ``MCF``
+   - Outputs are populated under ``\log``:
+      * ``<intersection name>_vehicle_level`` includes input csv plus the ``departure time`` and
+         ``elapsed time`` columns.
+      * ``<intersection name>_trj_point_level.csv`` includes the trajectory points.
+
+
+The **UML diagram** of the project is as the following (*Eagle eyes required, otherwise right-click and save as the image so you can zoom in*):
+
+.. image:: images/UML.JPG
+
+
+
+
+.. automodule:: main
+   :members:

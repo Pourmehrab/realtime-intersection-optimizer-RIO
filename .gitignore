@@ -103,7 +103,6 @@ ENV/
 # pycharm
 .idea/
 *.svg
-*.html
 *.csv
 *.lp
 *.pdf
@@ -112,4 +111,5 @@ note.txt
 unit_tests.py
 
 log/
+sphinx/
 src/optional/
