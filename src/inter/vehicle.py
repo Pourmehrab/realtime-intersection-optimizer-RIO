@@ -33,6 +33,13 @@ class Vehicle:
     def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx, k):
         """
         Data Structure for an individual vehicle
+        .. note::
+            - The last trajectory point index less than the first means no trajectory has been computed yet
+            - The last trajectory index is set to -1 and the first to 0 for initialization purpose
+            - The shape of trajectory matrix is :math:`3 *n` where :math:`n` is the maximum number of trajectory points
+                to be held. The first, second, and third rows correspond to time, distance, and speed profile,
+                 respectively.
+            -
 
         :param det_id:          the id assigned to this vehicle by radio
         :param det_type:        0: Conventional, 1: Connected and Automated Vehicle
@@ -59,8 +66,8 @@ class Vehicle:
         self.desired_speed = des_speed
         self.trajectory = np.zeros((3, self.MAX_NUM_TRAJECTORY_POINTS), dtype=np.float)  # the shape is important
         self.first_trj_point_indx = 0
-        self.trajectory[:, 0] = [det_time, dist, speed, ]
-        self.last_trj_point_indx = -1  # last index < first index means no traj has been computed yet
+        self.trajectory[:, self.first_trj_point_indx] = [det_time, dist, speed, ]
+        self.last_trj_point_indx = -1
         self.csv_indx = indx  # is used to find vehicle in original csv file
 
         if det_type == 1:  # only CAVs trajectories are in the form of polynomials (the also have trajectory matrix)
@@ -71,33 +78,35 @@ class Vehicle:
 
     def reset_trj_points(self, sc, lane, time_threshold, file):
         """
-        Write trajectory points in the csv file if their time stamp is before the `time_threshold` and then remove them
-        by updating the first trj point.
+        Writes trajectory points in the csv file if their time stamp is before the `time_threshold` and then removes
+        them by updating the first trj point.
 
         :param sc: scenario number being simulated
         :param lane: lane number that is zero-based  (it records it one-based)
         :param time_threshold: any trajectory point before this is considered expired (normally its simulation time)
-        :param file: initialized in `Traffic.__init__()` method
-        :return:
+        :param file: initialized in `Traffic.__init__()` method, if ``None``, this does not record in csv.
         """
         trj_indx, max_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx
-        time = self.trajectory[0, trj_indx]
+        time, distance, speed = self.trajectory[:, trj_indx]
 
         if time < time_threshold:
             if file is None:  # don't have to write csv
                 while time < time_threshold and trj_indx <= max_trj_indx:
-                    time = self.trajectory[0, trj_indx]
                     trj_indx += 1
+                    time = self.trajectory[0, trj_indx]
 
             else:  # get full info and write trj points to the csv file
                 writer = csv.writer(file, delimiter=',')
                 while time < time_threshold and trj_indx <= max_trj_indx:
-                    time, distance, speed = self.trajectory[:, trj_indx]
                     writer.writerows([[sc, self.ID, self.veh_type, lane + 1, time, distance, speed]])
                     file.flush()
                     trj_indx += 1
+                    time, distance, speed = self.trajectory[:, trj_indx]
 
-            self.set_first_trj_point_indx(trj_indx - 1)
+            if trj_indx <= max_trj_indx:
+                self.set_first_trj_point_indx(trj_indx)
+            else:
+                raise Exception("The vehicle should've been removed instead of getting updated for trj points.")
 
     def set_earliest_arrival(self, t_earliest):
         """
@@ -136,14 +145,14 @@ class Vehicle:
     @staticmethod
     def map_veh_type2str(code):
         """
-        For the purpose of printing, this method translates the vehicle codes. Currently it supports:
-            0 : Conventional vehicles
-            1 : Automated/Connected vehicles
+        For the purpose of printing, this method translates the vehicle codes. Currently, it supports:
+            - 0 : Conventional Vehicle (**CNV**)
+            - 1 : Connected and Automated Vehicle (**CAV**)
         """
         if code == 1:
-            return 'Automated'
+            return 'CAV'
         elif code == 0:
-            return 'Conventional'
+            return 'CNV'
         else:
             raise Exception('The numeric code of vehicle type is not known.')
 
@@ -159,10 +168,10 @@ class Vehicle:
         veh_type_str = self.map_veh_type2str(self.veh_type)
         first_trj_indx, last_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx
         rank = '1st' if veh_indx == 0 else ('2nd' if veh_indx == 1 else str(veh_indx + 1) + 'th')
-        lane_rank = rank + ' in lane ' + str(lane + 1)
+        lane_rank = rank + ' in L' + str(lane + 1).zfill(2)
         print(
-            '* ' + veh_type_str + ' Vehicle ' + str(
-                self.ID) + ' ' + lane_rank + ': DETECETED ({:.2f} sec, {:.2f} m, {:.2f} m/s), SCHEDULED ({:.2f} sec, {:.2f} m, {:.2f} m/s), {:d} points, called by '.format(
+            veh_type_str + ':' + str(self.ID) + ':' + lane_rank +
+            ': det@({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s), sch@({:>4.1f}, {:>4.1f}, {:>4.1f}), {:>3d} points, called by '.format(
                 self.trajectory[0, first_trj_indx], self.trajectory[1, first_trj_indx],
                 self.trajectory[2, first_trj_indx],
                 self.trajectory[0, last_trj_indx], self.trajectory[1, last_trj_indx], self.trajectory[2, last_trj_indx],

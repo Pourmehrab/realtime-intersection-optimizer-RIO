@@ -24,9 +24,11 @@ def get_general_params(inter_name):
 # PRETIMED CONTROL PARAMETERS
 def get_pretimed_parameters(inter_name):
     """
-    This return the parameters needed for pre-timed control
-    Note the sequence field includes the phases and is zero-based
-    Compute green splits and yellows, all-reds based on traffic flow theory
+    This returns the parameters needed for pre-timed control.
+
+    .. note::
+        - The sequence field includes the phases and is zero-based.
+        - Compute green splits and yellows, all-reds based on traffic flow theory.
     """
 
     if inter_name == '13th16th':

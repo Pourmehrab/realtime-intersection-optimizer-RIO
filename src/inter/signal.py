@@ -92,7 +92,7 @@ class Signal:
             for j in conf:
                 self._pli[l - 1].append(j - 1)  # these are lanes that belong to this phase
 
-    def enqueue(self, phase, actual_green):
+    def append_extend_phase(self, phase, actual_green):
         """
         Append a phase to the SPaT (append a phase and its green to the end of signal array)
         Note SPaT decision is the sequence and green duration of phases
@@ -104,14 +104,14 @@ class Signal:
         if self.SPaT_sequence[-1] == phase:  # extend this phase
             self.SPaT_end[-1] = self.SPaT_start[-1] + actual_green + self._y + self._ar
             if self._print_signal_detail:
-                print('*** Phase {:d} Extended (ends @ {:2.2f} sec)'.format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
+                print('>-> Phase {:d} Extended (ends @ {:2.2f} sec)'.format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
         else:  # append a new phase
             self.SPaT_sequence += [phase]
             self.SPaT_green_dur += [actual_green]
             self.SPaT_start += [self.SPaT_end[-1]]
             self.SPaT_end += [self.SPaT_start[-1] + actual_green + self._y + self._ar]
             if self._print_signal_detail:
-                print('*** Phase {:d} Appended (ends @ {:2.2f} sec)'.format(phase, self.SPaT_end[-1]))
+                print('>>> Phase {:d} Appended (ends @ {:2.2f} sec)'.format(phase, self.SPaT_end[-1]))
 
     def set_critical_phase_volumes(self, volumes):
         """
@@ -141,7 +141,7 @@ class Signal:
             phase_indx += 1
 
         if self._print_signal_detail and any_to_be_purged:
-            print('*** First {:d} phases purged'.format(phase_indx + 1))
+            print('<<< Phase(s) ' + ','.join(str(p) for p in self.SPaT_sequence[:phase_indx]) + ' expired.')
 
         if phase_indx >= len(self.SPaT_end) - 1:
             raise Exception('If all phases get purged, SPaT becomes empty!')
@@ -277,18 +277,6 @@ class Signal:
             for veh_indx in range(self.first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
                 lanes.vehlist[lane][veh_indx].set_scheduled_arrival(scheduled_arrivals[lane][veh_indx], 0, max_speed)
 
-    def reset(self):
-        """
-        Reset signal for the next scenario
-        Note it assumes next scenario is still on the same test intersection under same yellow and all-red
-        Therefore it only resets the SPaT variables
-        Not important if the phase index even does not exists because the zero green duration removes this
-        instantly in the next iteration.
-
-        :return:
-        """
-        self.SPaT_sequence, self.SPaT_green_dur, self.SPaT_start, self.SPaT_end = [0], [
-            0], [0], [self._y + self._ar]
 
 
 # -------------------------------------------------------
@@ -321,10 +309,12 @@ class Pretimed(Signal):
         # add a dummy phase to initiate (note this is the last phase in the sequence to make the order right)
         self.SPaT_sequence, self.SPaT_green_dur, self.SPaT_start, self.SPaT_end = [self._phase_seq[-1]], [0], \
                                                                                   [0], [self._y + self._ar]
+        if self._print_signal_detail:
+            print('>>> Phase {:d} Appended (ends @ {:2.2f} sec)'.format(self._phase_seq[-1], self.SPaT_end[-1]))
 
         for cycle in range(self.NUM_CYCLES):
             for indx, phase in enumerate(self._phase_seq):
-                self.enqueue(int(phase), self._green_dur[indx])
+                self.append_extend_phase(int(phase), self._green_dur[indx])
 
     def solve(self, lanes, num_lanes, max_speed):
         """
@@ -344,7 +334,7 @@ class Pretimed(Signal):
 
         if len(self.SPaT_sequence) // len(self._phase_seq) < self.NUM_CYCLES - 1:
             for indx, phase in enumerate(self._phase_seq):
-                self.enqueue(int(phase), self._green_dur[indx])
+                self.append_extend_phase(int(phase), self._green_dur[indx])
 
         if any(any_unserved_vehicle):
             self.best_scheduled_arrivals = self.complete_unserved_vehicles(lanes, num_lanes,
@@ -352,17 +342,6 @@ class Pretimed(Signal):
                                                                            any_unserved_vehicle)
             self._set_non_base_scheduled_arrival(lanes, self.best_scheduled_arrivals, num_lanes, max_speed)
 
-    def reset(self):
-        """
-        Overrides the original reset method in the parent class
-        :return:
-        """
-        # add a dummy phase to initiate (note this is the last phase in the sequence to make the order right)
-        self.SPaT_sequence, self.SPaT_green_dur, self.SPaT_start, self.SPaT_end = [self._phase_seq[-1]], [0], \
-                                                                                  [0], [self._y + self._ar]
-        for cycle in range(self.NUM_CYCLES):
-            for indx, phase in enumerate(self._phase_seq):
-                self.enqueue(int(phase), self._green_dur[indx])
 
 
 # -------------------------------------------------------
@@ -473,7 +452,7 @@ class GA_SPaT(Signal):
                 # best_temp_indiv = sorted_list[0]
 
             for indx, phase in enumerate(self.best_SPaT['phase_seq']):
-                self.enqueue(int(phase), self.best_SPaT['time_split'][indx] - self._y - self._ar)
+                self.append_extend_phase(int(phase), self.best_SPaT['time_split'][indx] - self._y - self._ar)
 
             if any(any_unserved_vehicle):
                 self.best_scheduled_arrivals = self.complete_unserved_vehicles(lanes, num_lanes,
@@ -832,8 +811,8 @@ class Enumerate_SpaT(Signal):
             if best_phase_score <= 0:  # vehicles are far away, assign a random phase the max green
 
                 remaining_phases = set(allowable_phases) - {self.SPaT_sequence[-1]}
-                self.enqueue(remaining_phases.pop(), self.max_green)  # pop gives a random phase which is new
+                self.append_extend_phase(remaining_phases.pop(), self.max_green)  # pop gives a random phase which is new
 
             else:  # progress SPaT
                 served_vehicle_indx += best_throughput
-                self.enqueue(best_phase, max(self.min_green, best_phase_green_dur))
+                self.append_extend_phase(best_phase, max(self.min_green, best_phase_green_dur))

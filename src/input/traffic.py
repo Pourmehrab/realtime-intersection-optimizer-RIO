@@ -25,12 +25,13 @@ class Traffic:
         4) Compute volumes in lanes
         5) remove/record served vehicles
 
-    Notes:
-        1) the csv should be located under the data/ directory with the valid name consistent to what inputted as an
-        argument and what exists in the data.py file.
+    .. note::
+        - The csv should be located under the ``data/`` directory with the valid name consistent to what inputted as an
+            argument and what exists in the data.py file.
+        - The scenario number should be appended to the name of intersection followed by an underscore.
     """
 
-    def __init__(self, inter_name, log_at_vehicle_level, log_at_trj_point_level):
+    def __init__(self, inter_name, sc, log_at_vehicle_level, log_at_trj_point_level):
         """
         Goals:
             1) Set the logging behaviour for outputting requested CSV files and auxiliary output vectors
@@ -39,17 +40,17 @@ class Traffic:
         """
 
         # get the path to the csv file and load up the traffic
-        filepath = os.path.join('data/' + inter_name + '.csv')
+        filepath = os.path.join('data/' + inter_name + '_' + str(sc) + '.csv')
         if os.path.exists(filepath):
             self.__all_vehicles = pd.read_csv(filepath)
         else:
             raise Exception(filepath + ' was not found.')
 
-        self.__all_vehicles = self.__all_vehicles.sort_values(by=['sc', 'arrival time'])
+        self.__all_vehicles = self.__all_vehicles.sort_values(by=['arrival time'])
         self.__all_vehicles = self.__all_vehicles.reset_index(drop=True)
 
         # get the scenario number
-        self._active_sc = self.__all_vehicles['sc'].iloc[0]
+        self.scenario_num = self.__all_vehicles['sc'].iloc[0]
 
         # _current_row_indx points to the row of last vehicle added (-1 if none has been yet)
         # note this is cumulative and won't reset after a scenario is done
@@ -66,7 +67,7 @@ class Traffic:
 
         if log_at_trj_point_level:
             # open a file to store trajectory points
-            filepath_trj = os.path.join('log/' + inter_name + '_trj_point_level.csv')
+            filepath_trj = os.path.join('log/' + inter_name + '_' + str(sc) + '_trj_point_level.csv')
             self.full_traj_csv_file = open(filepath_trj, 'w', newline='')
             writer = csv.writer(self.full_traj_csv_file, delimiter=',')
             writer.writerow(['sc', 'VehID', 'type', 'lane', 'time', 'distance', 'speed'])
@@ -101,44 +102,27 @@ class Traffic:
         # the column to store simulation time per scenario
         self.__all_vehicles['elapsed time'] = self._axilary_elapsed_time
 
-        filepath = os.path.join('log/' + inter_name + '_vehicle_level.csv')
+        filepath = os.path.join('log/' + inter_name + '_' + str(self.scenario_num) + '_vehicle_level.csv')
         self.__all_vehicles.to_csv(filepath, index=False)
 
     def close_trj_csv(self):
         """Closes trajectory CSV file"""
         self.full_traj_csv_file.close()
 
-    def last_veh_in_last_sc_arrived(self):
+    def last_veh_arrived(self):
         """
-        :return: True if all vehicles in in all scenarios has been added at some point, False otherwise.
+        :return: True if all vehicles from the input csv have been added at some point, False otherwise.
         """
         if self._current_row_indx + 1 >= self.__all_vehicles.shape[0]:
             return False
         else:
             return True
 
-    def unarrived_vehicles_in_sc(self):
-        """
-        :return: True if there will be more vehicles arriving from current scenario, False otherwise.
-        """
-        indx = self._current_row_indx + 1
-        if self.__all_vehicles['sc'][indx] == self._active_sc:
-            return True
-        else:
-            return False
-
-    def reset_scenario(self):
-        """
-        Last vehicle of this scenario is served and there is still more scenarios. Move the scenario index to the next.
-        """
-        indx = self._current_row_indx + 1
-        self._active_sc = self.__all_vehicles['sc'].iloc[indx]
-
     def get_first_detection_time(self):
         """
         :return: The time when the first vehicle in current scenario shows up.
         """
-        filtered_indx = self.__all_vehicles['sc'] == self._active_sc
+        filtered_indx = self.__all_vehicles['sc'] == self.scenario_num
         return np.nanmin(self.__all_vehicles[filtered_indx]['arrival time'].values)
 
     def update_vehicles_info(self, lanes, simulation_time, max_speed, min_headway, k):
@@ -160,12 +144,12 @@ class Traffic:
         indx = self._current_row_indx + 1
         max_indx = self.__all_vehicles.shape[0] - 1
         t_earliest = 0.0  # keep this since in the loop it gets updated (necessary here)
-        while indx <= max_indx and self.__all_vehicles['sc'][indx] == self._active_sc and \
+        while indx <= max_indx and self.__all_vehicles['sc'][indx] == self.scenario_num and \
                 self.__all_vehicles['arrival time'][indx] <= simulation_time:
 
             # read the arrived vehicle's information
             lane = self.__all_vehicles['lane'][indx] - 1  # csv file has lanes coded in one-based
-            det_id = 'xyz' + str(indx)
+            det_id = 'xyz' + str(indx).zfill(3)  # pad zeros if necessary
             det_type = self.__all_vehicles['type'][indx]  # 0: CNV, 1: CAV
             det_time = float(self.__all_vehicles['arrival time'][indx])
             speed = float(self.__all_vehicles['curSpd'][indx])
@@ -255,7 +239,7 @@ class Traffic:
                 veh_indx, any_veh_served = 0, False
                 for veh in lanes.vehlist[lane]:
                     # RESET EXISTING VEHICLES TRAJECTORY
-                    veh.reset_trj_points(self._active_sc, lane, simulation_time, self.full_traj_csv_file)
+                    veh.reset_trj_points(self.scenario_num, lane, simulation_time, self.full_traj_csv_file)
 
                     trj_indx = veh.last_trj_point_indx
                     dep_time = veh.trajectory[0, trj_indx]

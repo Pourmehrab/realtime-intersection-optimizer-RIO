@@ -37,7 +37,7 @@ def check_py_ver():
         sys.exit(-1)
 
 
-def run_avian(inter_name, method, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level, print_clock,
+def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level, print_clock,
               print_signal_detail, print_trj_info, test_time):
     """
     For simulating a 12 lane four leg intersection (reservation intersection) with pretimed control do:
@@ -57,40 +57,39 @@ def run_avian(inter_name, method, do_traj_computation, log_at_vehicle_level, log
         * actuated (under development)
 
     For logging and printing of information set boolean variables:
-        - ``log_at_trj_point_level`` saves a csv under ``\log directory`` that contains all trajectory points for all
-            vehicles
-        - ``log_at_vehicle_level`` saves a csv file under ``\log directory`` that contains departure times and elapsed
-            times and vehicle IDs
+        - ``log_at_trj_point_level`` saves a csv under ``\log directory`` that contains all trajectory points for all vehicles
+        - ``log_at_vehicle_level`` saves a csv file under ``\log directory`` that contains departure times and elapsed times and vehicle IDs
 
-    The flow is as the following:
-    - Tests for python version
-    - Checks the input arguments to be valid
-    - Instantiate:
-        - Intersection: keeps lane-lane and phase-lane incidence dictionaries
-        - Lanes:
-        - Traffic:
-        - trajectory planners: all bellow
-            - LeadConventional:
-            - LeadConnected:
-            - FollowerConventional:
-            - FollowerConnected:
-        - signal: one of followings
-            - GA_SPaT:
-            - Pretimed:
-    - set simulation start time to when first vehicle shows up
-        - Simulator:
-    - main loop stops only when all vehicles in the provided input traffic csv file are assigned a departure time.
-        - remove vehicles that are served
-        - update SPaT
-        - update vehicle information (includes addition too)
-        - do signal
-        - plan trajectories
-        - update time and check of termination
+    The work flow is as the following:
+        - Tests for python version
+        - Checks the input arguments to be valid
+        - Instantiate:
+            - Intersection: keeps lane-lane and phase-lane incidence dictionaries
+            - Lanes:
+            - Traffic:
+            - trajectory planners: all bellow
+                - LeadConventional:
+                - LeadConnected:
+                - FollowerConventional:
+                - FollowerConnected:
+            - signal: one of followings
+                - GA_SPaT:
+                - Pretimed:
+        - set simulation start time to when first vehicle shows up
+            - Simulator:
+        - main loop stops only when all vehicles in the provided input traffic csv file are assigned a departure time.
+            - remove vehicles that are served
+            - update SPaT
+            - update vehicle information (includes addition too)
+            - do signal
+            - plan trajectories
+            - update time and check of termination
 
 
     :param inter_name: intersection name
     :type inter_name: str
     :param method: Pretimed, GA, ...
+    :param sc: scenario number (*should match the appendix of the input csv file*)
     :param do_traj_computation:
     :param log_at_vehicle_level:
     :param log_at_trj_point_level:
@@ -110,7 +109,7 @@ def run_avian(inter_name, method, do_traj_computation, log_at_vehicle_level, log
     lanes = Lanes(num_lanes)
 
     # load entire traffic generated in csv file
-    traffic = Traffic(inter_name, log_at_vehicle_level, log_at_trj_point_level)
+    traffic = Traffic(inter_name, sc, log_at_vehicle_level, log_at_trj_point_level)
 
     # initialize trajectory planners
     lead_conventional_trj_estimator = LeadConventional(max_speed, min_headway)
@@ -199,50 +198,30 @@ def run_avian(inter_name, method, do_traj_computation, log_at_vehicle_level, log
                             veh.print_trj_points(lane, veh_indx, 'trj solve()')
 
         # MOVE SIMULATION FORWARD
-        if traffic.last_veh_in_last_sc_arrived():
-            if not lanes.all_served(num_lanes) or traffic.unarrived_vehicles_in_sc():
-                time_keeper.next_sim_step()
-                simulation_time = time_keeper.clock
-            else:  # simulation of a scenario ended move on to the next scenario
-                if log_at_vehicle_level:
-                    t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT"S JUST TIMING THE ALGORITHM
-                    traffic.set_elapsed_sim_time(t_end - t_start)
-                    if print_clock:
-                        print("### ELAPSED TIME: {:2.2f} sec ###".format(int(1000 * (t_end - t_start)) / 1000))
+        if traffic.last_veh_arrived() and lanes.all_served(num_lanes):
+            if log_at_vehicle_level:
+                t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT"S JUST TIMING THE ALGORITHM
+                traffic.set_elapsed_sim_time(t_end - t_start)
+                if print_clock:
+                    print("### ELAPSED TIME: {:2.2f} sec ###".format(int(1000 * (t_end - t_start)) / 1000))
 
-                traffic.reset_scenario()
-                first_detection_time = traffic.get_first_detection_time()
+                # save the csv which has travel time column appended
+                traffic.save_csv(inter_name)
 
-                time_keeper = TimeKeeper(first_detection_time)
+            if log_at_trj_point_level:
+                traffic.close_trj_csv()  # cus this is written line y line
 
-                lanes = Lanes(num_lanes)
-
-                signal.reset()
-
-                if log_at_vehicle_level:
-                    t_start = time.clock()  # reset the timer
-        else:
-            if lanes.all_served(num_lanes):  # all vehicles in the csv file are served
-                if log_at_vehicle_level:
-                    t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT"S JUST TIMING THE ALGORITHM
-                    traffic.set_elapsed_sim_time(t_end - t_start)
-
-                    # save the csv which has travel time column appended
-                    traffic.save_csv(intersection.name)
-                if log_at_trj_point_level:
-                    traffic.close_trj_csv()
-                break
-            else:  # this is the last scenario but still some vehicles have not been served
-                time_keeper.next_sim_step()
+        else:  # this is the last scenario but still some vehicles have not been served
+            time_keeper.next_sim_step()
 
 
 if __name__ == "__main__":
 
-    ################### SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR
+    # ################## SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR
     do_traj_computation = False  # speeds up
     log_at_vehicle_level = False  # writes the <inter_name>_vehicle_level.csv
     log_at_trj_point_level = False  # writes the <inter_name>_trj_point_level.csv
-    print_trj_info, test_time = True, 0  # prints arrival departures in command line
+    print_trj_info, test_time = True, 0.0  # prints arrival departures in command line
     print_signal_detail = True  # prints signal info in command line
     print_clock = True  # prints the timer in command line
 
@@ -255,12 +234,17 @@ if __name__ == "__main__":
     # Check the interpreter to make sure using py version at least 3.5.2
     check_py_ver()
 
-    if len(sys.argv) != 3 or sys.argv[1] not in ["13th16th", "reserv", ] or sys.argv[2] not in ["GA", "MCF", "pretimed",
-                                                                                                "actuated"]:
+    if len(sys.argv) != 4 or sys.argv[1] not in ["13th16th", "reserv", ] or sys.argv[2] not in ["GA", "MCF", "pretimed",
+                                                                                                "actuated"] or sys.argv[
+        3] not in ["simulation", "realtime"]:
         raise Exception("Check the input arguments and try again.")
     else:
         # Set the intersection name, optimization method
-        inter_name, method = sys.argv[1], sys.argv[2]
+        inter_name, method, run_mode = sys.argv[1], sys.argv[2], sys.argv[3]
 
-        run_avian(inter_name, method, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level, print_clock,
-                  print_signal_detail, print_trj_info, test_time)
+        if run_mode == 'simulation':
+            sc = 353  # 237
+            run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level,
+                      print_clock, print_signal_detail, print_trj_info, test_time)
+        elif run_mode == 'realtime':
+            pass  # todo we may define realtime functionality here
