@@ -103,7 +103,8 @@ class Signal:
         if self.SPaT_sequence[-1] == phase:  # extend this phase
             self.SPaT_end[-1] = self.SPaT_start[-1] + actual_green + self._y + self._ar
             if self._print_signal_detail:
-                print('>-> Phase {:d} Extended (ends @ {:>2.2f} sec) >->'.format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
+                print('>-> Phase {:d} Extended (ends @ {:>2.2f} sec) >->'.format(self.SPaT_sequence[-1],
+                                                                                 self.SPaT_end[-1]))
         else:  # append a new phase
             self.SPaT_sequence += [phase]
             self.SPaT_green_dur += [actual_green]
@@ -193,6 +194,10 @@ class Signal:
         already served with base SPaT. This also returns ``any_unserved_vehicle`` array that has True if any lane has
         vehicles that could not be unserved with base SPaT.
 
+        .. note::
+            - Since base SPaT never gets changed (for safety and practical reasons), any vehicle served by it has to get ``redo_trj_allowed`` value set to ``False``.
+            - It is feasible that if fusion algorithm updates the info on this vehicle and wants an update on trajectory, it rolls back the ``redo_trj_allowed`` to be ``True``. However, this should be decided outside this method.
+
         :param lanes:
         :param num_lanes:
         :param max_speed:
@@ -208,26 +213,28 @@ class Signal:
             if any(any_unserved_vehicle):  # serve all with the current phasing
                 for lane in self._pli[phase]:
                     if any_unserved_vehicle[lane]:
-                        while True:
-                            veh_indx = self.first_unsrvd_indx[lane]
-                            veh = lanes.vehlist[lane][veh_indx]
+                        for veh_indx, veh in enumerate(lanes.vehlist[lane]):
+                            if veh.redo_trj_allowed:
+                                t_earliest = veh.earliest_arrival
+                                t_scheduled = max(t_earliest, start_green, served_vehicle_time[
+                                    lane] + self._min_headway)
+                                if t_scheduled < end_yellow:
+                                    self.first_unsrvd_indx[lane] += 1
+                                    veh.set_scheduled_arrival(t_scheduled, 0, max_speed)  # since this is final
+                                    served_vehicle_time[lane] = t_scheduled
+                                    veh.redo_trj_allowed = False
+                                    if self._print_signal_detail:
+                                        veh.print_trj_points(lane, veh_indx, 'base_badness()')
 
-                            t_earliest = veh.earliest_arrival
-                            # depending on if we are keeping the prev trajectory or not, schedule or reschedule departure
-                            t_scheduled = max(t_earliest, start_green, served_vehicle_time[
-                                lane] + self._min_headway) if veh.redo_trj_allowed else veh.scheduled_arrival
-                            if t_scheduled < end_yellow:
+                                else:
+                                    break  # no more room in this phase (no point to continue)
+
+                            else:  # next vehicle may want trajectory
+                                served_vehicle_time[lane] = veh.scheduled_arrival
                                 self.first_unsrvd_indx[lane] += 1
-                                veh.set_scheduled_arrival(t_scheduled, 0, max_speed)  # since this is final
-                                served_vehicle_time[lane] = t_scheduled
-                                if self._print_signal_detail:
-                                    veh.print_trj_points(lane, veh_indx, 'base_badness()')
 
-                                if self.first_unsrvd_indx[lane] > lanes.last_vehicle_indx[lane]:
-                                    any_unserved_vehicle[lane] = False
-                                    break
-                            else:
-                                break  # no more room in this phase
+                        if self.first_unsrvd_indx[lane] > lanes.last_vehicle_indx[lane]:
+                            any_unserved_vehicle[lane] = False
 
             else:
                 break
@@ -270,11 +277,24 @@ class Signal:
         return scheduled_arrivals  # schedules of all vehicle except those served through base SPaT
 
     def _set_non_base_scheduled_arrival(self, lanes, scheduled_arrivals, num_lanes, max_speed):
+        """
+        Sets the scheduled departure in the trajectory of the vehicle.
 
+        .. note::
+            - Departure schedule of those which were served by base SPaT is set in ``base_badness()`` and not here.
+
+        :param lanes:
+        :param scheduled_arrivals:
+        :param num_lanes:
+        :param max_speed: by default the departure speed is maximum allowable speed in :math:`m/s`
+        """
         for lane in range(num_lanes):
             for veh_indx in range(self.first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
-                lanes.vehlist[lane][veh_indx].set_scheduled_arrival(scheduled_arrivals[lane][veh_indx], 0, max_speed)
-
+                veh = lanes.vehlist[lane][veh_indx]
+                if veh.redo_trj_allowed:
+                    veh.set_scheduled_arrival(scheduled_arrivals[lane][veh_indx], 0, max_speed)
+                else:
+                    continue
 
 
 # -------------------------------------------------------
@@ -339,7 +359,6 @@ class Pretimed(Signal):
                                                                            self.best_scheduled_arrivals,
                                                                            any_unserved_vehicle)
             self._set_non_base_scheduled_arrival(lanes, self.best_scheduled_arrivals, num_lanes, max_speed)
-
 
 
 # -------------------------------------------------------
@@ -809,7 +828,8 @@ class Enumerate_SpaT(Signal):
             if best_phase_score <= 0:  # vehicles are far away, assign a random phase the max green
 
                 remaining_phases = set(allowable_phases) - {self.SPaT_sequence[-1]}
-                self.append_extend_phase(remaining_phases.pop(), self.max_green)  # pop gives a random phase which is new
+                self.append_extend_phase(remaining_phases.pop(),
+                                         self.max_green)  # pop gives a random phase which is new
 
             else:  # progress SPaT
                 served_vehicle_indx += best_throughput
