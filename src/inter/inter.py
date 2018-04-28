@@ -9,7 +9,7 @@
     Intersection: gets parameters that are needed to specify the configuration of problem
 '''
 
-from src.input.data import *
+from data.data import *
 
 
 class Intersection:

@@ -34,10 +34,14 @@ class Lanes:
 
     def purge_served_vehs(self, lane, indx):
         """
-        Deletes vehicles from 0 to indx where indx is the pointer to the last served
-        note deletion also includes indx
+        Deletes vehicles from 0 to ``indx`` where ``indx`` is the pointer to the last served
+        .. note:: deletion also includes vehicle at ``indx``
+
+        :param lane: the lane number
+        :type lane: int
+        :param indx: from vehicle 0 to ``indx`` are intended to be removed by this method
         """
-        del self.vehlist[lane][0:indx]
+        del self.vehlist[lane][0:indx + 1]
         self.decrement_last_veh_indx(lane, indx + 1)
 
     def all_served(self, num_lanes):

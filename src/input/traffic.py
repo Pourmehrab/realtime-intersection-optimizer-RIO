@@ -235,21 +235,22 @@ class Traffic:
         """
 
         for lane in range(num_lanes):
-            if bool(lanes.vehlist[lane]):  # not an empty lane
-                veh_indx, any_veh_served = 0, False
-                for veh in lanes.vehlist[lane]:
-                    # RESET EXISTING VEHICLES TRAJECTORY
-                    veh.reset_trj_points(self.scenario_num, lane, simulation_time, self.full_traj_csv_file)
 
-                    trj_indx = veh.last_trj_point_indx
-                    dep_time = veh.trajectory[0, trj_indx]
-                    if dep_time <= simulation_time:  # served
+            if bool(lanes.vehlist[lane]):  # not an empty lane
+
+                any_veh_served = False
+                for veh_indx, veh in enumerate(lanes.vehlist[lane]):
+
+                    det_time = veh.trajectory[0, veh.first_trj_point_indx]
+                    dep_time = veh.trajectory[0, veh.last_trj_point_indx]
+                    if dep_time < simulation_time:  # served! remove it.
                         any_veh_served = True
-                        veh_indx += 1
                         if self._log_at_vehicle_level:
                             self.set_travel_time(dep_time, veh.csv_indx, veh.ID)
-                    # else:
-                    #     break
+                    elif det_time < simulation_time:  # RESET EXISTING VEHICLES TRAJECTORY
+                        veh.reset_trj_points(self.scenario_num, lane, simulation_time, self.full_traj_csv_file)
+                    else:  # det_time of all behind this vehicle is larger, so we can stop.
+                        break
 
                 if any_veh_served:  # removes vehicles 0, 1, ..., veh_indx
                     lanes.purge_served_vehs(lane, veh_indx)

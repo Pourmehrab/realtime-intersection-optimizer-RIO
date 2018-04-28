@@ -9,8 +9,7 @@ import numpy as np
 
 np.random.seed(2018)
 
-import src.input.data as data_importer
-from src.optional.enum_phases import phase_enumerator
+import data.data as data_importer
 
 
 class Signal:
@@ -104,14 +103,14 @@ class Signal:
         if self.SPaT_sequence[-1] == phase:  # extend this phase
             self.SPaT_end[-1] = self.SPaT_start[-1] + actual_green + self._y + self._ar
             if self._print_signal_detail:
-                print('>-> Phase {:d} Extended (ends @ {:2.2f} sec)'.format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
+                print('>-> Phase {:d} Extended (ends @ {:>2.2f} sec) >->'.format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
         else:  # append a new phase
             self.SPaT_sequence += [phase]
             self.SPaT_green_dur += [actual_green]
             self.SPaT_start += [self.SPaT_end[-1]]
             self.SPaT_end += [self.SPaT_start[-1] + actual_green + self._y + self._ar]
             if self._print_signal_detail:
-                print('>>> Phase {:d} Appended (ends @ {:2.2f} sec)'.format(phase, self.SPaT_end[-1]))
+                print('>>> Phase {:d} appended (ends @ {:>2.2f} sec) >>>'.format(phase, self.SPaT_end[-1]))
 
     def set_critical_phase_volumes(self, volumes):
         """
@@ -131,7 +130,6 @@ class Signal:
         Performs two tasks to update SPaT based on the given clock:
             - Removes terminated phase (happens when the all-red is passed)
             - Checks for  SPaT to not get empty after being updated
-            - Update timing of the current phase
 
         :param time_threshold: Normally the current clock of simulation or real-time
         """
@@ -141,7 +139,7 @@ class Signal:
             phase_indx += 1
 
         if self._print_signal_detail and any_to_be_purged:
-            print('<<< Phase(s) ' + ','.join(str(p) for p in self.SPaT_sequence[:phase_indx]) + ' expired.')
+            print('<<< Phase(s) ' + ','.join(str(p) for p in self.SPaT_sequence[:phase_indx]) + ' expired <<<')
 
         if phase_indx >= len(self.SPaT_end) - 1:
             raise Exception('If all phases get purged, SPaT becomes empty!')
@@ -310,7 +308,7 @@ class Pretimed(Signal):
         self.SPaT_sequence, self.SPaT_green_dur, self.SPaT_start, self.SPaT_end = [self._phase_seq[-1]], [0], \
                                                                                   [0], [self._y + self._ar]
         if self._print_signal_detail:
-            print('>>> Phase {:d} Appended (ends @ {:2.2f} sec)'.format(self._phase_seq[-1], self.SPaT_end[-1]))
+            print('>>> Phase {:d} appended (ends @ {:2.2f} sec) >>>'.format(self._phase_seq[-1], self.SPaT_end[-1]))
 
         for cycle in range(self.NUM_CYCLES):
             for indx, phase in enumerate(self._phase_seq):

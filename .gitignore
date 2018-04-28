@@ -107,7 +107,6 @@ ENV/
 *.lp
 *.pdf
 *.xlsx
-note.txt
 unit_tests.py
 
 log/
