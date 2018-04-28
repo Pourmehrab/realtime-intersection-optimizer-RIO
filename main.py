@@ -145,7 +145,7 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     while True:  # stops when all rows of csv are processed (a break statement controls this)
         simulation_time = time_keeper.clock  # gets current simulation clock
         if print_clock:
-            print("\nUPDATE AT CLOCK: {:.2f} SEC #################################".format(
+            print("\nUPDATE AT CLOCK: {:>5.1f} SEC #################################".format(
                 simulation_time))
 
         # UPDATE VEHICLES
@@ -207,7 +207,7 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
                 t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT"S JUST TIMING THE ALGORITHM
                 traffic.set_elapsed_sim_time(t_end - t_start)
                 if print_clock:
-                    print("### ELAPSED TIME: {:2.2f} sec ###".format(int(1000 * (t_end - t_start)) / 1000))
+                    print("\n### ELAPSED TIME: {:>5d} ms ###".format(int(1000 * (t_end - t_start))))
 
                 # save the csv which has travel time column appended
                 traffic.save_csv(inter_name)
@@ -215,7 +215,7 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
             if log_at_trj_point_level:
                 traffic.close_trj_csv()  # cus this is written line y line
 
-            sys.exit(-1)  # this halts the program
+            return  # this halts the program
 
         else:  # this is the last scenario but still some vehicles have not been served
             time_keeper.next_sim_step()
@@ -225,8 +225,8 @@ if __name__ == "__main__":
 
     # ################## SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR
     do_traj_computation = False  # speeds up
-    log_at_vehicle_level = False  # writes the <inter_name>_vehicle_level.csv
-    log_at_trj_point_level = False  # writes the <inter_name>_trj_point_level.csv
+    log_at_vehicle_level = True  # writes the <inter_name>_vehicle_level.csv
+    log_at_trj_point_level = True  # writes the <inter_name>_trj_point_level.csv
     print_trj_info, test_time = True, 0.0  # prints arrival departures in command line
     print_signal_detail = True  # prints signal info in command line
     print_clock = True  # prints the timer in command line
@@ -249,7 +249,7 @@ if __name__ == "__main__":
         inter_name, method, run_mode = sys.argv[1], sys.argv[2], sys.argv[3]
 
         if run_mode == 'simulation':
-            sc = 237  # 353
+            sc = 353  # 237
             run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level,
                       print_clock, print_signal_detail, print_trj_info, test_time)
         elif run_mode == 'realtime':

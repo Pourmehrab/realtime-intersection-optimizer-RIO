@@ -39,24 +39,23 @@ class Vehicle:
             - The shape of trajectory matrix is :math:`3 *n` where :math:`n` is the maximum number of trajectory points
                 to be held. The first, second, and third rows correspond to time, distance, and speed profile,
                  respectively.
-            -
 
-        :param det_id:          the id assigned to this vehicle by radio
+        :param det_id:          the *id* assigned to this vehicle by radio
         :param det_type:        0: Conventional, 1: Connected and Automated Vehicle
-        :param det_time:        detection time in seconds from reference time
-        :param speed:           detection speed in m/s
-        :param dist:            detection distance to stop bar in meter
-        :param des_speed:       desired speed in m/s
+        :param det_time:        detection time in :math:`s` from reference time
+        :param speed:           detection speed in :math:`m/s`
+        :param dist:            detection distance to stop bar in :math:`m`
+        :param des_speed:       desired speed in :math:`m/s`
         :param dest:            destination 0: right turn, 1: through, 2: left
-        :param length:          length of vehicle in meter
-        :param amin:            desirable deceleration rate in m/s2
-        :param amax:            desired acceleration rate in m/s2
+        :param length:          length of vehicle in :math:`m`
+        :param amin:            desirable deceleration rate in :math:`m/s^2`
+        :param amax:            desired acceleration rate in :math:`m/s^2`
         :param indx:            the original row index in the input csv file
         :param k:               number of coefficients to represent the trajectory if vehicle is connected
         """
         self.ID = det_id
         self.veh_type = det_type
-        self.init_time = det_time  # needed to compute the travel time
+        # self.init_time = det_time
         self.curr_speed = speed
         self.distance = dist
         self.length = length

@@ -103,7 +103,7 @@ class Signal:
         if self.SPaT_sequence[-1] == phase:  # extend this phase
             self.SPaT_end[-1] = self.SPaT_start[-1] + actual_green + self._y + self._ar
             if self._print_signal_detail:
-                print('>-> Phase {:d} Extended (ends @ {:>2.2f} sec) >->'.format(self.SPaT_sequence[-1],
+                print('>-> Phase {:d} Extended (ends @ {:>2.1f} sec) >->'.format(self.SPaT_sequence[-1],
                                                                                  self.SPaT_end[-1]))
         else:  # append a new phase
             self.SPaT_sequence += [phase]
@@ -111,7 +111,7 @@ class Signal:
             self.SPaT_start += [self.SPaT_end[-1]]
             self.SPaT_end += [self.SPaT_start[-1] + actual_green + self._y + self._ar]
             if self._print_signal_detail:
-                print('>>> Phase {:d} appended (ends @ {:>2.2f} sec) >>>'.format(phase, self.SPaT_end[-1]))
+                print('>>> Phase {:d} appended (ends @ {:>2.1f} sec) >>>'.format(phase, self.SPaT_end[-1]))
 
     def set_critical_phase_volumes(self, volumes):
         """
@@ -328,7 +328,7 @@ class Pretimed(Signal):
         self.SPaT_sequence, self.SPaT_green_dur, self.SPaT_start, self.SPaT_end = [self._phase_seq[-1]], [0], \
                                                                                   [0], [self._y + self._ar]
         if self._print_signal_detail:
-            print('>>> Phase {:d} appended (ends @ {:2.2f} sec) >>>'.format(self._phase_seq[-1], self.SPaT_end[-1]))
+            print('>>> Phase {:d} appended (ends @ {:2.1f} sec) >>>'.format(self._phase_seq[-1], self.SPaT_end[-1]))
 
         for cycle in range(self.NUM_CYCLES):
             for indx, phase in enumerate(self._phase_seq):
