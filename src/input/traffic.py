@@ -112,11 +112,14 @@ class Traffic:
     def last_veh_arrived(self):
         """
         :return: True if all vehicles from the input csv have been added at some point, False otherwise.
+
+        .. note::
+            The fact that all are added does not equal to they are all served. Thus, check if any vehicle is in any of the incoming lanes.
         """
         if self._current_row_indx + 1 >= self.__all_vehicles.shape[0]:
-            return False
-        else:
             return True
+        else:
+            return False
 
     def get_first_detection_time(self):
         """

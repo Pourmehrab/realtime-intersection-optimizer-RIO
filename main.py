@@ -215,6 +215,8 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
             if log_at_trj_point_level:
                 traffic.close_trj_csv()  # cus this is written line y line
 
+            sys.exit(-1)  # this halts the program
+
         else:  # this is the last scenario but still some vehicles have not been served
             time_keeper.next_sim_step()
 
