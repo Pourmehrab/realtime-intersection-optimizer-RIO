@@ -93,7 +93,7 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     :param inter_name: intersection name
     :type inter_name: str
     :param method: Pretimed, GA, ...
-    :param sc: scenario number (*should match the appendix of the input csv file*)
+    :param sc: scenario number (*should match the appendix of the input csv filename*)
     :param do_traj_computation:
     :param log_at_vehicle_level:
     :param log_at_trj_point_level:
@@ -247,7 +247,7 @@ if __name__ == "__main__":
         inter_name, method, run_mode = sys.argv[1], sys.argv[2], sys.argv[3]
 
         if run_mode == 'simulation':
-            sc = 353  # 237
+            sc = 237  # 353
             run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level,
                       print_clock, print_signal_detail, print_trj_info, test_time)
         elif run_mode == 'realtime':

@@ -78,35 +78,38 @@ class Vehicle:
 
     def reset_trj_points(self, sc, lane, time_threshold, file):
         """
-        Writes trajectory points in the csv file if their time stamp is before the `time_threshold` and then removes
+        Writes trajectory points in the csv file if their time stamp is before the ``time_threshold`` and then removes
         them by updating the first trj point.
+
+        .. warning::
+            Before calling this make sure at least the first trajectory point's time stamp is less than provided time
+            threshold or such a call would be pointless.
 
         :param sc: scenario number being simulated
         :param lane: lane number that is zero-based  (it records it one-based)
         :param time_threshold: any trajectory point before this is considered expired (normally its simulation time)
-        :param file: initialized in `Traffic.__init__()` method, if ``None``, this does not record in csv.
+        :param file: initialized in ``Traffic.__init__()`` method, if ``None``, this does not record points in csv.
         """
         trj_indx, max_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx
         time, distance, speed = self.trajectory[:, trj_indx]
 
-        if time < time_threshold:
-            if file is None:  # don't have to write csv
-                while time < time_threshold and trj_indx <= max_trj_indx:
-                    trj_indx += 1
-                    time = self.trajectory[0, trj_indx]
+        if file is None:  # don't have to write csv
+            while time < time_threshold and trj_indx <= max_trj_indx:
+                trj_indx += 1
+                time = self.trajectory[0, trj_indx]
 
-            else:  # get full info and write trj points to the csv file
-                writer = csv.writer(file, delimiter=',')
-                while time < time_threshold and trj_indx <= max_trj_indx:
-                    writer.writerows([[sc, self.ID, self.veh_type, lane + 1, time, distance, speed]])
-                    file.flush()
-                    trj_indx += 1
-                    time, distance, speed = self.trajectory[:, trj_indx]
+        else:  # get full info and write trj points to the csv file
+            writer = csv.writer(file, delimiter=',')
+            while time < time_threshold and trj_indx <= max_trj_indx:
+                writer.writerows([[sc, self.ID, self.veh_type, lane + 1, time, distance, speed]])
+                file.flush()
+                trj_indx += 1
+                time, distance, speed = self.trajectory[:, trj_indx]
 
-            if trj_indx <= max_trj_indx:
-                self.set_first_trj_point_indx(trj_indx)
-            else:
-                raise Exception("The vehicle should've been removed instead of getting updated for trj points.")
+        if trj_indx <= max_trj_indx:
+            self.set_first_trj_point_indx(trj_indx)
+        else:
+            raise Exception("The vehicle should've been removed instead of getting updated for trj points.")
 
     def set_earliest_arrival(self, t_earliest):
         """
@@ -148,6 +151,8 @@ class Vehicle:
         For the purpose of printing, this method translates the vehicle codes. Currently, it supports:
             - 0 : Conventional Vehicle (**CNV**)
             - 1 : Connected and Automated Vehicle (**CAV**)
+        :param code: numeric code for the vehicle type
+        :type code: int
         """
         if code == 1:
             return 'CAV'
