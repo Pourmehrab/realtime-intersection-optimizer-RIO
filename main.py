@@ -38,7 +38,7 @@ def check_py_ver():
 
 
 def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level, print_clock,
-              print_signal_detail, print_trj_info, test_time):
+              print_signal_detail, print_trj_info, test_time, print_detection, print_departure):
     """
     For simulating a 12 lane four leg intersection (reservation intersection) with pretimed control do:
         >>> python reserv pretimed simulation
@@ -113,7 +113,7 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     lanes = Lanes(num_lanes)
 
     # load entire traffic generated in csv file
-    traffic = Traffic(inter_name, sc, log_at_vehicle_level, log_at_trj_point_level)
+    traffic = Traffic(inter_name, sc, log_at_vehicle_level, log_at_trj_point_level, print_detection)
 
     # initialize trajectory planners
     lead_conventional_trj_estimator = LeadConventional(max_speed, min_headway)
@@ -145,12 +145,12 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     while True:  # stops when all rows of csv are processed (a break statement controls this)
         simulation_time = time_keeper.clock  # gets current simulation clock
         if print_clock:
-            print("\nUPDATE AT CLOCK: {:.2f} SEC #################################".format(
+            print("\nUPDATE AT CLOCK: {:>5.1f} SEC #################################".format(
                 simulation_time))
 
         # UPDATE VEHICLES
         # remove/record served vehicles and phases
-        traffic.serve_update_at_stop_bar(lanes, simulation_time, num_lanes)
+        traffic.serve_update_at_stop_bar(lanes, simulation_time, num_lanes, print_departure)
         # add/update vehicles
         traffic.update_vehicles_info(lanes, simulation_time, max_speed, min_headway, k)
         # update SPaT
@@ -199,7 +199,7 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
                             veh.set_redo_trj_false()  # todo eventually works with the fusion outputs
 
                         if print_trj_info and simulation_time >= test_time:
-                            veh.print_trj_points(lane, veh_indx, 'trj solve()')
+                            veh.print_trj_points(lane, veh_indx)
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_arrived() and lanes.all_served(num_lanes):
@@ -207,13 +207,15 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
                 t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT"S JUST TIMING THE ALGORITHM
                 traffic.set_elapsed_sim_time(t_end - t_start)
                 if print_clock:
-                    print("### ELAPSED TIME: {:2.2f} sec ###".format(int(1000 * (t_end - t_start)) / 1000))
+                    print("\n### ELAPSED TIME: {:>5d} ms ###".format(int(1000 * (t_end - t_start))))
 
                 # save the csv which has travel time column appended
                 traffic.save_csv(inter_name)
 
             if log_at_trj_point_level:
                 traffic.close_trj_csv()  # cus this is written line y line
+
+            return  # this halts the program
 
         else:  # this is the last scenario but still some vehicles have not been served
             time_keeper.next_sim_step()
@@ -223,11 +225,12 @@ if __name__ == "__main__":
 
     # ################## SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR
     do_traj_computation = False  # speeds up
-    log_at_vehicle_level = False  # writes the <inter_name>_vehicle_level.csv
+    log_at_vehicle_level = True  # writes the <inter_name>_vehicle_level.csv
     log_at_trj_point_level = False  # writes the <inter_name>_trj_point_level.csv
-    print_trj_info, test_time = True, 0.0  # prints arrival departures in command line
+    print_trj_info, test_time = False, 0.0  # prints arrival departures in command line
     print_signal_detail = True  # prints signal info in command line
-    print_clock = True  # prints the timer in command line
+    print_clock = False  # prints the timer in command line
+    print_detection, print_departure = False, False  # prints arrivals sent to the algorithm, ...
 
     print(
         "University of Florida.\nBy Mahmoud Pourmehrab ######################\n")
@@ -247,8 +250,8 @@ if __name__ == "__main__":
         inter_name, method, run_mode = sys.argv[1], sys.argv[2], sys.argv[3]
 
         if run_mode == 'simulation':
-            sc = 237  # 353
+            sc = 353  # 237
             run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level,
-                      print_clock, print_signal_detail, print_trj_info, test_time)
+                      print_clock, print_signal_detail, print_trj_info, test_time, print_detection, print_departure)
         elif run_mode == 'realtime':
             pass  # todo we may define realtime functionality here

@@ -61,6 +61,53 @@
 <dd></dd></dl>
 
 <dl class="method">
+<dt id="src.inter.signal.ActuatedControl._schedule_unserved_vehicles">
+<code class="descname">_schedule_unserved_vehicles</code><span class="sig-paren">(</span><em>lanes</em>, <em>num_lanes</em>, <em>served_vehicle_time</em>, <em>any_unserved_vehicle</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.ActuatedControl._schedule_unserved_vehicles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sometimes the base SPaT prior to running a <code class="docutils literal notranslate"><span class="pre">solve()</span></code> method does not serve all vehicles. However, vehicles
+require trajectory to be provided. One way to address this is to assign them the best temporal trajectory which
+only has some of general qualities necessary for continuation of program. In this method we do the followings
+to compute the <code class="docutils literal notranslate"><span class="pre">departure</span> <span class="pre">times</span></code> of such trajectories:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>Without use of phases, schedule vehicles one after the other at minimum headway restricted by the</dt>
+<dd>saturation headway. This gives an overestimate of teh departure time since one vehicle gets served by
+intersection at a time, while having allowing to depart in phases let multiple simultaneous departures.</dd>
+</dl>
+</li>
+<li>This may be called after a signal <code class="docutils literal notranslate"><span class="pre">solve()</span></code> method decided to complete those that did not get served.</li>
+<li>Also this assumes min headway after green starts instead of <code class="docutils literal notranslate"><span class="pre">LAG</span></code> time which is a simplification.</li>
+<li><dl class="first docutils">
+<dt>If a vehicle gets a schedule and has more than one trajectory point, the last index should reset to the</dt>
+<dd>first index so when the trajectory is set there would be two points.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Since the departure times are definitely temporal, DO NOT set <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lanes</strong> – </li>
+<li><strong>num_lanes</strong> – </li>
+<li><strong>served_vehicle_time</strong> – includes schedule of departures for those served by base SPaT</li>
+<li><strong>any_unserved_vehicle</strong> – <cite>Has `False`</cite> for the lane that has all vehicles scheduled through base SPaT and the <code class="docutils literal notranslate"><span class="pre">solve()</span></code>, <code class="docutils literal notranslate"><span class="pre">True</span></code> otherwise.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><code class="docutils literal notranslate"><span class="pre">served_vehicle_time</span></code> that now includes the schedules of all vehicle except those served through base SPaT</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="src.inter.signal.ActuatedControl._set_lane_lane_incidence">
 <code class="descname">_set_lane_lane_incidence</code><span class="sig-paren">(</span><em>num_lanes</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.ActuatedControl._set_lane_lane_incidence" title="Permalink to this definition">¶</a></dt>
 <dd><p>This converts a dictionary of the form:
@@ -81,7 +128,28 @@ conflicting movements</p>
 <dl class="method">
 <dt id="src.inter.signal.ActuatedControl._set_non_base_scheduled_arrival">
 <code class="descname">_set_non_base_scheduled_arrival</code><span class="sig-paren">(</span><em>lanes</em>, <em>scheduled_arrivals</em>, <em>num_lanes</em>, <em>max_speed</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.ActuatedControl._set_non_base_scheduled_arrival" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Sets the scheduled departure in the trajectory of the vehicle.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>Departure schedule of those which were served by base SPaT is set in <code class="docutils literal notranslate"><span class="pre">base_badness()</span></code> and not here.</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lanes</strong> – </li>
+<li><strong>scheduled_arrivals</strong> – </li>
+<li><strong>num_lanes</strong> – </li>
+<li><strong>max_speed</strong> – by default the departure speed is maximum allowable speed in <span class="math notranslate nohighlight">\(m/s\)</span></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="src.inter.signal.ActuatedControl._set_phase_lane_incidence">
@@ -152,6 +220,16 @@ timing.</p>
 method. The <code class="docutils literal notranslate"><span class="pre">self.first_unsrvd_indx</span></code> will be used after this to avoid reserving and double-counting those
 already served with base SPaT. This also returns <code class="docutils literal notranslate"><span class="pre">any_unserved_vehicle</span></code> array that has True if any lane has
 vehicles that could not be unserved with base SPaT.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>Since base SPaT never gets changed (for safety and practical reasons), any vehicle served by it has to get <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> value set to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</li>
+<li>It is feasible that if fusion algorithm updates the info on this vehicle and wants an update on trajectory, it rolls back the <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> to be <code class="docutils literal notranslate"><span class="pre">True</span></code>. However, this should be decided outside this method.</li>
+<li>The reason that this does not return schedule of departures is because they are already set inside this method. Late, the set method skips these.</li>
+<li>If a vehicle gets a schedule and has more than one trajectory point, the last index should reset to the first index so when the trajectory is set there would be two points.</li>
+<li>all-red from the end and <code class="docutils literal notranslate"><span class="pre">LAG</span></code> time from the beginning of a phase are note utilizes by any vehicle.</li>
+</ul>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -168,32 +246,8 @@ vehicles that could not be unserved with base SPaT.</p>
 </tr>
 </tbody>
 </table>
-<p>initialized to zero before calling this method and gets updated by the end of this call.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="src.inter.signal.ActuatedControl.complete_unserved_vehicles">
-<code class="descname">complete_unserved_vehicles</code><span class="sig-paren">(</span><em>lanes</em>, <em>num_lanes</em>, <em>scheduled_arrivals</em>, <em>any_unserved_vehicle</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.ActuatedControl.complete_unserved_vehicles" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sometimes the SPaT that a method provides does not serve all vehicles.
-Since we don’t consider phases here, this only serves the rest of vehicles one at a time
-If a vehicle is served this way, the trajectory is temporary so make sure set redo trajectory option to True.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>lanes</strong> – </li>
-<li><strong>num_lanes</strong> – </li>
-<li><strong>scheduled_arrivals</strong> – </li>
-<li><strong>any_unserved_vehicle</strong> – </li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">scheduled_arrivals</p>
-</td>
-</tr>
-</tbody>
-</table>
+<p>initialized to zero before calling this method and gets updated by the end of this call. It also returns
+<code class="docutils literal notranslate"><span class="pre">served_vehicle_time</span></code> that shows the schedule</p>
 </dd></dl>
 
 <dl class="method">
@@ -233,15 +287,20 @@ that is derived from time budget concept</p>
 <dd><ul class="first last simple">
 <li>Removes terminated phase (happens when the all-red is passed)</li>
 <li>Checks for  SPaT to not get empty after being updated</li>
-<li>Update timing of the current phase</li>
 </ul>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>If all phases are getting purged, either make longer SPaT decisions or reduce the simulation steps.</li>
+</ul>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time_threshold</strong> – Normally the current clock of simulation or real-time</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time_threshold</strong> – Normally the current clock of simulation or real-time in <span class="math notranslate nohighlight">\(s\)</span></td>
 </tr>
 </tbody>
 </table>
@@ -267,6 +326,53 @@ Similar to GA functionality
 <dd></dd></dl>
 
 <dl class="method">
+<dt id="src.inter.signal.Enumerate_SpaT._schedule_unserved_vehicles">
+<code class="descname">_schedule_unserved_vehicles</code><span class="sig-paren">(</span><em>lanes</em>, <em>num_lanes</em>, <em>served_vehicle_time</em>, <em>any_unserved_vehicle</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.Enumerate_SpaT._schedule_unserved_vehicles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sometimes the base SPaT prior to running a <code class="docutils literal notranslate"><span class="pre">solve()</span></code> method does not serve all vehicles. However, vehicles
+require trajectory to be provided. One way to address this is to assign them the best temporal trajectory which
+only has some of general qualities necessary for continuation of program. In this method we do the followings
+to compute the <code class="docutils literal notranslate"><span class="pre">departure</span> <span class="pre">times</span></code> of such trajectories:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>Without use of phases, schedule vehicles one after the other at minimum headway restricted by the</dt>
+<dd>saturation headway. This gives an overestimate of teh departure time since one vehicle gets served by
+intersection at a time, while having allowing to depart in phases let multiple simultaneous departures.</dd>
+</dl>
+</li>
+<li>This may be called after a signal <code class="docutils literal notranslate"><span class="pre">solve()</span></code> method decided to complete those that did not get served.</li>
+<li>Also this assumes min headway after green starts instead of <code class="docutils literal notranslate"><span class="pre">LAG</span></code> time which is a simplification.</li>
+<li><dl class="first docutils">
+<dt>If a vehicle gets a schedule and has more than one trajectory point, the last index should reset to the</dt>
+<dd>first index so when the trajectory is set there would be two points.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Since the departure times are definitely temporal, DO NOT set <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lanes</strong> – </li>
+<li><strong>num_lanes</strong> – </li>
+<li><strong>served_vehicle_time</strong> – includes schedule of departures for those served by base SPaT</li>
+<li><strong>any_unserved_vehicle</strong> – <cite>Has `False`</cite> for the lane that has all vehicles scheduled through base SPaT and the <code class="docutils literal notranslate"><span class="pre">solve()</span></code>, <code class="docutils literal notranslate"><span class="pre">True</span></code> otherwise.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><code class="docutils literal notranslate"><span class="pre">served_vehicle_time</span></code> that now includes the schedules of all vehicle except those served through base SPaT</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="src.inter.signal.Enumerate_SpaT._set_lane_lane_incidence">
 <code class="descname">_set_lane_lane_incidence</code><span class="sig-paren">(</span><em>num_lanes</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.Enumerate_SpaT._set_lane_lane_incidence" title="Permalink to this definition">¶</a></dt>
 <dd><p>This converts a dictionary of the form:
@@ -287,7 +393,28 @@ conflicting movements</p>
 <dl class="method">
 <dt id="src.inter.signal.Enumerate_SpaT._set_non_base_scheduled_arrival">
 <code class="descname">_set_non_base_scheduled_arrival</code><span class="sig-paren">(</span><em>lanes</em>, <em>scheduled_arrivals</em>, <em>num_lanes</em>, <em>max_speed</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.Enumerate_SpaT._set_non_base_scheduled_arrival" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Sets the scheduled departure in the trajectory of the vehicle.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>Departure schedule of those which were served by base SPaT is set in <code class="docutils literal notranslate"><span class="pre">base_badness()</span></code> and not here.</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lanes</strong> – </li>
+<li><strong>scheduled_arrivals</strong> – </li>
+<li><strong>num_lanes</strong> – </li>
+<li><strong>max_speed</strong> – by default the departure speed is maximum allowable speed in <span class="math notranslate nohighlight">\(m/s\)</span></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="src.inter.signal.Enumerate_SpaT._set_phase_lane_incidence">
@@ -358,6 +485,16 @@ timing.</p>
 method. The <code class="docutils literal notranslate"><span class="pre">self.first_unsrvd_indx</span></code> will be used after this to avoid reserving and double-counting those
 already served with base SPaT. This also returns <code class="docutils literal notranslate"><span class="pre">any_unserved_vehicle</span></code> array that has True if any lane has
 vehicles that could not be unserved with base SPaT.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>Since base SPaT never gets changed (for safety and practical reasons), any vehicle served by it has to get <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> value set to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</li>
+<li>It is feasible that if fusion algorithm updates the info on this vehicle and wants an update on trajectory, it rolls back the <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> to be <code class="docutils literal notranslate"><span class="pre">True</span></code>. However, this should be decided outside this method.</li>
+<li>The reason that this does not return schedule of departures is because they are already set inside this method. Late, the set method skips these.</li>
+<li>If a vehicle gets a schedule and has more than one trajectory point, the last index should reset to the first index so when the trajectory is set there would be two points.</li>
+<li>all-red from the end and <code class="docutils literal notranslate"><span class="pre">LAG</span></code> time from the beginning of a phase are note utilizes by any vehicle.</li>
+</ul>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -374,32 +511,8 @@ vehicles that could not be unserved with base SPaT.</p>
 </tr>
 </tbody>
 </table>
-<p>initialized to zero before calling this method and gets updated by the end of this call.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="src.inter.signal.Enumerate_SpaT.complete_unserved_vehicles">
-<code class="descname">complete_unserved_vehicles</code><span class="sig-paren">(</span><em>lanes</em>, <em>num_lanes</em>, <em>scheduled_arrivals</em>, <em>any_unserved_vehicle</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.Enumerate_SpaT.complete_unserved_vehicles" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sometimes the SPaT that a method provides does not serve all vehicles.
-Since we don’t consider phases here, this only serves the rest of vehicles one at a time
-If a vehicle is served this way, the trajectory is temporary so make sure set redo trajectory option to True.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>lanes</strong> – </li>
-<li><strong>num_lanes</strong> – </li>
-<li><strong>scheduled_arrivals</strong> – </li>
-<li><strong>any_unserved_vehicle</strong> – </li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">scheduled_arrivals</p>
-</td>
-</tr>
-</tbody>
-</table>
+<p>initialized to zero before calling this method and gets updated by the end of this call. It also returns
+<code class="docutils literal notranslate"><span class="pre">served_vehicle_time</span></code> that shows the schedule</p>
 </dd></dl>
 
 <dl class="method">
@@ -444,15 +557,20 @@ that is derived from time budget concept</p>
 <dd><ul class="first last simple">
 <li>Removes terminated phase (happens when the all-red is passed)</li>
 <li>Checks for  SPaT to not get empty after being updated</li>
-<li>Update timing of the current phase</li>
 </ul>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>If all phases are getting purged, either make longer SPaT decisions or reduce the simulation steps.</li>
+</ul>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time_threshold</strong> – Normally the current clock of simulation or real-time</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time_threshold</strong> – Normally the current clock of simulation or real-time in <span class="math notranslate nohighlight">\(s\)</span></td>
 </tr>
 </tbody>
 </table>
@@ -528,6 +646,53 @@ that is derived from time budget concept</p>
 <dd></dd></dl>
 
 <dl class="method">
+<dt id="src.inter.signal.GA_SPaT._schedule_unserved_vehicles">
+<code class="descname">_schedule_unserved_vehicles</code><span class="sig-paren">(</span><em>lanes</em>, <em>num_lanes</em>, <em>served_vehicle_time</em>, <em>any_unserved_vehicle</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.GA_SPaT._schedule_unserved_vehicles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sometimes the base SPaT prior to running a <code class="docutils literal notranslate"><span class="pre">solve()</span></code> method does not serve all vehicles. However, vehicles
+require trajectory to be provided. One way to address this is to assign them the best temporal trajectory which
+only has some of general qualities necessary for continuation of program. In this method we do the followings
+to compute the <code class="docutils literal notranslate"><span class="pre">departure</span> <span class="pre">times</span></code> of such trajectories:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>Without use of phases, schedule vehicles one after the other at minimum headway restricted by the</dt>
+<dd>saturation headway. This gives an overestimate of teh departure time since one vehicle gets served by
+intersection at a time, while having allowing to depart in phases let multiple simultaneous departures.</dd>
+</dl>
+</li>
+<li>This may be called after a signal <code class="docutils literal notranslate"><span class="pre">solve()</span></code> method decided to complete those that did not get served.</li>
+<li>Also this assumes min headway after green starts instead of <code class="docutils literal notranslate"><span class="pre">LAG</span></code> time which is a simplification.</li>
+<li><dl class="first docutils">
+<dt>If a vehicle gets a schedule and has more than one trajectory point, the last index should reset to the</dt>
+<dd>first index so when the trajectory is set there would be two points.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Since the departure times are definitely temporal, DO NOT set <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lanes</strong> – </li>
+<li><strong>num_lanes</strong> – </li>
+<li><strong>served_vehicle_time</strong> – includes schedule of departures for those served by base SPaT</li>
+<li><strong>any_unserved_vehicle</strong> – <cite>Has `False`</cite> for the lane that has all vehicles scheduled through base SPaT and the <code class="docutils literal notranslate"><span class="pre">solve()</span></code>, <code class="docutils literal notranslate"><span class="pre">True</span></code> otherwise.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><code class="docutils literal notranslate"><span class="pre">served_vehicle_time</span></code> that now includes the schedules of all vehicle except those served through base SPaT</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="src.inter.signal.GA_SPaT._set_lane_lane_incidence">
 <code class="descname">_set_lane_lane_incidence</code><span class="sig-paren">(</span><em>num_lanes</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.GA_SPaT._set_lane_lane_incidence" title="Permalink to this definition">¶</a></dt>
 <dd><p>This converts a dictionary of the form:
@@ -548,7 +713,28 @@ conflicting movements</p>
 <dl class="method">
 <dt id="src.inter.signal.GA_SPaT._set_non_base_scheduled_arrival">
 <code class="descname">_set_non_base_scheduled_arrival</code><span class="sig-paren">(</span><em>lanes</em>, <em>scheduled_arrivals</em>, <em>num_lanes</em>, <em>max_speed</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.GA_SPaT._set_non_base_scheduled_arrival" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Sets the scheduled departure in the trajectory of the vehicle.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>Departure schedule of those which were served by base SPaT is set in <code class="docutils literal notranslate"><span class="pre">base_badness()</span></code> and not here.</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lanes</strong> – </li>
+<li><strong>scheduled_arrivals</strong> – </li>
+<li><strong>num_lanes</strong> – </li>
+<li><strong>max_speed</strong> – by default the departure speed is maximum allowable speed in <span class="math notranslate nohighlight">\(m/s\)</span></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="src.inter.signal.GA_SPaT._set_phase_lane_incidence">
@@ -619,6 +805,16 @@ timing.</p>
 method. The <code class="docutils literal notranslate"><span class="pre">self.first_unsrvd_indx</span></code> will be used after this to avoid reserving and double-counting those
 already served with base SPaT. This also returns <code class="docutils literal notranslate"><span class="pre">any_unserved_vehicle</span></code> array that has True if any lane has
 vehicles that could not be unserved with base SPaT.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>Since base SPaT never gets changed (for safety and practical reasons), any vehicle served by it has to get <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> value set to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</li>
+<li>It is feasible that if fusion algorithm updates the info on this vehicle and wants an update on trajectory, it rolls back the <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> to be <code class="docutils literal notranslate"><span class="pre">True</span></code>. However, this should be decided outside this method.</li>
+<li>The reason that this does not return schedule of departures is because they are already set inside this method. Late, the set method skips these.</li>
+<li>If a vehicle gets a schedule and has more than one trajectory point, the last index should reset to the first index so when the trajectory is set there would be two points.</li>
+<li>all-red from the end and <code class="docutils literal notranslate"><span class="pre">LAG</span></code> time from the beginning of a phase are note utilizes by any vehicle.</li>
+</ul>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -635,32 +831,8 @@ vehicles that could not be unserved with base SPaT.</p>
 </tr>
 </tbody>
 </table>
-<p>initialized to zero before calling this method and gets updated by the end of this call.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="src.inter.signal.GA_SPaT.complete_unserved_vehicles">
-<code class="descname">complete_unserved_vehicles</code><span class="sig-paren">(</span><em>lanes</em>, <em>num_lanes</em>, <em>scheduled_arrivals</em>, <em>any_unserved_vehicle</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.GA_SPaT.complete_unserved_vehicles" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sometimes the SPaT that a method provides does not serve all vehicles.
-Since we don’t consider phases here, this only serves the rest of vehicles one at a time
-If a vehicle is served this way, the trajectory is temporary so make sure set redo trajectory option to True.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>lanes</strong> – </li>
-<li><strong>num_lanes</strong> – </li>
-<li><strong>scheduled_arrivals</strong> – </li>
-<li><strong>any_unserved_vehicle</strong> – </li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">scheduled_arrivals</p>
-</td>
-</tr>
-</tbody>
-</table>
+<p>initialized to zero before calling this method and gets updated by the end of this call. It also returns
+<code class="docutils literal notranslate"><span class="pre">served_vehicle_time</span></code> that shows the schedule</p>
 </dd></dl>
 
 <dl class="method">
@@ -815,15 +987,20 @@ the key to the sorted dict is integer part of the travel time times 10</p>
 <dd><ul class="first last simple">
 <li>Removes terminated phase (happens when the all-red is passed)</li>
 <li>Checks for  SPaT to not get empty after being updated</li>
-<li>Update timing of the current phase</li>
 </ul>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>If all phases are getting purged, either make longer SPaT decisions or reduce the simulation steps.</li>
+</ul>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time_threshold</strong> – Normally the current clock of simulation or real-time</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time_threshold</strong> – Normally the current clock of simulation or real-time in <span class="math notranslate nohighlight">\(s\)</span></td>
 </tr>
 </tbody>
 </table>
@@ -877,6 +1054,53 @@ Phase-selection arcs are from 0 to <a href="#id5"><span class="problematic" id="
 <dd></dd></dl>
 
 <dl class="method">
+<dt id="src.inter.signal.MinCostFlow_SPaT._schedule_unserved_vehicles">
+<code class="descname">_schedule_unserved_vehicles</code><span class="sig-paren">(</span><em>lanes</em>, <em>num_lanes</em>, <em>served_vehicle_time</em>, <em>any_unserved_vehicle</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.MinCostFlow_SPaT._schedule_unserved_vehicles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sometimes the base SPaT prior to running a <code class="docutils literal notranslate"><span class="pre">solve()</span></code> method does not serve all vehicles. However, vehicles
+require trajectory to be provided. One way to address this is to assign them the best temporal trajectory which
+only has some of general qualities necessary for continuation of program. In this method we do the followings
+to compute the <code class="docutils literal notranslate"><span class="pre">departure</span> <span class="pre">times</span></code> of such trajectories:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>Without use of phases, schedule vehicles one after the other at minimum headway restricted by the</dt>
+<dd>saturation headway. This gives an overestimate of teh departure time since one vehicle gets served by
+intersection at a time, while having allowing to depart in phases let multiple simultaneous departures.</dd>
+</dl>
+</li>
+<li>This may be called after a signal <code class="docutils literal notranslate"><span class="pre">solve()</span></code> method decided to complete those that did not get served.</li>
+<li>Also this assumes min headway after green starts instead of <code class="docutils literal notranslate"><span class="pre">LAG</span></code> time which is a simplification.</li>
+<li><dl class="first docutils">
+<dt>If a vehicle gets a schedule and has more than one trajectory point, the last index should reset to the</dt>
+<dd>first index so when the trajectory is set there would be two points.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Since the departure times are definitely temporal, DO NOT set <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lanes</strong> – </li>
+<li><strong>num_lanes</strong> – </li>
+<li><strong>served_vehicle_time</strong> – includes schedule of departures for those served by base SPaT</li>
+<li><strong>any_unserved_vehicle</strong> – <cite>Has `False`</cite> for the lane that has all vehicles scheduled through base SPaT and the <code class="docutils literal notranslate"><span class="pre">solve()</span></code>, <code class="docutils literal notranslate"><span class="pre">True</span></code> otherwise.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><code class="docutils literal notranslate"><span class="pre">served_vehicle_time</span></code> that now includes the schedules of all vehicle except those served through base SPaT</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="src.inter.signal.MinCostFlow_SPaT._set_lane_lane_incidence">
 <code class="descname">_set_lane_lane_incidence</code><span class="sig-paren">(</span><em>num_lanes</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.MinCostFlow_SPaT._set_lane_lane_incidence" title="Permalink to this definition">¶</a></dt>
 <dd><p>This converts a dictionary of the form:
@@ -897,7 +1121,28 @@ conflicting movements</p>
 <dl class="method">
 <dt id="src.inter.signal.MinCostFlow_SPaT._set_non_base_scheduled_arrival">
 <code class="descname">_set_non_base_scheduled_arrival</code><span class="sig-paren">(</span><em>lanes</em>, <em>scheduled_arrivals</em>, <em>num_lanes</em>, <em>max_speed</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.MinCostFlow_SPaT._set_non_base_scheduled_arrival" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Sets the scheduled departure in the trajectory of the vehicle.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>Departure schedule of those which were served by base SPaT is set in <code class="docutils literal notranslate"><span class="pre">base_badness()</span></code> and not here.</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lanes</strong> – </li>
+<li><strong>scheduled_arrivals</strong> – </li>
+<li><strong>num_lanes</strong> – </li>
+<li><strong>max_speed</strong> – by default the departure speed is maximum allowable speed in <span class="math notranslate nohighlight">\(m/s\)</span></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="src.inter.signal.MinCostFlow_SPaT._set_phase_lane_incidence">
@@ -968,6 +1213,16 @@ timing.</p>
 method. The <code class="docutils literal notranslate"><span class="pre">self.first_unsrvd_indx</span></code> will be used after this to avoid reserving and double-counting those
 already served with base SPaT. This also returns <code class="docutils literal notranslate"><span class="pre">any_unserved_vehicle</span></code> array that has True if any lane has
 vehicles that could not be unserved with base SPaT.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>Since base SPaT never gets changed (for safety and practical reasons), any vehicle served by it has to get <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> value set to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</li>
+<li>It is feasible that if fusion algorithm updates the info on this vehicle and wants an update on trajectory, it rolls back the <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> to be <code class="docutils literal notranslate"><span class="pre">True</span></code>. However, this should be decided outside this method.</li>
+<li>The reason that this does not return schedule of departures is because they are already set inside this method. Late, the set method skips these.</li>
+<li>If a vehicle gets a schedule and has more than one trajectory point, the last index should reset to the first index so when the trajectory is set there would be two points.</li>
+<li>all-red from the end and <code class="docutils literal notranslate"><span class="pre">LAG</span></code> time from the beginning of a phase are note utilizes by any vehicle.</li>
+</ul>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -984,32 +1239,8 @@ vehicles that could not be unserved with base SPaT.</p>
 </tr>
 </tbody>
 </table>
-<p>initialized to zero before calling this method and gets updated by the end of this call.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="src.inter.signal.MinCostFlow_SPaT.complete_unserved_vehicles">
-<code class="descname">complete_unserved_vehicles</code><span class="sig-paren">(</span><em>lanes</em>, <em>num_lanes</em>, <em>scheduled_arrivals</em>, <em>any_unserved_vehicle</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.MinCostFlow_SPaT.complete_unserved_vehicles" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sometimes the SPaT that a method provides does not serve all vehicles.
-Since we don’t consider phases here, this only serves the rest of vehicles one at a time
-If a vehicle is served this way, the trajectory is temporary so make sure set redo trajectory option to True.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>lanes</strong> – </li>
-<li><strong>num_lanes</strong> – </li>
-<li><strong>scheduled_arrivals</strong> – </li>
-<li><strong>any_unserved_vehicle</strong> – </li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">scheduled_arrivals</p>
-</td>
-</tr>
-</tbody>
-</table>
+<p>initialized to zero before calling this method and gets updated by the end of this call. It also returns
+<code class="docutils literal notranslate"><span class="pre">served_vehicle_time</span></code> that shows the schedule</p>
 </dd></dl>
 
 <dl class="method">
@@ -1059,15 +1290,20 @@ that is derived from time budget concept</p>
 <dd><ul class="first last simple">
 <li>Removes terminated phase (happens when the all-red is passed)</li>
 <li>Checks for  SPaT to not get empty after being updated</li>
-<li>Update timing of the current phase</li>
 </ul>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>If all phases are getting purged, either make longer SPaT decisions or reduce the simulation steps.</li>
+</ul>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time_threshold</strong> – Normally the current clock of simulation or real-time</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time_threshold</strong> – Normally the current clock of simulation or real-time in <span class="math notranslate nohighlight">\(s\)</span></td>
 </tr>
 </tbody>
 </table>
@@ -1113,8 +1349,55 @@ that is derived from time budget concept</p>
 
 <dl class="attribute">
 <dt id="src.inter.signal.Pretimed.NUM_CYCLES">
-<code class="descname">NUM_CYCLES</code><em class="property"> = 4</em><a class="headerlink" href="#src.inter.signal.Pretimed.NUM_CYCLES" title="Permalink to this definition">¶</a></dt>
+<code class="descname">NUM_CYCLES</code><em class="property"> = 2</em><a class="headerlink" href="#src.inter.signal.Pretimed.NUM_CYCLES" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="method">
+<dt id="src.inter.signal.Pretimed._schedule_unserved_vehicles">
+<code class="descname">_schedule_unserved_vehicles</code><span class="sig-paren">(</span><em>lanes</em>, <em>num_lanes</em>, <em>served_vehicle_time</em>, <em>any_unserved_vehicle</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.Pretimed._schedule_unserved_vehicles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sometimes the base SPaT prior to running a <code class="docutils literal notranslate"><span class="pre">solve()</span></code> method does not serve all vehicles. However, vehicles
+require trajectory to be provided. One way to address this is to assign them the best temporal trajectory which
+only has some of general qualities necessary for continuation of program. In this method we do the followings
+to compute the <code class="docutils literal notranslate"><span class="pre">departure</span> <span class="pre">times</span></code> of such trajectories:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>Without use of phases, schedule vehicles one after the other at minimum headway restricted by the</dt>
+<dd>saturation headway. This gives an overestimate of teh departure time since one vehicle gets served by
+intersection at a time, while having allowing to depart in phases let multiple simultaneous departures.</dd>
+</dl>
+</li>
+<li>This may be called after a signal <code class="docutils literal notranslate"><span class="pre">solve()</span></code> method decided to complete those that did not get served.</li>
+<li>Also this assumes min headway after green starts instead of <code class="docutils literal notranslate"><span class="pre">LAG</span></code> time which is a simplification.</li>
+<li><dl class="first docutils">
+<dt>If a vehicle gets a schedule and has more than one trajectory point, the last index should reset to the</dt>
+<dd>first index so when the trajectory is set there would be two points.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Since the departure times are definitely temporal, DO NOT set <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lanes</strong> – </li>
+<li><strong>num_lanes</strong> – </li>
+<li><strong>served_vehicle_time</strong> – includes schedule of departures for those served by base SPaT</li>
+<li><strong>any_unserved_vehicle</strong> – <cite>Has `False`</cite> for the lane that has all vehicles scheduled through base SPaT and the <code class="docutils literal notranslate"><span class="pre">solve()</span></code>, <code class="docutils literal notranslate"><span class="pre">True</span></code> otherwise.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><code class="docutils literal notranslate"><span class="pre">served_vehicle_time</span></code> that now includes the schedules of all vehicle except those served through base SPaT</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="src.inter.signal.Pretimed._set_lane_lane_incidence">
@@ -1137,7 +1420,28 @@ conflicting movements</p>
 <dl class="method">
 <dt id="src.inter.signal.Pretimed._set_non_base_scheduled_arrival">
 <code class="descname">_set_non_base_scheduled_arrival</code><span class="sig-paren">(</span><em>lanes</em>, <em>scheduled_arrivals</em>, <em>num_lanes</em>, <em>max_speed</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.Pretimed._set_non_base_scheduled_arrival" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Sets the scheduled departure in the trajectory of the vehicle.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>Departure schedule of those which were served by base SPaT is set in <code class="docutils literal notranslate"><span class="pre">base_badness()</span></code> and not here.</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lanes</strong> – </li>
+<li><strong>scheduled_arrivals</strong> – </li>
+<li><strong>num_lanes</strong> – </li>
+<li><strong>max_speed</strong> – by default the departure speed is maximum allowable speed in <span class="math notranslate nohighlight">\(m/s\)</span></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="src.inter.signal.Pretimed._set_phase_lane_incidence">
@@ -1208,6 +1512,16 @@ timing.</p>
 method. The <code class="docutils literal notranslate"><span class="pre">self.first_unsrvd_indx</span></code> will be used after this to avoid reserving and double-counting those
 already served with base SPaT. This also returns <code class="docutils literal notranslate"><span class="pre">any_unserved_vehicle</span></code> array that has True if any lane has
 vehicles that could not be unserved with base SPaT.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>Since base SPaT never gets changed (for safety and practical reasons), any vehicle served by it has to get <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> value set to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</li>
+<li>It is feasible that if fusion algorithm updates the info on this vehicle and wants an update on trajectory, it rolls back the <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> to be <code class="docutils literal notranslate"><span class="pre">True</span></code>. However, this should be decided outside this method.</li>
+<li>The reason that this does not return schedule of departures is because they are already set inside this method. Late, the set method skips these.</li>
+<li>If a vehicle gets a schedule and has more than one trajectory point, the last index should reset to the first index so when the trajectory is set there would be two points.</li>
+<li>all-red from the end and <code class="docutils literal notranslate"><span class="pre">LAG</span></code> time from the beginning of a phase are note utilizes by any vehicle.</li>
+</ul>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1224,32 +1538,8 @@ vehicles that could not be unserved with base SPaT.</p>
 </tr>
 </tbody>
 </table>
-<p>initialized to zero before calling this method and gets updated by the end of this call.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="src.inter.signal.Pretimed.complete_unserved_vehicles">
-<code class="descname">complete_unserved_vehicles</code><span class="sig-paren">(</span><em>lanes</em>, <em>num_lanes</em>, <em>scheduled_arrivals</em>, <em>any_unserved_vehicle</em><span class="sig-paren">)</span><a class="headerlink" href="#src.inter.signal.Pretimed.complete_unserved_vehicles" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sometimes the SPaT that a method provides does not serve all vehicles.
-Since we don’t consider phases here, this only serves the rest of vehicles one at a time
-If a vehicle is served this way, the trajectory is temporary so make sure set redo trajectory option to True.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>lanes</strong> – </li>
-<li><strong>num_lanes</strong> – </li>
-<li><strong>scheduled_arrivals</strong> – </li>
-<li><strong>any_unserved_vehicle</strong> – </li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">scheduled_arrivals</p>
-</td>
-</tr>
-</tbody>
-</table>
+<p>initialized to zero before calling this method and gets updated by the end of this call. It also returns
+<code class="docutils literal notranslate"><span class="pre">served_vehicle_time</span></code> that shows the schedule</p>
 </dd></dl>
 
 <dl class="method">
@@ -1294,6 +1584,11 @@ that is derived from time budget concept</p>
 </ol>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The <code class="docutils literal notranslate"><span class="pre">scheduled_departures</span></code> is made only to call <code class="docutils literal notranslate"><span class="pre">complete_unserved_vehicles()</span></code>. It only stores
+departures for those vehicles nit served bt base SPaT.</p>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1317,15 +1612,20 @@ that is derived from time budget concept</p>
 <dd><ul class="first last simple">
 <li>Removes terminated phase (happens when the all-red is passed)</li>
 <li>Checks for  SPaT to not get empty after being updated</li>
-<li>Update timing of the current phase</li>
 </ul>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>If all phases are getting purged, either make longer SPaT decisions or reduce the simulation steps.</li>
+</ul>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time_threshold</strong> – Normally the current clock of simulation or real-time</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time_threshold</strong> – Normally the current clock of simulation or real-time in <span class="math notranslate nohighlight">\(s\)</span></td>
 </tr>
 </tbody>
 </table>
@@ -1376,6 +1676,53 @@ departurs.</p>
 <dd></dd></dl>
 
 <dl class="method">
+<dt id="src.inter.signal.Signal._schedule_unserved_vehicles">
+<code class="descname">_schedule_unserved_vehicles</code><span class="sig-paren">(</span><em>lanes</em>, <em>num_lanes</em>, <em>served_vehicle_time</em>, <em>any_unserved_vehicle</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/inter/signal.html#Signal._schedule_unserved_vehicles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.inter.signal.Signal._schedule_unserved_vehicles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sometimes the base SPaT prior to running a <code class="docutils literal notranslate"><span class="pre">solve()</span></code> method does not serve all vehicles. However, vehicles
+require trajectory to be provided. One way to address this is to assign them the best temporal trajectory which
+only has some of general qualities necessary for continuation of program. In this method we do the followings
+to compute the <code class="docutils literal notranslate"><span class="pre">departure</span> <span class="pre">times</span></code> of such trajectories:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>Without use of phases, schedule vehicles one after the other at minimum headway restricted by the</dt>
+<dd>saturation headway. This gives an overestimate of teh departure time since one vehicle gets served by
+intersection at a time, while having allowing to depart in phases let multiple simultaneous departures.</dd>
+</dl>
+</li>
+<li>This may be called after a signal <code class="docutils literal notranslate"><span class="pre">solve()</span></code> method decided to complete those that did not get served.</li>
+<li>Also this assumes min headway after green starts instead of <code class="docutils literal notranslate"><span class="pre">LAG</span></code> time which is a simplification.</li>
+<li><dl class="first docutils">
+<dt>If a vehicle gets a schedule and has more than one trajectory point, the last index should reset to the</dt>
+<dd>first index so when the trajectory is set there would be two points.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Since the departure times are definitely temporal, DO NOT set <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lanes</strong> – </li>
+<li><strong>num_lanes</strong> – </li>
+<li><strong>served_vehicle_time</strong> – includes schedule of departures for those served by base SPaT</li>
+<li><strong>any_unserved_vehicle</strong> – <cite>Has `False`</cite> for the lane that has all vehicles scheduled through base SPaT and the <code class="docutils literal notranslate"><span class="pre">solve()</span></code>, <code class="docutils literal notranslate"><span class="pre">True</span></code> otherwise.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><code class="docutils literal notranslate"><span class="pre">served_vehicle_time</span></code> that now includes the schedules of all vehicle except those served through base SPaT</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="src.inter.signal.Signal._set_lane_lane_incidence">
 <code class="descname">_set_lane_lane_incidence</code><span class="sig-paren">(</span><em>num_lanes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/inter/signal.html#Signal._set_lane_lane_incidence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.inter.signal.Signal._set_lane_lane_incidence" title="Permalink to this definition">¶</a></dt>
 <dd><p>This converts a dictionary of the form:
@@ -1396,7 +1743,28 @@ conflicting movements</p>
 <dl class="method">
 <dt id="src.inter.signal.Signal._set_non_base_scheduled_arrival">
 <code class="descname">_set_non_base_scheduled_arrival</code><span class="sig-paren">(</span><em>lanes</em>, <em>scheduled_arrivals</em>, <em>num_lanes</em>, <em>max_speed</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/inter/signal.html#Signal._set_non_base_scheduled_arrival"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.inter.signal.Signal._set_non_base_scheduled_arrival" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Sets the scheduled departure in the trajectory of the vehicle.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>Departure schedule of those which were served by base SPaT is set in <code class="docutils literal notranslate"><span class="pre">base_badness()</span></code> and not here.</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lanes</strong> – </li>
+<li><strong>scheduled_arrivals</strong> – </li>
+<li><strong>num_lanes</strong> – </li>
+<li><strong>max_speed</strong> – by default the departure speed is maximum allowable speed in <span class="math notranslate nohighlight">\(m/s\)</span></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="src.inter.signal.Signal._set_phase_lane_incidence">
@@ -1467,6 +1835,16 @@ timing.</p>
 method. The <code class="docutils literal notranslate"><span class="pre">self.first_unsrvd_indx</span></code> will be used after this to avoid reserving and double-counting those
 already served with base SPaT. This also returns <code class="docutils literal notranslate"><span class="pre">any_unserved_vehicle</span></code> array that has True if any lane has
 vehicles that could not be unserved with base SPaT.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>Since base SPaT never gets changed (for safety and practical reasons), any vehicle served by it has to get <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> value set to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</li>
+<li>It is feasible that if fusion algorithm updates the info on this vehicle and wants an update on trajectory, it rolls back the <code class="docutils literal notranslate"><span class="pre">redo_trj_allowed</span></code> to be <code class="docutils literal notranslate"><span class="pre">True</span></code>. However, this should be decided outside this method.</li>
+<li>The reason that this does not return schedule of departures is because they are already set inside this method. Late, the set method skips these.</li>
+<li>If a vehicle gets a schedule and has more than one trajectory point, the last index should reset to the first index so when the trajectory is set there would be two points.</li>
+<li>all-red from the end and <code class="docutils literal notranslate"><span class="pre">LAG</span></code> time from the beginning of a phase are note utilizes by any vehicle.</li>
+</ul>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1483,32 +1861,8 @@ vehicles that could not be unserved with base SPaT.</p>
 </tr>
 </tbody>
 </table>
-<p>initialized to zero before calling this method and gets updated by the end of this call.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="src.inter.signal.Signal.complete_unserved_vehicles">
-<code class="descname">complete_unserved_vehicles</code><span class="sig-paren">(</span><em>lanes</em>, <em>num_lanes</em>, <em>scheduled_arrivals</em>, <em>any_unserved_vehicle</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/inter/signal.html#Signal.complete_unserved_vehicles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.inter.signal.Signal.complete_unserved_vehicles" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sometimes the SPaT that a method provides does not serve all vehicles.
-Since we don’t consider phases here, this only serves the rest of vehicles one at a time
-If a vehicle is served this way, the trajectory is temporary so make sure set redo trajectory option to True.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>lanes</strong> – </li>
-<li><strong>num_lanes</strong> – </li>
-<li><strong>scheduled_arrivals</strong> – </li>
-<li><strong>any_unserved_vehicle</strong> – </li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">scheduled_arrivals</p>
-</td>
-</tr>
-</tbody>
-</table>
+<p>initialized to zero before calling this method and gets updated by the end of this call. It also returns
+<code class="docutils literal notranslate"><span class="pre">served_vehicle_time</span></code> that shows the schedule</p>
 </dd></dl>
 
 <dl class="method">
@@ -1548,15 +1902,20 @@ that is derived from time budget concept</p>
 <dd><ul class="first last simple">
 <li>Removes terminated phase (happens when the all-red is passed)</li>
 <li>Checks for  SPaT to not get empty after being updated</li>
-<li>Update timing of the current phase</li>
 </ul>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>If all phases are getting purged, either make longer SPaT decisions or reduce the simulation steps.</li>
+</ul>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time_threshold</strong> – Normally the current clock of simulation or real-time</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>time_threshold</strong> – Normally the current clock of simulation or real-time in <span class="math notranslate nohighlight">\(s\)</span></td>
 </tr>
 </tbody>
 </table>
@@ -1600,11 +1959,19 @@ that is derived from time budget concept</p>
 </ul>
 </dd>
 </dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>code</strong> (<em>int</em>) – numeric code for the vehicle type</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="src.inter.vehicle.Vehicle.print_trj_points">
-<code class="descname">print_trj_points</code><span class="sig-paren">(</span><em>lane</em>, <em>veh_indx</em>, <em>source</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/inter/vehicle.html#Vehicle.print_trj_points"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.inter.vehicle.Vehicle.print_trj_points" title="Permalink to this definition">¶</a></dt>
+<code class="descname">print_trj_points</code><span class="sig-paren">(</span><em>lane</em>, <em>veh_indx</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/inter/vehicle.html#Vehicle.print_trj_points"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.inter.vehicle.Vehicle.print_trj_points" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print the first and last trajectory points information.
 This may be used either when a plan is scheduled or a trajectory is computed.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1625,8 +1992,13 @@ This may be used either when a plan is scheduled or a trajectory is computed.</p
 <dl class="method">
 <dt id="src.inter.vehicle.Vehicle.reset_trj_points">
 <code class="descname">reset_trj_points</code><span class="sig-paren">(</span><em>sc</em>, <em>lane</em>, <em>time_threshold</em>, <em>file</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/inter/vehicle.html#Vehicle.reset_trj_points"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.inter.vehicle.Vehicle.reset_trj_points" title="Permalink to this definition">¶</a></dt>
-<dd><p>Writes trajectory points in the csv file if their time stamp is before the <cite>time_threshold</cite> and then removes
+<dd><p>Writes trajectory points in the csv file if their time stamp is before the <code class="docutils literal notranslate"><span class="pre">time_threshold</span></code> and then removes
 them by updating the first trj point.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Before calling this make sure at least the first trajectory point’s time stamp is less than provided time
+threshold or such a call would be pointless.</p>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1635,7 +2007,7 @@ them by updating the first trj point.</p>
 <li><strong>sc</strong> – scenario number being simulated</li>
 <li><strong>lane</strong> – lane number that is zero-based  (it records it one-based)</li>
 <li><strong>time_threshold</strong> – any trajectory point before this is considered expired (normally its simulation time)</li>
-<li><strong>file</strong> – initialized in <cite>Traffic.__init__()</cite> method, if <code class="docutils literal notranslate"><span class="pre">None</span></code>, this does not record in csv.</li>
+<li><strong>file</strong> – initialized in <code class="docutils literal notranslate"><span class="pre">Traffic.__init__()</span></code> method, if <code class="docutils literal notranslate"><span class="pre">None</span></code>, this does not record points in csv.</li>
 </ul>
 </td>
 </tr>
@@ -1670,24 +2042,26 @@ Called under Traffic.update_vehicles_info() method</p>
 
 <dl class="method">
 <dt id="src.inter.vehicle.Vehicle.set_scheduled_arrival">
-<code class="descname">set_scheduled_arrival</code><span class="sig-paren">(</span><em>t_scheduled</em>, <em>d_scheduled</em>, <em>s_scheduled</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/inter/vehicle.html#Vehicle.set_scheduled_arrival"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.inter.vehicle.Vehicle.set_scheduled_arrival" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="docutils">
-<dt>Note when a new vehicle is scheduled, it has two trajectory points</dt>
-<dd>One for the current state
-One for the final state</dd>
-</dl>
+<code class="descname">set_scheduled_arrival</code><span class="sig-paren">(</span><em>t_scheduled</em>, <em>d_scheduled</em>, <em>s_scheduled</em>, <em>lane</em>, <em>veh_indx</em>, <em>print</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/inter/vehicle.html#Vehicle.set_scheduled_arrival"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.inter.vehicle.Vehicle.set_scheduled_arrival" title="Permalink to this definition">¶</a></dt>
+<dd><div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>When a new vehicle is scheduled, it has two trajectory points: one for the current state and the other for the final state.</li>
+<li>If the vehicle is closer than <code class="docutils literal notranslate"><span class="pre">MIN_DIST_TO_STOP_BAR</span></code>, avoid appending the schedule.</li>
+</ul>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>t_scheduled</strong> – scheduled departure time (s)</li>
-<li><strong>d_scheduled</strong> – scheduled departure distance (m)</li>
-<li><strong>s_scheduled</strong> – scheduled departure speed (m/s)</li>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>t_scheduled</strong> – scheduled departure time (<span class="math notranslate nohighlight">\(s\)</span>)</li>
+<li><strong>d_scheduled</strong> – scheduled departure distance (<span class="math notranslate nohighlight">\(m\)</span>)</li>
+<li><strong>s_scheduled</strong> – scheduled departure speed (<span class="math notranslate nohighlight">\(m/s\)</span>)</li>
+<li><strong>lane</strong> – the lane this vehicle is in (<em>for printing purpose only</em>)</li>
+<li><strong>veh_indx</strong> – The index of this vehicle in ots lane (<em>for printing purpose only</em>)</li>
+<li><strong>print</strong> – <code class="docutils literal notranslate"><span class="pre">True</span></code> if we want to print schedule</li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
 </td>
 </tr>
 </tbody>

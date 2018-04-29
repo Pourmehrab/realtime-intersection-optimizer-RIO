@@ -70,7 +70,7 @@
 <span class="sd">        - The scenario number should be appended to the name of intersection followed by an underscore.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inter_name</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">log_at_vehicle_level</span><span class="p">,</span> <span class="n">log_at_trj_point_level</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inter_name</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">log_at_vehicle_level</span><span class="p">,</span> <span class="n">log_at_trj_point_level</span><span class="p">,</span> <span class="n">print_detection</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Goals:</span>
 <span class="sd">            1) Set the logging behaviour for outputting requested CSV files and auxiliary output vectors</span>
@@ -97,6 +97,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_log_at_vehicle_level</span> <span class="o">=</span> <span class="n">log_at_vehicle_level</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_log_at_trj_point_level</span> <span class="o">=</span> <span class="n">log_at_trj_point_level</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_print_detection</span> <span class="o">=</span> <span class="n">print_detection</span>
 
         <span class="k">if</span> <span class="n">log_at_vehicle_level</span><span class="p">:</span>
             <span class="n">df_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__all_vehicles</span><span class="p">)</span>
@@ -114,15 +115,15 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">full_traj_csv_file</span> <span class="o">=</span> <span class="kc">None</span>
 
-<div class="viewcode-block" id="Traffic.set_travel_time"><a class="viewcode-back" href="../../../[1].traffic.html#src.input.traffic.Traffic.set_travel_time">[docs]</a>    <span class="k">def</span> <span class="nf">set_travel_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">travel_time</span><span class="p">,</span> <span class="n">indx</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
+<div class="viewcode-block" id="Traffic.set_departure_time_for_csv"><a class="viewcode-back" href="../../../[1].traffic.html#src.input.traffic.Traffic.set_departure_time_for_csv">[docs]</a>    <span class="k">def</span> <span class="nf">set_departure_time_for_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">departure_time</span><span class="p">,</span> <span class="n">indx</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Sets the travel time of an individual vehicle that is just served</span>
-<span class="sd">        :param travel_time: travel time in seconds (computed using base veh.init_time that it was detected first)</span>
-<span class="sd">        :param indx: row index in the original CSV file that has list of all vehicles</span>
+<span class="sd">        Sets the departure time of an individual vehicle that is just served</span>
+<span class="sd">        :param departure_time: departure time in seconds</span>
+<span class="sd">        :param indx: row index in the sorted CSV file that has list of all vehicles</span>
 <span class="sd">        :param id: ID of the vehicle being recorded</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_auxilary_departure_times</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">travel_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_auxilary_departure_times</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">departure_time</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_auxilary_ID</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="nb">id</span></div>
 
 <div class="viewcode-block" id="Traffic.set_elapsed_sim_time"><a class="viewcode-back" href="../../../[1].traffic.html#src.input.traffic.Traffic.set_elapsed_sim_time">[docs]</a>    <span class="k">def</span> <span class="nf">set_elapsed_sim_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
@@ -151,11 +152,14 @@
 <div class="viewcode-block" id="Traffic.last_veh_arrived"><a class="viewcode-back" href="../../../[1].traffic.html#src.input.traffic.Traffic.last_veh_arrived">[docs]</a>    <span class="k">def</span> <span class="nf">last_veh_arrived</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :return: True if all vehicles from the input csv have been added at some point, False otherwise.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            The fact that all vehicles are *added* does not equal to all *served*. Thus, we check if any vehicle is in any of the incoming lanes before halting the program.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_row_indx</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__all_vehicles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">return</span> <span class="kc">True</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">True</span></div>
+            <span class="k">return</span> <span class="kc">False</span></div>
 
 <div class="viewcode-block" id="Traffic.get_first_detection_time"><a class="viewcode-back" href="../../../[1].traffic.html#src.input.traffic.Traffic.get_first_detection_time">[docs]</a>    <span class="k">def</span> <span class="nf">get_first_detection_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -202,8 +206,11 @@
             <span class="c1"># create the vehicle and get the earliest departure time</span>
             <span class="n">veh</span> <span class="o">=</span> <span class="n">Vehicle</span><span class="p">(</span><span class="n">det_id</span><span class="p">,</span> <span class="n">det_type</span><span class="p">,</span> <span class="n">det_time</span><span class="p">,</span> <span class="n">speed</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">des_speed</span><span class="p">,</span>
                           <span class="n">dest</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">amin</span><span class="p">,</span> <span class="n">amax</span><span class="p">,</span> <span class="n">indx</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
-            <span class="c1"># print(&#39;*** A veh of type &#39; + veh.map_veh_type2str(det_type) + &#39; detected @ {:2.2f} sec in lane {:d}&#39;.format(</span>
-            <span class="c1">#     det_time, lane + 1))</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_print_detection</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="s1">&#39;&gt;&gt;&gt; &#39;</span> <span class="o">+</span> <span class="n">veh</span><span class="o">.</span><span class="n">map_veh_type2str</span><span class="p">(</span><span class="n">det_type</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="n">det_id</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="s1">&#39;L&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">lane</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span>
+                    <span class="s1">&#39;(</span><span class="si">{:&gt;4.1f}</span><span class="s1"> s, </span><span class="si">{:&gt;4.1f}</span><span class="s1"> m, </span><span class="si">{:&gt;4.1f}</span><span class="s1"> m/s)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">det_time</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">speed</span><span class="p">))</span>
 
             <span class="c1"># append it to its lane</span>
             <span class="n">lanes</span><span class="o">.</span><span class="n">vehlist</span><span class="p">[</span><span class="n">lane</span><span class="p">]</span> <span class="o">+=</span> <span class="p">[</span><span class="n">veh</span><span class="p">]</span>  <span class="c1"># recall it is an array</span>
@@ -264,7 +271,7 @@
                                                                    <span class="p">])</span> <span class="k">if</span> <span class="n">num_of_vehs</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span>
         <span class="k">return</span> <span class="n">volumes</span></div>
 
-<div class="viewcode-block" id="Traffic.serve_update_at_stop_bar"><a class="viewcode-back" href="../../../[1].traffic.html#src.input.traffic.Traffic.serve_update_at_stop_bar">[docs]</a>    <span class="k">def</span> <span class="nf">serve_update_at_stop_bar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lanes</span><span class="p">,</span> <span class="n">simulation_time</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">):</span>
+<div class="viewcode-block" id="Traffic.serve_update_at_stop_bar"><a class="viewcode-back" href="../../../[1].traffic.html#src.input.traffic.Traffic.serve_update_at_stop_bar">[docs]</a>    <span class="k">def</span> <span class="nf">serve_update_at_stop_bar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lanes</span><span class="p">,</span> <span class="n">simulation_time</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">print_departure</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This looks for/removes the served vehicles</span>
 
@@ -274,24 +281,31 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">for</span> <span class="n">lane</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_lanes</span><span class="p">):</span>
+
             <span class="k">if</span> <span class="nb">bool</span><span class="p">(</span><span class="n">lanes</span><span class="o">.</span><span class="n">vehlist</span><span class="p">[</span><span class="n">lane</span><span class="p">]):</span>  <span class="c1"># not an empty lane</span>
-                <span class="n">veh_indx</span><span class="p">,</span> <span class="n">any_veh_served</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">False</span>
-                <span class="k">for</span> <span class="n">veh</span> <span class="ow">in</span> <span class="n">lanes</span><span class="o">.</span><span class="n">vehlist</span><span class="p">[</span><span class="n">lane</span><span class="p">]:</span>
-                    <span class="c1"># RESET EXISTING VEHICLES TRAJECTORY</span>
-                    <span class="n">veh</span><span class="o">.</span><span class="n">reset_trj_points</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scenario_num</span><span class="p">,</span> <span class="n">lane</span><span class="p">,</span> <span class="n">simulation_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_traj_csv_file</span><span class="p">)</span>
 
-                    <span class="n">trj_indx</span> <span class="o">=</span> <span class="n">veh</span><span class="o">.</span><span class="n">last_trj_point_indx</span>
-                    <span class="n">dep_time</span> <span class="o">=</span> <span class="n">veh</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">trj_indx</span><span class="p">]</span>
-                    <span class="k">if</span> <span class="n">dep_time</span> <span class="o">&lt;=</span> <span class="n">simulation_time</span><span class="p">:</span>  <span class="c1"># served</span>
-                        <span class="n">any_veh_served</span> <span class="o">=</span> <span class="kc">True</span>
-                        <span class="n">veh_indx</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">last_veh_indx_to_remove</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="k">for</span> <span class="n">veh_indx</span><span class="p">,</span> <span class="n">veh</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lanes</span><span class="o">.</span><span class="n">vehlist</span><span class="p">[</span><span class="n">lane</span><span class="p">]):</span>
+
+                    <span class="n">det_time</span> <span class="o">=</span> <span class="n">veh</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">veh</span><span class="o">.</span><span class="n">first_trj_point_indx</span><span class="p">]</span>
+                    <span class="n">dep_time</span> <span class="o">=</span> <span class="n">veh</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">veh</span><span class="o">.</span><span class="n">last_trj_point_indx</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">dep_time</span> <span class="o">&lt;</span> <span class="n">simulation_time</span><span class="p">:</span>  <span class="c1"># served! remove it.</span>
+
+                        <span class="n">last_veh_indx_to_remove</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="k">if</span> <span class="n">print_departure</span><span class="p">:</span>
+                            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;&lt;&lt;&lt; &#39;</span> <span class="o">+</span> <span class="n">veh</span><span class="o">.</span><span class="n">map_veh_type2str</span><span class="p">(</span><span class="n">veh</span><span class="o">.</span><span class="n">veh_type</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="n">veh</span><span class="o">.</span><span class="n">ID</span> <span class="o">+</span>
+                                  <span class="s1">&#39;@(</span><span class="si">{:&gt;4.1f}</span><span class="s1"> s)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dep_time</span><span class="p">))</span>
                         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_at_vehicle_level</span><span class="p">:</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">set_travel_time</span><span class="p">(</span><span class="n">dep_time</span><span class="p">,</span> <span class="n">veh</span><span class="o">.</span><span class="n">csv_indx</span><span class="p">,</span> <span class="n">veh</span><span class="o">.</span><span class="n">ID</span><span class="p">)</span>
-                    <span class="c1"># else:</span>
-                    <span class="c1">#     break</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">set_departure_time_for_csv</span><span class="p">(</span><span class="n">dep_time</span><span class="p">,</span> <span class="n">veh</span><span class="o">.</span><span class="n">csv_indx</span><span class="p">,</span> <span class="n">veh</span><span class="o">.</span><span class="n">ID</span><span class="p">)</span>
 
-                <span class="k">if</span> <span class="n">any_veh_served</span><span class="p">:</span>  <span class="c1"># removes vehicles 0, 1, ..., veh_indx</span>
-                    <span class="n">lanes</span><span class="o">.</span><span class="n">purge_served_vehs</span><span class="p">(</span><span class="n">lane</span><span class="p">,</span> <span class="n">veh_indx</span><span class="p">)</span></div></div>
+                    <span class="k">elif</span> <span class="n">det_time</span> <span class="o">&lt;</span> <span class="n">simulation_time</span><span class="p">:</span>  <span class="c1"># RESET EXISTING VEHICLES TRAJECTORY</span>
+                        <span class="n">veh</span><span class="o">.</span><span class="n">reset_trj_points</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scenario_num</span><span class="p">,</span> <span class="n">lane</span><span class="p">,</span> <span class="n">simulation_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_traj_csv_file</span><span class="p">)</span>
+
+                    <span class="k">else</span><span class="p">:</span>  <span class="c1"># det_time of all behind this vehicle is larger, so we can stop.</span>
+                        <span class="k">break</span>
+
+                <span class="k">if</span> <span class="n">last_veh_indx_to_remove</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>  <span class="c1"># removes vehicles 0, 1, ..., veh_indx</span>
+                    <span class="n">lanes</span><span class="o">.</span><span class="n">purge_served_vehs</span><span class="p">(</span><span class="n">lane</span><span class="p">,</span> <span class="n">last_veh_indx_to_remove</span><span class="p">)</span></div></div>
 </pre></div>
 
           </div>

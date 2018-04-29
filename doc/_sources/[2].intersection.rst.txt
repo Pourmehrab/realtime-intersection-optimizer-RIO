@@ -7,9 +7,12 @@ Intersection
    :show-inheritance:
    :private-members:
    :undoc-members:
+
 .. automodule:: src.inter.lane
    :members:
+
 .. automodule:: src.inter.vehicle
    :members:
+
 .. automodule:: src.inter.inter
    :members:

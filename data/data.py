@@ -8,17 +8,32 @@
 # GENERAL PARAMETERS
 def get_general_params(inter_name):
     """
-    Returns max speed (m/s), min_headway (seconds), detection range (meters), k, m, number of lanes
-        k =  # n will be in 0, ..., k-1 (odd degree of polynomial is preferred: k to be even)
-        m =  # to discretize the time interval
-    Required for trajectory optimization
+    Returns max speed (:math:`m/s`), min_headway (:math:`s`), detection range (:math:`m`), :math:`k, m`, number of lanes
+        - :math:`k` =  # :math:`n` will be in 0, ..., k-1 (odd degree of polynomial is preferred: k to be even)
+        - :math:`m` =  # to discretize the time interval
+    .. note::
+        - The distance to stop bar will be input from either csv file or fusion. However, the number provided here can be used for generic computations.
+
+    .. warning:: Required for trajectory optimization
     """
     if inter_name == '13th16th':
-        return 15.0, 2.0, 500.0, 10, 20, 16
+        max_speed = 15.0
+        min_headway = 2.0
+        det_range = 500.0
+        k, m = int(10), int(20)
+        num_lanes = int(16)
+
     elif inter_name == 'reserv':
-        return 15.0, 2.0, 500.0, 10, 20, 12
+        max_speed = 15.0
+        min_headway = 2.0
+        det_range = 500.0
+        k, m = int(10), int(20)
+        num_lanes = int(12)
+
     else:
         raise Exception('Simulation parameters are not known for this intersection.')
+
+    return max_speed, min_headway, det_range, k, m, num_lanes
 
 
 # PRETIMED CONTROL PARAMETERS
@@ -46,14 +61,14 @@ def get_conflict_dict(inter_name):
     """
     Returns a dictionary of sets
     The keys are lane numbers and must be coded in one-based
-T   he value for each key is a set of lane numbers that are in conflict with the key lane (again must be one based)
+    The value for each key is a set of lane numbers that are in conflict with the key lane (again must be one based)
 
     Available intersections:
 
-    1) 13th16th: a physical one, google map it in Gainesville for the image and lane assignment detail
+        1) 13th16th: a physical one, google map it in Gainesville for the image and lane assignment detail
+        2) reserv: reservation based model intersection: 12 incoming lanes (3 per approach and all lanes are exclusive).
 
-    2) reserv: reservation based model intersection: 12 incoming lanes (3 per approach and all lanes are exclusive).
-    Assumes three exclusive discharge lanes (http://www.cs.utexas.edu/~aim/)
+    .. note:: Assumes three exclusive discharge lanes (http://www.cs.utexas.edu/~aim/)
     """
 
     if inter_name == '13th16th':

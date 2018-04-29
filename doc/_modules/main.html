@@ -77,7 +77,7 @@
 
 
 <div class="viewcode-block" id="run_avian"><a class="viewcode-back" href="../[0].overview.html#main.run_avian">[docs]</a><span class="k">def</span> <span class="nf">run_avian</span><span class="p">(</span><span class="n">inter_name</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">do_traj_computation</span><span class="p">,</span> <span class="n">log_at_vehicle_level</span><span class="p">,</span> <span class="n">log_at_trj_point_level</span><span class="p">,</span> <span class="n">print_clock</span><span class="p">,</span>
-              <span class="n">print_signal_detail</span><span class="p">,</span> <span class="n">print_trj_info</span><span class="p">,</span> <span class="n">test_time</span><span class="p">):</span>
+              <span class="n">print_signal_detail</span><span class="p">,</span> <span class="n">print_trj_info</span><span class="p">,</span> <span class="n">test_time</span><span class="p">,</span> <span class="n">print_detection</span><span class="p">,</span> <span class="n">print_departure</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    For simulating a 12 lane four leg intersection (reservation intersection) with pretimed control do:</span>
 <span class="sd">        &gt;&gt;&gt; python reserv pretimed simulation</span>
@@ -132,7 +132,7 @@
 <span class="sd">    :param inter_name: intersection name</span>
 <span class="sd">    :type inter_name: str</span>
 <span class="sd">    :param method: Pretimed, GA, ...</span>
-<span class="sd">    :param sc: scenario number (*should match the appendix of the input csv file*)</span>
+<span class="sd">    :param sc: scenario number (*should match the appendix of the input csv filename*)</span>
 <span class="sd">    :param do_traj_computation:</span>
 <span class="sd">    :param log_at_vehicle_level:</span>
 <span class="sd">    :param log_at_trj_point_level:</span>
@@ -152,7 +152,7 @@
     <span class="n">lanes</span> <span class="o">=</span> <span class="n">Lanes</span><span class="p">(</span><span class="n">num_lanes</span><span class="p">)</span>
 
     <span class="c1"># load entire traffic generated in csv file</span>
-    <span class="n">traffic</span> <span class="o">=</span> <span class="n">Traffic</span><span class="p">(</span><span class="n">inter_name</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">log_at_vehicle_level</span><span class="p">,</span> <span class="n">log_at_trj_point_level</span><span class="p">)</span>
+    <span class="n">traffic</span> <span class="o">=</span> <span class="n">Traffic</span><span class="p">(</span><span class="n">inter_name</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">log_at_vehicle_level</span><span class="p">,</span> <span class="n">log_at_trj_point_level</span><span class="p">,</span> <span class="n">print_detection</span><span class="p">)</span>
 
     <span class="c1"># initialize trajectory planners</span>
     <span class="n">lead_conventional_trj_estimator</span> <span class="o">=</span> <span class="n">LeadConventional</span><span class="p">(</span><span class="n">max_speed</span><span class="p">,</span> <span class="n">min_headway</span><span class="p">)</span>
@@ -184,12 +184,12 @@
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>  <span class="c1"># stops when all rows of csv are processed (a break statement controls this)</span>
         <span class="n">simulation_time</span> <span class="o">=</span> <span class="n">time_keeper</span><span class="o">.</span><span class="n">clock</span>  <span class="c1"># gets current simulation clock</span>
         <span class="k">if</span> <span class="n">print_clock</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">UPDATE AT CLOCK: </span><span class="si">{:.2f}</span><span class="s2"> SEC #################################&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">UPDATE AT CLOCK: </span><span class="si">{:&gt;5.1f}</span><span class="s2"> SEC #################################&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                 <span class="n">simulation_time</span><span class="p">))</span>
 
         <span class="c1"># UPDATE VEHICLES</span>
         <span class="c1"># remove/record served vehicles and phases</span>
-        <span class="n">traffic</span><span class="o">.</span><span class="n">serve_update_at_stop_bar</span><span class="p">(</span><span class="n">lanes</span><span class="p">,</span> <span class="n">simulation_time</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">)</span>
+        <span class="n">traffic</span><span class="o">.</span><span class="n">serve_update_at_stop_bar</span><span class="p">(</span><span class="n">lanes</span><span class="p">,</span> <span class="n">simulation_time</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">print_departure</span><span class="p">)</span>
         <span class="c1"># add/update vehicles</span>
         <span class="n">traffic</span><span class="o">.</span><span class="n">update_vehicles_info</span><span class="p">(</span><span class="n">lanes</span><span class="p">,</span> <span class="n">simulation_time</span><span class="p">,</span> <span class="n">max_speed</span><span class="p">,</span> <span class="n">min_headway</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
         <span class="c1"># update SPaT</span>
@@ -238,7 +238,7 @@
                             <span class="n">veh</span><span class="o">.</span><span class="n">set_redo_trj_false</span><span class="p">()</span>  <span class="c1"># todo eventually works with the fusion outputs</span>
 
                         <span class="k">if</span> <span class="n">print_trj_info</span> <span class="ow">and</span> <span class="n">simulation_time</span> <span class="o">&gt;=</span> <span class="n">test_time</span><span class="p">:</span>
-                            <span class="n">veh</span><span class="o">.</span><span class="n">print_trj_points</span><span class="p">(</span><span class="n">lane</span><span class="p">,</span> <span class="n">veh_indx</span><span class="p">,</span> <span class="s1">&#39;trj solve()&#39;</span><span class="p">)</span>
+                            <span class="n">veh</span><span class="o">.</span><span class="n">print_trj_points</span><span class="p">(</span><span class="n">lane</span><span class="p">,</span> <span class="n">veh_indx</span><span class="p">)</span>
 
         <span class="c1"># MOVE SIMULATION FORWARD</span>
         <span class="k">if</span> <span class="n">traffic</span><span class="o">.</span><span class="n">last_veh_arrived</span><span class="p">()</span> <span class="ow">and</span> <span class="n">lanes</span><span class="o">.</span><span class="n">all_served</span><span class="p">(</span><span class="n">num_lanes</span><span class="p">):</span>
@@ -246,13 +246,15 @@
                 <span class="n">t_end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>  <span class="c1"># THIS IS NOT SIMULATION TIME! IT&quot;S JUST TIMING THE ALGORITHM</span>
                 <span class="n">traffic</span><span class="o">.</span><span class="n">set_elapsed_sim_time</span><span class="p">(</span><span class="n">t_end</span> <span class="o">-</span> <span class="n">t_start</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">print_clock</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;### ELAPSED TIME: </span><span class="si">{:2.2f}</span><span class="s2"> sec ###&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mi">1000</span> <span class="o">*</span> <span class="p">(</span><span class="n">t_end</span> <span class="o">-</span> <span class="n">t_start</span><span class="p">))</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">))</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">### ELAPSED TIME: </span><span class="si">{:&gt;5d}</span><span class="s2"> ms ###&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mi">1000</span> <span class="o">*</span> <span class="p">(</span><span class="n">t_end</span> <span class="o">-</span> <span class="n">t_start</span><span class="p">))))</span>
 
                 <span class="c1"># save the csv which has travel time column appended</span>
                 <span class="n">traffic</span><span class="o">.</span><span class="n">save_csv</span><span class="p">(</span><span class="n">inter_name</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">log_at_trj_point_level</span><span class="p">:</span>
                 <span class="n">traffic</span><span class="o">.</span><span class="n">close_trj_csv</span><span class="p">()</span>  <span class="c1"># cus this is written line y line</span>
+
+            <span class="k">return</span>  <span class="c1"># this halts the program</span>
 
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># this is the last scenario but still some vehicles have not been served</span>
             <span class="n">time_keeper</span><span class="o">.</span><span class="n">next_sim_step</span><span class="p">()</span></div>
@@ -262,11 +264,12 @@
 
     <span class="c1"># ################## SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR</span>
     <span class="n">do_traj_computation</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># speeds up</span>
-    <span class="n">log_at_vehicle_level</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># writes the &lt;inter_name&gt;_vehicle_level.csv</span>
+    <span class="n">log_at_vehicle_level</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># writes the &lt;inter_name&gt;_vehicle_level.csv</span>
     <span class="n">log_at_trj_point_level</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># writes the &lt;inter_name&gt;_trj_point_level.csv</span>
-    <span class="n">print_trj_info</span><span class="p">,</span> <span class="n">test_time</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="mf">0.0</span>  <span class="c1"># prints arrival departures in command line</span>
+    <span class="n">print_trj_info</span><span class="p">,</span> <span class="n">test_time</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="mf">0.0</span>  <span class="c1"># prints arrival departures in command line</span>
     <span class="n">print_signal_detail</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># prints signal info in command line</span>
-    <span class="n">print_clock</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># prints the timer in command line</span>
+    <span class="n">print_clock</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># prints the timer in command line</span>
+    <span class="n">print_detection</span><span class="p">,</span> <span class="n">print_departure</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span>  <span class="c1"># prints arrivals sent to the algorithm, ...</span>
 
     <span class="nb">print</span><span class="p">(</span>
         <span class="s2">&quot;University of Florida.</span><span class="se">\n</span><span class="s2">By Mahmoud Pourmehrab ######################</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -288,7 +291,7 @@
         <span class="k">if</span> <span class="n">run_mode</span> <span class="o">==</span> <span class="s1">&#39;simulation&#39;</span><span class="p">:</span>
             <span class="n">sc</span> <span class="o">=</span> <span class="mi">353</span>  <span class="c1"># 237</span>
             <span class="n">run_avian</span><span class="p">(</span><span class="n">inter_name</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">do_traj_computation</span><span class="p">,</span> <span class="n">log_at_vehicle_level</span><span class="p">,</span> <span class="n">log_at_trj_point_level</span><span class="p">,</span>
-                      <span class="n">print_clock</span><span class="p">,</span> <span class="n">print_signal_detail</span><span class="p">,</span> <span class="n">print_trj_info</span><span class="p">,</span> <span class="n">test_time</span><span class="p">)</span>
+                      <span class="n">print_clock</span><span class="p">,</span> <span class="n">print_signal_detail</span><span class="p">,</span> <span class="n">print_trj_info</span><span class="p">,</span> <span class="n">test_time</span><span class="p">,</span> <span class="n">print_detection</span><span class="p">,</span> <span class="n">print_departure</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">run_mode</span> <span class="o">==</span> <span class="s1">&#39;realtime&#39;</span><span class="p">:</span>
             <span class="k">pass</span>  <span class="c1"># todo we may define realtime functionality here</span>
 </pre></div>

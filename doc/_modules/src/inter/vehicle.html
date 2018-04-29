@@ -68,6 +68,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">EPS</span> <span class="o">=</span> <span class="mf">0.01</span>  <span class="c1"># small number that lower than that is approximated by zero</span>
     <span class="n">MAX_NUM_TRAJECTORY_POINTS</span> <span class="o">=</span> <span class="mi">300</span>  <span class="c1"># check if it&#39;s enough to preallocate the trajectory</span>
+    <span class="n">MIN_DIST_TO_STOP_BAR</span> <span class="o">=</span> <span class="mi">50</span>  <span class="c1"># lower than this (in m) do not update schedule todo where else used?</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">det_id</span><span class="p">,</span> <span class="n">det_type</span><span class="p">,</span> <span class="n">det_time</span><span class="p">,</span> <span class="n">speed</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">des_speed</span><span class="p">,</span> <span class="n">dest</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">amin</span><span class="p">,</span> <span class="n">amax</span><span class="p">,</span> <span class="n">indx</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -78,24 +79,23 @@
 <span class="sd">            - The shape of trajectory matrix is :math:`3 *n` where :math:`n` is the maximum number of trajectory points</span>
 <span class="sd">                to be held. The first, second, and third rows correspond to time, distance, and speed profile,</span>
 <span class="sd">                 respectively.</span>
-<span class="sd">            -</span>
 
-<span class="sd">        :param det_id:          the id assigned to this vehicle by radio</span>
+<span class="sd">        :param det_id:          the *id* assigned to this vehicle by radio</span>
 <span class="sd">        :param det_type:        0: Conventional, 1: Connected and Automated Vehicle</span>
-<span class="sd">        :param det_time:        detection time in seconds from reference time</span>
-<span class="sd">        :param speed:           detection speed in m/s</span>
-<span class="sd">        :param dist:            detection distance to stop bar in meter</span>
-<span class="sd">        :param des_speed:       desired speed in m/s</span>
+<span class="sd">        :param det_time:        detection time in :math:`s` from reference time</span>
+<span class="sd">        :param speed:           detection speed in :math:`m/s`</span>
+<span class="sd">        :param dist:            detection distance to stop bar in :math:`m`</span>
+<span class="sd">        :param des_speed:       desired speed in :math:`m/s`</span>
 <span class="sd">        :param dest:            destination 0: right turn, 1: through, 2: left</span>
-<span class="sd">        :param length:          length of vehicle in meter</span>
-<span class="sd">        :param amin:            desirable deceleration rate in m/s2</span>
-<span class="sd">        :param amax:            desired acceleration rate in m/s2</span>
+<span class="sd">        :param length:          length of vehicle in :math:`m`</span>
+<span class="sd">        :param amin:            desirable deceleration rate in :math:`m/s^2`</span>
+<span class="sd">        :param amax:            desired acceleration rate in :math:`m/s^2`</span>
 <span class="sd">        :param indx:            the original row index in the input csv file</span>
 <span class="sd">        :param k:               number of coefficients to represent the trajectory if vehicle is connected</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ID</span> <span class="o">=</span> <span class="n">det_id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">veh_type</span> <span class="o">=</span> <span class="n">det_type</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">init_time</span> <span class="o">=</span> <span class="n">det_time</span>  <span class="c1"># needed to compute the travel time</span>
+        <span class="c1"># self.init_time = det_time</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">curr_speed</span> <span class="o">=</span> <span class="n">speed</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="n">dist</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="n">length</span>
@@ -117,35 +117,38 @@
 
 <div class="viewcode-block" id="Vehicle.reset_trj_points"><a class="viewcode-back" href="../../../[2].intersection.html#src.inter.vehicle.Vehicle.reset_trj_points">[docs]</a>    <span class="k">def</span> <span class="nf">reset_trj_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">lane</span><span class="p">,</span> <span class="n">time_threshold</span><span class="p">,</span> <span class="n">file</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Writes trajectory points in the csv file if their time stamp is before the `time_threshold` and then removes</span>
+<span class="sd">        Writes trajectory points in the csv file if their time stamp is before the ``time_threshold`` and then removes</span>
 <span class="sd">        them by updating the first trj point.</span>
+
+<span class="sd">        .. warning::</span>
+<span class="sd">            Before calling this make sure at least the first trajectory point&#39;s time stamp is less than provided time</span>
+<span class="sd">            threshold or such a call would be pointless.</span>
 
 <span class="sd">        :param sc: scenario number being simulated</span>
 <span class="sd">        :param lane: lane number that is zero-based  (it records it one-based)</span>
 <span class="sd">        :param time_threshold: any trajectory point before this is considered expired (normally its simulation time)</span>
-<span class="sd">        :param file: initialized in `Traffic.__init__()` method, if ``None``, this does not record in csv.</span>
+<span class="sd">        :param file: initialized in ``Traffic.__init__()`` method, if ``None``, this does not record points in csv.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">trj_indx</span><span class="p">,</span> <span class="n">max_trj_indx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_trj_point_indx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_trj_point_indx</span>
         <span class="n">time</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">speed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[:,</span> <span class="n">trj_indx</span><span class="p">]</span>
 
-        <span class="k">if</span> <span class="n">time</span> <span class="o">&lt;</span> <span class="n">time_threshold</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># don&#39;t have to write csv</span>
-                <span class="k">while</span> <span class="n">time</span> <span class="o">&lt;</span> <span class="n">time_threshold</span> <span class="ow">and</span> <span class="n">trj_indx</span> <span class="o">&lt;=</span> <span class="n">max_trj_indx</span><span class="p">:</span>
-                    <span class="n">trj_indx</span> <span class="o">+=</span> <span class="mi">1</span>
-                    <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">trj_indx</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># don&#39;t have to write csv</span>
+            <span class="k">while</span> <span class="n">time</span> <span class="o">&lt;</span> <span class="n">time_threshold</span> <span class="ow">and</span> <span class="n">trj_indx</span> <span class="o">&lt;=</span> <span class="n">max_trj_indx</span><span class="p">:</span>
+                <span class="n">trj_indx</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">trj_indx</span><span class="p">]</span>
 
-            <span class="k">else</span><span class="p">:</span>  <span class="c1"># get full info and write trj points to the csv file</span>
-                <span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
-                <span class="k">while</span> <span class="n">time</span> <span class="o">&lt;</span> <span class="n">time_threshold</span> <span class="ow">and</span> <span class="n">trj_indx</span> <span class="o">&lt;=</span> <span class="n">max_trj_indx</span><span class="p">:</span>
-                    <span class="n">writer</span><span class="o">.</span><span class="n">writerows</span><span class="p">([[</span><span class="n">sc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ID</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">veh_type</span><span class="p">,</span> <span class="n">lane</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">speed</span><span class="p">]])</span>
-                    <span class="n">file</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
-                    <span class="n">trj_indx</span> <span class="o">+=</span> <span class="mi">1</span>
-                    <span class="n">time</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">speed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[:,</span> <span class="n">trj_indx</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># get full info and write trj points to the csv file</span>
+            <span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+            <span class="k">while</span> <span class="n">time</span> <span class="o">&lt;</span> <span class="n">time_threshold</span> <span class="ow">and</span> <span class="n">trj_indx</span> <span class="o">&lt;=</span> <span class="n">max_trj_indx</span><span class="p">:</span>
+                <span class="n">writer</span><span class="o">.</span><span class="n">writerows</span><span class="p">([[</span><span class="n">sc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ID</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">veh_type</span><span class="p">,</span> <span class="n">lane</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">speed</span><span class="p">]])</span>
+                <span class="n">file</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+                <span class="n">trj_indx</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">time</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">speed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[:,</span> <span class="n">trj_indx</span><span class="p">]</span>
 
-            <span class="k">if</span> <span class="n">trj_indx</span> <span class="o">&lt;=</span> <span class="n">max_trj_indx</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">set_first_trj_point_indx</span><span class="p">(</span><span class="n">trj_indx</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;The vehicle should&#39;ve been removed instead of getting updated for trj points.&quot;</span><span class="p">)</span></div>
+        <span class="k">if</span> <span class="n">trj_indx</span> <span class="o">&lt;=</span> <span class="n">max_trj_indx</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_first_trj_point_indx</span><span class="p">(</span><span class="n">trj_indx</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;The vehicle should&#39;ve been removed instead of getting updated for trj points.&quot;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Vehicle.set_earliest_arrival"><a class="viewcode-back" href="../../../[2].intersection.html#src.inter.vehicle.Vehicle.set_earliest_arrival">[docs]</a>    <span class="k">def</span> <span class="nf">set_earliest_arrival</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t_earliest</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -154,20 +157,28 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">earliest_arrival</span> <span class="o">=</span> <span class="n">t_earliest</span>  <span class="c1"># this is the absolute earliest time</span></div>
 
-<div class="viewcode-block" id="Vehicle.set_scheduled_arrival"><a class="viewcode-back" href="../../../[2].intersection.html#src.inter.vehicle.Vehicle.set_scheduled_arrival">[docs]</a>    <span class="k">def</span> <span class="nf">set_scheduled_arrival</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t_scheduled</span><span class="p">,</span> <span class="n">d_scheduled</span><span class="p">,</span> <span class="n">s_scheduled</span><span class="p">):</span>
+<div class="viewcode-block" id="Vehicle.set_scheduled_arrival"><a class="viewcode-back" href="../../../[2].intersection.html#src.inter.vehicle.Vehicle.set_scheduled_arrival">[docs]</a>    <span class="k">def</span> <span class="nf">set_scheduled_arrival</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t_scheduled</span><span class="p">,</span> <span class="n">d_scheduled</span><span class="p">,</span> <span class="n">s_scheduled</span><span class="p">,</span> <span class="n">lane</span><span class="p">,</span> <span class="n">veh_indx</span><span class="p">,</span> <span class="nb">print</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Note when a new vehicle is scheduled, it has two trajectory points</span>
-<span class="sd">            One for the current state</span>
-<span class="sd">            One for the final state</span>
+<span class="sd">        .. note::</span>
+<span class="sd">            - When a new vehicle is scheduled, it has two trajectory points: one for the current state and the other for the final state.</span>
+<span class="sd">            - If the vehicle is closer than ``MIN_DIST_TO_STOP_BAR``, avoid appending the schedule.</span>
 
-<span class="sd">        :param t_scheduled: scheduled departure time (s)</span>
-<span class="sd">        :param d_scheduled: scheduled departure distance (m)</span>
-<span class="sd">        :param s_scheduled: scheduled departure speed (m/s)</span>
-<span class="sd">        :return:</span>
+<span class="sd">        :param t_scheduled: scheduled departure time (:math:`s`)</span>
+<span class="sd">        :param d_scheduled: scheduled departure distance (:math:`m`)</span>
+<span class="sd">        :param s_scheduled: scheduled departure speed (:math:`m/s`)</span>
+<span class="sd">        :param lane: the lane this vehicle is in (*for printing purpose only*)</span>
+<span class="sd">        :param veh_indx: The index of this vehicle in ots lane (*for printing purpose only*)</span>
+<span class="sd">        :param print: ``True`` if we want to print schedule</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduled_arrival</span> <span class="o">=</span> <span class="n">t_scheduled</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">last_trj_point_indx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_trj_point_indx</span> <span class="o">+</span> <span class="mi">1</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_trj_point_indx</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">t_scheduled</span><span class="p">,</span> <span class="n">d_scheduled</span><span class="p">,</span> <span class="n">s_scheduled</span><span class="p">]</span></div>
+        <span class="n">first_trj_indx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_trj_point_indx</span>
+        <span class="n">last_dist_to_stop_bar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">first_trj_indx</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">last_dist_to_stop_bar</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">MIN_DIST_TO_STOP_BAR</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scheduled_arrival</span> <span class="o">=</span> <span class="n">t_scheduled</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_trj_point_indx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_trj_point_indx</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_trj_point_indx</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">t_scheduled</span><span class="p">,</span> <span class="n">d_scheduled</span><span class="p">,</span> <span class="n">s_scheduled</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="nb">print</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">print_trj_points</span><span class="p">(</span><span class="n">lane</span><span class="p">,</span> <span class="n">veh_indx</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Vehicle.set_poly_coeffs"><a class="viewcode-back" href="../../../[2].intersection.html#src.inter.vehicle.Vehicle.set_poly_coeffs">[docs]</a>    <span class="k">def</span> <span class="nf">set_poly_coeffs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beta</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Sets the coefficients that define the polynomial that defines trajectory of a connected vehicle&quot;&quot;&quot;</span>
@@ -187,6 +198,8 @@
 <span class="sd">        For the purpose of printing, this method translates the vehicle codes. Currently, it supports:</span>
 <span class="sd">            - 0 : Conventional Vehicle (**CNV**)</span>
 <span class="sd">            - 1 : Connected and Automated Vehicle (**CAV**)</span>
+<span class="sd">        :param code: numeric code for the vehicle type</span>
+<span class="sd">        :type code: int</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">code</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">return</span> <span class="s1">&#39;CAV&#39;</span>
@@ -195,7 +208,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;The numeric code of vehicle type is not known.&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Vehicle.print_trj_points"><a class="viewcode-back" href="../../../[2].intersection.html#src.inter.vehicle.Vehicle.print_trj_points">[docs]</a>    <span class="k">def</span> <span class="nf">print_trj_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lane</span><span class="p">,</span> <span class="n">veh_indx</span><span class="p">,</span> <span class="n">source</span><span class="p">):</span>
+<div class="viewcode-block" id="Vehicle.print_trj_points"><a class="viewcode-back" href="../../../[2].intersection.html#src.inter.vehicle.Vehicle.print_trj_points">[docs]</a>    <span class="k">def</span> <span class="nf">print_trj_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lane</span><span class="p">,</span> <span class="n">veh_indx</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Print the first and last trajectory points information.</span>
 <span class="sd">        This may be used either when a plan is scheduled or a trajectory is computed.</span>
@@ -210,12 +223,12 @@
         <span class="n">lane_rank</span> <span class="o">=</span> <span class="n">rank</span> <span class="o">+</span> <span class="s1">&#39; in L&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">lane</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span>
             <span class="n">veh_type_str</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ID</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="n">lane_rank</span> <span class="o">+</span>
-            <span class="s1">&#39;: det@(</span><span class="si">{:&gt;4.1f}</span><span class="s1"> s, </span><span class="si">{:&gt;4.1f}</span><span class="s1"> m, </span><span class="si">{:&gt;4.1f}</span><span class="s1"> m/s), sch@(</span><span class="si">{:&gt;4.1f}</span><span class="s1">, </span><span class="si">{:&gt;4.1f}</span><span class="s1">, </span><span class="si">{:&gt;4.1f}</span><span class="s1">), </span><span class="si">{:&gt;3d}</span><span class="s1"> points, called by &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="s1">&#39;: (</span><span class="si">{:&gt;4.1f}</span><span class="s1"> s, </span><span class="si">{:&gt;4.1f}</span><span class="s1"> m, </span><span class="si">{:&gt;4.1f}</span><span class="s1"> m/s) -&gt; (</span><span class="si">{:&gt;4.1f}</span><span class="s1">, </span><span class="si">{:&gt;4.1f}</span><span class="s1">, </span><span class="si">{:&gt;4.1f}</span><span class="s1">), </span><span class="si">{:&gt;3d}</span><span class="s1"> points.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">first_trj_indx</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">first_trj_indx</span><span class="p">],</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">first_trj_indx</span><span class="p">],</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">last_trj_indx</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">last_trj_indx</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">trajectory</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">last_trj_indx</span><span class="p">],</span>
                 <span class="n">last_trj_indx</span> <span class="o">-</span> <span class="n">first_trj_indx</span> <span class="o">+</span> <span class="mi">1</span>
-            <span class="p">)</span> <span class="o">+</span> <span class="n">source</span><span class="p">)</span></div>
+            <span class="p">))</span></div>
 
 <div class="viewcode-block" id="Vehicle.test_trj_redo_needed"><a class="viewcode-back" href="../../../[2].intersection.html#src.inter.vehicle.Vehicle.test_trj_redo_needed">[docs]</a>    <span class="k">def</span> <span class="nf">test_trj_redo_needed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">min_dist</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
