@@ -21,8 +21,8 @@ from src.trajectory import earliest_arrival_connected, earliest_arrival_conventi
 
 class Intersection:
     """
-    Goals:
-        1) Keeps intersection parameters
+    Objectives:
+        - Keeps intersection parameters
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -69,11 +69,11 @@ class Lanes:
         '''
         Data Structure for keeping vehicles in order in the lanes in the form of a dictionary of arrays
 
-        Goals:
-            1) Keeps vehicles in order
-            2) Keep track of index of last vehicle in each lane (useful for applications in Signal())
-            3) Remove served vehicles
-            4) Check if all lanes are empty
+        Objectives:
+            - Keeps vehicles in order
+            - Keep track of index of last vehicle in each lane (useful for applications in Signal())
+            - Remove served vehicles
+            - Check if all lanes are empty
 
         :param num_lanes: number of lanes
         '''
@@ -117,20 +117,18 @@ class Lanes:
 
 class Vehicle:
     """
-        Goals:
-        1) Defines the vehicle object that keeps all necessary information
-            1-1) Those which are coming from fusion
-            1-2) Those which are defined to be decided in the program:
-            `trajectory[time, distance, speed], earliest_arrival, scheduled_arrival, poly_coeffs, _do_trj`
-        2) Update/record the trajectory points once they are expired
-        3) Keep trajectory indexes updated
-        4) Print useful info once a plan is scheduled
-        5) Decides if a trajectory re-computation is needed
-        6) Quality controls the assigned trajectory
+        Objectives:
+            - Defines the vehicle object that keeps all necessary information
+                - Those which are coming from fusion
+                - Those which are defined to be decided in the program: `trajectory[time, distance, speed], earliest_arrival, scheduled_arrival, poly_coeffs, _do_trj`
+            - Update/record the trajectory points once they are expired
+            - Keep trajectory indexes updated
+            - Print useful info once a plan is scheduled
+            - Decides if a trajectory re-computation is needed
+            - Quality controls the assigned trajectory
 
 
-    Note:
-        1) Make sure the MAX_NUM_TRAJECTORY_POINTS to preallocate the trajectories is enough for given problem
+    .. note:: Make sure the MAX_NUM_TRAJECTORY_POINTS to preallocate the trajectories is enough for given problem
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -144,19 +142,17 @@ class Vehicle:
     def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx, k):
         """
         Data Structure for an individual vehicle
-        .. note::
+
+        .. attention::
             - The last trajectory point index less than the first means no trajectory has been computed yet
             - The last trajectory index is set to -1 and the first to 0 for initialization purpose
-            - The shape of trajectory matrix is :math:`3 *n` where :math:`n` is the maximum number of trajectory points
-                to be held. The first, second, and third rows correspond to time, distance, and speed profile,
-                 respectively.
+            - The shape of trajectory matrix is :math:`3*n` where :math:`n` is the maximum number of trajectory points to be held. The first, second, and third rows correspond to time, distance, and speed profile, respectively.
 
         .. warning::
-            - The vehicle detection time shall be recorded in ``init_time``. GA uses this field to compute travel time
-                when computing *badness* if an individual.
+            - The vehicle detection time shall be recorded in ``init_time``. GA depends on this field to compute travel time when computing *badness* if an individual.
 
-        :param det_id:          the *id* assigned to this vehicle by radio
-        :param det_type:        0: Conventional, 1: Connected and Automated Vehicle
+        :param det_id:          the *ID* assigned to this vehicle by radio or a generator
+        :param det_type:        0: CNV, 1: CAV
         :param det_time:        detection time in :math:`s` from reference time
         :param speed:           detection speed in :math:`m/s`
         :param dist:            detection distance to stop bar in :math:`m`
@@ -227,8 +223,7 @@ class Vehicle:
 
     def set_earliest_arrival(self, t_earliest):
         """
-        Sets the earliest arrival time at the stop bar
-        Called under Traffic.update_vehicles_info() method
+        Sets the earliest arrival time at the stop bar. Called under ``Traffic.update_vehicles_info()`` method
         """
         self.earliest_arrival = t_earliest  # this is the absolute earliest time
 
@@ -273,6 +268,7 @@ class Vehicle:
         For the purpose of printing, this method translates the vehicle codes. Currently, it supports:
             - 0 : Conventional Vehicle (**CNV**)
             - 1 : Connected and Automated Vehicle (**CAV**)
+
         :param code: numeric code for the vehicle type
         :type code: int
         """
@@ -308,8 +304,8 @@ class Vehicle:
     def test_trj_redo_needed(self, min_dist=50):
         """
         Checks if the trajectory model should be run (returns True) or not (False). Cases:
-            1) if last trajectory point is not assigned yet, do the trajectory.
-            2) if vehicle is closer than a certain distance, do NOT update the trajectory.
+            - if last trajectory point is not assigned yet, do the trajectory.
+            - if vehicle is closer than a certain distance, do NOT update the trajectory.
 
         :param min_dist: for lower than this (in meters), no trajectory optimization or car following will be applied
         :return:
@@ -327,9 +323,9 @@ class Vehicle:
     def test_trj_points(self, simulation_time):
         """
         Verifies the trajectory points for following cases:
-            1) Non-negative speed (threshold is set to -3 m/s)
-            2) Non-negative distance (threshold is set to -3 m)
-            3) Expired trajectory point is not removed
+            - Non-negative speed (threshold is set to -3 m/s)
+            - Non-negative distance (threshold is set to -3 m)
+            - Expired trajectory point is not removed
 
             todo add more tests
         :param simulation_time: the current simulation clock
@@ -352,12 +348,12 @@ class Vehicle:
 
 class Traffic:
     """
-    Goals:
-        1) Add new vehicles from the csv file to the lanes.vehlist structure
-        2) Append travel time, ID, and elapsed time columns and save csv
-        3) Manages scenario indexing, resetting, and more
-        4) Compute volumes in lanes
-        5) remove/record served vehicles
+    Objectives:
+        - Add new vehicles from the csv file to the lanes.vehlist structure
+        - Append travel time, ID, and elapsed time columns and save csv
+        - Manages scenario indexing, resetting, and more
+        - Compute volumes in lanes
+        - remove/record served vehicles
 
     .. note::
         - The csv should be located under the ``data/`` directory with the valid name consistent to what inputted as an
@@ -372,10 +368,10 @@ class Traffic:
 
     def __init__(self, inter_name, sc, log_at_vehicle_level, log_at_trj_point_level, print_detection):
         """
-        Goals:
-            1) Set the logging behaviour for outputting requested CSV files and auxiliary output vectors
-            2) Import the CSV file that includes the traffic and sorts it
-            3) Initialize the first scenario number to run
+        Objectives:
+            - Set the logging behaviour for outputting requested CSV files and auxiliary output vectors
+            - Import the CSV file that includes the traffic and sorts it
+            - Initialize the first scenario number to run
         """
 
         # get the path to the csv file and load up the traffic
@@ -417,7 +413,7 @@ class Traffic:
 
     def set_departure_time_for_csv(self, departure_time, indx, id):
         """
-        Sets the departure time of an individual vehicle that is just served
+        Sets the departure time of an individual vehicle that is just served.
 
         :param departure_time: departure time in seconds
         :param indx: row index in the sorted CSV file that has list of all vehicles
@@ -429,7 +425,7 @@ class Traffic:
 
     def set_elapsed_sim_time(self, t):
         """
-        Sets the elapsed time for one simulation of scenario
+        Sets the elapsed time for one simulation of scenario.
 
         :param t: elapsed time in seconds
         """
@@ -437,7 +433,7 @@ class Traffic:
 
     def save_csv(self, inter_name):
         """
-        Set the recorded values and save the  CSV at vehicle level
+        Set the recorded values and save the  CSV at vehicle level.
         """
         self.__all_vehicles['departure time'] = self._auxilary_departure_times
         self.__all_vehicles['ID'] = self._auxilary_ID
@@ -448,7 +444,7 @@ class Traffic:
         self.__all_vehicles.to_csv(filepath, index=False)
 
     def close_trj_csv(self):
-        """Closes trajectory CSV file"""
+        """Closes trajectory CSV file."""
         self.full_traj_csv_file.close()
 
     def last_veh_arrived(self):
@@ -472,9 +468,9 @@ class Traffic:
 
     def update_vehicles_info(self, lanes, simulation_time, max_speed, min_headway, k):
         """
-        Goals
-            1) Add vehicles from the csv file to lanes.vehlist
-            2) Assign their earliest arrival time
+        Objectives
+            - Add vehicles from the csv file to ``lanes.vehlist``
+            - Assign their earliest arrival time
 
         :param lanes: vehicles are added to this data structure
         :type lanes: dictionary of array as of Lanes()
@@ -556,8 +552,8 @@ class Traffic:
     @staticmethod
     def get_volumes(lanes, num_lanes, det_range):
         """
-        Unit of volume in each lane is veh/sec/lane
-        Volume = Density x Space Mean Speed
+        Unit of volume in each lane is veh/sec/lane. Uses the fundamental traffic flow equation :math:`F=D*S`.
+
 
         :param lanes: includes all vehicles
         :param num_lanes: number of lanes
@@ -575,7 +571,7 @@ class Traffic:
 
     def serve_update_at_stop_bar(self, lanes, simulation_time, num_lanes, print_departure):
         """
-        This looks for/removes the served vehicles
+        This looks for/removes the served vehicles.
 
         :param lanes: includes all vehicles
         :param simulation_time: current simulation clock

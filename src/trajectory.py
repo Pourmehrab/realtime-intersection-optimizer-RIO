@@ -15,15 +15,14 @@ import numpy as np
 class Trajectory:
     """
     Abstract class for computing the trajectory points. Four subclasses inherited from Trajectory():
-        * LeadConventional
-        * FollowerConnected
-        * LeadConnected
-        * FollowerConventional
+        - LeadConventional
+        - FollowerConnected
+        - LeadConnected
+        - FollowerConventional
 
     Note if want to omit the trajectory planning, there are two options:
-        * If a particular vehicle is intended to be skipped, simply invoke veh.set_redo_trj_false() whenever needed
-        * If the whole simulation is intended to be run without trajectory planer, set do_traj_computation in main.py
-        to False.
+        - If a particular vehicle is intended to be skipped, simply set ``do_traj_allowed`` to ``False``
+        - If the whole simulation is intended to be run without trajectory planer, set ``do_traj_allowed`` in ``main.py`` to False.
 
     Any solve method under each class shall invoke set_trajectory() method at the end or does the assignment in-place.
 
@@ -134,8 +133,10 @@ class LeadConventional(Trajectory):
 # -------------------------------------------------------
 class FollowerConventional(Trajectory):
     """
-    Computes the trajectory for a follower conventional vehicle assuming a car following model.
+    Estimates the trajectory for a follower conventional vehicle assuming a car following model.
 
+    .. seealso::
+        Gipps, Peter G. *A behavioural car-following model for computer simulation*. Transportation Research Part B: Methodological 15.2 (1981): 105-111.
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -148,13 +149,10 @@ class FollowerConventional(Trajectory):
 
     def solve(self, veh, lead_veh):
         """
-        Gipps car following model is assumed here.
-        It is written in-place (does not call set_trajectory)
+        Gipps car following model is assumed here. It is written in-place (does not call set_trajectory)
 
-        Refer to:
-            Gipps, Peter G. "A behavioural car-following model for computer simulation."
-            Transportation Research Part B: Methodological 15.2 (1981): 105-111.
-        Note the only trajectory point index that changes is follower's last one
+        .. note:: The only trajectory point index that changes is follower's last one.
+
         """
         follower_trajectory = veh.trajectory
         follower_desired_speed = veh.desired_speed
@@ -254,9 +252,6 @@ class LeadConnected(Trajectory):
         - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n b_n t^{n-1}`
         - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n (n-1) b_n t^{n-2}`
 
-    .. seealso::
-        - Refer to ``IBM(R) ILOG CPLEX Python API Reference Manual`` for CPLEX usage using Python
-        - `Docs for solver status codes <https://www.ibm.com/support/knowledgecenter/SSSA5P_12.8.0/ilog.odms.cplex.help/refcallablelibrary/macros/Solution_status_codes.html>`_
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -468,21 +463,27 @@ class LeadConnected(Trajectory):
 
 
 class FollowerConnected(LeadConnected):
-    HEASWAY_CONTROL_START = 2  # in seconds how frequent need to check for speed, acc/dec rate, and headway
-    SAFE_MIN_GAP = 4.8  # minimum safe distance to keep from lead vehicles todo make it dependent to speed
+    """
+    Optimizes the trajectory of a follower CAV.
 
-    def __init__(self, max_speed, min_headway, k, m):
-        """
-        adds the safe headway constraints at the control points to the inherited model.
-        :param max_speed:
-        :param min_headway:
-        :param k:
-        :param m:
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
         April-2018
+    """
+    HEASWAY_CONTROL_START = 2  # in seconds how frequent need to check for speed, acc/dec rate, and headway
+    SAFE_MIN_GAP = 4.8  # minimum safe distance to keep from lead vehicles todo make it dependent to speed
+
+    def __init__(self, max_speed, min_headway, k, m):
+        """
+        Adds the safe headway constraints at the control points to the inherited model.
+
+        :param max_speed:
+        :param min_headway:
+        :param k:
+        :param m:
+
         """
         super().__init__(max_speed, min_headway, k, m)
 
@@ -540,9 +541,9 @@ class FollowerConnected(LeadConnected):
 def earliest_arrival_connected(det_time, speed, dist, amin, amax, max_speed, min_headway=0, t_earliest=0):
     """
     Uses the maximum of the followings to compute the earliest time vehicle can reach to the stop bar:
-        1) Accelerate/Decelerate to the maximum allowable speed and maintain the speed till departure
-        2) Distance is short, it accelerates/decelerated to the best speed and departs
-        3) Departs at the minimum headway with its lead vehicle (only for followers close enough to their lead)
+        - Accelerate/Decelerate to the maximum allowable speed and maintain the speed till departure
+        - Distance is short, it accelerates/decelerated to the best speed and departs
+        - Departs at the minimum headway with its lead vehicle (only for followers close enough to their lead)
 
     :param det_time:
     :param speed:
@@ -558,6 +559,7 @@ def earliest_arrival_connected(det_time, speed, dist, amin, amax, max_speed, min
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
         April-2018
+
     """
     a = amax if speed <= max_speed else amin
     dist_to_max_speed = (max_speed ** 2 - speed ** 2) / (2 * a)
@@ -578,8 +580,8 @@ def earliest_arrival_connected(det_time, speed, dist, amin, amax, max_speed, min
 def earliest_arrival_conventional(det_time, speed, dist, min_headway=0, t_earliest=0):
     """
     Uses the maximum of the followings to compute the earliest time vehicle can reach to the stop bar:
-        1) Maintain the detected speed till departure
-        2) Depart at the minimum headway with the vehicle in front
+        - Maintains the detected speed till departure
+        - Departs at the minimum headway with the vehicle in front
 
     :param det_time:
     :param speed:

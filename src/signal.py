@@ -467,7 +467,8 @@ class GA_SPaT(Signal):
         :param max_speed:
         :param critical_volume_ratio:
         """
-        self._flush_upcoming_SPaTs()
+        if len(self.SPaT_sequence) > 1:
+            self._flush_upcoming_SPaTs()
 
         self.first_unsrvd_indx = np.zeros(num_lanes, dtype=np.int)
         any_unserved_vehicle = self.base_badness(lanes, num_lanes, max_speed)

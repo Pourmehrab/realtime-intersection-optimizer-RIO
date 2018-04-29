@@ -26,7 +26,7 @@ def check_py_ver():
     expect_major, expect_minor, expect_rev = 3, 5, 2
     if sys.version_info[0] >= expect_major and sys.version_info[1] >= expect_minor and sys.version_info[
         2] >= expect_rev:
-        print("Python version requirement is met. ################################")
+        print("Python version requirement is met. ################################\n")
     else:
         print(
             "INFO: Script developed and tested with Python " + str(expect_major) + "." + str(expect_minor) + "." + str(
