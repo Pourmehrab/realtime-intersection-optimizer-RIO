@@ -6,10 +6,11 @@
 ####################################
 
 import numpy as np
+from sortedcontainers import SortedDict
+from copy import deepcopy
+import data.data as data_importer
 
 np.random.seed(2018)
-
-import data.data as data_importer
 
 
 class Signal:
@@ -153,11 +154,11 @@ class Signal:
         del self.SPaT_start[:phase_indx]
         del self.SPaT_end[:phase_indx]
 
-    def flush_upcoming_SPaT(self):
+    def _flush_upcoming_SPaTs(self):
         """
-        Just leaves the first SPaT and flushes the rest
-        # todo maybe reduce the green time of first phase too?
-        :return:
+        Just leaves the first SPaT and flushes the rest. One more severe variant to this is to even reduce the the green
+        time of first phase.
+
         """
         if len(self.SPaT_sequence) > 1:
             self.SPaT_sequence = [self.SPaT_sequence[0]]
@@ -165,8 +166,8 @@ class Signal:
             self.SPaT_start = [self.SPaT_start[0]]
             self.SPaT_end = [self.SPaT_end[0]]
 
-        if self._print_signal_detail:
-            print('** SPaT Flushed')
+            if self._print_signal_detail:
+                print('<<< Phase(s) ' + ','.join(str(p) for p in self.SPaT_sequence[1:]) + ' flushed.')
 
     def base_badness(self, lanes, num_lanes, max_speed):
         """
@@ -386,25 +387,23 @@ class Pretimed(Signal):
 # -------------------------------------------------------
 # Genetic Algorithms
 # -------------------------------------------------------
-from sortedcontainers import SortedDict
-from copy import deepcopy
 
 
 class GA_SPaT(Signal):
     """
     Assumptions:
         - The sequence and duration is decided optimally by a Genetic Algorithms
-        - The trajectories are computed using:
-            - Gipps car following model for conventional vehicles
-            - Polynomial degree k area under curve minimization for Lead/Follower AVs
 
-    :param allowable_phases: subset of all possible phases is used (no limitation but it should cover all movements)
+
+    :param allowable_phases: subset of all possible phases to be used.
+
     .. warning::
-        ``allowable_phases`` should be zero-based unlike what is provided in ``data.py``
+        - ``allowable_phases`` should cover all lanes or some would not get green.
+        - ``allowable_phases`` should be zero-based unlike what is provided in ``data.py``
 
     """
     # do not include more than this in a phase (is exclusive of last: 1,2, ..., MAX_PHASE_LENGTH-1)
-    MAX_PHASE_LENGTH = 5
+    MAX_PHASE_LENGTH = 4
 
     POPULATION_SIZE = 20
     MAX_ITERATION_PER_PHASE = 10
@@ -414,7 +413,13 @@ class GA_SPaT(Signal):
 
     def __init__(self, inter_name, allowable_phases, num_lanes, min_headway, print_signal_detail):
         """
-        Initializes GA
+
+        :param inter_name:
+        :param allowable_phases:
+        :type allowable_phases: tuple
+        :param num_lanes:
+        :param min_headway:
+        :param print_signal_detail:
         """
 
         super().__init__(inter_name, num_lanes, min_headway, print_signal_detail)
@@ -428,17 +433,38 @@ class GA_SPaT(Signal):
         # add a dummy phase to initiate
         self.SPaT_sequence, self.SPaT_green_dur, self.SPaT_start, self.SPaT_end = [set(allowable_phases).pop()], [0], \
                                                                                   [0], [self._y + self._ar]
-        # todo print the decision
+        if self._print_signal_detail:
+            print('>>> Phase {:d} appended (ends @ {:2.1f} sec)'.format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
 
     def solve(self, lanes, num_lanes, max_speed, critical_volume_ratio):
         """
-        This runs GA
-        the key to the sorted dict is integer part of the travel time times 10
+        This method implements Genetic Algorithm to determine SPaT. The high-level work flow is as the following:
+            1) From the available SPaT, only keep the ongoing one due to safety and practical reasons (*Here we do not change the timing of the first phase, however a variant is to reduce the timing to the minimum green time*).
+            2) Serve as many as possible with the remaining phase.
+            3) If any unserved vehicle is present, do GA.
+
+        ..note::
+            - We define ``badness`` as the measure that less of it is preferred for choosing a SPaT. Here we used travel time time ``ACCURACY_OF_BADNESS_MEASURE`` as the ``badness`` measure but any other measure can be simply used.
+            - GA has access to only subset of phases defined by ``allowable_phases`` from the full set in ``data.py`` file.
+            - GA tries cycles with 1 up to the defined number of phases and for each it computes the cycle length using the time budget concept in traffic flow theory.
+            - GA keeps the alternative in a sorted dictionary that the key is ``badness`` and the value keeps the corresponding SPaT decision. This helps when we want to replace worse individuals with new ones from crossover.
+            - The phase sequence are randomly drawn from the set of phases *without* replacement.
+            - The timings are random but respects the minimum and maximum green. They also sum to the cycle length.
+            - Note since the dictionary hashes individuals based on their ``badness``, it may overwrite one individual with anther. Hence the population may fall less than what defined initially.
+            - The crossover step is in-place, meaning it replaces the individuals with higher badness with crossovered ones. This way elite selection step is implemented at the same time crossover executes.
+            - Eventually, the best SPaT may not serve all vehicles. In that case, ``_schedule_unserved_vehicles()`` method gets called to provide temporary schedule for the unserved vehicles.
+
+
+        :param lanes:
+        :param num_lanes:
+        :param max_speed:
+        :param critical_volume_ratio:
         """
-        self.flush_upcoming_SPaT()  # todo make sure of the effect
+        self._flush_upcoming_SPaTs()  # todo make sure of the effect
 
         self.first_unsrvd_indx = np.zeros(num_lanes, dtype=np.int)
         any_unserved_vehicle = self.base_badness(lanes, num_lanes, max_speed)
+
         if any(any_unserved_vehicle):  # if the base SPaT serves, don't bother doing GA
             self.best_SPaT = {'phase_seq': tuple(), 'time_split': tuple(), 'badness_measure': self.LARGE_NUM}
 
@@ -451,11 +477,6 @@ class GA_SPaT(Signal):
                 population = SortedDict({})
 
                 cycle_length = self.get_optimal_cycle_length(critical_volume_ratio, phase_length)
-
-                # population keeps individuals in each row, and:
-                #   - the sequence in the first columns up to the phase size (first block)
-                #   - the timings in the second block of columns
-                #   - the metrics in the third block of columns up to the number of metrics
 
                 half_max_indx = phase_length // 2  # for crossover
 
@@ -667,6 +688,7 @@ class ActuatedControl(Signal):
 
 class MinCostFlow_SPaT(Signal):
     '''
+    (UNDERDEVELOPMENT)
     This class is meant to slove the min cost flow problem that is set up for phase selection
 
     Code is written in Python 3
@@ -785,6 +807,7 @@ class Enumerate_SpaT(Signal):
     '''
     Gives all phases equal chance but picks the one with highest throughput
     Similar to GA functionality
+    (UNDERDEVELOPMENT)
     :return:
     '''
 
@@ -794,7 +817,7 @@ class Enumerate_SpaT(Signal):
 
     def solve(self, lanes, num_lanes, allowable_phases):
         # the goal is to choose the sequence of SPaT which gives more throughput in less time
-        self.flush_upcoming_SPaT()
+        self._flush_upcoming_SPaTs()
 
         # keeps index of last vehicle to be served by progressing SPaT
         served_vehicle_indx = np.array([0 if bool(lanes.vehlist[lane]) else -1 for lane in range(num_lanes)],

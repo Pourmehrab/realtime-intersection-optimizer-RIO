@@ -11,14 +11,12 @@
 import sys
 import time
 
-from src.input.time_keeper import TimeKeeper
-from src.input.traffic import Traffic
-from src.inter.inter import Intersection
-from src.inter.lane import Lanes
+from src.time_keeper import TimeKeeper
+from src.intersection import Intersection, Lanes, Traffic
 # Signal Optimizers
-from src.inter.signal import GA_SPaT, Pretimed
+from src.signal import GA_SPaT, Pretimed
 # Trajectory Optimizers
-from src.trj.traj import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
+from src.trajectory import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
 # testing
 from src.optional.test.unit_tests import test_scheduled_arrivals
 
@@ -46,7 +44,7 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     For simulating intersection of 13th and 16th in Gainesville with GA do:
         >>> python 13th16th GA simulation
 
-    You can add any intersection in the ``src/inter/data.py``. The list of all available intersections is:
+    You can add any intersection in the ``src/intersection/data.py``. The list of all available intersections is:
         * reserv
         * 13th16th
 
@@ -61,8 +59,8 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
         * realtime
 
     For logging and printing of information set boolean variables:
-        - ``log_at_trj_point_level`` saves a csv under ``\log directory`` that contains all trajectory points for all vehicles
-        - ``log_at_vehicle_level`` saves a csv file under ``\log directory`` that contains departure times and elapsed times and vehicle IDs
+        - ``log_at_trj_point_level`` saves a csv under ``\log`` directory that contains all trajectory points for all vehicles
+        - ``log_at_vehicle_level`` saves a csv file under ``\log`` directory that contains departure times and elapsed times and vehicle IDs
 
     The work flow is as the following:
         - Tests for python version
@@ -220,17 +218,19 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
         else:  # this is the last scenario but still some vehicles have not been served
             time_keeper.next_sim_step()
 
+    # Nothing after the while loop gets executed
+
 
 if __name__ == "__main__":
 
     # ################## SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR
     do_traj_computation = False  # speeds up
-    log_at_vehicle_level = True  # writes the <inter_name>_vehicle_level.csv
+    log_at_vehicle_level = False  # writes the <inter_name>_vehicle_level.csv
     log_at_trj_point_level = False  # writes the <inter_name>_trj_point_level.csv
-    print_trj_info, test_time = False, 0.0  # prints arrival departures in command line
+    print_trj_info, test_time = True, 0.0  # prints arrival departures in command line
     print_signal_detail = True  # prints signal info in command line
-    print_clock = False  # prints the timer in command line
-    print_detection, print_departure = False, False  # prints arrivals sent to the algorithm, ...
+    print_clock = True  # prints the timer in command line
+    print_detection, print_departure = True, True  # prints arrivals sent to the algorithm, ...
 
     print(
         "University of Florida.\nBy Mahmoud Pourmehrab ######################\n")

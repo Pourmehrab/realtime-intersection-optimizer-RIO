@@ -1,5 +1,5 @@
 ####################################
-# File name: traj.py               #
+# File name: trajectory.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
 # Last Modified: Apr/23/2018       #
@@ -311,7 +311,7 @@ class LeadConnected(Trajectory):
         """
         delay = veh.scheduled_arrival - veh.earliest_arrival
 
-        if delay < self.EPS and is_lead:  # do not have to solve LP since the earliest trj works
+        if delay < self.EPS and is_lead:  # do not have to solve LP since the earliest trajectory works
             return None
         else:  # solve LP
             trajectory = veh.trajectory
@@ -418,7 +418,7 @@ class LeadConnected(Trajectory):
 
                 dep_speed -= dv
             if dep_speed < 0:  # no optimal found in the while loop above
-                raise Exception("CPLEX failed to find optimal trj for vehicle " + str(veh.ID))
+                raise Exception("CPLEX failed to find optimal trajectory for vehicle " + str(veh.ID))
 
             beta = np.flip(np.array(model.solution.get_values(["beta_" + str(n) for n in range(self.k)])), 0)
             f = np.poly1d(beta)
@@ -510,3 +510,55 @@ class FollowerConnected(LeadConnected):
                 j += 1
 
         return self._lp_model
+
+
+def earliest_arrival_connected(det_time, speed, dist, amin, amax, max_speed, min_headway=0, t_earliest=0):
+    """
+    Uses the maximum of the followings to compute the earliest time vehicle can reach to the stop bar:
+        1) Accelerate/Decelerate to the maximum allowable speed and maintain the speed till departure
+        2) Distance is short, it accelerates/decelerated to the best speed and departs
+        3) Departs at the minimum headway with its lead vehicle (only for followers close enough to their lead)
+
+    :param det_time:
+    :param speed:
+    :param dist:
+    :param amin:
+    :param amax:
+    :param max_speed:
+    :param min_headway:
+    :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
+    :return:
+    """
+    a = amax if speed <= max_speed else amin
+    dist_to_max_speed = (max_speed ** 2 - speed ** 2) / (2 * a)
+
+    if dist_to_max_speed <= dist:
+        return max(
+            det_time + (max_speed - speed) / a + (dist - dist_to_max_speed) / max_speed  # min time to get to stop bar
+            , t_earliest + min_headway)
+
+    else:  # not enough time and distance to accelerate/decelerate to max speed
+        v_dest = np.sqrt(speed ** 2 + 2 * a * dist)
+        return max(
+            det_time + (max_speed - v_dest) / a  # min time to get to stop bar
+            , t_earliest + min_headway
+        )
+
+
+def earliest_arrival_conventional(det_time, speed, dist, min_headway=0, t_earliest=0):
+    """
+    Uses the maximum of the followings to compute the earliest time vehicle can reach to the stop bar:
+        1) Maintain the detected speed till departure
+        2) Depart at the minimum headway with the vehicle in front
+
+    :param det_time:
+    :param speed:
+    :param dist:
+    :param min_headway:
+    :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
+    :return:
+    """
+    return max(
+        det_time + dist / speed
+        , t_earliest + min_headway
+    )
