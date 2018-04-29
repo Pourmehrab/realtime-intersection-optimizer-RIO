@@ -47,7 +47,7 @@
 <span id="input-output"></span><h1>Input/Output<a class="headerlink" href="#module-src.input.traffic" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="src.input.traffic.Traffic">
-<em class="property">class </em><code class="descclassname">src.input.traffic.</code><code class="descname">Traffic</code><span class="sig-paren">(</span><em>inter_name</em>, <em>sc</em>, <em>log_at_vehicle_level</em>, <em>log_at_trj_point_level</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/input/traffic.html#Traffic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.input.traffic.Traffic" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">src.input.traffic.</code><code class="descname">Traffic</code><span class="sig-paren">(</span><em>inter_name</em>, <em>sc</em>, <em>log_at_vehicle_level</em>, <em>log_at_trj_point_level</em>, <em>print_detection</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/input/traffic.html#Traffic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.input.traffic.Traffic" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
 <dt>Goals:</dt>
 <dd><ol class="first last arabic simple">
@@ -123,6 +123,10 @@ Volume = Density x Space Mean Speed</p>
 </tr>
 </tbody>
 </table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The fact that all vehicles are <em>added</em> does not equal to all <em>served</em>. Thus, we check if any vehicle is in any of the incoming lanes before halting the program.</p>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -133,7 +137,7 @@ Volume = Density x Space Mean Speed</p>
 
 <dl class="method">
 <dt id="src.input.traffic.Traffic.serve_update_at_stop_bar">
-<code class="descname">serve_update_at_stop_bar</code><span class="sig-paren">(</span><em>lanes</em>, <em>simulation_time</em>, <em>num_lanes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/input/traffic.html#Traffic.serve_update_at_stop_bar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.input.traffic.Traffic.serve_update_at_stop_bar" title="Permalink to this definition">¶</a></dt>
+<code class="descname">serve_update_at_stop_bar</code><span class="sig-paren">(</span><em>lanes</em>, <em>simulation_time</em>, <em>num_lanes</em>, <em>print_departure</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/input/traffic.html#Traffic.serve_update_at_stop_bar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.input.traffic.Traffic.serve_update_at_stop_bar" title="Permalink to this definition">¶</a></dt>
 <dd><p>This looks for/removes the served vehicles</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -151,19 +155,19 @@ Volume = Density x Space Mean Speed</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="src.input.traffic.Traffic.set_departure_time_for_csv">
+<code class="descname">set_departure_time_for_csv</code><span class="sig-paren">(</span><em>departure_time</em>, <em>indx</em>, <em>id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/input/traffic.html#Traffic.set_departure_time_for_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.input.traffic.Traffic.set_departure_time_for_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the departure time of an individual vehicle that is just served
+:param departure_time: departure time in seconds
+:param indx: row index in the sorted CSV file that has list of all vehicles
+:param id: ID of the vehicle being recorded</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="src.input.traffic.Traffic.set_elapsed_sim_time">
 <code class="descname">set_elapsed_sim_time</code><span class="sig-paren">(</span><em>t</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/input/traffic.html#Traffic.set_elapsed_sim_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.input.traffic.Traffic.set_elapsed_sim_time" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets the elapsed time for one simulation of scenario
 :param t: elapsed time in seconds</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="src.input.traffic.Traffic.set_travel_time">
-<code class="descname">set_travel_time</code><span class="sig-paren">(</span><em>travel_time</em>, <em>indx</em>, <em>id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/input/traffic.html#Traffic.set_travel_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.input.traffic.Traffic.set_travel_time" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sets the travel time of an individual vehicle that is just served
-:param travel_time: travel time in seconds (computed using base veh.init_time that it was detected first)
-:param indx: row index in the original CSV file that has list of all vehicles
-:param id: ID of the vehicle being recorded</p>
 </dd></dl>
 
 <dl class="method">
@@ -197,37 +201,51 @@ Volume = Density x Space Mean Speed</p>
 
 </dd></dl>
 
-<span class="target" id="module-src.input.data"></span><dl class="function">
-<dt id="src.input.data.get_conflict_dict">
-<code class="descclassname">src.input.data.</code><code class="descname">get_conflict_dict</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/input/data.html#get_conflict_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.input.data.get_conflict_dict" title="Permalink to this definition">¶</a></dt>
-<dd><blockquote>
-<div>Returns a dictionary of sets
-The keys are lane numbers and must be coded in one-based</div></blockquote>
-<p>T   he value for each key is a set of lane numbers that are in conflict with the key lane (again must be one based)</p>
+<span class="target" id="module-data.data"></span><dl class="function">
+<dt id="data.data.get_conflict_dict">
+<code class="descclassname">data.data.</code><code class="descname">get_conflict_dict</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/data/data.html#get_conflict_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.data.get_conflict_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary of sets
+The keys are lane numbers and must be coded in one-based
+The value for each key is a set of lane numbers that are in conflict with the key lane (again must be one based)</p>
+<p>Available intersections:</p>
 <blockquote>
-<div><p>Available intersections:</p>
-<ol class="arabic simple">
+<div><ol class="arabic simple">
 <li>13th16th: a physical one, google map it in Gainesville for the image and lane assignment detail</li>
+<li>reserv: reservation based model intersection: 12 incoming lanes (3 per approach and all lanes are exclusive).</li>
 </ol>
-<p>2) reserv: reservation based model intersection: 12 incoming lanes (3 per approach and all lanes are exclusive).
-Assumes three exclusive discharge lanes (<a class="reference external" href="http://www.cs.utexas.edu/~aim/">http://www.cs.utexas.edu/~aim/</a>)</p>
 </div></blockquote>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Assumes three exclusive discharge lanes (<a class="reference external" href="http://www.cs.utexas.edu/~aim/">http://www.cs.utexas.edu/~aim/</a>)</p>
+</div>
 </dd></dl>
 
 <dl class="function">
-<dt id="src.input.data.get_general_params">
-<code class="descclassname">src.input.data.</code><code class="descname">get_general_params</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/input/data.html#get_general_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.input.data.get_general_params" title="Permalink to this definition">¶</a></dt>
+<dt id="data.data.get_general_params">
+<code class="descclassname">data.data.</code><code class="descname">get_general_params</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/data/data.html#get_general_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.data.get_general_params" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
-<dt>Returns max speed (m/s), min_headway (seconds), detection range (meters), k, m, number of lanes</dt>
-<dd>k =  # n will be in 0, …, k-1 (odd degree of polynomial is preferred: k to be even)
-m =  # to discretize the time interval</dd>
+<dt>Returns max speed (<span class="math notranslate nohighlight">\(m/s\)</span>), min_headway (<span class="math notranslate nohighlight">\(s\)</span>), detection range (<span class="math notranslate nohighlight">\(m\)</span>), <span class="math notranslate nohighlight">\(k, m\)</span>, number of lanes</dt>
+<dd><ul class="first last simple">
+<li><span class="math notranslate nohighlight">\(k\)</span> =  # <span class="math notranslate nohighlight">\(n\)</span> will be in 0, …, k-1 (odd degree of polynomial is preferred: k to be even)</li>
+<li><span class="math notranslate nohighlight">\(m\)</span> =  # to discretize the time interval</li>
+</ul>
+</dd>
 </dl>
-<p>Required for trajectory optimization</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>The distance to stop bar will be input from either csv file or fusion. However, the number provided here can be used for generic computations.</li>
+</ul>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Required for trajectory optimization</p>
+</div>
 </dd></dl>
 
 <dl class="function">
-<dt id="src.input.data.get_phases">
-<code class="descclassname">src.input.data.</code><code class="descname">get_phases</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/input/data.html#get_phases"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.input.data.get_phases" title="Permalink to this definition">¶</a></dt>
+<dt id="data.data.get_phases">
+<code class="descclassname">data.data.</code><code class="descname">get_phases</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/data/data.html#get_phases"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.data.get_phases" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a dictionary of sets
 The key is the phase number is one-based
 The value to a key is set of lanes included in that phase (lanes are one-based too)
@@ -237,8 +255,8 @@ The rule is each set must include non-conflicting lanes
 </dd></dl>
 
 <dl class="function">
-<dt id="src.input.data.get_pretimed_parameters">
-<code class="descclassname">src.input.data.</code><code class="descname">get_pretimed_parameters</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/input/data.html#get_pretimed_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.input.data.get_pretimed_parameters" title="Permalink to this definition">¶</a></dt>
+<dt id="data.data.get_pretimed_parameters">
+<code class="descclassname">data.data.</code><code class="descname">get_pretimed_parameters</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/data/data.html#get_pretimed_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.data.get_pretimed_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>This returns the parameters needed for pre-timed control.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -250,15 +268,15 @@ The rule is each set must include non-conflicting lanes
 </dd></dl>
 
 <dl class="function">
-<dt id="src.input.data.get_signal_params">
-<code class="descclassname">src.input.data.</code><code class="descname">get_signal_params</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/input/data.html#get_signal_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.input.data.get_signal_params" title="Permalink to this definition">¶</a></dt>
+<dt id="data.data.get_signal_params">
+<code class="descclassname">data.data.</code><code class="descname">get_signal_params</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/data/data.html#get_signal_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.data.get_signal_params" title="Permalink to this definition">¶</a></dt>
 <dd><p>Required for GA signal control
 ALL yellow, all-red, min green, max green times are in seconds</p>
 </dd></dl>
 
 <span class="target" id="module-src.input.time_keeper"></span><dl class="class">
 <dt id="src.input.time_keeper.TimeKeeper">
-<em class="property">class </em><code class="descclassname">src.input.time_keeper.</code><code class="descname">TimeKeeper</code><span class="sig-paren">(</span><em>t</em>, <em>resolution=20</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/input/time_keeper.html#TimeKeeper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.input.time_keeper.TimeKeeper" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">src.input.time_keeper.</code><code class="descname">TimeKeeper</code><span class="sig-paren">(</span><em>t</em>, <em>resolution=20.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/input/time_keeper.html#TimeKeeper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.input.time_keeper.TimeKeeper" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
 <dt>Goals:</dt>
 <dd><ol class="first last arabic simple">
@@ -267,6 +285,10 @@ ALL yellow, all-red, min green, max green times are in seconds</p>
 </ol>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Set the <strong>simulation resolution</strong> in <span class="math notranslate nohighlight">\(s\)</span> at the default value of <code class="docutils literal notranslate"><span class="pre">TimeKeeper.__init__()</span></code></p>
+</div>
 <dl class="method">
 <dt id="src.input.time_keeper.TimeKeeper.next_sim_step">
 <code class="descname">next_sim_step</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/input/time_keeper.html#TimeKeeper.next_sim_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.input.time_keeper.TimeKeeper.next_sim_step" title="Permalink to this definition">¶</a></dt>

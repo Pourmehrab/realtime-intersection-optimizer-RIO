@@ -29,6 +29,7 @@ class Vehicle:
     """
     EPS = 0.01  # small number that lower than that is approximated by zero
     MAX_NUM_TRAJECTORY_POINTS = 300  # check if it's enough to preallocate the trajectory
+    MIN_DIST_TO_STOP_BAR = 50  # lower than this (in m) do not update schedule todo where else used?
 
     def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx, k):
         """
@@ -117,20 +118,28 @@ class Vehicle:
         """
         self.earliest_arrival = t_earliest  # this is the absolute earliest time
 
-    def set_scheduled_arrival(self, t_scheduled, d_scheduled, s_scheduled):
+    def set_scheduled_arrival(self, t_scheduled, d_scheduled, s_scheduled, lane, veh_indx, print):
         """
-        Note when a new vehicle is scheduled, it has two trajectory points
-            One for the current state
-            One for the final state
+        .. note::
+            - When a new vehicle is scheduled, it has two trajectory points: one for the current state and the other for the final state.
+            - If the vehicle is closer than ``MIN_DIST_TO_STOP_BAR``, avoid appending the schedule.
 
-        :param t_scheduled: scheduled departure time (s)
-        :param d_scheduled: scheduled departure distance (m)
-        :param s_scheduled: scheduled departure speed (m/s)
-        :return:
+        :param t_scheduled: scheduled departure time (:math:`s`)
+        :param d_scheduled: scheduled departure distance (:math:`m`)
+        :param s_scheduled: scheduled departure speed (:math:`m/s`)
+        :param lane: the lane this vehicle is in (*for printing purpose only*)
+        :param veh_indx: The index of this vehicle in ots lane (*for printing purpose only*)
+        :param print: ``True`` if we want to print schedule
         """
-        self.scheduled_arrival = t_scheduled
-        self.last_trj_point_indx = self.first_trj_point_indx + 1
-        self.trajectory[:, self.last_trj_point_indx] = [t_scheduled, d_scheduled, s_scheduled]
+        first_trj_indx = self.first_trj_point_indx
+        last_dist_to_stop_bar = self.trajectory[1, first_trj_indx]
+        if last_dist_to_stop_bar > self.MIN_DIST_TO_STOP_BAR:
+            self.scheduled_arrival = t_scheduled
+            self.last_trj_point_indx = self.first_trj_point_indx + 1
+            self.trajectory[:, self.last_trj_point_indx] = [t_scheduled, d_scheduled, s_scheduled]
+
+            if print:
+                self.print_trj_points(lane, veh_indx)
 
     def set_poly_coeffs(self, beta):
         """Sets the coefficients that define the polynomial that defines trajectory of a connected vehicle"""
@@ -160,7 +169,7 @@ class Vehicle:
         else:
             raise Exception('The numeric code of vehicle type is not known.')
 
-    def print_trj_points(self, lane, veh_indx, source):
+    def print_trj_points(self, lane, veh_indx):
         """
         Print the first and last trajectory points information.
         This may be used either when a plan is scheduled or a trajectory is computed.
@@ -175,12 +184,12 @@ class Vehicle:
         lane_rank = rank + ' in L' + str(lane + 1).zfill(2)
         print(
             veh_type_str + ':' + str(self.ID) + ':' + lane_rank +
-            ': det@({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s), sch@({:>4.1f}, {:>4.1f}, {:>4.1f}), {:>3d} points, called by '.format(
+            ': ({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s) -> ({:>4.1f}, {:>4.1f}, {:>4.1f}), {:>3d} points.'.format(
                 self.trajectory[0, first_trj_indx], self.trajectory[1, first_trj_indx],
                 self.trajectory[2, first_trj_indx],
                 self.trajectory[0, last_trj_indx], self.trajectory[1, last_trj_indx], self.trajectory[2, last_trj_indx],
                 last_trj_indx - first_trj_indx + 1
-            ) + source)
+            ))
 
     def test_trj_redo_needed(self, min_dist=50):
         """

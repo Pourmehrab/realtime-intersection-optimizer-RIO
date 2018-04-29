@@ -31,7 +31,7 @@ class Traffic:
         - The scenario number should be appended to the name of intersection followed by an underscore.
     """
 
-    def __init__(self, inter_name, sc, log_at_vehicle_level, log_at_trj_point_level):
+    def __init__(self, inter_name, sc, log_at_vehicle_level, log_at_trj_point_level, print_detection):
         """
         Goals:
             1) Set the logging behaviour for outputting requested CSV files and auxiliary output vectors
@@ -58,6 +58,7 @@ class Traffic:
 
         self._log_at_vehicle_level = log_at_vehicle_level
         self._log_at_trj_point_level = log_at_trj_point_level
+        self._print_detection = print_detection
 
         if log_at_vehicle_level:
             df_size = len(self.__all_vehicles)
@@ -166,8 +167,11 @@ class Traffic:
             # create the vehicle and get the earliest departure time
             veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed,
                           dest, length, amin, amax, indx, k)
-            # print('*** A veh of type ' + veh.map_veh_type2str(det_type) + ' detected @ {:2.2f} sec in lane {:d}'.format(
-            #     det_time, lane + 1))
+
+            if self._print_detection:
+                print(
+                    '>>> ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane + 1).zfill(2) + ':' +
+                    '({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s)'.format(det_time, dist, speed))
 
             # append it to its lane
             lanes.vehlist[lane] += [veh]  # recall it is an array
@@ -228,7 +232,7 @@ class Traffic:
                                                                    ]) if num_of_vehs > 0 else 0.0
         return volumes
 
-    def serve_update_at_stop_bar(self, lanes, simulation_time, num_lanes):
+    def serve_update_at_stop_bar(self, lanes, simulation_time, num_lanes, print_departure):
         """
         This looks for/removes the served vehicles
 
@@ -249,6 +253,9 @@ class Traffic:
                     if dep_time < simulation_time:  # served! remove it.
 
                         last_veh_indx_to_remove += 1
+                        if print_departure:
+                            print('<<< ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID +
+                                  '@({:>4.1f} s)'.format(dep_time))
                         if self._log_at_vehicle_level:
                             self.set_departure_time_for_csv(dep_time, veh.csv_indx, veh.ID)
 
