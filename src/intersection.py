@@ -23,6 +23,11 @@ class Intersection:
     """
     Goals:
         1) Keeps intersection parameters
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
 
     def __init__(self, int_name):
@@ -53,7 +58,13 @@ class Intersection:
 
 
 class Lanes:
+    """
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
 
+    """
     def __init__(self, num_lanes):
         '''
         Data Structure for keeping vehicles in order in the lanes in the form of a dictionary of arrays
@@ -120,6 +131,11 @@ class Vehicle:
 
     Note:
         1) Make sure the MAX_NUM_TRAJECTORY_POINTS to preallocate the trajectories is enough for given problem
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
     EPS = 0.01  # small number that lower than that is approximated by zero
     MAX_NUM_TRAJECTORY_POINTS = 300  # check if it's enough to preallocate the trajectory
@@ -347,6 +363,11 @@ class Traffic:
         - The csv should be located under the ``data/`` directory with the valid name consistent to what inputted as an
             argument and what exists in the data.py file.
         - The scenario number should be appended to the name of intersection followed by an underscore.
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
 
     def __init__(self, inter_name, sc, log_at_vehicle_level, log_at_trj_point_level, print_detection):
@@ -397,6 +418,7 @@ class Traffic:
     def set_departure_time_for_csv(self, departure_time, indx, id):
         """
         Sets the departure time of an individual vehicle that is just served
+
         :param departure_time: departure time in seconds
         :param indx: row index in the sorted CSV file that has list of all vehicles
         :param id: ID of the vehicle being recorded
@@ -408,6 +430,7 @@ class Traffic:
     def set_elapsed_sim_time(self, t):
         """
         Sets the elapsed time for one simulation of scenario
+
         :param t: elapsed time in seconds
         """
         self._axilary_elapsed_time[self._current_row_indx] = t

@@ -14,6 +14,11 @@ class TimeKeeper:
 
     .. note::
         Set the **simulation resolution** in :math:`s` at the default value of ``TimeKeeper.__init__()``
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
 
     def __init__(self, t, resolution=20.0):

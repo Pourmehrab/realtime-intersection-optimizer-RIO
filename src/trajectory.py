@@ -31,6 +31,11 @@ class Trajectory:
     :param RES: time difference between two consecutive trajectory points in second (be careful not to exceed max size
      of trajectory
     :param EPS: small number that lower than that is approximated by zero
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
 
     LAG = 1
@@ -81,6 +86,11 @@ class Trajectory:
 class LeadConventional(Trajectory):
     """
     Computes the trajectory for a lead conventional vehicle assuming the vehicle tends to maintain its arrival speed.
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
 
     def __init__(self, max_speed, min_headway):
@@ -126,6 +136,11 @@ class FollowerConventional(Trajectory):
     """
     Computes the trajectory for a follower conventional vehicle assuming a car following model.
 
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
 
     def __init__(self, max_speed, min_headway):
@@ -234,14 +249,19 @@ import cplex
 
 class LeadConnected(Trajectory):
     """
-.. note::
-    - Trajectory function: :math:`f(t)   = \sum_{n=0}^{k-1} b_n t^n`
-    - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n b_n t^{n-1}`
-    - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n (n-1) b_n t^{n-2}`
+    .. attention::
+        - Trajectory function: :math:`f(t)   = \sum_{n=0}^{k-1} b_n t^n`
+        - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n b_n t^{n-1}`
+        - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n (n-1) b_n t^{n-2}`
 
-.. seealso::
-    - Refer to ``IBM(R) ILOG CPLEX Python API Reference Manual`` for CPLEX usage using Python
-    - `Docs for solver status codes <https://www.ibm.com/support/knowledgecenter/SSSA5P_12.8.0/ilog.odms.cplex.help/refcallablelibrary/macros/Solution_status_codes.html>`_
+    .. seealso::
+        - Refer to ``IBM(R) ILOG CPLEX Python API Reference Manual`` for CPLEX usage using Python
+        - `Docs for solver status codes <https://www.ibm.com/support/knowledgecenter/SSSA5P_12.8.0/ilog.odms.cplex.help/refcallablelibrary/macros/Solution_status_codes.html>`_
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
     NUM_DIGS = 3  # the accuracy to keep decimals
 
@@ -458,6 +478,11 @@ class FollowerConnected(LeadConnected):
         :param min_headway:
         :param k:
         :param m:
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
         """
         super().__init__(max_speed, min_headway, k, m)
 
@@ -528,6 +553,11 @@ def earliest_arrival_connected(det_time, speed, dist, amin, amax, max_speed, min
     :param min_headway:
     :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
     :return:
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
     a = amax if speed <= max_speed else amin
     dist_to_max_speed = (max_speed ** 2 - speed ** 2) / (2 * a)
@@ -557,6 +587,11 @@ def earliest_arrival_conventional(det_time, speed, dist, min_headway=0, t_earlie
     :param min_headway:
     :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
     :return:
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
     return max(
         det_time + dist / speed

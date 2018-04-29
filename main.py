@@ -38,26 +38,6 @@ def check_py_ver():
 def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level, print_clock,
               print_signal_detail, print_trj_info, test_time, print_detection, print_departure):
     """
-    For simulating a 12 lane four leg intersection (reservation intersection) with pretimed control do:
-        >>> python reserv pretimed simulation
-
-    For simulating intersection of 13th and 16th in Gainesville with GA do:
-        >>> python 13th16th GA simulation
-
-    You can add any intersection in the ``src/intersection/data.py``. The list of all available intersections is:
-        * reserv
-        * 13th16th
-
-    You also can choose from the following signal control methods:
-        * GA
-        * pretimed
-        * MCF      (under development)
-        * actuated (under development)
-
-    You can run in either of the following modes (*each has certain requirements though*):
-        * simulation
-        * realtime
-
     For logging and printing of information set boolean variables:
         - ``log_at_trj_point_level`` saves a csv under ``\log`` directory that contains all trajectory points for all vehicles
         - ``log_at_vehicle_level`` saves a csv file under ``\log`` directory that contains departure times and elapsed times and vehicle IDs
@@ -99,6 +79,10 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     :param print_signal_detail:
     :param print_trj_info:
     :param test_time: in seconds from start of simulation
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
     intersection = Intersection(inter_name)
     # get some useful values
