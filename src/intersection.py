@@ -59,6 +59,16 @@ class Intersection:
 
 class Lanes:
     """
+    Dictionary that the key is lane index and value is an arrays that keeps queue of vehicle in that lane.
+
+    Objectives:
+        - Keeps vehicles in order
+        - Keep track of index of last vehicle in each lane (useful for applications in ``Signal()``)
+        - Remove served vehicles, and update first unserved and last vehicle's indices accordingly
+        - Check if all lanes are empty
+
+
+
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
@@ -69,12 +79,6 @@ class Lanes:
     def __init__(self, num_lanes):
         '''
         Data Structure for keeping vehicles in order in the lanes in the form of a dictionary of arrays
-
-        Objectives:
-            - Keeps vehicles in order
-            - Keep track of index of last vehicle in each lane (useful for applications in ``Signal()``)
-            - Remove served vehicles, and update first_unserved and last vehicle's indices accordingly
-            - Check if all lanes are empty
 
         :param num_lanes: number of lanes
         '''
@@ -121,7 +125,6 @@ class Lanes:
         self.decrement_last_veh_indx(lane, num_served)
 
     def all_served(self, num_lanes):
-
         """
         :return: True if all lanes are empty, False otherwise
         """
@@ -140,15 +143,15 @@ class Lanes:
 
 class Vehicle:
     """
-        Objectives:
-            - Defines the vehicle object that keeps all necessary information
-                - Those which are coming from fusion
-                - Those which are defined to be decided in the program: `trajectory[time, distance, speed], earliest_arrival, scheduled_arrival, poly_coeffs, _do_trj`
-            - Update/record the trajectory points once they are expired
-            - Keep trajectory indexes updated
-            - Print useful info once a plan is scheduled
-            - Decides if a trajectory re-computation is needed
-            - Quality controls the assigned trajectory
+    Objectives:
+        - Defines the vehicle object that keeps all necessary information
+            - Those which are coming from fusion
+            - Those which are defined to be decided in the program: `trajectory[time, distance, speed], earliest_arrival, scheduled_arrival, poly_coeffs, _do_trj`
+        - Update/record the trajectory points once they are expired
+        - Keep trajectory indexes updated
+        - Print useful info once a plan is scheduled
+        - Decides if a trajectory re-computation is needed
+        - Quality controls the assigned trajectory
 
 
     .. note:: Make sure the MAX_NUM_TRAJECTORY_POINTS to preallocate the trajectories is enough for given problem
@@ -211,8 +214,7 @@ class Vehicle:
 
     def reset_trj_points(self, sc, lane, time_threshold, file):
         """
-        Writes trajectory points in the csv file if their time stamp is before the ``time_threshold`` and then removes
-        them by updating the first trajectory point.
+        Writes trajectory points in the csv file if their time stamp is before the ``time_threshold`` and then removes them by updating the first trajectory point.
 
         .. warning::
             Before calling this make sure at least the first trajectory point's time stamp is less than provided time
@@ -304,8 +306,7 @@ class Vehicle:
 
     def print_trj_points(self, lane, veh_indx):
         """
-        Print the first and last trajectory points information.
-        This may be used either when a plan is scheduled or a trajectory is computed.
+        Print the first and last trajectory points information. This may be used either when a plan is scheduled or a trajectory is computed.
 
         :param lane: zero-based lane number
         :param veh_indx: index to find the vehicle in its lane array
@@ -326,7 +327,7 @@ class Vehicle:
 
     def check_trj_redo_needed(self, min_dist=50):
         """
-        Checks if the trajectory model should be run (returns True) or not (False). Cases:
+        Checks if the trajectory model should be run (returns ``True``) or not (``False``). Cases:
             - If last trajectory point is not assigned yet, do the trajectory.
             - If vehicle is closer than a certain distance, do NOT update the trajectory.
 
@@ -367,9 +368,9 @@ class Traffic:
     def __init__(self, inter_name, sc, log_at_vehicle_level, log_at_trj_point_level, print_detection):
         """
         Objectives:
-            - Set the logging behaviour for outputting requested CSV files and auxiliary output vectors
-            - Import the CSV file that includes the traffic and sorts it
-            - Initialize the first scenario number to run
+            - Sets the logging behaviour for outputting requested CSV files and auxiliary output vectors
+            - Imports the CSV file that includes the traffic and sorts it
+            - Initializes the first scenario number to run
         """
 
         # get the path to the csv file and load up the traffic
@@ -467,8 +468,8 @@ class Traffic:
     def update_vehicles_info(self, lanes, simulation_time, max_speed, min_headway, k):
         """
         Objectives
-            - Add vehicles from the csv file to ``lanes.vehlist``
-            - Assign their earliest arrival time
+            - Adds vehicles from the csv file to ``lanes.vehlist``
+            - Assigns their earliest arrival time
 
         :param lanes: vehicles are added to this data structure
         :type lanes: dictionary of array as of Lanes()
