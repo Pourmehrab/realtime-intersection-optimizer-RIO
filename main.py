@@ -18,7 +18,7 @@ from src.signal import GA_SPaT, Pretimed
 # Trajectory Optimizers
 from src.trajectory import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
 # testing
-from src.optional.test.unit_tests import test_scheduled_arrivals
+from src.optional.test.unit_tests import test_scheduled_arrivals, test_trj_points
 
 
 def check_py_ver():
@@ -156,7 +156,7 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
             for lane in range(num_lanes):
                 if bool(lanes.vehlist[lane]):  # not an empty lane
                     for veh_indx, veh in enumerate(lanes.vehlist[lane]):
-                        if veh.redredo_trj_allowed:  # false if we want to keep previous trajectory
+                        if veh.redo_trj_allowed:  # false if we want to keep previous trajectory
                             veh_type = veh.veh_type
                             arrival_time = veh.scheduled_arrival
                             if veh_indx > 0 and veh_type == 1:  # Follower CAV
@@ -177,8 +177,9 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
                             elif veh_indx == 0 and veh_type == 0:  # Lead Conventional
                                 lead_conventional_trj_estimator.solve(veh)
 
-                            veh.test_trj_points(simulation_time)  # todo remove if not testing
-                            veh.set_redo_trj_false()  # todo eventually works with the fusion outputs
+                            test_trj_points(veh.first_trj_point_indx, veh.last_trj_point_indx, veh.trajectory, veh.ID,
+                                            simulation_time)  # todo remove if not testing
+                            veh.redo_trj_allowed = False  # todo eventually works with the fusion outputs
 
                         if print_trj_info and simulation_time >= test_time:
                             veh.print_trj_points(lane, veh_indx)
@@ -211,10 +212,10 @@ if __name__ == "__main__":
     do_traj_computation = False  # speeds up
     log_at_vehicle_level = False  # writes the <inter_name>_vehicle_level.csv
     log_at_trj_point_level = False  # writes the <inter_name>_trj_point_level.csv
-    print_trj_info, test_time = True, 0.0  # prints arrival departures in command line
-    print_signal_detail = True  # prints signal info in command line
-    print_clock = True  # prints the timer in command line
-    print_detection, print_departure = True, True  # prints arrivals sent to the algorithm, ...
+    print_trj_info, test_time = False, 0.0  # prints arrival departures in command line
+    print_signal_detail = False  # prints signal info in command line
+    print_clock = False  # prints the timer in command line
+    print_detection, print_departure = False, False  # prints arrivals sent to the algorithm, ...
 
     print(
         "University of Florida.\nBy Mahmoud Pourmehrab ######################\n")

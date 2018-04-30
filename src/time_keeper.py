@@ -8,12 +8,9 @@
 
 class TimeKeeper:
     """
-    Goals:
-        1) Keeps the time
-        2) Move forward the time
-
-    .. note::
-        Set the **simulation resolution** in :math:`s` at the default value of ``TimeKeeper.__init__()``
+    Objectives:
+        - Keeps the time
+        - Move forward the time
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -21,10 +18,13 @@ class TimeKeeper:
         April-2018
     """
 
-    def __init__(self, t, resolution=20.0):
+    def __init__(self, t, resolution=2.0):
         """
-        Clock keeps the simulation starting time in seconds (it gets reset for every scenario)
-        Simulation resolution: the time steps to move the simulation forward in seconds
+        Clock keeps the simulation starting time in seconds.
+
+
+        :param t: start time of simulation to be initialized
+        :param resolution: Simulation resolution: the time steps to move the simulation forward in seconds
         """
         self.clock = t
         self._res = resolution

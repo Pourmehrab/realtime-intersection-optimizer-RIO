@@ -65,24 +65,42 @@ class Lanes:
         April-2018
 
     """
+
     def __init__(self, num_lanes):
         '''
         Data Structure for keeping vehicles in order in the lanes in the form of a dictionary of arrays
 
         Objectives:
             - Keeps vehicles in order
-            - Keep track of index of last vehicle in each lane (useful for applications in Signal())
-            - Remove served vehicles
+            - Keep track of index of last vehicle in each lane (useful for applications in ``Signal()``)
+            - Remove served vehicles, and update first_unserved and last vehicle's indices accordingly
             - Check if all lanes are empty
 
         :param num_lanes: number of lanes
         '''
 
         self.vehlist = {l: [] for l in range(num_lanes)}
+
+        self.reset_first_unsrvd_indx(num_lanes)
         self.last_vehicle_indx = np.zeros(num_lanes, dtype=np.int) - 1
+
+    def decrement_first_unsrvd_indx(self, lane, num_served):
+        """
+        When vehicles get served, the first index to the unservd vehicle in a lane should change.
+
+        :param n: number of served vehicle
+        :param lane: the lane at which the vehicles are served
+        """
+        self.first_unsrvd_indx[lane] = max(0, self.first_unsrvd_indx[lane] - num_served)
+
+    def increment_first_unsrvd_indx(self, lane):
+        self.first_unsrvd_indx[lane] += 1
 
     def increment_last_veh_indx(self, lane):
         self.last_vehicle_indx[lane] += 1
+
+    def reset_first_unsrvd_indx(self, num_lanes):
+        self.first_unsrvd_indx = np.zeros(num_lanes, dtype=int)  # this is the most important variable in this module
 
     def decrement_last_veh_indx(self, lane, n):
         self.last_vehicle_indx[lane] -= n
@@ -90,6 +108,7 @@ class Lanes:
     def purge_served_vehs(self, lane, indx):
         """
         Deletes vehicles from 0 to ``indx`` where ``indx`` is the pointer to the last served
+
         .. note:: deletion also includes vehicle at ``indx``
 
         :param lane: the lane number
@@ -97,12 +116,16 @@ class Lanes:
         :param indx: from vehicle 0 to ``indx`` are intended to be removed by this method
         """
         del self.vehlist[lane][0:indx + 1]
-        self.decrement_last_veh_indx(lane, indx + 1)
+        num_served = indx + 1
+        self.decrement_first_unsrvd_indx(lane, num_served)
+        self.decrement_last_veh_indx(lane, num_served)
 
     def all_served(self, num_lanes):
+
         """
         :return: True if all lanes are empty, False otherwise
         """
+
         indx = 0
         while indx < num_lanes:
             if not self.vehlist[indx]:
@@ -293,7 +316,7 @@ class Vehicle:
         rank = '1st' if veh_indx == 0 else ('2nd' if veh_indx == 1 else str(veh_indx + 1) + 'th')
         lane_rank = rank + ' in L' + str(lane + 1).zfill(2)
         print(
-            veh_type_str + ':' + str(self.ID) + ':' + lane_rank +
+            '>@> ' + veh_type_str + ':' + str(self.ID) + ':' + lane_rank +
             ': ({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s) -> ({:>4.1f}, {:>4.1f}, {:>4.1f}), {:>3d} points.'.format(
                 self.trajectory[0, first_trj_indx], self.trajectory[1, first_trj_indx],
                 self.trajectory[2, first_trj_indx],
@@ -301,11 +324,11 @@ class Vehicle:
                 last_trj_indx - first_trj_indx + 1
             ))
 
-    def test_trj_redo_needed(self, min_dist=50):
+    def check_trj_redo_needed(self, min_dist=50):
         """
         Checks if the trajectory model should be run (returns True) or not (False). Cases:
-            - if last trajectory point is not assigned yet, do the trajectory.
-            - if vehicle is closer than a certain distance, do NOT update the trajectory.
+            - If last trajectory point is not assigned yet, do the trajectory.
+            - If vehicle is closer than a certain distance, do NOT update the trajectory.
 
         :param min_dist: for lower than this (in meters), no trajectory optimization or car following will be applied
         :return:
@@ -320,40 +343,15 @@ class Vehicle:
         else:
             self.redo_trj_allowed = True
 
-    def test_trj_points(self, simulation_time):
-        """
-        Verifies the trajectory points for following cases:
-            - Non-negative speed (threshold is set to -3 m/s)
-            - Non-negative distance (threshold is set to -3 m)
-            - Expired trajectory point is not removed
-
-            todo add more tests
-        :param simulation_time: the current simulation clock
-        """
-
-        trj_point_indx = self.first_trj_point_indx
-        last_trj_point_indx = self.last_trj_point_indx
-        if last_trj_point_indx - trj_point_indx > 0:  # if there are at least two points, check them
-            trajectory = self.trajectory
-            while trj_point_indx <= last_trj_point_indx:
-                time, dist, speed = trajectory[:, trj_point_indx]
-                if speed < -3:  # the polynomial may oscillate near zero so let it
-                    raise Exception('Negative speed, veh: ' + str(self.ID))
-                elif dist < -3:  # the polynomial may oscillate near zero so let it
-                    raise Exception('Traj point after the stop bar, veh: ' + str(self.ID))
-                elif time < simulation_time:
-                    raise Exception('Expired trajectory point is not purged, veh: ' + str(self.ID))
-                trj_point_indx += 1
-
 
 class Traffic:
     """
     Objectives:
-        - Add new vehicles from the csv file to the lanes.vehlist structure
-        - Append travel time, ID, and elapsed time columns and save csv
+        - Adds new vehicles from the csv file to the ``lanes.vehlist`` structure
+        - Appends travel time, ID, and elapsed time columns and save csv
         - Manages scenario indexing, resetting, and more
-        - Compute volumes in lanes
-        - remove/record served vehicles
+        - Computes volumes in lanes
+        - removes/records served vehicles
 
     .. note::
         - The csv should be located under the ``data/`` directory with the valid name consistent to what inputted as an
@@ -507,7 +505,7 @@ class Traffic:
 
             if self._print_detection:
                 print(
-                    '>>> ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane + 1).zfill(2) + ':' +
+                    r'\\\ ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane + 1).zfill(2) + ':' +
                     '({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s)'.format(det_time, dist, speed))
 
             # append it to its lane
@@ -591,7 +589,7 @@ class Traffic:
 
                         last_veh_indx_to_remove += 1
                         if print_departure:
-                            print('<<< ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID +
+                            print('/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID +
                                   '@({:>4.1f} s)'.format(dep_time))
                         if self._log_at_vehicle_level:
                             self.set_departure_time_for_csv(dep_time, veh.csv_indx, veh.ID)
