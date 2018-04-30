@@ -105,7 +105,6 @@ ENV/
 *.svg
 *.csv
 *.lp
-*.pdf
 *.xlsx
 unit_tests.py
 

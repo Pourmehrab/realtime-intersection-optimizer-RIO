@@ -1,9 +1,0 @@
-Input/Output
-============
-
-.. automodule:: src.input.traffic
-   :members:
-.. automodule:: data.data
-   :members:
-.. automodule:: src.input.time_keeper
-   :members:

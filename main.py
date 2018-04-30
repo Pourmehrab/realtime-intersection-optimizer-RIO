@@ -11,16 +11,14 @@
 import sys
 import time
 
-from src.input.time_keeper import TimeKeeper
-from src.input.traffic import Traffic
-from src.inter.inter import Intersection
-from src.inter.lane import Lanes
+from src.time_keeper import TimeKeeper
+from src.intersection import Intersection, Lanes, Traffic
 # Signal Optimizers
-from src.inter.signal import GA_SPaT, Pretimed
+from src.signal import GA_SPaT, Pretimed
 # Trajectory Optimizers
-from src.trj.traj import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
+from src.trajectory import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
 # testing
-from src.optional.test.unit_tests import test_scheduled_arrivals
+from src.optional.test.unit_tests import test_scheduled_arrivals, test_trj_points
 
 
 def check_py_ver():
@@ -28,7 +26,7 @@ def check_py_ver():
     expect_major, expect_minor, expect_rev = 3, 5, 2
     if sys.version_info[0] >= expect_major and sys.version_info[1] >= expect_minor and sys.version_info[
         2] >= expect_rev:
-        print("Python version requirement is met. ################################")
+        print("Python version requirement is met. ################################\n")
     else:
         print(
             "INFO: Script developed and tested with Python " + str(expect_major) + "." + str(expect_minor) + "." + str(
@@ -40,29 +38,9 @@ def check_py_ver():
 def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level, print_clock,
               print_signal_detail, print_trj_info, test_time, print_detection, print_departure):
     """
-    For simulating a 12 lane four leg intersection (reservation intersection) with pretimed control do:
-        >>> python reserv pretimed simulation
-
-    For simulating intersection of 13th and 16th in Gainesville with GA do:
-        >>> python 13th16th GA simulation
-
-    You can add any intersection in the ``src/inter/data.py``. The list of all available intersections is:
-        * reserv
-        * 13th16th
-
-    You also can choose from the following signal control methods:
-        * GA
-        * pretimed
-        * MCF      (under development)
-        * actuated (under development)
-
-    You can run in either of the following modes (*each has certain requirements though*):
-        * simulation
-        * realtime
-
     For logging and printing of information set boolean variables:
-        - ``log_at_trj_point_level`` saves a csv under ``\log directory`` that contains all trajectory points for all vehicles
-        - ``log_at_vehicle_level`` saves a csv file under ``\log directory`` that contains departure times and elapsed times and vehicle IDs
+        - ``log_at_trj_point_level`` saves a csv under ``\log`` directory that contains all trajectory points for all vehicles
+        - ``log_at_vehicle_level`` saves a csv file under ``\log`` directory that contains departure times and elapsed times and vehicle IDs
 
     The work flow is as the following:
         - Tests for python version
@@ -101,6 +79,10 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     :param print_signal_detail:
     :param print_trj_info:
     :param test_time: in seconds from start of simulation
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
     intersection = Intersection(inter_name)
     # get some useful values
@@ -174,7 +156,7 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
             for lane in range(num_lanes):
                 if bool(lanes.vehlist[lane]):  # not an empty lane
                     for veh_indx, veh in enumerate(lanes.vehlist[lane]):
-                        if veh.redredo_trj_allowed:  # false if we want to keep previous trajectory
+                        if veh.redo_trj_allowed:  # false if we want to keep previous trajectory
                             veh_type = veh.veh_type
                             arrival_time = veh.scheduled_arrival
                             if veh_indx > 0 and veh_type == 1:  # Follower CAV
@@ -195,8 +177,9 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
                             elif veh_indx == 0 and veh_type == 0:  # Lead Conventional
                                 lead_conventional_trj_estimator.solve(veh)
 
-                            veh.test_trj_points(simulation_time)  # todo remove if not testing
-                            veh.set_redo_trj_false()  # todo eventually works with the fusion outputs
+                            test_trj_points(veh.first_trj_point_indx, veh.last_trj_point_indx, veh.trajectory, veh.ID,
+                                            simulation_time)  # todo remove if not testing
+                            veh.redo_trj_allowed = False  # todo eventually works with the fusion outputs
 
                         if print_trj_info and simulation_time >= test_time:
                             veh.print_trj_points(lane, veh_indx)
@@ -220,15 +203,17 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
         else:  # this is the last scenario but still some vehicles have not been served
             time_keeper.next_sim_step()
 
+    # Nothing after the while loop gets executed
+
 
 if __name__ == "__main__":
 
     # ################## SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR
     do_traj_computation = False  # speeds up
-    log_at_vehicle_level = True  # writes the <inter_name>_vehicle_level.csv
+    log_at_vehicle_level = False  # writes the <inter_name>_vehicle_level.csv
     log_at_trj_point_level = False  # writes the <inter_name>_trj_point_level.csv
     print_trj_info, test_time = False, 0.0  # prints arrival departures in command line
-    print_signal_detail = True  # prints signal info in command line
+    print_signal_detail = False  # prints signal info in command line
     print_clock = False  # prints the timer in command line
     print_detection, print_departure = False, False  # prints arrivals sent to the algorithm, ...
 

@@ -1,5 +1,5 @@
 ####################################
-# File name: traj.py               #
+# File name: trajectory.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
 # Last Modified: Apr/23/2018       #
@@ -15,15 +15,14 @@ import numpy as np
 class Trajectory:
     """
     Abstract class for computing the trajectory points. Four subclasses inherited from Trajectory():
-        * LeadConventional
-        * FollowerConnected
-        * LeadConnected
-        * FollowerConventional
+        - LeadConventional
+        - FollowerConnected
+        - LeadConnected
+        - FollowerConventional
 
     Note if want to omit the trajectory planning, there are two options:
-        * If a particular vehicle is intended to be skipped, simply invoke veh.set_redo_trj_false() whenever needed
-        * If the whole simulation is intended to be run without trajectory planer, set do_traj_computation in main.py
-        to False.
+        - If a particular vehicle is intended to be skipped, simply set ``do_traj_allowed`` to ``False``
+        - If the whole simulation is intended to be run without trajectory planer, set ``do_traj_allowed`` in ``main.py`` to False.
 
     Any solve method under each class shall invoke set_trajectory() method at the end or does the assignment in-place.
 
@@ -31,6 +30,11 @@ class Trajectory:
     :param RES: time difference between two consecutive trajectory points in second (be careful not to exceed max size
      of trajectory
     :param EPS: small number that lower than that is approximated by zero
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
 
     LAG = 1
@@ -81,6 +85,11 @@ class Trajectory:
 class LeadConventional(Trajectory):
     """
     Computes the trajectory for a lead conventional vehicle assuming the vehicle tends to maintain its arrival speed.
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
 
     def __init__(self, max_speed, min_headway):
@@ -124,8 +133,15 @@ class LeadConventional(Trajectory):
 # -------------------------------------------------------
 class FollowerConventional(Trajectory):
     """
-    Computes the trajectory for a follower conventional vehicle assuming a car following model.
+    Estimates the trajectory for a follower conventional vehicle assuming a car following model.
 
+    .. seealso::
+        Gipps, Peter G. *A behavioural car-following model for computer simulation*. Transportation Research Part B: Methodological 15.2 (1981): 105-111.
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
 
     def __init__(self, max_speed, min_headway):
@@ -133,13 +149,10 @@ class FollowerConventional(Trajectory):
 
     def solve(self, veh, lead_veh):
         """
-        Gipps car following model is assumed here.
-        It is written in-place (does not call set_trajectory)
+        Gipps car following model is assumed here. It is written in-place (does not call set_trajectory)
 
-        Refer to:
-            Gipps, Peter G. "A behavioural car-following model for computer simulation."
-            Transportation Research Part B: Methodological 15.2 (1981): 105-111.
-        Note the only trajectory point index that changes is follower's last one
+        .. note:: The only trajectory point index that changes is follower's last one.
+
         """
         follower_trajectory = veh.trajectory
         follower_desired_speed = veh.desired_speed
@@ -234,14 +247,16 @@ import cplex
 
 class LeadConnected(Trajectory):
     """
-.. note::
-    - Trajectory function: :math:`f(t)   = \sum_{n=0}^{k-1} b_n t^n`
-    - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n b_n t^{n-1}`
-    - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n (n-1) b_n t^{n-2}`
+    .. attention::
+        - Trajectory function: :math:`f(t)   = \sum_{n=0}^{k-1} b_n t^n`
+        - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n b_n t^{n-1}`
+        - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n (n-1) b_n t^{n-2}`
 
-.. seealso::
-    - Refer to ``IBM(R) ILOG CPLEX Python API Reference Manual`` for CPLEX usage using Python
-    - `Docs for solver status codes <https://www.ibm.com/support/knowledgecenter/SSSA5P_12.8.0/ilog.odms.cplex.help/refcallablelibrary/macros/Solution_status_codes.html>`_
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
     NUM_DIGS = 3  # the accuracy to keep decimals
 
@@ -311,7 +326,7 @@ class LeadConnected(Trajectory):
         """
         delay = veh.scheduled_arrival - veh.earliest_arrival
 
-        if delay < self.EPS and is_lead:  # do not have to solve LP since the earliest trj works
+        if delay < self.EPS and is_lead:  # do not have to solve LP since the earliest trajectory works
             return None
         else:  # solve LP
             trajectory = veh.trajectory
@@ -418,7 +433,7 @@ class LeadConnected(Trajectory):
 
                 dep_speed -= dv
             if dep_speed < 0:  # no optimal found in the while loop above
-                raise Exception("CPLEX failed to find optimal trj for vehicle " + str(veh.ID))
+                raise Exception("CPLEX failed to find optimal trajectory for vehicle " + str(veh.ID))
 
             beta = np.flip(np.array(model.solution.get_values(["beta_" + str(n) for n in range(self.k)])), 0)
             f = np.poly1d(beta)
@@ -448,16 +463,27 @@ class LeadConnected(Trajectory):
 
 
 class FollowerConnected(LeadConnected):
+    """
+    Optimizes the trajectory of a follower CAV.
+
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
+    """
     HEASWAY_CONTROL_START = 2  # in seconds how frequent need to check for speed, acc/dec rate, and headway
     SAFE_MIN_GAP = 4.8  # minimum safe distance to keep from lead vehicles todo make it dependent to speed
 
     def __init__(self, max_speed, min_headway, k, m):
         """
-        adds the safe headway constraints at the control points to the inherited model.
+        Adds the safe headway constraints at the control points to the inherited model.
+
         :param max_speed:
         :param min_headway:
         :param k:
         :param m:
+
         """
         super().__init__(max_speed, min_headway, k, m)
 
@@ -510,3 +536,66 @@ class FollowerConnected(LeadConnected):
                 j += 1
 
         return self._lp_model
+
+
+def earliest_arrival_connected(det_time, speed, dist, amin, amax, max_speed, min_headway=0, t_earliest=0):
+    """
+    Uses the maximum of the followings to compute the earliest time vehicle can reach to the stop bar:
+        - Accelerate/Decelerate to the maximum allowable speed and maintain the speed till departure
+        - Distance is short, it accelerates/decelerated to the best speed and departs
+        - Departs at the minimum headway with its lead vehicle (only for followers close enough to their lead)
+
+    :param det_time:
+    :param speed:
+    :param dist:
+    :param amin:
+    :param amax:
+    :param max_speed:
+    :param min_headway:
+    :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
+    :return:
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
+
+    """
+    a = amax if speed <= max_speed else amin
+    dist_to_max_speed = (max_speed ** 2 - speed ** 2) / (2 * a)
+
+    if dist_to_max_speed <= dist:
+        return max(
+            det_time + (max_speed - speed) / a + (dist - dist_to_max_speed) / max_speed  # min time to get to stop bar
+            , t_earliest + min_headway)
+
+    else:  # not enough time and distance to accelerate/decelerate to max speed
+        v_dest = np.sqrt(speed ** 2 + 2 * a * dist)
+        return max(
+            det_time + (max_speed - v_dest) / a  # min time to get to stop bar
+            , t_earliest + min_headway
+        )
+
+
+def earliest_arrival_conventional(det_time, speed, dist, min_headway=0, t_earliest=0):
+    """
+    Uses the maximum of the followings to compute the earliest time vehicle can reach to the stop bar:
+        - Maintains the detected speed till departure
+        - Departs at the minimum headway with the vehicle in front
+
+    :param det_time:
+    :param speed:
+    :param dist:
+    :param min_headway:
+    :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
+    :return:
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
+    """
+    return max(
+        det_time + dist / speed
+        , t_earliest + min_headway
+    )
