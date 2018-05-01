@@ -422,13 +422,13 @@ class Traffic:
         self._auxilary_departure_times[indx] = departure_time
         self._auxilary_ID[indx] = id
 
-    def set_elapsed_sim_time(self, t):
+    def set_elapsed_sim_time(self, elapsed_t):
         """
         Sets the elapsed time for one simulation of scenario.
 
-        :param t: elapsed time in seconds
+        :param elapsed_t: elapsed time in seconds
         """
-        self._axilary_elapsed_time[self._current_row_indx] = t
+        self._axilary_elapsed_time[self._current_row_indx] = elapsed_t
 
     def save_csv(self, inter_name):
         """
@@ -476,8 +476,7 @@ class Traffic:
         :param simulation_time: current simulation clock in seconds measured from zero
         :param max_speed: maximum allowable speed at the intersection in m/s
         :param min_headway: min headway in sec/veh
-        :param k: one more than the degree of polynomial to compute trajectory of connected vehicles. We need it here
-        to preallocate the vector that keeps the polynomial coefficients for connected vehicles.
+        :param k: one more than the degree of polynomial to compute trajectory of connected vehicles. We need it here to preallocate the vector that keeps the polynomial coefficients for connected vehicles.
         """
 
         # SEE IF ANY NEW VEHICLES HAS ARRIVED

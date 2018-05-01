@@ -46,19 +46,19 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
         - Tests for python version
         - Checks the input arguments to be valid
         - Instantiate:
-            - Intersection: keeps lane-lane and phase-lane incidence dictionaries
-            - Lanes:
-            - Traffic:
+            - :any:`Intersection`
+            - :any:`Lanes`
+            - :any:`Traffic`
             - trajectory planners: all bellow
-                - LeadConventional:
-                - LeadConnected:
-                - FollowerConventional:
-                - FollowerConnected:
+                - :any:`LeadConventional`
+                - :any:`LeadConnected`
+                - :any:`FollowerConventional`
+                - :any:`FollowerConnected`
             - signal: one of followings
-                - GA_SPaT:
-                - Pretimed:
+                - :any:`GA_SPaT`
+                - :any:`Pretimed`
         - set simulation start time to when first vehicle shows up
-            - Simulator:
+            - :any:`Simulator`
         - main loop stops only when all vehicles in the provided input traffic csv file are assigned a departure time.
             - remove vehicles that are served
             - update SPaT
@@ -70,8 +70,10 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
 
     :param inter_name: intersection name
     :type inter_name: str
-    :param method: Pretimed, GA, ...
+    :param method: pretimed, GA, ...
+    :type method: str
     :param sc: scenario number (*should match the appendix of the input csv filename*)
+    :type sc: int
     :param do_traj_computation:
     :param log_at_vehicle_level:
     :param log_at_trj_point_level:
