@@ -74,7 +74,7 @@ def get_conflict_dict(inter_name):
     """
 
     if inter_name == '13th16th':
-        return {1: {7},
+        lli =  {1: {7},
                 2: {7, 8, 12, 16, 15, 14, 13},
                 3: {7, 8, 12, 16, 15, 14, 9},
                 4: {7, 16, 8, 15, 9, 11, 10},
@@ -93,7 +93,7 @@ def get_conflict_dict(inter_name):
         # note (17, 9, 8, 15,) covers all lanes
 
     elif inter_name == 'TERL':
-        return {1: {2, 3, 4, 5, 6, },
+        lli = {1: {2, 3, 4, 5, 6, },
                 2: {1, 4, 6, },
                 3: {1, 4, 5, },
                 4: {1, 2, 3, 5, 6},
@@ -102,7 +102,7 @@ def get_conflict_dict(inter_name):
         # note (1, 2, 3, 4, ) covers all lanes
 
     elif inter_name == 'reserv':
-        return {1: {4, 5, 6, 7, 8, 9, 10, 11, 12},
+        lli = {1: {4, 5, 6, 7, 8, 9, 10, 11, 12},
                 2: {4, 5, 6, 7, 8, 9, 10, 11, 12},
                 3: {4, 5, 6, 7, 8, 9, 10, 11, 12},
                 4: {1, 2, 3, 7, 8, 9, 10, 11, 12},
@@ -114,7 +114,10 @@ def get_conflict_dict(inter_name):
                 10: {1, 2, 3, 4, 5, 6, 7, 8, 9},
                 11: {1, 2, 3, 4, 5, 6, 7, 8, 9},
                 12: {1, 2, 3, 4, 5, 6, 7, 8, 9}}
+    else:
+        raise Exception('Set of conflicting lanes is not known for this intersection.')
 
+    return lli
 
 def get_phases(inter_name):
     """
@@ -127,24 +130,24 @@ def get_phases(inter_name):
     """
 
     if inter_name == '13th16th':
-        return {1: {1, 10, 16, },
-                2: {6, 7, 12, },
-                3: {1, 2, 6, 9, },
-                4: {1, 5, 6, 13, },
-                5: {1, 6, 8, 9, },
-                6: {1, 6, 9, 16, },
-                7: {1, 6, 11, 12, },
-                8: {1, 9, 15, 16, },
-                9: {1, 10, 11, 12, },
-                10: {6, 7, 8, 9, },
-                11: {1, 2, 3, 6, 11, },
-                12: {1, 2, 3, 10, 11, },
-                13: {1, 4, 5, 6, 12, },
-                14: {1, 6, 8, 13, 14, },
-                15: {1, 6, 13, 14, 16, },
-                16: {1, 13, 14, 15, 16, },
-                17: {6, 7, 8, 13, 14, },
-                18: {1, 2, 3, 4, 5, 6, }}
+        pli = {1: {1, 10, 16, },
+               2: {6, 7, 12, },
+               3: {1, 2, 6, 9, },
+               4: {1, 5, 6, 13, },
+               5: {1, 6, 8, 9, },
+               6: {1, 6, 9, 16, },
+               7: {1, 6, 11, 12, },
+               8: {1, 9, 15, 16, },
+               9: {1, 10, 11, 12, },
+               10: {6, 7, 8, 9, },
+               11: {1, 2, 3, 6, 11, },
+               12: {1, 2, 3, 10, 11, },
+               13: {1, 4, 5, 6, 12, },
+               14: {1, 6, 8, 13, 14, },
+               15: {1, 6, 13, 14, 16, },
+               16: {1, 13, 14, 15, 16, },
+               17: {6, 7, 8, 13, 14, },
+               18: {1, 2, 3, 4, 5, 6, }}
 
     if inter_name == 'TERL':
         return {1: {1, },  # Southbound (signal controller: phase 2)
@@ -156,13 +159,14 @@ def get_phases(inter_name):
                 }
 
     elif inter_name == 'reserv':
-        # return None
-        return {1: {1, 2, 3, },
-                2: {4, 5, 6, },
-                3: {7, 8, 9, },
-                4: {10, 11, 12, }}
+        pli = {1: {1, 2, 3, },
+               2: {4, 5, 6, },
+               3: {7, 8, 9, },
+               4: {10, 11, 12, }}
     else:
         raise Exception('Set of phases is not known for this intersection.')
+
+    return pli
 
 
 def get_signal_params(inter_name):

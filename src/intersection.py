@@ -384,7 +384,7 @@ class Traffic:
         self.__all_vehicles = self.__all_vehicles.reset_index(drop=True)
 
         # get the scenario number
-        self.scenario_num = self.__all_vehicles['sc'].iloc[0]
+        self.scenario_num = sc
 
         # _current_row_indx points to the row of last vehicle added (-1 if none has been yet)
         # note this is cumulative and won't reset after a scenario is done
@@ -462,8 +462,7 @@ class Traffic:
         """
         :return: The time when the first vehicle in current scenario shows up.
         """
-        filtered_indx = self.__all_vehicles['sc'] == self.scenario_num
-        return np.nanmin(self.__all_vehicles[filtered_indx]['arrival time'].values)
+        return np.nanmin(self.__all_vehicles['arrival time'].values)
 
     def update_vehicles_info(self, lanes, simulation_time, max_speed, min_headway, k):
         """
@@ -483,8 +482,7 @@ class Traffic:
         indx = self._current_row_indx + 1
         max_indx = self.__all_vehicles.shape[0] - 1
         t_earliest = 0.0  # keep this since in the loop it gets updated (necessary here)
-        while indx <= max_indx and self.__all_vehicles['sc'][indx] == self.scenario_num and \
-                self.__all_vehicles['arrival time'][indx] <= simulation_time:
+        while indx <= max_indx and self.__all_vehicles['arrival time'][indx] <= simulation_time:
 
             # read the arrived vehicle's information
             lane = self.__all_vehicles['lane'][indx] - 1  # csv file has lanes coded in one-based

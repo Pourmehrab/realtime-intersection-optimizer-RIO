@@ -26,7 +26,7 @@ def check_py_ver():
     expect_major, expect_minor, expect_rev = 3, 5, 2
     if sys.version_info[0] >= expect_major and sys.version_info[1] >= expect_minor and sys.version_info[
         2] >= expect_rev:
-        print("Python version requirement is met. ################################\n")
+        print("Python version requirement is met.\n")
     else:
         print(
             "INFO: Script developed and tested with Python " + str(expect_major) + "." + str(expect_minor) + "." + str(
@@ -212,33 +212,38 @@ if __name__ == "__main__":
 
     # ################## SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR
     do_traj_computation = False  # speeds up
-    log_at_vehicle_level = False  # writes the <inter_name>_vehicle_level.csv
+    log_at_vehicle_level = True  # writes the <inter_name>_vehicle_level.csv
     log_at_trj_point_level = False  # writes the <inter_name>_trj_point_level.csv
     print_trj_info, test_time = False, 0.0  # prints arrival departures in command line
     print_signal_detail = False  # prints signal info in command line
     print_clock = False  # prints the timer in command line
     print_detection, print_departure = False, False  # prints arrivals sent to the algorithm, ...
 
-    print(
-        "University of Florida.\nBy Mahmoud Pourmehrab ######################\n")
-    print("Interpreter Information ###################################")
+    print("Interpreter Information")
     print("Python Path: ", sys.executable)
     print("Python Version: ", sys.version)
 
     # Check the interpreter to make sure using py version at least 3.5.2
     check_py_ver()
 
-    if len(sys.argv) != 4 or sys.argv[1] not in ["13th16th", "reserv", ] or sys.argv[2] not in ["GA", "MCF", "pretimed",
-                                                                                                "actuated"] or sys.argv[
-        3] not in ["simulation", "realtime"]:
+    if len(sys.argv) != 4 or \
+            sys.argv[1] not in ["13th16th", "TERL", "reserv", ] or \
+            sys.argv[2] not in ["GA", "MCF", "pretimed", "actuated"] or \
+            sys.argv[3] not in ["simulation", "realtime"]:
+
         raise Exception("Check the input arguments and try again.")
     else:
         # Set the intersection name, optimization method
         inter_name, method, run_mode = sys.argv[1], sys.argv[2], sys.argv[3]
 
         if run_mode == 'simulation':
-            sc = 353  # 237
-            run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level,
-                      print_clock, print_signal_detail, print_trj_info, test_time, print_detection, print_departure)
+            max_sc = 45
+            for sc in range(1, max_sc + 1):
+
+                run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level,
+                          print_clock, print_signal_detail, print_trj_info, test_time, print_detection, print_departure)
+
         elif run_mode == 'realtime':
-            pass  # todo we may define realtime functionality here
+            raise Exception('real-time mode is not available yet.')
+
+    print("Program Terminated with No Error.")
