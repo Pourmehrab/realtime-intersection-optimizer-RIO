@@ -213,9 +213,9 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
 if __name__ == "__main__":
 
     # ################## SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR
-    do_traj_computation = False  # speeds up
+    do_traj_computation = True
     log_at_vehicle_level = True  # writes the <inter_name>_vehicle_level.csv
-    log_at_trj_point_level = False  # writes the <inter_name>_trj_point_level.csv
+    log_at_trj_point_level = True  # writes the <inter_name>_trj_point_level.csv
     print_trj_info, test_time = True, 0.0  # prints arrival departures in command line
     print_signal_detail = True  # prints signal info in command line
     print_clock = True  # prints the timer in command line
