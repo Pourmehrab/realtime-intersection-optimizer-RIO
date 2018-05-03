@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>2. Simulator/Data &#8212; AVIAN 1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="3. Intersection" href="[2].intersection.html" />
+    <link rel="prev" title="1. Overview" href="[0].overview.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-inverse navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          AVIAN</a>
+        <span class="navbar-text navbar-version pull-left"><b>1.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="https://pourmehrab.github.io/home">Personal Page</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="[0].overview.html">1. Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="[0].overview.html#introduction">1.1. Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="[0].overview.html#terms">1.2. Terms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="[0].overview.html#main-script">1.3. Main Script</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">2. Simulator/Data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-src.time_keeper">2.1. Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-data.data">2.2. Python Data</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="[2].intersection.html">3. Intersection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[3].signal.html">4. Signal Phase and Timing (SPaT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[4].trajectory.html">5. Trajectory</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">2. Simulator/Data</a><ul>
+<li><a class="reference internal" href="#module-src.time_keeper">2.1. Simulation</a></li>
+<li><a class="reference internal" href="#module-data.data">2.2. Python Data</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="[0].overview.html" title="Previous Chapter: 1. Overview"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; 1. Overview</span>
+    </a>
+  </li>
+  <li>
+    <a href="[2].intersection.html" title="Next Chapter: 3. Intersection"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">3. Intersection &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm"></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+      <div class="col-md-3">
+        <div id="sidebar" class="bs-sidenav" role="complementary">
+  <li>
+    <a href="[0].overview.html" title="Previous Chapter: 1. Overview"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; 1. Overview</span>
+    </a>
+  </li>
+  <li>
+    <a href="[2].intersection.html" title="Next Chapter: 3. Intersection"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">3. Intersection &raquo;</span>
+    </a>
+  </li>
+<form action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+        </div>
+      </div>
+    <div class="col-md-9 content">
+      
+  <div class="section" id="simulator-data">
+<h1>2. Simulator/Data<a class="headerlink" href="#simulator-data" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-src.time_keeper">
+<span id="simulation"></span><h2>2.1. Simulation<a class="headerlink" href="#module-src.time_keeper" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="src.time_keeper.TimeKeeper">
+<em class="property">class </em><code class="descclassname">src.time_keeper.</code><code class="descname">TimeKeeper</code><span class="sig-paren">(</span><em>sim_start</em>, <em>resolution=2.0</em><span class="sig-paren">)</span><a class="headerlink" href="#src.time_keeper.TimeKeeper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="docutils">
+<dt>Objectives:</dt>
+<dd><ul class="first last simple">
+<li>Keeps the time</li>
+<li>Moves the simulation clock forward</li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="src.time_keeper.TimeKeeper.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>sim_start</em>, <em>resolution=2.0</em><span class="sig-paren">)</span><a class="headerlink" href="#src.time_keeper.TimeKeeper.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clock keeps the simulation starting time in seconds.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sim_start</strong> – start time of simulation to be initialized</li>
+<li><strong>resolution</strong> – Simulation resolution: the time steps to move the simulation forward in seconds</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.time_keeper.TimeKeeper.next_sim_step">
+<code class="descname">next_sim_step</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.time_keeper.TimeKeeper.next_sim_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move simulation clock forward</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-data.data">
+<span id="python-data"></span><h2>2.2. Python Data<a class="headerlink" href="#module-data.data" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="data.data.get_general_params">
+<code class="descclassname">data.data.</code><code class="descname">get_general_params</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="headerlink" href="#data.data.get_general_params" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Returns max speed (<span class="math notranslate nohighlight">\(m/s\)</span>), min_headway (<span class="math notranslate nohighlight">\(s\)</span>), detection range (<span class="math notranslate nohighlight">\(m\)</span>), <span class="math notranslate nohighlight">\(k, m\)</span>, number of lanes. Where:</dt>
+<dd><ul class="first last simple">
+<li><span class="math notranslate nohighlight">\(k\)</span> =  # <span class="math notranslate nohighlight">\(n\)</span> will be in 0, …, k-1 (odd degree of polynomial is preferred: k to be even)</li>
+<li><span class="math notranslate nohighlight">\(m\)</span> =  # to discretize the time interval</li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>The distance to stop bar will be input from either csv file or fusion. However, the number provided here is used for generic computations.</li>
+</ul>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Is required for trajectory optimization</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="data.data.get_pretimed_parameters">
+<code class="descclassname">data.data.</code><code class="descname">get_pretimed_parameters</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="headerlink" href="#data.data.get_pretimed_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>This returns the parameters needed for pre-timed control.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>The sequence field includes the phases and is zero-based.</li>
+<li>You need to compute green splits and yellows, all-reds based on traffic flow theory.</li>
+</ul>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="data.data.get_conflict_dict">
+<code class="descclassname">data.data.</code><code class="descname">get_conflict_dict</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="headerlink" href="#data.data.get_conflict_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a <strong>dictionary</strong> of sets where the <strong>keys</strong> are lane numbers and must be coded in one-based and the <strong>value</strong> for each key is a set of lane numbers that are in conflict with the key lane (again must be one based).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="data.data.get_phases">
+<code class="descclassname">data.data.</code><code class="descname">get_phases</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="headerlink" href="#data.data.get_phases" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary of sets
+The key is the phase number is one-based
+The value to a key is set of lanes included in that phase (lanes are one-based too)
+Use the phase enumerator for new intersections of refine manually
+The rule is each set must include non-conflicting lanes
+# todo add the phase enumarator to the project</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="data.data.get_signal_params">
+<code class="descclassname">data.data.</code><code class="descname">get_signal_params</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="headerlink" href="#data.data.get_signal_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Required for GA signal control
+ALL yellow, all-red, min green, max green times are in seconds</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2018, Mahmoud Pourmehrab.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.4.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>
