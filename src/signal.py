@@ -694,6 +694,8 @@ class ActuatedControl(Signal):
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
         April-2018
+    :Status:
+        Incomplete
     """
 
     def __init__(self, inter_name, allowable_phases, num_lanes):
@@ -742,6 +744,8 @@ class MinCostFlow_SPaT(Signal):
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
         April-2018
+    :Status:
+        Incomplete
     '''
 
     M = 999
@@ -843,6 +847,8 @@ class Enumerate_SpaT(Signal):
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
         April-2018
+    :Status:
+        Incomplete
     '''
 
     def __init__(self, inter_name, allowable_phases, num_lanes):

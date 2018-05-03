@@ -10,7 +10,7 @@ class TimeKeeper:
     """
     Objectives:
         - Keeps the time
-        - Move forward the time
+        - Moves the simulation clock forward
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -18,15 +18,15 @@ class TimeKeeper:
         April-2018
     """
 
-    def __init__(self, t, resolution=2.0):
+    def __init__(self, sim_start, resolution=2.0):
         """
         Clock keeps the simulation starting time in seconds.
 
 
-        :param t: start time of simulation to be initialized
+        :param sim_start: start time of simulation to be initialized
         :param resolution: Simulation resolution: the time steps to move the simulation forward in seconds
         """
-        self.clock = t
+        self.clock = sim_start
         self._res = resolution
 
     def next_sim_step(self):

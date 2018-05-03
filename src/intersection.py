@@ -384,7 +384,7 @@ class Traffic:
         self.__all_vehicles = self.__all_vehicles.reset_index(drop=True)
 
         # get the scenario number
-        self.scenario_num = self.__all_vehicles['sc'].iloc[0]
+        self.scenario_num = sc
 
         # _current_row_indx points to the row of last vehicle added (-1 if none has been yet)
         # note this is cumulative and won't reset after a scenario is done
@@ -422,13 +422,13 @@ class Traffic:
         self._auxilary_departure_times[indx] = departure_time
         self._auxilary_ID[indx] = id
 
-    def set_elapsed_sim_time(self, t):
+    def set_elapsed_sim_time(self, elapsed_t):
         """
         Sets the elapsed time for one simulation of scenario.
 
-        :param t: elapsed time in seconds
+        :param elapsed_t: elapsed time in seconds
         """
-        self._axilary_elapsed_time[self._current_row_indx] = t
+        self._axilary_elapsed_time[self._current_row_indx] = elapsed_t
 
     def save_csv(self, inter_name):
         """
@@ -462,13 +462,12 @@ class Traffic:
         """
         :return: The time when the first vehicle in current scenario shows up.
         """
-        filtered_indx = self.__all_vehicles['sc'] == self.scenario_num
-        return np.nanmin(self.__all_vehicles[filtered_indx]['arrival time'].values)
+        return np.nanmin(self.__all_vehicles['arrival time'].values)
 
     def update_vehicles_info(self, lanes, simulation_time, max_speed, min_headway, k):
         """
         Objectives
-            - Adds vehicles from the csv file to ``lanes.vehlist``
+            - Appends arrived vehicles from the csv file to ``lanes.vehlist``
             - Assigns their earliest arrival time
 
         :param lanes: vehicles are added to this data structure
@@ -476,16 +475,14 @@ class Traffic:
         :param simulation_time: current simulation clock in seconds measured from zero
         :param max_speed: maximum allowable speed at the intersection in m/s
         :param min_headway: min headway in sec/veh
-        :param k: one more than the degree of polynomial to compute trajectory of connected vehicles. We need it here
-        to preallocate the vector that keeps the polynomial coefficients for connected vehicles.
+        :param k: one more than the degree of polynomial to compute trajectory of connected vehicles. We need it here to preallocate the vector that keeps the polynomial coefficients for connected vehicles.
         """
 
         # SEE IF ANY NEW VEHICLES HAS ARRIVED
         indx = self._current_row_indx + 1
         max_indx = self.__all_vehicles.shape[0] - 1
         t_earliest = 0.0  # keep this since in the loop it gets updated (necessary here)
-        while indx <= max_indx and self.__all_vehicles['sc'][indx] == self.scenario_num and \
-                self.__all_vehicles['arrival time'][indx] <= simulation_time:
+        while indx <= max_indx and self.__all_vehicles['arrival time'][indx] <= simulation_time:
 
             # read the arrived vehicle's information
             lane = self.__all_vehicles['lane'][indx] - 1  # csv file has lanes coded in one-based
@@ -575,6 +572,7 @@ class Traffic:
         :param lanes: includes all vehicles
         :param simulation_time: current simulation clock
         :param num_lanes: number of lanes
+        :param print_departure:
         """
 
         for lane in range(num_lanes):
