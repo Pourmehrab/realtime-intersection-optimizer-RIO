@@ -106,7 +106,6 @@ ENV/
 *.csv
 *.lp
 *.xlsx
-unit_tests.py
 
 log/
 sphinx/
