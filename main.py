@@ -85,6 +85,8 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
         April-2018
+    :Organization:
+        University of Florida
     """
     intersection = Intersection(inter_name)
     # get some useful values
@@ -214,10 +216,10 @@ if __name__ == "__main__":
     do_traj_computation = False  # speeds up
     log_at_vehicle_level = True  # writes the <inter_name>_vehicle_level.csv
     log_at_trj_point_level = False  # writes the <inter_name>_trj_point_level.csv
-    print_trj_info, test_time = False, 0.0  # prints arrival departures in command line
-    print_signal_detail = False  # prints signal info in command line
-    print_clock = False  # prints the timer in command line
-    print_detection, print_departure = False, False  # prints arrivals sent to the algorithm, ...
+    print_trj_info, test_time = True, 0.0  # prints arrival departures in command line
+    print_signal_detail = True  # prints signal info in command line
+    print_clock = True  # prints the timer in command line
+    print_detection, print_departure = True, True  # prints arrivals sent to the algorithm, ...
 
     print("Interpreter Information")
     print("Python Path: ", sys.executable)
@@ -232,18 +234,16 @@ if __name__ == "__main__":
             sys.argv[3] not in ["simulation", "realtime"]:
 
         raise Exception("Check the input arguments and try again.")
-    else:
-        # Set the intersection name, optimization method
+    else:  # input arguments are good, run the rest
         inter_name, method, run_mode = sys.argv[1], sys.argv[2], sys.argv[3]
 
         if run_mode == 'simulation':
-            max_sc = 45
+            max_sc = 1
             for sc in range(1, max_sc + 1):
-
                 run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level,
                           print_clock, print_signal_detail, print_trj_info, test_time, print_detection, print_departure)
 
         elif run_mode == 'realtime':
             raise Exception('real-time mode is not available yet.')
 
-    print("Program Terminated with No Error.")
+    print("\nProgram Terminated.")

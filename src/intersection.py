@@ -467,7 +467,7 @@ class Traffic:
     def update_vehicles_info(self, lanes, simulation_time, max_speed, min_headway, k):
         """
         Objectives
-            - Adds vehicles from the csv file to ``lanes.vehlist``
+            - Appends arrived vehicles from the csv file to ``lanes.vehlist``
             - Assigns their earliest arrival time
 
         :param lanes: vehicles are added to this data structure
@@ -572,6 +572,7 @@ class Traffic:
         :param lanes: includes all vehicles
         :param simulation_time: current simulation clock
         :param num_lanes: number of lanes
+        :param print_departure:
         """
 
         for lane in range(num_lanes):
