@@ -58,7 +58,7 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
                 - :any:`GA_SPaT`
                 - :any:`Pretimed`
         - set simulation start time to when first vehicle shows up
-            - :any:`Simulator`
+            - :any:`TimeKeeper`
         - main loop stops only when all vehicles in the provided input traffic csv file are assigned a departure time.
             - remove vehicles that are served
             - update SPaT
@@ -225,7 +225,7 @@ if __name__ == "__main__":
     print("Python Path: ", sys.executable)
     print("Python Version: ", sys.version)
 
-    # Check the interpreter to make sure using py version at least 3.5.2
+    # Check the interpreter to make sure using python version
     check_py_ver()
 
     if len(sys.argv) != 4 or \

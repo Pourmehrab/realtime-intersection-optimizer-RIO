@@ -16,6 +16,11 @@ def get_general_params(inter_name):
         - The distance to stop bar will be input from either csv file or fusion. However, the number provided here is used for generic computations.
 
     .. warning:: Is required for trajectory optimization
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
     if inter_name == '13th16th':
         max_speed = 15.0
@@ -52,6 +57,11 @@ def get_pretimed_parameters(inter_name):
     .. note::
         - The sequence field includes the phases and is zero-based.
         - You need to compute green splits and yellows, all-reds based on traffic flow theory.
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
 
     if inter_name == '13th16th':
@@ -71,6 +81,37 @@ def get_pretimed_parameters(inter_name):
 def get_conflict_dict(inter_name):
     """
     Returns a **dictionary** of sets where the **keys** are lane numbers and must be coded in one-based and the **value** for each key is a set of lane numbers that are in conflict with the key lane (again must be one based).
+
+    An intersection configuration can be specified by its lanes and movements (left, through, right) that are allowed in each lane. The lane-lane incidence matrix of an intersection is a squared matrix that holds 1 (shown by solid circles in the figures), if two lanes are in conflict. The standard types of conflicts that may wanted to be avoided are cross, merge, and diverge conflicts. Depending on the design, the definition of conflicts points can be broader or more limited. For instance, if volume of a lane is too low and extensive gaps can be found, some of conflict points can be relaxed as non-conflicting points. In the following figures, only cross and merge conflict points are indicated.
+
+    .. figure:: images/TERL.JPG
+       :width: 4cm
+       :height: 4cm
+       :align: center
+       :alt: map to buried treasure
+
+       The TERL facility.
+
+    .. figure:: images/reserv.JPG
+       :width: 8cm
+       :height: 8cm
+       :align: center
+       :alt: map to buried treasure
+
+       The reservation-based intersection.
+
+    .. figure:: images/13th16th.JPG
+       :width: 10cm
+       :height: 10cm
+       :align: center
+       :alt: map to buried treasure
+
+       The intersection of 13th and 16th, Gainesville, FL.
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
 
     if inter_name == '13th16th':
@@ -127,6 +168,11 @@ def get_phases(inter_name):
     Use the phase enumerator for new intersections of refine manually
     The rule is each set must include non-conflicting lanes
     # todo add the phase enumarator to the project
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
 
     if inter_name == '13th16th':
@@ -173,6 +219,11 @@ def get_signal_params(inter_name):
     """
     Required for GA signal control
     ALL yellow, all-red, min green, max green times are in seconds
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
 
     if inter_name == '13th16th':
