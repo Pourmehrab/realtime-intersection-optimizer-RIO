@@ -10,6 +10,7 @@
 
 import sys
 import time
+from datetime import datetime
 
 from src.time_keeper import TimeKeeper
 from src.intersection import Intersection, Lanes, Traffic
@@ -35,8 +36,9 @@ def check_py_ver():
         sys.exit(-1)
 
 
-def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level, print_clock,
-              print_signal_detail, print_trj_info, test_time, print_detection, print_departure):
+def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level,
+              log_signal_status, print_clock, print_signal_detail, print_trj_info, test_time, print_detection,
+              print_departure):
     """
     For logging and printing of information set boolean variables:
         - ``log_at_trj_point_level`` saves a csv under ``\log`` directory that contains all trajectory points for all vehicles
@@ -77,10 +79,12 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     :param do_traj_computation:
     :param log_at_vehicle_level:
     :param log_at_trj_point_level:
+    :param log_signal_status:
     :param print_clock: prints the simulation clock
     :param print_signal_detail:
     :param print_trj_info:
     :param test_time: in seconds from start of simulation
+
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
@@ -88,6 +92,10 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     :Organization:
         University of Florida
     """
+    # to mark saved csv file
+    if log_at_vehicle_level or log_at_trj_point_level or log_signal_status:
+        start_time_stamp = datetime.utcnow().strftime('%B %d %Y - %H:%M:%S')
+
     intersection = Intersection(inter_name)
     # get some useful values
     num_lanes = intersection.get_num_lanes()
@@ -99,7 +107,7 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     lanes = Lanes(num_lanes)
 
     # load entire traffic generated in csv file
-    traffic = Traffic(inter_name, sc, log_at_vehicle_level, log_at_trj_point_level, print_detection)
+    traffic = Traffic(inter_name, sc, log_at_vehicle_level, log_at_trj_point_level, print_detection, start_time_stamp)
 
     # initialize trajectory planners
     lead_conventional_trj_estimator = LeadConventional(max_speed, min_headway)
@@ -112,9 +120,12 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
         # define what subset of phase-lane incidence matrix should be used
         # minimal set of phase indices to cover all movements (17, 9, 8, 15) for 13th16th intersection
         # NOTE TEH SET OF ALLOWABLE PHASE ARRAY IS ZERO-BASED (not like what inputted in data.py)
-        signal = GA_SPaT(inter_name, (0, 1, 2, 3,), num_lanes, min_headway, print_signal_detail)
+        allowable_phase = (0, 1, 2, 3,)
+        signal = GA_SPaT(inter_name, allowable_phase, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
+                         print_signal_detail)
     elif method == "pretimed":
-        signal = Pretimed(inter_name, num_lanes, min_headway, print_signal_detail)
+        signal = Pretimed(inter_name, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
+                          print_signal_detail)
 
     elif method == "MCF" or method == "actuated":
         raise Exception("This signal control method is not complete yet.")  # todo develop these
@@ -197,11 +208,12 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
                     print("\n### ELAPSED TIME: {:>5d} ms ###".format(int(1000 * (t_end - t_start))))
 
                 # save the csv which has travel time column appended
-                traffic.save_csv(inter_name)
+                traffic.save_veh_level_csv(inter_name, start_time_stamp)
 
             if log_at_trj_point_level:
                 traffic.close_trj_csv()  # cus this is written line y line
-
+            if log_signal_status:
+                signal.close_sig_csv()
             return  # this halts the program
 
         else:  # this is the last scenario but still some vehicles have not been served
@@ -213,9 +225,10 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
 if __name__ == "__main__":
 
     # ################## SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR
-    do_traj_computation = True
+    do_traj_computation = False
     log_at_vehicle_level = True  # writes the <inter_name>_vehicle_level.csv
     log_at_trj_point_level = True  # writes the <inter_name>_trj_point_level.csv
+    log_signal_status = True
     print_trj_info, test_time = True, 0.0  # prints arrival departures in command line
     print_signal_detail = True  # prints signal info in command line
     print_clock = True  # prints the timer in command line
@@ -241,7 +254,8 @@ if __name__ == "__main__":
             max_sc = 1
             for sc in range(1, max_sc + 1):
                 run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level,
-                          print_clock, print_signal_detail, print_trj_info, test_time, print_detection, print_departure)
+                          log_signal_status, print_clock, print_signal_detail, print_trj_info, test_time,
+                          print_detection, print_departure)
 
         elif run_mode == 'realtime':
             raise Exception('real-time mode is not available yet.')

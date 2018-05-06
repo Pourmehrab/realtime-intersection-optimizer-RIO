@@ -84,12 +84,23 @@ class Trajectory:
 # -------------------------------------------------------
 class LeadConventional(Trajectory):
     """
-    Computes the trajectory for a lead conventional vehicle assuming the vehicle tends to maintain its arrival speed.
+Computes the trajectory for a lead conventional vehicle assuming the vehicle tends to maintain its arrival speed.
 
-    :Author:
-        Mahmoud Pourmehrab <pourmehrab@gmail.com>
-    :Date:
-        April-2018
+Use Case:
+
+    Instantiate like::
+
+        $ lead_conventional_trj_estimator = LeadConventional(.)
+
+    Perform trajectory computation by::
+
+        $ lead_conventional_trj_estimator.solve(veh)
+
+
+:Author:
+    Mahmoud Pourmehrab <pourmehrab@gmail.com>
+:Date:
+    April-2018
     """
 
     def __init__(self, max_speed, min_headway):
@@ -137,6 +148,16 @@ class FollowerConventional(Trajectory):
 
     .. seealso::
         Gipps, Peter G. *A behavioural car-following model for computer simulation*. Transportation Research Part B: Methodological 15.2 (1981): 105-111.
+
+Use Case:
+
+    Instantiate like::
+
+        $ follower_conventional_trj_estimator = FollowerConventional(.)
+
+    Perform trajectory computation by::
+
+        $ follower_conventional_trj_estimator.solve(veh, .)
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -252,6 +273,16 @@ class LeadConnected(Trajectory):
         - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n b_n t^{n-1}`
         - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n (n-1) b_n t^{n-2}`
 
+
+Use Case:
+
+    Instantiate like::
+
+        $ lead_connected_trj_optimizer = LeadConnected(.)
+
+    Perform trajectory computation by::
+
+        $ lead_conventional_trj_estimator.solve(veh)
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -464,8 +495,18 @@ class LeadConnected(Trajectory):
 
 class FollowerConnected(LeadConnected):
     """
-    Optimizes the trajectory of a follower CAV.
+Optimizes the trajectory of a follower CAV.
 
+Use Case:
+
+    Instantiate like::
+
+        $ follower_connected_trj_optimizer = FollowerConnected(.)
+
+    Perform trajectory computation by::
+
+        $ model = follower_connected_trj_optimizer.set_model(.)
+        $ follower_connected_trj_optimizer.solve(veh, .)
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
