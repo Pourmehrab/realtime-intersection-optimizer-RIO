@@ -49,9 +49,12 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> AVIAN
+            <a href="index.html">
           
 
+          
+            
+            <img src="_static/uf_logo_AVIAN.jpg" class="logo" alt="Logo"/>
           
           </a>
 
@@ -160,9 +163,7 @@
 <h1>1. Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="introduction">
 <h2>1.1. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>The program is to simulate the performance of an isolated intersection under traffic of automated vehicles and conventional vehicles with variety of signal control methods. It is developed as part of the AVIAN project supported by National Science Foundation under <a class="reference external" href="https://www.nsf.gov/awardsearch/showAward?AWD_ID=1446813&amp;HistoricalAwards=false">grant award 1446813</a>. The base implementation was done in MATLAB programming language in 2015 - 2017 (see <a class="footnote-reference" href="#id2" id="id1">[1]</a>).</p>
-<p>Coded by: Mahmoud Pourmehrab (<a class="reference external" href="mailto:mpourmehrab&#37;&#52;&#48;ufl&#46;edu">mpourmehrab<span>&#64;</span>ufl<span>&#46;</span>edu</a>)</p>
-<p>Visit the project website at <a class="reference external" href="http://avian.essie.ufl.edu">AVIAN.ESSIE.UFL.EDU</a></p>
+<p>The program is to simulate the performance of an isolated intersection under traffic of automated vehicles and conventional vehicles with variety of signal control methods. It is developed as part of the AVIAN project supported by National Science Foundation under <a class="reference external" href="https://www.nsf.gov/awardsearch/showAward?AWD_ID=1446813&amp;HistoricalAwards=false">grant award 1446813</a>. The base implementation was done in MATLAB programming language in 2015 - 2017 (see <a class="footnote-reference" href="#id2" id="id1">[1]</a>). For comments and questions please contact email me at <a class="reference external" href="mailto:mpourmehrab&#37;&#52;&#48;ufl&#46;edu">mpourmehrab<span>&#64;</span>ufl<span>&#46;</span>edu</a>. For details on the AVIAN project visit <a class="reference external" href="http://avian.essie.ufl.edu">AVIAN.ESSIE.UFL.EDU</a>.</p>
 <blockquote>
 <div><div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -185,9 +186,10 @@
 </dl>
 </li>
 <li><dl class="first docutils">
-<dt>Outputs are stored under <code class="docutils literal notranslate"><span class="pre">\log</span></code>:</dt>
+<dt>Outputs are stored under <code class="docutils literal notranslate"><span class="pre">/log/</span></code>:</dt>
 <dd><ul class="first last">
-<li><code class="docutils literal notranslate"><span class="pre">&lt;intersection</span> <span class="pre">name&gt;_vehicle_level</span></code> includes input csv plus the <code class="docutils literal notranslate"><span class="pre">departure</span> <span class="pre">time,</span> <span class="pre">vehicle</span> <span class="pre">ID</span></code> and <code class="docutils literal notranslate"><span class="pre">elapsed</span> <span class="pre">time</span></code> columns</li>
+<li>The outputs are named by the format of <code class="docutils literal notranslate"><span class="pre">/log/&lt;intersection</span> <span class="pre">name&gt;/&lt;UTC</span> <span class="pre">timestamp&gt;_&lt;sc&gt;_*.csv</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">&lt;intersection</span> <span class="pre">name&gt;_vehicle_level.csv</span></code> includes input csv plus the <code class="docutils literal notranslate"><span class="pre">departure</span> <span class="pre">time,</span> <span class="pre">vehicle</span> <span class="pre">ID</span></code> and <code class="docutils literal notranslate"><span class="pre">elapsed</span> <span class="pre">time</span></code> columns</li>
 <li><code class="docutils literal notranslate"><span class="pre">&lt;intersection</span> <span class="pre">name&gt;_trj_point_level.csv</span></code> includes the trajectory points</li>
 </ul>
 </dd>
@@ -198,8 +200,8 @@
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <ul class="last simple">
-<li>As of now, no traffic generator module is developed as part of the main workflow. The traffic is input in csv format under <code class="docutils literal notranslate"><span class="pre">data</span></code> directory.</li>
-<li>For simulation, the directory <code class="docutils literal notranslate"><span class="pre">\data\</span></code> shall include <code class="docutils literal notranslate"><span class="pre">&lt;intersection</span> <span class="pre">name&gt;.csv</span></code> which has the scenarios to be tested. Note the filename should match the intersection name.</li>
+<li>As of now, no traffic generator module is developed as part of the main workflow. The traffic is input in csv format under <code class="docutils literal notranslate"><span class="pre">/data/&lt;intersection</span> <span class="pre">name&gt;/</span></code> directory.</li>
+<li>For simulation, the directory <code class="docutils literal notranslate"><span class="pre">/data/&lt;intersection</span> <span class="pre">name&gt;/</span></code> shall include <code class="docutils literal notranslate"><span class="pre">&lt;timestamp&gt;_sc_sig_phase_level,</span> <span class="pre">_trj_vehicle_level,</span> <span class="pre">_trj_point_level.csv</span></code> which has the scenarios to be tested. Note the filename should match the intersection name.</li>
 <li><dl class="first docutils">
 <dt>The csv file must include columns with the following heading:</dt>
 <dd><ul class="first last">
@@ -211,8 +213,7 @@
 <li><cite>desSpd</cite>: desired speed</li>
 <li><cite>dest</cite>: destination {0: right turn, 1: through, 2: left}</li>
 <li><cite>L</cite>: length of vehicle</li>
-<li><cite>maxDec</cite>: maximum deceleration rate vehicle can execute</li>
-<li><cite>maxAcc</cite>: maximum acceleration rate vehicle can execute</li>
+<li><cite>maxAcc, maxDec</cite>: maximum acceleration, deceleration rate vehicle can execute</li>
 </ul>
 </dd>
 </dl>
@@ -288,7 +289,7 @@
 
 <dl class="function">
 <dt id="main.run_avian">
-<code class="descclassname">main.</code><code class="descname">run_avian</code><span class="sig-paren">(</span><em>inter_name</em>, <em>method</em>, <em>sc</em>, <em>do_traj_computation</em>, <em>log_at_vehicle_level</em>, <em>log_at_trj_point_level</em>, <em>print_clock</em>, <em>print_signal_detail</em>, <em>print_trj_info</em>, <em>test_time</em>, <em>print_detection</em>, <em>print_departure</em><span class="sig-paren">)</span><a class="headerlink" href="#main.run_avian" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">main.</code><code class="descname">run_avian</code><span class="sig-paren">(</span><em>inter_name</em>, <em>method</em>, <em>sc</em>, <em>do_traj_computation</em>, <em>log_at_vehicle_level</em>, <em>log_at_trj_point_level</em>, <em>log_signal_status</em>, <em>print_clock</em>, <em>print_signal_detail</em>, <em>print_trj_info</em>, <em>test_time</em>, <em>print_detection</em>, <em>print_departure</em><span class="sig-paren">)</span><a class="headerlink" href="#main.run_avian" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
 <dt>For logging and printing of information set boolean variables:</dt>
 <dd><ul class="first last simple">
@@ -365,20 +366,26 @@
 <li><strong>do_traj_computation</strong> – </li>
 <li><strong>log_at_vehicle_level</strong> – </li>
 <li><strong>log_at_trj_point_level</strong> – </li>
-<li><strong>print_clock</strong> – prints the simulation clock</li>
+<li><strong>log_signal_status</strong> – </li>
+<li><strong>print_clock</strong> – </li>
 <li><strong>print_signal_detail</strong> – </li>
 <li><strong>print_trj_info</strong> – </li>
 <li><strong>test_time</strong> – in seconds from start of simulation</li>
+<li><strong>print_detection</strong> – </li>
+<li><strong>print_departure</strong> – </li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body"><p class="first">April-2018</p>
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Organization:</th><td class="field-body"><p class="first last">University of Florida</p>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body"><p class="first">April-2018</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Organization:</th><td class="field-body"><p class="first last">University of Florida</p>
 </td>
 </tr>
 </tbody>

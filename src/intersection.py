@@ -8,8 +8,7 @@
 '''
     Intersection: gets parameters that are needed to specify the configuration of problem
 '''
-import csv
-import os
+import os, csv
 
 import numpy as np
 import pandas as pd
@@ -365,7 +364,7 @@ class Traffic:
         April-2018
     """
 
-    def __init__(self, inter_name, sc, log_at_vehicle_level, log_at_trj_point_level, print_detection):
+    def __init__(self, inter_name, sc, log_at_vehicle_level, log_at_trj_point_level, print_detection, start_time_stamp):
         """
         Objectives:
             - Sets the logging behaviour for outputting requested CSV files and auxiliary output vectors
@@ -374,7 +373,8 @@ class Traffic:
         """
 
         # get the path to the csv file and load up the traffic
-        filepath = os.path.join('data/' + inter_name + '_' + str(sc) + '.csv')
+        filepath = os.path.join(
+            'data/' + inter_name + '/' + inter_name + '_' + str(sc) + '.csv')
         if os.path.exists(filepath):
             self.__all_vehicles = pd.read_csv(filepath)
         else:
@@ -402,7 +402,8 @@ class Traffic:
 
         if log_at_trj_point_level:
             # open a file to store trajectory points
-            filepath_trj = os.path.join('log/' + inter_name + '_' + str(sc) + '_trj_point_level.csv')
+            filepath_trj = os.path.join('log/' + inter_name + '/' + start_time_stamp + '_' + str(
+                self.scenario_num) + '_trj_point_level.csv')
             self.full_traj_csv_file = open(filepath_trj, 'w', newline='')
             writer = csv.writer(self.full_traj_csv_file, delimiter=',')
             writer.writerow(['sc', 'VehID', 'type', 'lane', 'time', 'distance', 'speed'])
@@ -430,7 +431,7 @@ class Traffic:
         """
         self._axilary_elapsed_time[self._current_row_indx] = elapsed_t
 
-    def save_csv(self, inter_name):
+    def save_veh_level_csv(self, inter_name, start_time_stamp):
         """
         Set the recorded values and save the  CSV at vehicle level.
         """
@@ -439,7 +440,9 @@ class Traffic:
         # the column to store simulation time per scenario
         self.__all_vehicles['elapsed time'] = self._axilary_elapsed_time
 
-        filepath = os.path.join('log/' + inter_name + '_' + str(self.scenario_num) + '_vehicle_level.csv')
+        filepath = os.path.join(
+            'log/' + inter_name + '/' + start_time_stamp + '_' + str(
+                self.scenario_num) + '_trj_vehicle_level.csv')
         self.__all_vehicles.to_csv(filepath, index=False)
 
     def close_trj_csv(self):
@@ -485,7 +488,7 @@ class Traffic:
         while indx <= max_indx and self.__all_vehicles['arrival time'][indx] <= simulation_time:
 
             # read the arrived vehicle's information
-            lane = self.__all_vehicles['lane'][indx] - 1  # csv file has lanes coded in one-based
+            lane = int(self.__all_vehicles['lane'][indx]) - 1  # csv file has lanes coded in one-based
             det_id = 'xyz' + str(indx).zfill(3)  # pad zeros if necessary
             det_type = self.__all_vehicles['type'][indx]  # 0: CNV, 1: CAV
             det_time = float(self.__all_vehicles['arrival time'][indx])

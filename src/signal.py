@@ -5,6 +5,8 @@
 # Last Modified: Apr/24/2018       #
 ####################################
 
+import os, csv
+
 import numpy as np
 from sortedcontainers import SortedDict
 from copy import deepcopy
@@ -15,18 +17,31 @@ np.random.seed(2018)
 
 class Signal:
     """
-    The class serves the following goals:
-        - Keeps the SPaT decision updated
-        - Makes SPaT decisions through variety of control methods. For now it supports:
-            - Pre-timed control
-            - Genetic Algorithm
-            - Min Cost Flow model
+The class serves the following goals:
+    - Keeps the SPaT decision updated
+    - Makes SPaT decisions through variety of control methods. For now it supports:
+        - Pre-timed control
+        - Genetic Algorithm
+        - Min Cost Flow model
 
-    Set the class variable ``LAG`` to the time (in seconds) that from start of green is not valid to schedule any departurs.
+Set the class variable ``LAG`` to the time (in seconds) that from start of green is not valid to schedule any departurs.
 
 .. note::
     - ``LAG`` also is used in ``Trajectory()`` class. Set them consistent.
     - ``LARGE_NUM`` is a large number to initialize badness of alternatives in GA. Make sure cannot be beaten by worst alternative.
+    - The signal status is saved under ``\log\<intersection name>\`` directory.
+
+Use Case:
+
+    Instantiate like::
+
+        $ signal = GA_SPaT/Pretimed(.)
+
+    Perform SPaT computation by::
+
+        $ signal.solve(.)
+
+    :param LAG: the lag time from start of green when a vehicle can depart
 
 
 :Author:
@@ -37,7 +52,8 @@ class Signal:
     LAG = 1
     LARGE_NUM = 999999999
 
-    def __init__(self, inter_name, num_lanes, min_headway, print_signal_detail):
+    def __init__(self, inter_name, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
+                 print_signal_detail):
         """
         Elements:
             - Sequence keeps the sequence of phases to be executed from 0
@@ -46,7 +62,12 @@ class Signal:
             - start keeps the absolute time (in seconds) when each phase starts
 
         Note: SPaT starts executing from index 0 to end of each list
-        """
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
+       """
         self._inter_name = inter_name
         self._num_lanes = num_lanes
 
@@ -54,6 +75,16 @@ class Signal:
 
         self._set_lane_lane_incidence(num_lanes)
         self._set_phase_lane_incidence(num_lanes)
+
+        if log_signal_status:
+            filepath_sig = os.path.join('log/' + inter_name + '/' + start_time_stamp + '_' + str(
+                sc) + '_sig_phase_level.csv')
+            self.sig_csv_file = open(filepath_sig, 'w', newline='')
+            writer = csv.writer(self.sig_csv_file, delimiter=',')
+            writer.writerow(['phase', 'start', 'end'])
+            self.sig_csv_file.flush()
+        else:
+            self.sig_csv_file = None
 
         self._print_signal_detail = print_signal_detail
 
@@ -118,7 +149,6 @@ class Signal:
             if self._print_signal_detail:
                 print('>>> Phase {:d} appended (ends @ {:>2.1f} sec)'.format(phase, self.SPaT_end[-1]))
 
-
     def set_critical_phase_volumes(self, volumes):
         """
         Not used in GA since the phasing configuration is unknown prior to cycle length formula
@@ -132,7 +162,7 @@ class Signal:
         """
         self._critical_phase_volumes = np.array([max(volumes[self._pli[phase]]) for phase in self._allowable_phases])
 
-    def update_SPaT(self, time_threshold):
+    def update_SPaT(self, time_threshold, ):
         """
         Performs two tasks to update SPaT based on the given clock:
             - Removes terminated phase (happens when the all-red is passed)
@@ -147,9 +177,20 @@ class Signal:
             raise Exception('If all phases get purged, SPaT becomes empty!')
 
         phase_indx, any_to_be_purged = 0, False
-        while time_threshold >= self.SPaT_end[phase_indx]:
-            any_to_be_purged = True
-            phase_indx += 1
+        file = self.sig_csv_file
+
+        if file is None:
+            while time_threshold >= self.SPaT_end[phase_indx]:
+                any_to_be_purged = True
+                phase_indx += 1
+        else:  # record in csv
+            writer = csv.writer(file, delimiter=',')
+            while time_threshold >= self.SPaT_end[phase_indx]:
+                any_to_be_purged = True
+                phase_indx += 1
+                writer.writerows(
+                    [[self.SPaT_sequence[phase_indx], self.SPaT_start[phase_indx], self.SPaT_end[phase_indx]]])
+                file.flush()
 
         if self._print_signal_detail and any_to_be_purged:
             print('<<< Phase(s) ' + ','.join(str(p) for p in self.SPaT_sequence[:phase_indx]) + ' expired')
@@ -158,6 +199,10 @@ class Signal:
         del self.SPaT_green_dur[:phase_indx]
         del self.SPaT_start[:phase_indx]
         del self.SPaT_end[:phase_indx]
+
+    def close_sig_csv(self):
+        """Closes the signal csv file"""
+        self.sig_csv_file.close()
 
     def _flush_upcoming_SPaTs(self):
         """
@@ -335,10 +380,12 @@ class Pretimed(Signal):
 
     NUM_CYCLES = 2
 
-    def __init__(self, inter_name, num_lanes, min_headway, print_signal_detail):
+    def __init__(self, inter_name, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
+                 print_signal_detail):
         """ Initialize the pretimed SPaT """
 
-        super().__init__(inter_name, num_lanes, min_headway, print_signal_detail)
+        super().__init__(inter_name, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
+                         print_signal_detail)
 
         pretimed_signal_plan = data_importer.get_pretimed_parameters(inter_name)
         self._phase_seq = pretimed_signal_plan['phase_seq']
@@ -415,7 +462,8 @@ class GA_SPaT(Signal):
     LAMBDA = 1 / 500
     BADNESS_ACCURACY = 10 ** 2  # 10 raised to the number of digits we want to keep
 
-    def __init__(self, inter_name, allowable_phases, num_lanes, min_headway, print_signal_detail):
+    def __init__(self, inter_name, allowable_phases, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
+                 print_signal_detail):
         """
 
         :param inter_name:
@@ -423,10 +471,12 @@ class GA_SPaT(Signal):
         :type allowable_phases: tuple
         :param num_lanes:
         :param min_headway:
+        :param log_signal_status:
         :param print_signal_detail:
         """
 
-        super().__init__(inter_name, num_lanes, min_headway, print_signal_detail)
+        super().__init__(inter_name, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
+                         print_signal_detail)
 
         self._allowable_phases = allowable_phases
 
@@ -530,7 +580,7 @@ class GA_SPaT(Signal):
             - :math:`\lambda` is weight factor in :math:`veh/s`
             - :math:`t` is the average travel time in :math:`s`, under the given SPaT.
 
-         .. attentions::
+         .. attention::
             - A rough approximate for :math:`\lambda` is the inverse of detection range.
             - Here we do not account for the vehicles served with base SPaT as they are already served.
             - We create a copy of ``first_unsrvd_indx`` since there is no guarantee this SPaT is the best by the end of GA.
@@ -836,7 +886,7 @@ class MinCostFlow_SPaT(Signal):
 # enumeration
 # -------------------------------------------------------
 
-class Enumerate_SpaT(Signal):
+class Enumerate_SPaT(Signal):
     '''
     Gives all phases equal chance but picks the one with highest throughput
     Similar to GA functionality
