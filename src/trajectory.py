@@ -14,21 +14,20 @@ import numpy as np
 
 class Trajectory:
     """
-    Abstract class for computing the trajectory points. Four subclasses inherited from Trajectory():
+    Abstract class for computing the trajectory points. Four subclasses inherited from ``Trajectory()``:
         - LeadConventional
         - FollowerConnected
         - LeadConnected
         - FollowerConventional
 
-    Note if want to omit the trajectory planning, there are two options:
-        - If a particular vehicle is intended to be skipped, simply set ``do_traj_allowed`` to ``False``
-        - If the whole simulation is intended to be run without trajectory planer, set ``do_traj_allowed`` in ``main.py`` to False.
+    Any solve method under each class shall invoke ``set_trajectory()`` method at the end or does the assignment in-place.
 
-    Any solve method under each class shall invoke set_trajectory() method at the end or does the assignment in-place.
+    .. note:: If want to limit the trajectory planning, there are two options:
+            - If a particular vehicle is intended to be skipped, simply set ``redo_trj_allowed`` to ``False``
+            - If the whole simulation is intended to be run without trajectory planer, set ``do_traj_computation`` in ``main.py`` to False.
 
-    :param LAG: the lag time from start of green when a vehicle can depart
-    :param RES: time difference between two consecutive trajectory points in second (be careful not to exceed max size
-     of trajectory
+
+    :param RES: time difference between two consecutive trajectory points in seconds used in``discretize_time_interval`` (be careful not to exceed max size of trajectory)
     :param EPS: small number that lower than that is approximated by zero
 
     :Author:
@@ -37,7 +36,6 @@ class Trajectory:
         April-2018
     """
 
-    LAG = 1
     RES = 1
     EPS = 0.01
 
@@ -52,7 +50,7 @@ class Trajectory:
     def discretize_time_interval(self, start_time, end_time):
         """
         Discretize the given time interval to a numpy array of time stamps
-        The resolution is equal to the :param RES: (sec)
+
         """
         if end_time <= start_time:
             return np.array([])

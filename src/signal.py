@@ -41,6 +41,7 @@ Use Case:
 
         $ signal.solve(.)
 
+    :param LAG: the lag time from start of green when a vehicle can depart
 
 
 :Author:
@@ -579,7 +580,7 @@ class GA_SPaT(Signal):
             - :math:`\lambda` is weight factor in :math:`veh/s`
             - :math:`t` is the average travel time in :math:`s`, under the given SPaT.
 
-         .. attentions::
+         .. attention::
             - A rough approximate for :math:`\lambda` is the inverse of detection range.
             - Here we do not account for the vehicles served with base SPaT as they are already served.
             - We create a copy of ``first_unsrvd_indx`` since there is no guarantee this SPaT is the best by the end of GA.

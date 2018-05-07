@@ -488,7 +488,7 @@ class Traffic:
         while indx <= max_indx and self.__all_vehicles['arrival time'][indx] <= simulation_time:
 
             # read the arrived vehicle's information
-            lane = self.__all_vehicles['lane'][indx] - 1  # csv file has lanes coded in one-based
+            lane = int(self.__all_vehicles['lane'][indx]) - 1  # csv file has lanes coded in one-based
             det_id = 'xyz' + str(indx).zfill(3)  # pad zeros if necessary
             det_type = self.__all_vehicles['type'][indx]  # 0: CNV, 1: CAV
             det_time = float(self.__all_vehicles['arrival time'][indx])

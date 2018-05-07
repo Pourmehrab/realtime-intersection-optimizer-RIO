@@ -69,7 +69,6 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
             - plan trajectories
             - update time and check of termination
 
-
     :param inter_name: intersection name
     :type inter_name: str
     :param method: pretimed, GA, ...
@@ -80,10 +79,14 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     :param log_at_vehicle_level:
     :param log_at_trj_point_level:
     :param log_signal_status:
-    :param print_clock: prints the simulation clock
+    :param print_clock:
     :param print_signal_detail:
     :param print_trj_info:
     :param test_time: in seconds from start of simulation
+    :param print_detection:
+    :param print_departure:
+    :return:
+
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -94,7 +97,8 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     """
     # to mark saved csv file
     if log_at_vehicle_level or log_at_trj_point_level or log_signal_status:
-        start_time_stamp = datetime.utcnow().strftime('%B %d %Y - %H:%M:%S')
+        start_time_stamp = 'output'
+        # start_time_stamp = datetime.utcnow().strftime('%B %d %Y - %H:%M:%S')
 
     intersection = Intersection(inter_name)
     # get some useful values
@@ -166,18 +170,15 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
         test_scheduled_arrivals(lanes, num_lanes)  # just for testing purpose
 
         # now we should have sufficient SPaT to serve all
-        if do_traj_computation:
-            # DO TRAJECTORY OPTIMIZATION
-            for lane in range(num_lanes):
+        if do_traj_computation:  # does trajectory optimization
+            for lane in range(num_lanes):  # note it goes over lanes by order
                 if bool(lanes.vehlist[lane]):  # not an empty lane
                     for veh_indx, veh in enumerate(lanes.vehlist[lane]):
                         if veh.redo_trj_allowed:  # false if we want to keep previous trajectory
-                            veh_type = veh.veh_type
-                            arrival_time = veh.scheduled_arrival
+                            veh_type, arrival_time = veh.veh_type, veh.scheduled_arrival
                             if veh_indx > 0 and veh_type == 1:  # Follower CAV
                                 lead_veh = lanes.vehlist[lane][veh_indx - 1]
-                                lead_poly = lead_veh.poly_coeffs
-                                lead_arrival_time = lead_veh.scheduled_arrival
+                                lead_poly, lead_arrival_time = lead_veh.poly_coeffs, lead_veh.scheduled_arrival
                                 lead_det_time = lead_veh.trajectory[0:, lead_veh.first_trj_point_indx]
                                 model = follower_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed,
                                                                                    lead_poly, lead_det_time,
@@ -226,8 +227,8 @@ if __name__ == "__main__":
 
     # ################## SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR
     do_traj_computation = False
-    log_at_vehicle_level = True  # writes the <inter_name>_vehicle_level.csv
-    log_at_trj_point_level = True  # writes the <inter_name>_trj_point_level.csv
+    log_at_vehicle_level = True
+    log_at_trj_point_level = True
     log_signal_status = True
     print_trj_info, test_time = True, 0.0  # prints arrival departures in command line
     print_signal_detail = True  # prints signal info in command line
@@ -238,7 +239,7 @@ if __name__ == "__main__":
     print("Python Path: ", sys.executable)
     print("Python Version: ", sys.version)
 
-    # Check the interpreter to make sure using python version
+    # Check the interpreter to make sure using right python version
     check_py_ver()
 
     if len(sys.argv) != 4 or \
@@ -251,8 +252,8 @@ if __name__ == "__main__":
         inter_name, method, run_mode = sys.argv[1], sys.argv[2], sys.argv[3]
 
         if run_mode == 'simulation':
-            max_sc = 1
-            for sc in range(1, max_sc + 1):
+            target_sc = 5
+            for sc in range(target_sc, target_sc + 1):
                 run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level,
                           log_signal_status, print_clock, print_signal_detail, print_trj_info, test_time,
                           print_detection, print_departure)
