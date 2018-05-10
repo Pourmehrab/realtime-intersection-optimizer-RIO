@@ -231,7 +231,7 @@ Use Case:
             - Respect the minimum headway to the lead vehicle (if present)
             - Respect the initiation of green plus a lag time specified by LAG as a class variable
             - Respect the earliest available time at the stop bar controlled by the speed limit  acc/dec rates
-            - Vehicle is allowed to acquire a new trajectory (``veh.redo_trj_allowed`` holds True)
+            - Vehicle is allowed to acquire a new trajectory (``veh.reschedule_departure`` holds True)
 
         The method does not compute or return the badness metric since the it does not aim to change current phase and timing.
 
@@ -242,8 +242,8 @@ Use Case:
         ``lanes.first_unsrvd_indx`` and setting the schedule of any possible served vehicles make the main result of this method. The ``lanes.first_unsrvd_indx`` will be used after this to avoid reserving and double-counting those already served with base SPaT. This also returns ``any_unserved_vehicle`` array that has True if any lane has vehicles that could not be unserved with base SPaT.
 
         .. note::
-            - Since base SPaT never gets changed (for safety and practical reasons), any vehicle served by it has to get ``redo_trj_allowed`` value set to ``False``.
-            - It is feasible that if fusion algorithm updates the info on this vehicle and wants an update on trajectory, it rolls back the ``redo_trj_allowed`` to be ``True``. However, this should be decided outside this method.
+            - Since base SPaT never gets changed (for safety and practical reasons), any vehicle served by it has to get ``reschedule_departure`` value set to ``False``.
+            - It is feasible that if fusion algorithm updates the info on this vehicle and wants an update on trajectory, it rolls back the ``reschedule_departure`` to be ``True``. However, this should be decided outside this method.
             - The reason that this does not return schedule of departures is because they are already set inside this method. Late, the set method skips these.
             - If a vehicle gets a schedule and has more than one trajectory point, the last index should reset to the first index so when the trajectory is set there would be two points.
             - all-red from the end and ``LAG`` time from the beginning of a phase are note utilizes by any vehicle.
@@ -265,7 +265,7 @@ Use Case:
                         for veh_indx in range(lanes.first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
                             veh = lanes.vehlist[lane][veh_indx]
 
-                            if veh.redo_trj_allowed:
+                            if veh.reschedule_departure:
                                 t_earliest = veh.earliest_arrival
                                 t_scheduled = max(t_earliest, start_green, served_vehicle_time[
                                     lane] + self._min_headway)
@@ -275,7 +275,7 @@ Use Case:
                                     veh.set_scheduled_arrival(t_scheduled, 0, max_speed, lane, veh_indx,
                                                               self._print_signal_detail)  # since this is final
                                     served_vehicle_time[lane] = t_scheduled
-                                    veh.redo_trj_allowed = False
+                                    veh.reschedule_departure = False
 
                                 else:
                                     break  # no more room in this phase (no point to continue)
@@ -306,7 +306,7 @@ Use Case:
 
 
         .. warning::
-            - Since the departure times are definitely temporal, DO NOT set ``redo_trj_allowed`` to ``False``.
+            - Since the departure times are definitely temporal, DO NOT set ``reschedule_departure`` to ``False``.
             - The ``lanes.first_unsrvd_indx`` cannot be used since it does not keep GA newly served vehicles. However, it would work for pretimed since the method is static.
 
         :param lanes:
@@ -584,7 +584,7 @@ class GA_SPaT(Signal):
             - A rough approximate for :math:`\lambda` is the inverse of detection range.
             - Here we do not account for the vehicles served with base SPaT as they are already served.
             - We create a copy of ``first_unsrvd_indx`` since there is no guarantee this SPaT is the best by the end of GA.
-            - The vehicle to be served by this method should have had ``veh.redo_trj_allowed`` set to ``True``.
+            - The vehicle to be served by this method should have had ``veh.reschedule_departure`` set to ``True``.
             - An individual which has ``throughput`` of zero is not qualified for comparison to best known SPaT.
 
         :param phase_seq:

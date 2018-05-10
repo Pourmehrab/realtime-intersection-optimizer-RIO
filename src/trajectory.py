@@ -23,7 +23,7 @@ class Trajectory:
     Any solve method under each class shall invoke ``set_trajectory()`` method at the end or does the assignment in-place.
 
     .. note:: If want to limit the trajectory planning, there are two options:
-            - If a particular vehicle is intended to be skipped, simply set ``redo_trj_allowed`` to ``False``
+            - If a particular vehicle is intended to be skipped, simply set ``reschedule_departure`` to ``False``
             - If the whole simulation is intended to be run without trajectory planer, set ``do_traj_computation`` in ``main.py`` to False.
 
 

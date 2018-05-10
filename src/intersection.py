@@ -209,7 +209,7 @@ class Vehicle:
             self.poly_coeffs = np.zeros(k)
 
         self.earliest_arrival, self.scheduled_arrival = 0.0, 0.0  # will be set with their set methods
-        self.redo_trj_allowed = True  # default value
+        self.reschedule_departure = True  # default value
 
     def reset_trj_points(self, sc, lane, time_threshold, file):
         """
@@ -339,9 +339,9 @@ class Vehicle:
 
         curr_dist = self.trajectory[1, self.first_trj_point_indx]
         if curr_dist <= min_dist:
-            self.redo_trj_allowed = False
+            self.reschedule_departure = False
         else:
-            self.redo_trj_allowed = True
+            self.reschedule_departure = True
 
 
 class Traffic:

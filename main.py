@@ -8,20 +8,6 @@
 ####################################
 
 
-import sys
-import time
-from datetime import datetime
-
-from src.time_keeper import TimeKeeper
-from src.intersection import Intersection, Lanes, Traffic
-# Signal Optimizers
-from src.signal import GA_SPaT, Pretimed
-# Trajectory Optimizers
-from src.trajectory import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
-# testing
-from src.optional.test.unit_tests import test_scheduled_arrivals, test_trj_points
-
-
 def check_py_ver():
     """ checks the python version to meet the requirement (``ver 3.5.2``)"""
     expect_major, expect_minor, expect_rev = 3, 5, 2
@@ -162,12 +148,14 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
         critical_volume_ratio = 3600 * volumes.max() / min_headway
 
         # DO SIGNAL OPTIMIZATION
-        if method == "GA":  # change the one inside the while loop as well
+        if method == "GA":
             signal.solve(lanes, num_lanes, max_speed, critical_volume_ratio)
         elif method == "pretimed":
             signal.solve(lanes, num_lanes, max_speed)
+        else:
+            raise Exception("The chosen signal method is not developed yet.")
 
-        test_scheduled_arrivals(lanes, num_lanes)  # just for testing purpose
+        test_scheduled_arrivals(lanes, num_lanes, max_speed)  # just for testing purpose
 
         # now we should have sufficient SPaT to serve all
         if do_traj_computation:  # does trajectory optimization
@@ -224,6 +212,18 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
 
 
 if __name__ == "__main__":
+    # IMPORT NECESSARY PACKAGES
+    import sys
+    import time
+
+    from src.time_keeper import TimeKeeper
+    from src.intersection import Intersection, Lanes, Traffic
+    # Signal Optimizers
+    from src.signal import GA_SPaT, Pretimed
+    # Trajectory Optimizers
+    from src.trajectory import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
+    # testing
+    from src.optional.test.unit_tests import test_scheduled_arrivals, test_trj_points
 
     # ################## SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR
     do_traj_computation = False
