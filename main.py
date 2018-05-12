@@ -9,22 +9,21 @@
 
 
 def check_py_ver():
-    """ checks the python version to meet the requirement (``ver 3.6.0``)"""
-    expect_major, expect_minor, expect_rev = 3, 6, 0
+    """ checks the python version to meet the requirement (``ver 3.6.4``)"""
+    expect_major, expect_minor, expect_rev = 3, 6, 4
     if sys.version_info[0] >= expect_major and sys.version_info[1] >= expect_minor and sys.version_info[
         2] >= expect_rev:
         print("Python version requirement is met.\n")
     else:
         print(
             "INFO: Script developed and tested with Python " + str(expect_major) + "." + str(
-                expect_minor) + "." + str(
-                expect_rev))
-        print("Please update Python")
+                expect_minor) + "." + str(expect_rev))
+        print("Please update python interpreter.")
         sys.exit(-1)
 
 
 def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level,
-              log_signal_status, print_commandline):
+              log_signal_status, print_commandline, optional_packages_found):
     """
     For logging and printing of information set boolean variables:
         - ``log_at_trj_point_level`` saves a csv under ``\log`` directory that contains all trajectory points for all vehicles
@@ -66,6 +65,7 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     :param log_at_trj_point_level:
     :param log_signal_status:
     :param print_commandline:
+    :param optional_packages_found: optional packages for testing
     :return:
 
 
@@ -101,10 +101,10 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
         # NOTE TEH SET OF ALLOWABLE PHASE ARRAY IS ZERO-BASED (not like what inputted in data.py)
         allowable_phase = (0, 1, 2, 3,)
         signal = GA_SPaT(inter_name, allowable_phase, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
-                         do_traj_computation, print_commandline)
+                         do_traj_computation, print_commandline,optional_packages_found)
     elif method == "pretimed":
         signal = Pretimed(inter_name, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
-                          do_traj_computation, print_commandline)
+                          do_traj_computation, print_commandline,optional_packages_found)
 
     elif method == "MCF" or method == "actuated":
         raise Exception("This signal control method is not complete yet.")  # todo develop these
@@ -144,7 +144,8 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
         else:
             raise Exception("The chosen signal method is not developed yet.")
 
-        test_scheduled_arrivals(lanes, num_lanes, max_speed)  # just for testing purpose
+        if optional_packages_found:
+            test_scheduled_arrivals(lanes, num_lanes, max_speed)
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_arrived() and lanes.all_served(num_lanes):
@@ -178,8 +179,14 @@ if __name__ == "__main__":
     from src.intersection import Intersection, Lanes, Traffic
     # Signal Optimizers
     from src.signal import GA_SPaT, Pretimed, TrajectoryPlanner
+
     # testing
-    from src.optional.test.unit_tests import test_scheduled_arrivals
+    try:
+        from src.optional.test.unit_tests import test_scheduled_arrivals
+
+        optional_packages_found = True
+    except ModuleNotFoundError:
+        optional_packages_found = False
 
     # ################## SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR
     do_traj_computation = True
@@ -208,7 +215,7 @@ if __name__ == "__main__":
             target_sc = 45
             for sc in range(1, target_sc + 1):
                 run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level,
-                          log_signal_status, print_commandline)
+                          log_signal_status, print_commandline, optional_packages_found)
 
         elif run_mode == 'realtime':
             raise Exception('real-time mode is not available yet.')

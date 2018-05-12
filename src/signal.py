@@ -56,7 +56,7 @@ Use Case:
     LARGE_NUM = 999_999_999
 
     def __init__(self, inter_name, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
-                 do_traj_computation, print_commandline):
+                 do_traj_computation, print_commandline, optional_packages_found):
         """
         Elements:
             - Sequence keeps the sequence of phases to be executed from 0
@@ -91,6 +91,7 @@ Use Case:
 
         self._do_traj_computation = do_traj_computation
         self._print_commandline = print_commandline
+        self._optional_packages_found = optional_packages_found
 
     def _set_lane_lane_incidence(self, num_lanes):
         """
@@ -285,7 +286,8 @@ Use Case:
 
                                     if self._do_traj_computation and veh.needs_traj():
                                         trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx,
-                                                                           self._print_commandline, '*')
+                                                                           self._print_commandline, '*',
+                                                                           self._optional_packages_found)
 
                                 else:
                                     break  # no more room in this phase (no point to continue)
@@ -370,7 +372,7 @@ Use Case:
                                               self._print_commandline)
                     if self._do_traj_computation and veh.needs_traj():
                         trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx,
-                                                           self._print_commandline, '#')
+                                                           self._print_commandline, '#', self._optional_packages_found)
                 else:
                     continue
 
@@ -378,7 +380,8 @@ Use Case:
 class TrajectoryPlanner:
 
     def __init__(self, max_speed, min_headway, k, m):
-        # initialize trajectory planners
+        """Instantiates the **trajectory** classes"""
+
         self.lead_conventional_trj_estimator = LeadConventional(max_speed, min_headway)
         self.lead_connected_trj_optimizer = LeadConnected(max_speed, min_headway, k, m)
         self.follower_conventional_trj_estimator = FollowerConventional(max_speed, min_headway)
@@ -386,12 +389,17 @@ class TrajectoryPlanner:
 
         self._max_speed = max_speed
 
-    def plan_trajectory(self, lanes, veh, lane, veh_indx, print_commandline, identifier):
+    def plan_trajectory(self, lanes, veh, lane, veh_indx, print_commandline, identifier, optional_packages_found):
         """
+        :param lanes:
+        :type lanes: Lanes
+        :param veh:
+        :type veh: Vehicle
         :param lane:
         :param veh_indx:
-        :param identifier: in {*,#}. Shows type of assigned trajectory
-        :return:
+        :param print_commandline:
+        :param identifier: Shows type of assigned trajectory
+        :param optional_packages_found:
         """
         veh_type, arrival_time = veh.veh_type, veh.scheduled_arrival
         if veh_indx > 0 and veh_type == 1:  # Follower CAV
@@ -412,8 +420,8 @@ class TrajectoryPlanner:
         elif veh_indx == 0 and veh_type == 0:  # Lead Conventional
             self.lead_conventional_trj_estimator.solve(veh, lane, veh_indx)
 
-        test_trj_points(veh.first_trj_point_indx, veh.last_trj_point_indx, veh.trajectory,
-                        veh.ID)  # todo remove if not testing
+        if optional_packages_found:
+            test_trj_points(veh.first_trj_point_indx, veh.last_trj_point_indx, veh.trajectory, veh.ID)
 
         if print_commandline:
             veh.print_trj_points(lane, veh_indx, identifier)
@@ -442,11 +450,11 @@ class Pretimed(Signal):
     NUM_CYCLES = 2
 
     def __init__(self, inter_name, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
-                 do_traj_computation, print_commandline):
+                 do_traj_computation, print_commandline, optional_packages_found):
         """ Initialize the pretimed SPaT """
 
         super().__init__(inter_name, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
-                         do_traj_computation, print_commandline)
+                         do_traj_computation, print_commandline, optional_packages_found)
 
         pretimed_signal_plan = data_importer.get_pretimed_parameters(inter_name)
         self._phase_seq = pretimed_signal_plan['phase_seq']
@@ -523,7 +531,7 @@ class GA_SPaT(Signal):
     BADNESS_ACCURACY = 10 ** 2  # 10 raised to the number of digits we want to keep
 
     def __init__(self, inter_name, allowable_phases, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
-                 do_traj_computation, print_commandline):
+                 do_traj_computation, print_commandline, optional_packages_found):
         """
 
         :param inter_name:
@@ -536,7 +544,7 @@ class GA_SPaT(Signal):
         """
 
         super().__init__(inter_name, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
-                         do_traj_computation, print_commandline)
+                         do_traj_computation, print_commandline, optional_packages_found)
 
         self._allowable_phases = allowable_phases
 
