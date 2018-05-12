@@ -212,7 +212,7 @@ if __name__ == "__main__":
         inter_name, method, run_mode = sys.argv[1], sys.argv[2], sys.argv[3]
 
         if run_mode == 'simulation':
-            target_sc = 45
+            target_sc = 1
             for sc in range(1, target_sc + 1):
                 run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level,
                           log_signal_status, print_commandline, optional_packages_found)

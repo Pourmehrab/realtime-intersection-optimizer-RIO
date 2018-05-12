@@ -262,7 +262,6 @@ Use Case:
         :return: The ``lanes.first_unsrvd_indx`` array that keeps index off the first unserved vehicle in each lane, is initialized to zero before calling this method and gets updated by the end of this call. It also returns ``served_vehicle_time`` that shows the schedule
         """
 
-        served_vehicle_time = np.zeros(num_lanes, dtype=np.float)
         any_unserved_vehicle = [0 <= lanes.last_vehicle_indx[lane] for lane in range(num_lanes)]
 
         for phase_indx, phase in enumerate(self.SPaT_sequence):
@@ -273,27 +272,29 @@ Use Case:
                         for veh_indx in range(lanes.first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
                             veh = lanes.vehlist[lane][veh_indx]
                             if veh.reschedule_departure:
-                                t_earliest = veh.earliest_arrival
-                                t_scheduled = max(t_earliest, start_green, served_vehicle_time[
-                                    lane] + self._min_headway)
+                                t_earliest = veh.earliest_departure
+                                if veh_indx == 0:
+                                    t_scheduled = max(t_earliest, start_green)
+                                else:
+                                    lead_veh_scheduled_departure = lanes.vehlist[lane][veh_indx - 1].scheduled_departure
+                                    t_scheduled = max(t_earliest, start_green,
+                                                      lead_veh_scheduled_departure + self._min_headway)
                                 if t_scheduled < end_yellow:
                                     lanes.increment_first_unsrvd_indx(lane)
-                                    veh.last_trj_point_indx = veh.first_trj_point_indx
-                                    veh.set_scheduled_arrival(t_scheduled, 0, max_speed, lane, veh_indx,
-                                                              self._print_commandline)  # since this is final
-                                    served_vehicle_time[lane] = t_scheduled
+                                    # veh.set_last_trj_point_indx(veh.first_trj_point_indx)
+                                    veh.set_scheduled_departure(t_scheduled, 0, max_speed, lane, veh_indx,
+                                                                self._print_commandline)  # since this is final
                                     veh.reschedule_departure = False
 
-                                    if self._do_traj_computation and veh.needs_traj():
+                                    if self._do_traj_computation and veh.freshly_scheduled:
                                         trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx,
                                                                            self._print_commandline, '*',
                                                                            self._optional_packages_found)
-
+                                        veh.reschedule_departure, veh.freshly_scheduled = False, False
                                 else:
                                     break  # no more room in this phase (no point to continue)
 
                             else:  # next vehicle may want trajectory
-                                served_vehicle_time[lane] = veh.scheduled_arrival
                                 lanes.increment_first_unsrvd_indx(lane)
 
                         if lanes.first_unsrvd_indx[lane] > lanes.last_vehicle_indx[lane]:
@@ -341,14 +342,14 @@ Use Case:
                     max_arrival_time = arrival_time
 
                     served_vehicle_time[lane][veh_indx] = arrival_time
-                    veh.last_trj_point_indx = veh.first_trj_point_indx
-                    veh.reschedule_departure = True  # just to make sure it's not False
+                    # veh.set_last_trj_point_indx(veh.first_trj_point_indx)
+                    veh.reschedule_departure = True
 
                 any_unserved_vehicle[lane] = False
 
         return served_vehicle_time
 
-    def _set_non_base_scheduled_arrival(self, lanes, scheduled_arrivals, num_lanes, max_speed, trajectory_planner):
+    def _set_non_base_scheduled_departures(self, lanes, scheduled_departure, num_lanes, max_speed, trajectory_planner):
         """
         Sets the scheduled departure in the trajectory of the vehicle and plans trajectory of vehicle
 
@@ -357,7 +358,7 @@ Use Case:
 
         :param lanes:
         :type lanes: Lanes
-        :param scheduled_arrivals:
+        :param scheduled_departure:
         :param num_lanes:
         :param max_speed: by default the departure speed is maximum allowable speed in :math:`m/s`
         :param trajectory_planner:
@@ -368,11 +369,12 @@ Use Case:
             for veh_indx in range(lanes.first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
                 veh = lanes.vehlist[lane][veh_indx]
                 if veh.reschedule_departure:
-                    veh.set_scheduled_arrival(scheduled_arrivals[lane][veh_indx], 0, max_speed, lane, veh_indx,
-                                              self._print_commandline)
-                    if self._do_traj_computation and veh.needs_traj():
+                    veh.set_scheduled_departure(scheduled_departure[lane][veh_indx], 0, max_speed, lane, veh_indx,
+                                                self._print_commandline)
+                    if self._do_traj_computation and veh.freshly_scheduled:
                         trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx,
                                                            self._print_commandline, '#', self._optional_packages_found)
+                        veh.freshly_scheduled = False
                 else:
                     continue
 
@@ -401,27 +403,27 @@ class TrajectoryPlanner:
         :param identifier: Shows type of assigned trajectory
         :param optional_packages_found:
         """
-        veh_type, arrival_time = veh.veh_type, veh.scheduled_arrival
+        veh_type, departure_time = veh.veh_type, veh.scheduled_departure
         if veh_indx > 0 and veh_type == 1:  # Follower CAV
             lead_veh = lanes.vehlist[lane][veh_indx - 1]
-            lead_poly, lead_arrival_time = lead_veh.poly_coeffs, lead_veh.scheduled_arrival
+            lead_poly, lead_departure_time = lead_veh.poly_coeffs, lead_veh.scheduled_departure
             lead_det_time = lead_veh.trajectory[0:, lead_veh.first_trj_point_indx]
-            model = self.follower_connected_trj_optimizer.set_model(veh, arrival_time, 0, self._max_speed,
+            model = self.follower_connected_trj_optimizer.set_model(veh, departure_time, 0, self._max_speed,
                                                                     lead_poly, lead_det_time,
-                                                                    lead_arrival_time)
-            self.follower_connected_trj_optimizer.solve(veh, model, arrival_time, self._max_speed, lane, veh_indx)
+                                                                    lead_departure_time)
+            self.follower_connected_trj_optimizer.solve(veh, model, departure_time, self._max_speed, lane, veh_indx)
 
         elif veh_indx > 0 and veh_type == 0:  # Follower Conventional
             lead_veh = lanes.vehlist[lane][veh_indx - 1]
             self.follower_conventional_trj_estimator.solve(veh, lead_veh)
         elif veh_indx == 0 and veh_type == 1:  # Lead CAV
-            model = self.lead_connected_trj_optimizer.set_model(veh, arrival_time, 0, self._max_speed, True)
-            self.lead_connected_trj_optimizer.solve(veh, model, arrival_time, self._max_speed, lane, veh_indx)
+            model = self.lead_connected_trj_optimizer.set_model(veh, departure_time, 0, self._max_speed, True)
+            self.lead_connected_trj_optimizer.solve(veh, model, departure_time, self._max_speed, lane, veh_indx)
         elif veh_indx == 0 and veh_type == 0:  # Lead Conventional
-            self.lead_conventional_trj_estimator.solve(veh, lane, veh_indx)
+            self.lead_conventional_trj_estimator.solve(veh)
 
         if optional_packages_found:
-            test_trj_points(veh.first_trj_point_indx, veh.last_trj_point_indx, veh.trajectory, veh.ID)
+            test_trj_points(veh)
 
         if print_commandline:
             veh.print_trj_points(lane, veh_indx, identifier)
@@ -497,7 +499,7 @@ class Pretimed(Signal):
             scheduled_departures = {lane: np.zeros(len(lanes.vehlist[lane]), dtype=float) for lane in range(num_lanes)}
             scheduled_departures = self._schedule_unserved_vehicles(lanes, num_lanes, lanes.first_unsrvd_indx,
                                                                     scheduled_departures, any_unserved_vehicle)
-            self._set_non_base_scheduled_arrival(lanes, scheduled_departures, num_lanes, max_speed, trajectory_planner)
+            self._set_non_base_scheduled_departures(lanes, scheduled_departures, num_lanes, max_speed, trajectory_planner)
 
 
 # -------------------------------------------------------
@@ -636,12 +638,12 @@ class GA_SPaT(Signal):
                 self.append_extend_phase(int(phase), self.best_SPaT['time_split'][indx] - self._y - self._ar)
 
             if any(self.best_any_unserved_vehicle):
-                self.best_scheduled_arrivals = self._schedule_unserved_vehicles(lanes, num_lanes,
-                                                                                self.best_first_unsrvd_indx,
-                                                                                self.best_scheduled_arrivals,
-                                                                                self.best_any_unserved_vehicle)
-            self._set_non_base_scheduled_arrival(lanes, self.best_scheduled_arrivals, num_lanes, max_speed,
-                                                 trajectory_planner)
+                self.best_scheduled_departures = self._schedule_unserved_vehicles(lanes, num_lanes,
+                                                                                  self.best_first_unsrvd_indx,
+                                                                                  self.best_scheduled_departures,
+                                                                                  self.best_any_unserved_vehicle)
+            self._set_non_base_scheduled_departures(lanes, self.best_scheduled_departures, num_lanes, max_speed,
+                                                    trajectory_planner)
 
     def evaluate_badness(self, phase_seq, time_split, lanes, num_lanes):
         """
@@ -667,7 +669,7 @@ class GA_SPaT(Signal):
         """
 
         mean_travel_time, throughput = 0.0, 0  # if no vehicle is found return zero throughput
-        temporary_scheduled_arrivals = {lane: np.zeros(len(lanes.vehlist[lane]), dtype=float) for lane in
+        temporary_scheduled_departures = {lane: np.zeros(len(lanes.vehlist[lane]), dtype=float) for lane in
                                         range(num_lanes)}
 
         # keeps departure time of last vehicle to be served by progressing SPaT
@@ -688,7 +690,7 @@ class GA_SPaT(Signal):
                         veh_indx = first_unsrvd_indx[lane]
                         veh = lanes.vehlist[lane][veh_indx]
 
-                        t_earliest = veh.earliest_arrival
+                        t_earliest = veh.earliest_departure
                         # depending on if we are keeping the prev trajectory or not, schedule or reschedule departure
                         t_scheduled = max(t_earliest, start_green, served_vehicle_time[
                             lane] + self._min_headway)
@@ -701,7 +703,7 @@ class GA_SPaT(Signal):
                             throughput += 1
 
                             served_vehicle_time[lane] = t_scheduled
-                            temporary_scheduled_arrivals[lane][veh_indx] = t_scheduled
+                            temporary_scheduled_departures[lane][veh_indx] = t_scheduled
                             if first_unsrvd_indx[lane] > lanes.last_vehicle_indx[lane]:
                                 any_unserved_vehicle[lane] = False
                                 break
@@ -717,7 +719,7 @@ class GA_SPaT(Signal):
             self.best_SPaT['phase_seq'] = tuple(phase_seq)
             self.best_SPaT['time_split'] = tuple(time_split)
 
-            self.best_scheduled_arrivals = deepcopy(temporary_scheduled_arrivals)
+            self.best_scheduled_departures = deepcopy(temporary_scheduled_departures)
             self.best_any_unserved_vehicle = any_unserved_vehicle
             self.best_first_unsrvd_indx = first_unsrvd_indx
 

@@ -144,7 +144,7 @@ class Vehicle:
     Objectives:
         - Defines the vehicle object that keeps all necessary information
             - Those which are coming from fusion
-            - Those which are defined to be decided in the program: `trajectory[time, distance, speed], earliest_arrival, scheduled_arrival, poly_coeffs, _do_trj`
+            - Those which are defined to be decided in the program: `trajectory[time, distance, speed], earliest_arrival, scheduled_departure, poly_coeffs, _do_trj`
         - Update/record the trajectory points once they are expired
         - Keep trajectory indexes updated
         - Print useful info once a plan is scheduled
@@ -191,13 +191,13 @@ class Vehicle:
         :param self.poly_coeffs: only CAVs trajectories are represented in the form of polynomials as well as the trajectory matrix
         :type self.poly_coeffs: array
         :param self.earliest_arrival: the earliest arrival time at the stop bar
-        :param self.scheduled_arrival: the scheduled arrival time at the stop bar
+        :param self.scheduled_departure: the scheduled arrival time at the stop bar
         :param self.reschedule_departure: True if a vehicle is open to receive a new departure time, False if want to keep previous trajectory
         :type self.reschedule_departure: bool
         :param self.freshly_scheduled: True if a vehicle is just scheduled a **different** departure and ready for being assigned a trajectory
         :type self.freshly_scheduled: bool
         .. note::
-            - By definition ``scheduled_arrival`` is always greater than or equal to ``earliest_arrival``.
+            - By definition ``scheduled_departure`` is always greater than or equal to ``earliest_arrival``.
             - Prior to run, make sure teh specified size for trajectory array by ``MAX_NUM_TRAJECTORY_POINTS`` is enough to store all under the worst case.
             - A vehicle may be open to be rescheduled but gets the same departure time and therefore ``freshly_scheduled`` should hold ``False`` under that case.
             -
@@ -205,7 +205,7 @@ class Vehicle:
         self.ID = det_id
         self.veh_type = det_type
         self.init_time = det_time
-        self.curr_speed = speed
+        # self.curr_speed = speed
         self.distance = dist
         self.length = length
         self.max_decel_rate = amin
@@ -222,7 +222,7 @@ class Vehicle:
         if det_type == 1:
             self.poly_coeffs = np.zeros(k)
 
-        self.earliest_arrival, self.scheduled_arrival = 0.0, 0.0
+        self.earliest_departure, self.scheduled_departure = 0.0, 0.0
         self.reschedule_departure, self.freshly_scheduled = True, False
 
     def reset_trj_points(self, sc, lane, time_threshold, file):
@@ -258,15 +258,15 @@ class Vehicle:
         else:
             raise Exception("The vehicle should've been removed instead of getting updated for trajectory points.")
 
-    def set_earliest_arrival(self, t_earliest):
+    def set_earliest_departure(self, t_earliest):
         """
         Sets the earliest arrival time at the stop bar. Called under :any:`Traffic.update_vehicles_info()` method
         """
-        self.earliest_arrival = t_earliest  # this is the absolute earliest time
+        self.earliest_departure = t_earliest  # this is the absolute earliest time
 
-    def set_scheduled_arrival(self, t_scheduled, d_scheduled, s_scheduled, lane, veh_indx, print_signal_detail):
+    def set_scheduled_departure(self, t_scheduled, d_scheduled, s_scheduled, lane, veh_indx, print_signal_detail):
         """
-        It only schedules if the new departrue time is different and vehicle is far enough for trajectory assignment
+        It only schedules if the new departure time is different and vehicle is far enough for trajectory assignment
         .. note::
             - When a new vehicle is scheduled, it has two trajectory points: one for the current state and the other for the final state.
             - If the vehicle is closer than ``MIN_DIST_TO_STOP_BAR``, avoids appending the schedule.
@@ -285,8 +285,8 @@ class Vehicle:
                 t_scheduled - self.trajectory[0, self.last_trj_point_indx]) > self.EPS:
             self.freshly_scheduled = True
 
-            self.scheduled_arrival = t_scheduled
-            self.last_trj_point_indx = self.first_trj_point_indx + 1
+            self.scheduled_departure = t_scheduled
+            self.set_last_trj_point_indx(self.first_trj_point_indx + 1)
             self.trajectory[:, self.last_trj_point_indx] = [t_scheduled, d_scheduled, s_scheduled]
 
             if print_signal_detail:
@@ -343,19 +343,19 @@ class Vehicle:
                 last_trj_indx - first_trj_indx + 1
             ))
 
-    def needs_traj(self):
-        """
-        Checks if the trajectory model should be run (returns ``True``) or not (``False``). Cases:
-            - If vehicle is closer than a certain distance specified by ``MIN_DIST_TO_STOP_BAR``, no need to update the trajectory.
-            -
-        :return: Whether trajectory should be computed (True), or not (False)
-        """
-
-        curr_distance_to_stop_bar = self.trajectory[1, self.first_trj_point_indx]
-        if self.freshly_scheduled and curr_distance_to_stop_bar > self.MIN_DIST_TO_STOP_BAR:
-            return True
-        else:
-            return False
+    # def needs_traj(self):
+    #     """
+    #     Checks if the trajectory model should be run (returns ``True``) or not (``False``). Cases:
+    #         - If vehicle is closer than a certain distance specified by ``MIN_DIST_TO_STOP_BAR``, no need to update the trajectory.
+    #         -
+    #     :return: Whether trajectory should be computed (True), or not (False)
+    #     """
+    #
+    #     curr_distance_to_stop_bar = self.trajectory[1, self.first_trj_point_indx]
+    #     if self.freshly_scheduled and curr_distance_to_stop_bar > self.MIN_DIST_TO_STOP_BAR:
+    #         return True
+    #     else:
+    #         return False
 
 
 class Traffic:
@@ -557,7 +557,7 @@ class Traffic:
                 raise Exception("The detected vehicle could not be classified.")
 
             # now that we have a trajectory, we can set the earliest departure time
-            veh.set_earliest_arrival(t_earliest)
+            veh.set_earliest_departure(t_earliest)
 
             indx += 1
 
@@ -567,7 +567,7 @@ class Traffic:
     @staticmethod
     def get_volumes(lanes, num_lanes, det_range):
         """
-        Unit of volume in each lane is veh/sec/lane. Uses the fundamental traffic flow equation :math:`F=D*S`.
+        Unit of volume in each lane is :math:`veh/sec/lane`. Uses the fundamental traffic flow equation :math:`F=D*S`.
 
 
         :param lanes: includes all vehicles
@@ -580,9 +580,18 @@ class Traffic:
         volumes = np.zeros(num_lanes, dtype=float)
         for lane in range(num_lanes):
             num_of_vehs = len(lanes.vehlist[lane])
-            volumes[lane] = num_of_vehs / det_range * stats.hmean([lanes.vehlist[lane][veh_indx].curr_speed
-                                                                   for veh_indx in range(len(lanes.vehlist[lane]))
-                                                                   ]) if num_of_vehs > 0 else 0.0
+            if num_of_vehs > 0:
+                curr_speed = np.array([veh.trajectory[2, veh.first_trj_point_indx]
+                                       for veh in lanes.vehlist[lane]], dtype=np.float)
+                indx = curr_speed > 0
+                if any(indx):
+                    s = stats.hmean(curr_speed[indx])
+                    volumes[lane] = num_of_vehs / det_range * s
+                else:
+                    volumes[lane] = 0.0
+            else:
+                volumes[lane] = 0.0
+
         return volumes
 
     def serve_update_at_stop_bar(self, lanes, simulation_time, num_lanes, print_commandline):
@@ -597,7 +606,6 @@ class Traffic:
         """
 
         for lane in range(num_lanes):
-
             if bool(lanes.vehlist[lane]):  # not an empty lane
 
                 last_veh_indx_to_remove = -1

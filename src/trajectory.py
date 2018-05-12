@@ -107,7 +107,7 @@ Use Case:
     def __init__(self, max_speed, min_headway):
         super().__init__(max_speed, min_headway)
 
-    def solve(self, veh, lane, veh_indx):
+    def solve(self, veh):
         """
         Constructs the trajectory of a lead conventional vehicle assuming the driver maintains its speed
 
@@ -117,16 +117,15 @@ Use Case:
         trajectory = veh.trajectory
         first_trj_point_indx = veh.first_trj_point_indx
         det_time, det_dist, det_speed = trajectory[:, first_trj_point_indx]
-        scheduled_arrival = veh.scheduled_arrival  # the time this vehicle departs the stop bar
 
         arrival_time = det_time + det_dist / det_speed
 
         t = self.discretize_time_interval(det_time, arrival_time)
-        s = np.array([det_speed for i in range(len(t))])
+        s = np.array([det_speed for t_i in t])
         d = np.array([det_dist - det_speed *
                       (t_i - det_time) for t_i in t])
 
-        t_augment = self.discretize_time_interval(t[-1] + self.RES, scheduled_arrival)
+        t_augment = self.discretize_time_interval(t[-1] + self.RES, veh.scheduled_departure)
         d_augment = [0 for t in t_augment]
         s_augment = [0 for t in t_augment]
 
@@ -159,7 +158,7 @@ Use Case:
     :Date:
         April-2018
 
-.. [#] Gipps, Peter G. *A behavioural car-following model for computer simulation*. Transportation Research Part B: Methodological 15.2 (1981): 105-111.
+.. [#] Gipps, Peter G. *A behavioural car-following model for computer simulation*. Transportation Research Part B: Methodological 15.2 (1981): 105-111 (`link <https://www.sciencedirect.com/science/article/pii/0191261581900370>`_).
     """
 
     def __init__(self, max_speed, min_headway):
@@ -167,99 +166,97 @@ Use Case:
 
     def solve(self, veh, lead_veh):
         """
-        Gipps car following model is assumed here. It is written in-place (does not call set_trajectory)
+        Gipps car following model is implemented. It is written in-place (does not call :any:`set_trajectory`)
+
+        .. figure:: images/Gipps_formula.JPG
+            :align: center
+            :alt: map to buried treasure
+
+            Gipps car following formula.
 
         .. note::
             - The only trajectory point index that changes is follower's last one.
-            - The Gipps model applies to the portion of trajectories that is overlapping. In other words, this avoids considering the part of lead trajectory before follower showed up.
+            - This method relies on the fact that lead vehicle's first trajectory point is current.
+            - Assumed the gap to lead vehicle cannot get lower than half length of the lead vehicle.
 
         :param veh: The follower conventional vehicle
         :type veh: Vehicle
         :param lead_veh: The vehicle in front of subject conventional vehicle
         :type lead_veh: Vehicle
-
         """
         follower_trajectory = veh.trajectory
         follower_desired_speed = veh.desired_speed
         follower_max_acc, follower_max_dec = veh.max_accel_rate, veh.max_decel_rate
         follower_trj_indx = veh.first_trj_point_indx
-        follower_detection_time = follower_trajectory[0, follower_trj_indx]
 
         lead_trajectory = lead_veh.trajectory
         lead_max_dec, lead_length = lead_veh.max_decel_rate, lead_veh.length
         lead_trj_indx = lead_veh.first_trj_point_indx
         lead_last_trj_point_indx = lead_veh.last_trj_point_indx
 
+        if lead_trajectory[0, lead_trj_indx] - follower_trajectory[0, follower_trj_indx] <= self.EPS:
+            lead_trj_indx += 1  # this shifts appropriately the trajectory computation
+
         while lead_trj_indx <= lead_last_trj_point_indx:
-            if follower_detection_time >= lead_trajectory[0, lead_trj_indx]:
-                lead_trj_indx += 1
+            next_trj_indx = follower_trj_indx + 1
+            lead_speed = lead_trajectory[2, lead_trj_indx]
+            follower_speed = follower_trajectory[2, follower_trj_indx]
+            gap = follower_trajectory[1, follower_trj_indx] - lead_trajectory[1, lead_trj_indx]
+            dt = lead_trajectory[0, lead_trj_indx] - follower_trajectory[0, follower_trj_indx]
+            if lead_speed <= self.EPS:  # Gipps doesn't work well for near zero speed
+                v_get_behind = (gap - lead_length) / dt
+                v = min(v_get_behind, follower_desired_speed) if v_get_behind >= 0 else 0.0
+                follower_trajectory[0, next_trj_indx] = lead_trajectory[0, lead_trj_indx]
+                follower_trajectory[1, next_trj_indx] = follower_trajectory[1, follower_trj_indx] - v * dt
+                follower_trajectory[2, next_trj_indx] = 0.0
+
             else:
-                break
-        if lead_trj_indx >= lead_last_trj_point_indx:
-            # the lead vehicle left before detection of this vehicle
-            # check vehicle update process since lead vehicle should have been removed
-            raise Exception("The lead vehicle sent to FollowerConventional() should have been removed.")
-        else:
-            while lead_trj_indx <= lead_last_trj_point_indx:
-                next_trj_indx = follower_trj_indx + 1
-                lead_speed = lead_trajectory[2, lead_trj_indx]
-                follower_speed = follower_trajectory[2, follower_trj_indx]
-                gap = follower_trajectory[1, follower_trj_indx] - lead_trajectory[1, lead_trj_indx]
-                dt = lead_trajectory[0, lead_trj_indx] - follower_trajectory[0, follower_trj_indx]
-                if lead_speed <= self.EPS:  # Gipps doesn't work well for near zero speed
-                    v_get_behind = (gap - lead_length) / dt
-                    v = min(v_get_behind, follower_desired_speed) if v_get_behind >= 0 else 0.0
-                    follower_trajectory[0, next_trj_indx] = lead_trajectory[0, lead_trj_indx + 1]
-                    follower_trajectory[1, next_trj_indx] = follower_trajectory[1, follower_trj_indx] - v * dt
-                    follower_trajectory[2, next_trj_indx] = 0.0
+                v1 = follower_speed + 2.5 * follower_max_acc * dt * (
+                        1 - follower_speed / follower_desired_speed) * np.sqrt(
+                    1 / 40 + follower_speed / follower_desired_speed)
 
+                s2 = (follower_max_dec * (lead_max_dec * (2 * (lead_length - gap) + dt * (
+                        follower_max_dec * dt + follower_speed)) + lead_speed ** 2)) / lead_max_dec
+
+                if s2 >= 0:  # determines followers next speed
+                    v2 = follower_max_dec * dt + np.sqrt(s2)  # might get negative
+                    v = min(v1, v2) if v2 >= 0 else v1
                 else:
-                    s1 = 1 / 40 + follower_speed / follower_desired_speed
-                    s2 = (follower_max_dec * (lead_max_dec * (2 * (lead_length - gap) + dt * (
-                            follower_max_dec * dt + follower_speed)) + lead_speed ** 2)) / lead_max_dec
+                    v = v1
 
-                    if s1 >= 0 and s2 >= 0:  # determines followers next speed
-                        v1 = follower_speed + 2.5 * follower_max_acc * dt * (
-                                1 - follower_speed / follower_desired_speed) * np.sqrt(s1)
-                        v2 = follower_max_dec * dt + np.sqrt(s2)  # might get negative
-                        v = min(v1, v2) if v2 >= 0 else v1
-                    elif s1 >= 0:
-                        v1 = follower_speed + 2.5 * follower_max_acc * dt * (
-                                1 - follower_speed / follower_desired_speed) * np.sqrt(s1)
-                        v = v1
-                    elif s2 >= 0:
-                        v2 = follower_max_dec * dt + np.sqrt(s2)  # might get negative
-                        v = max(0.0, v2)
-                    else:  # not supposed to happen
-                        raise Exception('both Gipps under squared root values came out negative')
-                        v = follower_speed
+            follower_trajectory[0, next_trj_indx] = lead_trajectory[0, lead_trj_indx]
+            follower_trajectory[2, next_trj_indx] = v
+            a = (v - follower_speed) / dt
+            follower_dist_to_stopbar = follower_trajectory[1, follower_trj_indx] - (
+                    a * (follower_trajectory[0, next_trj_indx] ** 2 - follower_trajectory[
+                0, follower_trj_indx] ** 2) / 2 + (follower_trajectory[2, follower_trj_indx] -
+                                                   a * follower_trajectory[0, follower_trj_indx]) * dt)
+            follower_trajectory[1, next_trj_indx] = max(follower_dist_to_stopbar, lead_trajectory[1, lead_trj_indx] +
+                                                        lead_length / 2)
 
-                    follower_trajectory[0, next_trj_indx] = lead_trajectory[0, lead_trj_indx]
-                    follower_trajectory[2, next_trj_indx] = v
-                    a = (v - follower_speed) / dt
-                    follower_trajectory[1, next_trj_indx] = max(follower_trajectory[1, follower_trj_indx] - (
-                            a * (follower_trajectory[0, next_trj_indx] ** 2 - follower_trajectory[
-                        0, follower_trj_indx] ** 2) / 2 + (follower_trajectory[2, follower_trj_indx] -
-                                                           a * follower_trajectory[0, follower_trj_indx]) * dt), 0.0)
+            follower_trj_indx += 1
+            lead_trj_indx += 1
 
-                follower_trj_indx += 1
-                lead_trj_indx += 1
-
-        # This part adds the end part that is out of Gipps Car Following domain
+        # This part adds the end part of follower trajectory that might left out of the domain
         d_follower_end = follower_trajectory[1, follower_trj_indx]
         t_follower_end = follower_trajectory[0, follower_trj_indx]
 
-        t_departure_relative = max(veh.scheduled_arrival - t_follower_end, d_follower_end / follower_desired_speed)
-        v_departure_relative = d_follower_end / t_departure_relative
+        t_departure_relative = veh.scheduled_departure - t_follower_end
+        if t_departure_relative > self.EPS:
+            v_departure_relative = d_follower_end / t_departure_relative
 
-        t_augment = self.discretize_time_interval(self.RES, t_departure_relative)
-        d_augment = [d_follower_end - t * v_departure_relative for t in t_augment]
-        s_augment = [v_departure_relative for i in range(len(t_augment))]
+            t_augment = self.discretize_time_interval(self.RES, t_departure_relative)
+            d_augment = [d_follower_end - t * v_departure_relative for t in t_augment]
+            v_augment = [v_departure_relative for t in t_augment]
+        else:
+            t_augment = []
+            d_augment = []
+            v_augment = []
 
         last_index = follower_trj_indx + len(t_augment) + 1
         follower_trajectory[0, follower_trj_indx + 1:last_index] = t_augment + t_follower_end
         follower_trajectory[1, follower_trj_indx + 1:last_index] = d_augment
-        follower_trajectory[2, follower_trj_indx + 1:last_index] = s_augment
+        follower_trajectory[2, follower_trj_indx + 1:last_index] = v_augment
         veh.set_last_trj_point_indx(last_index - 1)
 
 
@@ -273,9 +270,9 @@ import cplex
 class LeadConnected(Trajectory):
     """
     .. attention::
-        - Trajectory function: :math:`f(t)   = \sum_{n=0}^{k-1} b_n t^n`
-        - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n b_n t^{n-1}`
-        - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n (n-1) b_n t^{n-2}`
+        - Trajectory function: :math:`f(t)   = \sum_{n=0}^{k-1} \\beta_n \\times t^n`
+        - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n \\times \\beta_n \\times t^{n-1}`
+        - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n \\times (n-1) \\times  \\beta_n \\times t^{n-2}`
 
 
 Use Case:
@@ -364,7 +361,7 @@ Use Case:
         :param is_lead:
         :return: cplex LP model. Should return the model since the follower optimizer adds constraints to this model
         """
-        delay = veh.scheduled_arrival - veh.earliest_arrival
+        delay = veh.scheduled_departure - veh.earliest_departure
 
         if delay < self.EPS and is_lead:  # do not have to solve LP since the earliest trajectory works
             return None
