@@ -195,6 +195,8 @@
 </li>
         <li><a href="[3].signal.html#src.signal.Signal.__init__">(src.signal.Signal method)</a>
 </li>
+        <li><a href="[3].signal.html#src.signal.TrajectoryPlanner.__init__">(src.signal.TrajectoryPlanner method)</a>
+</li>
         <li><a href="[1].simulator.html#src.time_keeper.TimeKeeper.__init__">(src.time_keeper.TimeKeeper method)</a>
 </li>
       </ul></li>
@@ -290,8 +292,6 @@
 </li>
       <li><a href="[0].overview.html#main.check_py_ver">check_py_ver() (in module main)</a>
 </li>
-      <li><a href="[2].intersection.html#src.intersection.Vehicle.check_trj_redo_needed">check_trj_redo_needed() (src.intersection.Vehicle method)</a>
-</li>
       <li><a href="[3].signal.html#src.signal.GA_SPaT.close_sig_csv">close_sig_csv() (src.signal.GA_SPaT method)</a>
 
       <ul>
@@ -332,9 +332,9 @@
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[4].trajectory.html#src.trajectory.earliest_arrival_connected">earliest_arrival_connected() (in module src.trajectory)</a>
+      <li><a href="[2].intersection.html#src.intersection.earliest_arrival_connected">earliest_arrival_connected() (in module src.intersection)</a>
 </li>
-      <li><a href="[4].trajectory.html#src.trajectory.earliest_arrival_conventional">earliest_arrival_conventional() (in module src.trajectory)</a>
+      <li><a href="[2].intersection.html#src.intersection.earliest_arrival_conventional">earliest_arrival_conventional() (in module src.intersection)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -387,6 +387,8 @@
       <li><a href="[2].intersection.html#src.intersection.Intersection.get_poly_params">get_poly_params() (src.intersection.Intersection method)</a>
 </li>
       <li><a href="[1].simulator.html#data.data.get_pretimed_parameters">get_pretimed_parameters() (in module data.data)</a>
+</li>
+      <li><a href="[1].simulator.html#src.time_keeper.TimeKeeper.get_running_clock">get_running_clock() (src.time_keeper.TimeKeeper method)</a>
 </li>
       <li><a href="[1].simulator.html#data.data.get_signal_params">get_signal_params() (in module data.data)</a>
 </li>
@@ -474,10 +476,12 @@
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[1].simulator.html#src.time_keeper.TimeKeeper.next_sim_step">next_sim_step() (src.time_keeper.TimeKeeper method)</a>
+      <li><a href="[2].intersection.html#src.intersection.Vehicle.needs_traj">needs_traj() (src.intersection.Vehicle method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="[1].simulator.html#src.time_keeper.TimeKeeper.next_sim_step">next_sim_step() (src.time_keeper.TimeKeeper method)</a>
+</li>
       <li><a href="[3].signal.html#src.signal.Pretimed.NUM_CYCLES">NUM_CYCLES (src.signal.Pretimed attribute)</a>
 </li>
   </ul></td>
@@ -486,12 +490,14 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[3].signal.html#src.signal.GA_SPaT.POPULATION_SIZE">POPULATION_SIZE (src.signal.GA_SPaT attribute)</a>
+      <li><a href="[3].signal.html#src.signal.TrajectoryPlanner.plan_trajectory">plan_trajectory() (src.signal.TrajectoryPlanner method)</a>
 </li>
-      <li><a href="[3].signal.html#src.signal.Pretimed">Pretimed (class in src.signal)</a>
+      <li><a href="[3].signal.html#src.signal.GA_SPaT.POPULATION_SIZE">POPULATION_SIZE (src.signal.GA_SPaT attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="[3].signal.html#src.signal.Pretimed">Pretimed (class in src.signal)</a>
+</li>
       <li><a href="[2].intersection.html#src.intersection.Vehicle.print_trj_points">print_trj_points() (src.intersection.Vehicle method)</a>
 </li>
       <li><a href="[2].intersection.html#src.intersection.Lanes.purge_served_vehs">purge_served_vehs() (src.intersection.Lanes method)</a>
@@ -594,6 +600,8 @@
         <li><a href="[4].trajectory.html#src.trajectory.Trajectory">(class in src.trajectory)</a>
 </li>
       </ul></li>
+      <li><a href="[3].signal.html#src.signal.TrajectoryPlanner">TrajectoryPlanner (class in src.signal)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -679,9 +687,7 @@
 
   <script type="text/javascript">
       jQuery(function () {
-          
-          SphinxRtdTheme.Navigation.enableSticky();
-          
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script> 
 
