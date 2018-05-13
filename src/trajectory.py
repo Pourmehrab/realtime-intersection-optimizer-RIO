@@ -1,5 +1,5 @@
 ####################################
-# File name: trajectory.py               #
+# File name: trajectory.py         #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
 # Last Modified: Apr/23/2018       #
@@ -14,20 +14,20 @@ import numpy as np
 
 class Trajectory:
     """
-    Abstract class for computing the trajectory points. Four subclasses inherited from ``Trajectory()``:
-        - LeadConventional
-        - FollowerConnected
-        - LeadConnected
-        - FollowerConventional
+    Is the abstract class for computing the trajectory points. Four subclasses inherited from this parent class:
+        - :any:`LeadConventional`
+        - :any:`FollowerConnected`
+        - :any:`LeadConnected`
+        - :any:`FollowerConventional`
 
-    Any solve method under each class shall invoke ``set_trajectory()`` method at the end or does the assignment in-place.
+    Any solve method under each class shall invoke :any:`set_trajectory` method at the end or does the assignment in-place.
 
     .. note:: If want to limit the trajectory planning, there are two options:
-            - If a particular vehicle is intended to be skipped, simply set ``redo_trj_allowed`` to ``False``
-            - If the whole simulation is intended to be run without trajectory planer, set ``do_traj_computation`` in ``main.py`` to False.
+            - If a particular vehicle is intended to be skipped, simply set ``vehicle.reschedule_departure`` to ``False``
+            - If the whole simulation is intended to be run without trajectory planer, set ``vehicle.reschedule_departure`` in ``main.py`` to False.
 
 
-    :param RES: time difference between two consecutive trajectory points in seconds used in``discretize_time_interval`` (be careful not to exceed max size of trajectory)
+    :param RES: time difference between two consecutive trajectory points in seconds used in :any:`discretize_time_interval()` (be careful not to exceed max size of trajectory)
     :param EPS: small number that lower than that is approximated by zero
 
     :Author:
@@ -41,8 +41,8 @@ class Trajectory:
 
     def __init__(self, max_speed, min_headway):
         """
-        :param max_speed: Trajectories are designed to respect the this speed limit (in m/s).
-        :param min_headway: This is the minimum headway that vehicles in a lane can be served (in sec/veh)
+        :param max_speed: Trajectories are designed to respect the this speed limit (in :math:`m/s`).
+        :param min_headway: This is the minimum headway that vehicles in a lane can be served (in :math:`sec/veh`)
         """
         self._max_speed = max_speed
         self._min_headway = min_headway
@@ -66,10 +66,13 @@ class Trajectory:
         """
         Sets trajectory of the vehicle and updates the first and last trajectory point index.
 
+        .. note:: An assigned trajectory always is indexed from zero as the ``veh.set_first_trj_point_indx``.
+
         :param veh: the vehicle object that is owns the trajectory
+        :type veh: Vehicle
         :param t: time stamps (seconds from the reference time)
         :param d: distances at each time stamp (in meters from the stop bar)
-        :param s: speed at each time stamp (in m/s)
+        :param s: speed at each time stamp (in :math:`m/s`)
         """
         n = len(t)
         veh.trajectory[:, 0:n] = [t, d, s]
@@ -109,43 +112,28 @@ Use Case:
         Constructs the trajectory of a lead conventional vehicle assuming the driver maintains its speed
 
         :param veh: the lead conventional vehicle
+        :type veh: Vehicle
         """
         trajectory = veh.trajectory
         first_trj_point_indx = veh.first_trj_point_indx
-        det_time, det_dist, det_speed = trajectory[:, first_trj_point_indx]
-        scheduled_arrival = veh.scheduled_arrival  # the time this vehicle departs the stop bar
+        det_time, det_dist = trajectory[:2, first_trj_point_indx]
 
-        arrival_time = det_time + det_dist / det_speed
+        v = det_dist / veh.scheduled_departure
 
-        t = self.discretize_time_interval(det_time, arrival_time)
-        s = np.array([det_speed for i in range(len(t))])
-        d = np.array([det_dist - det_speed *
-                      (t[i] - det_time) for i in range(len(t))])
+        t = self.discretize_time_interval(det_time, veh.scheduled_departure)
+        s = np.array([v for t_i in t])
+        d = np.array([det_dist - v * (t_i - det_time) for t_i in t])
 
-        if arrival_time > scheduled_arrival + self.EPS:
-            raise Exception("the computed earliest arrival of a lead conventional is later than the scheduled time.")
-        else:
+        self.set_trajectory(veh, t, d, s)
 
-            t_augment = self.discretize_time_interval(t[-1] + self.RES, scheduled_arrival)
-            d_augment = [0 for t in t_augment]
-            s_augment = [0 for t in t_augment]
-
-            t = np.append(t, t_augment)
-            d = np.append(d, d_augment)
-            s = np.append(s, s_augment)
-
-            self.set_trajectory(veh, t, d, s)
+        # -------------------------------------------------------
+        # FOLLOWER CONVENTIONAL TRAJECTORY ESTIMATOR
+        # -------------------------------------------------------
 
 
-# -------------------------------------------------------
-# FOLLOWER CONVENTIONAL TRAJECTORY ESTIMATOR
-# -------------------------------------------------------
 class FollowerConventional(Trajectory):
     """
-    Estimates the trajectory for a follower conventional vehicle assuming a car following model.
-
-    .. seealso::
-        Gipps, Peter G. *A behavioural car-following model for computer simulation*. Transportation Research Part B: Methodological 15.2 (1981): 105-111.
+    Estimates the trajectory for a follower conventional vehicle assuming a car following model. In the current implementation, Gipps car-following model [#]_ is used.
 
 Use Case:
 
@@ -161,6 +149,8 @@ Use Case:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
         April-2018
+
+.. [#] Gipps, Peter G. *A behavioural car-following model for computer simulation*. Transportation Research Part B: Methodological 15.2 (1981): 105-111 (`link <https://www.sciencedirect.com/science/article/pii/0191261581900370>`_).
     """
 
     def __init__(self, max_speed, min_headway):
@@ -168,92 +158,97 @@ Use Case:
 
     def solve(self, veh, lead_veh):
         """
-        Gipps car following model is assumed here. It is written in-place (does not call set_trajectory)
+        Gipps car following model is implemented. It is written in-place (does not call :any:`set_trajectory`)
 
-        .. note:: The only trajectory point index that changes is follower's last one.
+        .. figure:: images/Gipps_formula.JPG
+            :align: center
+            :alt: map to buried treasure
 
+            Gipps car following formula.
+
+        .. note::
+            - The only trajectory point index that changes is follower's last one.
+            - This method relies on the fact that lead vehicle's first trajectory point is current.
+            - Assumed the gap to lead vehicle cannot get lower than half length of the lead vehicle.
+
+        :param veh: The follower conventional vehicle
+        :type veh: Vehicle
+        :param lead_veh: The vehicle in front of subject conventional vehicle
+        :type lead_veh: Vehicle
         """
         follower_trajectory = veh.trajectory
         follower_desired_speed = veh.desired_speed
         follower_max_acc, follower_max_dec = veh.max_accel_rate, veh.max_decel_rate
         follower_trj_indx = veh.first_trj_point_indx
-        follower_detection_time = follower_trajectory[0, follower_trj_indx]
 
         lead_trajectory = lead_veh.trajectory
         lead_max_dec, lead_length = lead_veh.max_decel_rate, lead_veh.length
-        lead_trj_indx = lead_veh.first_trj_point_indx  # this starts with followers first and goes to leads last point
+        lead_trj_indx = lead_veh.first_trj_point_indx
         lead_last_trj_point_indx = lead_veh.last_trj_point_indx
 
+        if lead_trajectory[0, lead_trj_indx] - follower_trajectory[0, follower_trj_indx] <= self.EPS:
+            lead_trj_indx += 1  # this shifts appropriately the trajectory computation
+
         while lead_trj_indx <= lead_last_trj_point_indx:
-            # this avoids considering the part of lead trajectory before follower showed up
-            if follower_detection_time > lead_trajectory[0, lead_trj_indx]:
-                lead_trj_indx += 1
+            next_trj_indx = follower_trj_indx + 1
+            lead_speed = lead_trajectory[2, lead_trj_indx]
+            follower_speed = follower_trajectory[2, follower_trj_indx]
+            gap = follower_trajectory[1, follower_trj_indx] - lead_trajectory[1, lead_trj_indx]
+            dt = lead_trajectory[0, lead_trj_indx] - follower_trajectory[0, follower_trj_indx]
+            if lead_speed <= self.EPS:  # Gipps doesn't work well for near zero speed
+                v_get_behind = (gap - lead_length) / dt
+                v = min(v_get_behind, follower_desired_speed) if v_get_behind >= 0 else 0.0
+                follower_trajectory[0, next_trj_indx] = lead_trajectory[0, lead_trj_indx]
+                follower_trajectory[1, next_trj_indx] = follower_trajectory[1, follower_trj_indx] - v * dt
+                follower_trajectory[2, next_trj_indx] = 0.0
+
             else:
-                break
-        if lead_trj_indx > lead_last_trj_point_indx:
-            # the lead vehicle left before detection of this vehicle
-            # check vehicle update process since lead vehicle should have been removed
-            raise Exception("The lead vehicle sent to FollowerConventional() should have been removed.")
-        else:
-            while lead_trj_indx < lead_last_trj_point_indx:  # less than is used since it computes the next trajectory point
-                next_trj_indx = follower_trj_indx + 1
-                lead_speed = lead_trajectory[2, lead_trj_indx]
-                follower_speed = follower_trajectory[2, follower_trj_indx]
-                gap = follower_trajectory[1, follower_trj_indx] - lead_trajectory[1, lead_trj_indx]
-                dt = lead_trajectory[0, lead_trj_indx + 1] - lead_trajectory[0, lead_trj_indx]
-                if lead_speed <= self.EPS:  # Gipps doesn"t work well for near zero speed
-                    follower_trajectory[0, next_trj_indx] = lead_trajectory[0, lead_trj_indx + 1]
-                    v_get_behind = (gap - lead_length) / dt
-                    v = min(v_get_behind, follower_desired_speed) if v_get_behind >= 0 else 0.0
-                    follower_trajectory[1, next_trj_indx] = follower_trajectory[1, follower_trj_indx] - v * dt
-                    follower_trajectory[2, next_trj_indx] = 0.0
+                v1 = follower_speed + 2.5 * follower_max_acc * dt * (
+                        1 - follower_speed / follower_desired_speed) * np.sqrt(
+                    1 / 40 + follower_speed / follower_desired_speed)
 
+                s2 = (follower_max_dec * (lead_max_dec * (2 * (lead_length - gap) + dt * (
+                        follower_max_dec * dt + follower_speed)) + lead_speed ** 2)) / lead_max_dec
+
+                if s2 >= 0:  # determines followers next speed
+                    v2 = follower_max_dec * dt + np.sqrt(s2)  # might get negative
+                    v = min(v1, v2) if v2 >= 0 else v1
                 else:
-                    follower_trajectory[0, next_trj_indx] = lead_trajectory[0, lead_trj_indx + 1]
+                    v = v1
 
-                    s1 = 1 / 40 + follower_speed / follower_desired_speed
-                    s2 = (follower_max_dec * (lead_max_dec * (2 * (lead_length - gap) + dt * (
-                            follower_max_dec * dt + follower_speed)) + lead_speed ** 2)) / lead_max_dec
+            follower_trajectory[0, next_trj_indx] = lead_trajectory[0, lead_trj_indx]
+            follower_trajectory[2, next_trj_indx] = v
+            a = (v - follower_speed) / dt
+            follower_dist_to_stopbar = follower_trajectory[1, follower_trj_indx] - (
+                    a * (follower_trajectory[0, next_trj_indx] ** 2 - follower_trajectory[
+                0, follower_trj_indx] ** 2) / 2 + (follower_trajectory[2, follower_trj_indx] -
+                                                   a * follower_trajectory[0, follower_trj_indx]) * dt)
+            follower_trajectory[1, next_trj_indx] = max(follower_dist_to_stopbar, lead_trajectory[1, lead_trj_indx] +
+                                                        lead_length / 2)
 
-                    if s1 >= 0 and s2 >= 0:  # determines followers next speed
-                        v1 = follower_speed + 2.5 * follower_max_acc * dt * (
-                                1 - follower_speed / follower_desired_speed) * np.sqrt(s1)
-                        v2 = follower_max_dec * dt + np.sqrt(s2)  # might get negative
-                        follower_trajectory[2, next_trj_indx] = min(v1, v2) if v2 >= 0 else v1
-                    elif s1 >= 0:
-                        v1 = follower_speed + 2.5 * follower_max_acc * dt * (
-                                1 - follower_speed / follower_desired_speed) * np.sqrt(s1)
-                        follower_trajectory[2, next_trj_indx] = v1
-                    elif s2 >= 0:
-                        v2 = follower_max_dec * dt + np.sqrt(s2)  # might get negative
-                        follower_trajectory[2, next_trj_indx] = max(0.0, v2)
-                    else:  # not supposed to happen
-                        follower_trajectory[2, follower_trj_indx + 1] = follower_speed
+            follower_trj_indx += 1
+            lead_trj_indx += 1
 
-                    a = (follower_trajectory[2, next_trj_indx] - follower_speed) / dt
-                    follower_trajectory[1, next_trj_indx] = max(follower_trajectory[1, follower_trj_indx] - (
-                            a * (follower_trajectory[0, next_trj_indx] ** 2 - follower_trajectory[
-                        0, follower_trj_indx] ** 2) / 2 + (follower_trajectory[2, follower_trj_indx] -
-                                                           a * follower_trajectory[0, follower_trj_indx]) * dt), 0.0)
-                    # todo remove the max and see why distance may get zero
-                    if np.any(np.isnan(follower_trajectory[1, :])):
-                        raise Exception("nan in time stamp of follower conventional")
-
-                follower_trj_indx += 1
-                lead_trj_indx += 1
-
-        # This part adds the end part that is out of Gipps Car Following domain
+        # This part adds the end part of follower trajectory that might left out of the domain
         d_follower_end = follower_trajectory[1, follower_trj_indx]
         t_follower_end = follower_trajectory[0, follower_trj_indx]
 
-        t_augment = self.discretize_time_interval(self.RES, d_follower_end / follower_desired_speed)
-        d_augment = [d_follower_end - t * follower_desired_speed for t in t_augment]
-        s_augment = [follower_desired_speed for i in range(len(t_augment))]
+        t_departure_relative = veh.scheduled_departure - t_follower_end
+        if t_departure_relative > self.EPS:
+            v_departure_relative = d_follower_end / t_departure_relative
+
+            t_augment = self.discretize_time_interval(self.RES, t_departure_relative)
+            d_augment = [d_follower_end - t * v_departure_relative for t in t_augment]
+            v_augment = [v_departure_relative for t in t_augment]
+        else:
+            t_augment = []
+            d_augment = []
+            v_augment = []
 
         last_index = follower_trj_indx + len(t_augment) + 1
         follower_trajectory[0, follower_trj_indx + 1:last_index] = t_augment + t_follower_end
         follower_trajectory[1, follower_trj_indx + 1:last_index] = d_augment
-        follower_trajectory[2, follower_trj_indx + 1:last_index] = s_augment
+        follower_trajectory[2, follower_trj_indx + 1:last_index] = v_augment
         veh.set_last_trj_point_indx(last_index - 1)
 
 
@@ -267,9 +262,9 @@ import cplex
 class LeadConnected(Trajectory):
     """
     .. attention::
-        - Trajectory function: :math:`f(t)   = \sum_{n=0}^{k-1} b_n t^n`
-        - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n b_n t^{n-1}`
-        - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n (n-1) b_n t^{n-2}`
+        - Trajectory function: :math:`f(t)   = \sum_{n=0}^{k-1} \\beta_n \\times t^n`
+        - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n \\times \\beta_n \\times t^{n-1}`
+        - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n \\times (n-1) \\times  \\beta_n \\times t^{n-2}`
 
 
 Use Case:
@@ -293,7 +288,9 @@ Use Case:
         """
 
         :param k: the size of array that keeps the polynomial (k-1 is the degree of polynomial)
+        :param k: int
         :param m: number of points (exclusive of boundaries) to control speed/acceleration magnitude
+        :param m: int
         """
         super().__init__(max_speed, min_headway)
 
@@ -349,11 +346,14 @@ Use Case:
         Overrides the generic coefficients to build the specific model
 
         :param veh:             vehicle object that its trajectory is meant to be computed
+        :type veh: Vehicle
         :param arrival_time:    time vehicle is scheduled to reach the stop bar
         :param arrival_dist:    distance vehicle is scheduled to reach the stop bar
         :param dep_speed:       speed vehicle is scheduled to reach the stop bar
+        :param is_lead:
+        :return: cplex LP model. Should return the model since the follower optimizer adds constraints to this model
         """
-        delay = veh.scheduled_arrival - veh.earliest_arrival
+        delay = veh.scheduled_departure - veh.earliest_departure
 
         if delay < self.EPS and is_lead:  # do not have to solve LP since the earliest trajectory works
             return None
@@ -409,14 +409,16 @@ Use Case:
                     list(zip(["lb_acc_" + str(j) for n in range(self.k)], var_name, acc_coeff))
                 )
 
-            return self._lp_model  # should return the model since the follower optimizer is extending this class
+            return self._lp_model
 
-    def solve(self, veh, model, arrival_time, max_speed):
+    def solve(self, veh, model, arrival_time, max_speed, lane, veh_indx):
         """
         Solves for connected vehicle (both lead and follower)
 
         :param veh:
+        :type veh: Vehicle
         :param model:
+        :type model: cplex
         :param arrival_time:
         :param max_speed:
         :return: coefficients of the polynomial to the veh object and trajectory points to the trajectory attribute of it
@@ -533,19 +535,19 @@ Use Case:
             rhs=[min_headway for j in range(self.m)],
             names=["min_headway_" + str(j) for j in range(self.m)])
 
-    def set_model(self, veh, arrival_time, arrival_dist, dep_speed,
-                  lead_poly, lead_det_time, lead_arrival_time):
+    def set_model(self, veh, arrival_time, arrival_dist, dep_speed, lead_poly, lead_det_time, lead_arrival_time):
         """
         Sets the LP model using the extra constraints to enforce the safe headway
 
         :param veh: follower connected vehicle that the trajectory model is constructed for
+        :type veh: Vehicle
         :param arrival_time: scheduled arrival time for this vehicle
         :param arrival_dist: scheduled arrival distance for this vehicle
         :param dep_speed: scheduled arrival speed for this vehicle
         :param lead_poly: the lead vehicle polynomial to regenerate necessary info at the control points
         :param lead_det_time: lead vehicle departure time
         :param lead_arrival_time: scheduled arrival time for lead vehicle
-        :return: the LP model to be solved by solve() method
+        :return: the cplex LP model to be solved by solve() method
         """
         self._lp_model = super().set_model(veh, arrival_time, arrival_dist, dep_speed)
 
@@ -575,66 +577,3 @@ Use Case:
                 j += 1
 
         return self._lp_model
-
-
-def earliest_arrival_connected(det_time, speed, dist, amin, amax, max_speed, min_headway=0, t_earliest=0):
-    """
-    Uses the maximum of the followings to compute the earliest time vehicle can reach to the stop bar:
-        - Accelerate/Decelerate to the maximum allowable speed and maintain the speed till departure
-        - Distance is short, it accelerates/decelerated to the best speed and departs
-        - Departs at the minimum headway with its lead vehicle (only for followers close enough to their lead)
-
-    :param det_time:
-    :param speed:
-    :param dist:
-    :param amin:
-    :param amax:
-    :param max_speed:
-    :param min_headway:
-    :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
-    :return:
-
-    :Author:
-        Mahmoud Pourmehrab <pourmehrab@gmail.com>
-    :Date:
-        April-2018
-
-    """
-    a = amax if speed <= max_speed else amin
-    dist_to_max_speed = (max_speed ** 2 - speed ** 2) / (2 * a)
-
-    if dist_to_max_speed <= dist:
-        return max(
-            det_time + (max_speed - speed) / a + (dist - dist_to_max_speed) / max_speed  # min time to get to stop bar
-            , t_earliest + min_headway)
-
-    else:  # not enough time and distance to accelerate/decelerate to max speed
-        v_dest = np.sqrt(speed ** 2 + 2 * a * dist)
-        return max(
-            det_time + (max_speed - v_dest) / a  # min time to get to stop bar
-            , t_earliest + min_headway
-        )
-
-
-def earliest_arrival_conventional(det_time, speed, dist, min_headway=0, t_earliest=0):
-    """
-    Uses the maximum of the followings to compute the earliest time vehicle can reach to the stop bar:
-        - Maintains the detected speed till departure
-        - Departs at the minimum headway with the vehicle in front
-
-    :param det_time:
-    :param speed:
-    :param dist:
-    :param min_headway:
-    :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
-    :return:
-
-    :Author:
-        Mahmoud Pourmehrab <pourmehrab@gmail.com>
-    :Date:
-        April-2018
-    """
-    return max(
-        det_time + dist / speed
-        , t_earliest + min_headway
-    )

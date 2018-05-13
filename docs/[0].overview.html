@@ -168,10 +168,10 @@
 <div><div class="admonition note">
 <p class="first admonition-title">Note</p>
 <ul class="last simple">
-<li>The Python requirement is set to <code class="docutils literal notranslate"><span class="pre">3.5.2</span></code></li>
-<li>Install packages using <code class="docutils literal notranslate"><span class="pre">pip3</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">requirements.txt</span></code></li>
+<li>The interpreter version requirement is set to <code class="docutils literal notranslate"><span class="pre">3.6.4</span></code>. If using conda, do <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">update</span> <span class="pre">conda</span></code> and <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">python=3.6.4</span></code> to update.</li>
+<li>Install packages using <code class="docutils literal notranslate"><span class="pre">pip3</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">requirements.txt</span></code> (a good idea is to do <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">--upgrade</span> <span class="pre">pip</span></code> before)</li>
 <li>SI units used (speed in <span class="math notranslate nohighlight">\(m/s\)</span>, length in <span class="math notranslate nohighlight">\(m\)</span>, time in <span class="math notranslate nohighlight">\(s\)</span>, acceleration in <span class="math notranslate nohighlight">\(m/s^2\)</span>)</li>
-<li>Run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">main</span> <span class="pre">&lt;intersection_name&gt;</span> <span class="pre">&lt;optimization_algo&gt;</span> <span class="pre">&lt;run</span> <span class="pre">mode&gt;</span></code></li>
+<li>Run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">main.py</span> <span class="pre">&lt;intersection_name&gt;</span> <span class="pre">&lt;optimization_algo&gt;</span> <span class="pre">&lt;run</span> <span class="pre">mode&gt;</span></code></li>
 <li><dl class="first docutils">
 <dt>The printed information in the command line may have the following prefixes:</dt>
 <dd><ul class="first last">
@@ -181,6 +181,8 @@
 <li><code class="docutils literal notranslate"><span class="pre">\\\</span></code> vehicle addition</li>
 <li><code class="docutils literal notranslate"><span class="pre">///</span></code> vehicle removal</li>
 <li><code class="docutils literal notranslate"><span class="pre">&gt;&#64;&gt;</span></code> vehicle departure scheduled</li>
+<li><code class="docutils literal notranslate"><span class="pre">&gt;*&gt;</span></code> vehicle trajectory planned through base SPaT</li>
+<li><code class="docutils literal notranslate"><span class="pre">&gt;#&gt;</span></code> vehicle trajectory planned through unserved module (temporary trajectory)</li>
 </ul>
 </dd>
 </dl>
@@ -246,7 +248,7 @@
 </dd>
 </dl>
 <p>For example, to simulate intersection of 13th and 16th in Gainesville with GA, invoke:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python 13th16th GA simulation
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python TERL pretimed simulation
 </pre></div>
 </div>
 <p>The <strong>UML diagram</strong> of the project is as the following (<em>you may want to zoom in</em>):</p>
@@ -284,12 +286,12 @@
 <span class="target" id="module-main"></span><dl class="function">
 <dt id="main.check_py_ver">
 <code class="descclassname">main.</code><code class="descname">check_py_ver</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#main.check_py_ver" title="Permalink to this definition">¶</a></dt>
-<dd><p>checks the python version to meet the requirement (<code class="docutils literal notranslate"><span class="pre">ver</span> <span class="pre">3.5.2</span></code>)</p>
+<dd><p>checks the python version to meet the requirement (<code class="docutils literal notranslate"><span class="pre">ver</span> <span class="pre">3.6.4</span></code>)</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="main.run_avian">
-<code class="descclassname">main.</code><code class="descname">run_avian</code><span class="sig-paren">(</span><em>inter_name</em>, <em>method</em>, <em>sc</em>, <em>do_traj_computation</em>, <em>log_at_vehicle_level</em>, <em>log_at_trj_point_level</em>, <em>log_signal_status</em>, <em>print_clock</em>, <em>print_signal_detail</em>, <em>print_trj_info</em>, <em>test_time</em>, <em>print_detection</em>, <em>print_departure</em><span class="sig-paren">)</span><a class="headerlink" href="#main.run_avian" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">main.</code><code class="descname">run_avian</code><span class="sig-paren">(</span><em>inter_name</em>, <em>method</em>, <em>sc</em>, <em>do_traj_computation</em>, <em>log_at_vehicle_level</em>, <em>log_at_trj_point_level</em>, <em>log_signal_status</em>, <em>print_commandline</em>, <em>optional_packages_found</em><span class="sig-paren">)</span><a class="headerlink" href="#main.run_avian" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
 <dt>For logging and printing of information set boolean variables:</dt>
 <dd><ul class="first last simple">
@@ -367,12 +369,8 @@
 <li><strong>log_at_vehicle_level</strong> – </li>
 <li><strong>log_at_trj_point_level</strong> – </li>
 <li><strong>log_signal_status</strong> – </li>
-<li><strong>print_clock</strong> – </li>
-<li><strong>print_signal_detail</strong> – </li>
-<li><strong>print_trj_info</strong> – </li>
-<li><strong>test_time</strong> – in seconds from start of simulation</li>
-<li><strong>print_detection</strong> – </li>
-<li><strong>print_departure</strong> – </li>
+<li><strong>print_commandline</strong> – </li>
+<li><strong>optional_packages_found</strong> – optional packages for testing</li>
 </ul>
 </td>
 </tr>
@@ -465,9 +463,7 @@
 
   <script type="text/javascript">
       jQuery(function () {
-          
-          SphinxRtdTheme.Navigation.enableSticky();
-          
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script> 
 

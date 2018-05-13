@@ -1,5 +1,5 @@
 ####################################
-# File name: intersection.py              #
+# File name: intersection.py       #
 # Author: Mahmoud Pourmehrab       #
 # Email: mpourmehrab@ufl.edu       #
 # Last Modified: Apr/22/2018       #
@@ -15,7 +15,8 @@ import pandas as pd
 from scipy import stats
 
 from data.data import *
-from src.trajectory import earliest_arrival_connected, earliest_arrival_conventional
+from src.optional.test.unit_tests import test_trj_points
+from src.trajectory import LeadConventional, LeadConnected, FollowerConventional, FollowerConnected
 
 
 class Intersection:
@@ -145,13 +146,12 @@ class Vehicle:
     Objectives:
         - Defines the vehicle object that keeps all necessary information
             - Those which are coming from fusion
-            - Those which are defined to be decided in the program: `trajectory[time, distance, speed], earliest_arrival, scheduled_arrival, poly_coeffs, _do_trj`
+            - Those which are defined to be decided in the program: `trajectory[time, distance, speed], earliest_arrival, scheduled_departure, poly_coeffs, _do_trj`
         - Update/record the trajectory points once they are expired
         - Keep trajectory indexes updated
         - Print useful info once a plan is scheduled
         - Decides if a trajectory re-computation is needed
         - Quality controls the assigned trajectory
-
 
     .. note:: Make sure the MAX_NUM_TRAJECTORY_POINTS to preallocate the trajectories is enough for given problem
 
@@ -166,17 +166,16 @@ class Vehicle:
 
     def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx, k):
         """
-        Data Structure for an individual vehicle
+        Initializes the vehicle object.
 
         .. attention::
             - The last trajectory point index less than the first means no trajectory has been computed yet
             - The last trajectory index is set to -1 and the first to 0 for initialization purpose
             - The shape of trajectory matrix is :math:`3*n` where :math:`n` is the maximum number of trajectory points to be held. The first, second, and third rows correspond to time, distance, and speed profile, respectively.
-
-        .. warning::
             - The vehicle detection time shall be recorded in ``init_time``. GA depends on this field to compute travel time when computing *badness* if an individual.
 
         :param det_id:          the *ID* assigned to this vehicle by radio or a generator
+        :type det_id:           str
         :param det_type:        0: CNV, 1: CAV
         :param det_time:        detection time in :math:`s` from reference time
         :param speed:           detection speed in :math:`m/s`
@@ -188,41 +187,59 @@ class Vehicle:
         :param amax:            desired acceleration rate in :math:`m/s^2`
         :param indx:            the original row index in the input csv file
         :param k:               number of coefficients to represent the trajectory if vehicle is connected
+        :param self.trajectory: keeps the trajectory points as columns of a 3 by N array that N is ``MAX_NUM_TRAJECTORY_POINTS``
+        :param self.first_trj_point_indx: points to the column of the ``trajectory`` array where the current point is stored. This gets updated as the time goes by.
+        :param self.last_trj_point_indx: similarly, points to the column of the ``trajectory`` where last trajectory point is stored.
+        :param self.poly_coeffs: only CAVs trajectories are represented in the form of polynomials as well as the trajectory matrix
+        :type self.poly_coeffs: array
+        :param self.earliest_arrival: the earliest arrival time at the stop bar
+        :param self.scheduled_departure: the scheduled arrival time at the stop bar
+        :param self.reschedule_departure: True if a vehicle is open to receive a new departure time, False if want to keep previous trajectory
+        :type self.reschedule_departure: bool
+        :param self.freshly_scheduled: True if a vehicle is just scheduled a **different** departure and ready for being assigned a trajectory
+        :type self.freshly_scheduled: bool
+        :param self._times_sent_to_traj_planner: number of times this vehicle is sent to trajectory planner
+        .. note::
+            - By definition ``scheduled_departure`` is always greater than or equal to ``earliest_arrival``.
+            - Prior to run, make sure teh specified size for trajectory array by ``MAX_NUM_TRAJECTORY_POINTS`` is enough to store all under the worst case.
+            - A vehicle may be open to be rescheduled but gets the same departure time and therefore ``freshly_scheduled`` should hold ``False`` under that case.
+            -
         """
         self.ID = det_id
         self.veh_type = det_type
         self.init_time = det_time
-        self.curr_speed = speed
+        # self.curr_speed = speed
         self.distance = dist
         self.length = length
         self.max_decel_rate = amin
         self.max_accel_rate = amax
         self.destination = dest
         self.desired_speed = des_speed
-        self.trajectory = np.zeros((3, self.MAX_NUM_TRAJECTORY_POINTS), dtype=np.float)  # the shape is important
-        self.first_trj_point_indx = 0
-        self.trajectory[:, self.first_trj_point_indx] = [det_time, dist, speed, ]
-        self.last_trj_point_indx = -1
         self.csv_indx = indx  # is used to find vehicle in original csv file
 
-        if det_type == 1:  # only CAVs trajectories are in the form of polynomials (the also have trajectory matrix)
+        self.trajectory = np.zeros((3, self.MAX_NUM_TRAJECTORY_POINTS), dtype=np.float)  # the shape is important
+        self.first_trj_point_indx = 0
+        self.last_trj_point_indx = -1
+        self.trajectory[:, self.first_trj_point_indx] = [det_time, dist, speed, ]
+
+        if det_type == 1:
             self.poly_coeffs = np.zeros(k)
 
-        self.earliest_arrival, self.scheduled_arrival = 0.0, 0.0  # will be set with their set methods
-        self.redo_trj_allowed = True  # default value
+        self.earliest_departure, self.scheduled_departure = 0.0, 0.0
+        self.reschedule_departure, self.freshly_scheduled = True, False
+        self._times_sent_to_traj_planner = 0
 
     def reset_trj_points(self, sc, lane, time_threshold, file):
         """
-        Writes trajectory points in the csv file if their time stamp is before the ``time_threshold`` and then removes them by updating the first trajectory point.
+        Writes the trajectory points in the csv file if their time stamp is before the ``time_threshold`` and then removes them by updating the first trajectory point.
 
         .. warning::
-            Before calling this make sure at least the first trajectory point's time stamp is less than provided time
-            threshold or such a call would be pointless.
+            Before calling this make sure at least the first trajectory point's time stamp is less than provided time threshold or such a call would be pointless.
 
         :param sc: scenario number being simulated
         :param lane: lane number that is zero-based  (it records it one-based)
         :param time_threshold: any trajectory point before this is considered expired (normally its simulation time)
-        :param file: initialized in ``Traffic.__init__()`` method, if ``None``, this does not record points in csv.
+        :param file: initialized in :any:`Traffic.__init__()` method, if ``None``, this does not record points in csv.
         """
         trj_indx, max_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx
         time, distance, speed = self.trajectory[:, trj_indx]
@@ -245,34 +262,39 @@ class Vehicle:
         else:
             raise Exception("The vehicle should've been removed instead of getting updated for trajectory points.")
 
-    def set_earliest_arrival(self, t_earliest):
+    def set_earliest_departure(self, t_earliest):
         """
-        Sets the earliest arrival time at the stop bar. Called under ``Traffic.update_vehicles_info()`` method
+        Sets the earliest arrival time at the stop bar. Called under :any:`Traffic.update_vehicles_info()` method
         """
-        self.earliest_arrival = t_earliest  # this is the absolute earliest time
+        self.earliest_departure = t_earliest  # this is the absolute earliest time
 
-    def set_scheduled_arrival(self, t_scheduled, d_scheduled, s_scheduled, lane, veh_indx, print):
+    def set_scheduled_departure(self, t_scheduled, d_scheduled, s_scheduled, lane, veh_indx, print_signal_detail):
         """
+        It only schedules if the new departure time is different and vehicle is far enough for trajectory assignment
         .. note::
             - When a new vehicle is scheduled, it has two trajectory points: one for the current state and the other for the final state.
-            - If the vehicle is closer than ``MIN_DIST_TO_STOP_BAR``, avoid appending the schedule.
+            - If the vehicle is closer than ``MIN_DIST_TO_STOP_BAR``, avoids appending the schedule.
+            - Set the ``freshly_scheduled`` to True only if vehicle is getting a new schedule and trajectory planning might become relevant.
 
         :param t_scheduled: scheduled departure time (:math:`s`)
         :param d_scheduled: scheduled departure distance (:math:`m`)
         :param s_scheduled: scheduled departure speed (:math:`m/s`)
         :param lane: the lane this vehicle is in (*for printing purpose only*)
         :param veh_indx: The index of this vehicle in ots lane (*for printing purpose only*)
-        :param print: ``True`` if we want to print schedule
+        :param print_signal_detail: ``True`` if we want to print schedule
         """
         first_trj_indx = self.first_trj_point_indx
-        last_dist_to_stop_bar = self.trajectory[1, first_trj_indx]
-        if last_dist_to_stop_bar > self.MIN_DIST_TO_STOP_BAR:
-            self.scheduled_arrival = t_scheduled
-            self.last_trj_point_indx = self.first_trj_point_indx + 1
+        current_dist_to_stop_bar = self.trajectory[1, first_trj_indx]
+        if current_dist_to_stop_bar >= self.MIN_DIST_TO_STOP_BAR and abs(
+                t_scheduled - self.trajectory[0, self.last_trj_point_indx]) > self.EPS:
+            self.freshly_scheduled = True
+
+            self.scheduled_departure = t_scheduled
+            self.set_last_trj_point_indx(self.first_trj_point_indx + 1)
             self.trajectory[:, self.last_trj_point_indx] = [t_scheduled, d_scheduled, s_scheduled]
 
-            if print:
-                self.print_trj_points(lane, veh_indx)
+            if print_signal_detail:
+                self.print_trj_points(lane, veh_indx, '@')
 
     def set_poly_coeffs(self, beta):
         """Sets the coefficients that define the polynomial that defines trajectory of a connected vehicle"""
@@ -303,45 +325,31 @@ class Vehicle:
         else:
             raise Exception('The numeric code of vehicle type is not known.')
 
-    def print_trj_points(self, lane, veh_indx):
+    def increment_times_sent_to_traj_planner(self):
+        """Increments the count on how many times sent to trajectory planner"""
+        self._times_sent_to_traj_planner += 1
+
+    def print_trj_points(self, lane, veh_indx, identifier):
         """
         Print the first and last trajectory points information. This may be used either when a plan is scheduled or a trajectory is computed.
 
         :param lane: zero-based lane number
         :param veh_indx: index to find the vehicle in its lane array
-        :param source: specifies which method has called the print
+        :param identifier: use ``*`` for optimized trajectory, and ``@`` for scheduled departure
         """
         veh_type_str = self.map_veh_type2str(self.veh_type)
         first_trj_indx, last_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx
         rank = '1st' if veh_indx == 0 else ('2nd' if veh_indx == 1 else str(veh_indx + 1) + 'th')
         lane_rank = rank + ' in L' + str(lane + 1).zfill(2)
         print(
-            '>@> ' + veh_type_str + ':' + str(self.ID) + ':' + lane_rank +
+            '>' + identifier + '> ' + veh_type_str + ':' + str(self.ID) + ':' + lane_rank +
             ': ({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s) -> ({:>4.1f}, {:>4.1f}, {:>4.1f}), {:>3d} points.'.format(
                 self.trajectory[0, first_trj_indx], self.trajectory[1, first_trj_indx],
                 self.trajectory[2, first_trj_indx],
-                self.trajectory[0, last_trj_indx], self.trajectory[1, last_trj_indx], self.trajectory[2, last_trj_indx],
+                self.trajectory[0, last_trj_indx], self.trajectory[1, last_trj_indx],
+                self.trajectory[2, last_trj_indx],
                 last_trj_indx - first_trj_indx + 1
             ))
-
-    def check_trj_redo_needed(self, min_dist=50):
-        """
-        Checks if the trajectory model should be run (returns ``True``) or not (``False``). Cases:
-            - If last trajectory point is not assigned yet, do the trajectory.
-            - If vehicle is closer than a certain distance, do NOT update the trajectory.
-
-        :param min_dist: for lower than this (in meters), no trajectory optimization or car following will be applied
-        :return:
-        """
-
-        if self.last_trj_point_indx < 0:
-            return True  # dont have to set self._do_trj to True since it's already True
-
-        curr_dist = self.trajectory[1, self.first_trj_point_indx]
-        if curr_dist <= min_dist:
-            self.redo_trj_allowed = False
-        else:
-            self.redo_trj_allowed = True
 
 
 class Traffic:
@@ -364,7 +372,8 @@ class Traffic:
         April-2018
     """
 
-    def __init__(self, inter_name, sc, log_at_vehicle_level, log_at_trj_point_level, print_detection, start_time_stamp):
+    def __init__(self, inter_name, sc, log_at_vehicle_level, log_at_trj_point_level, print_commandline,
+                 start_time_stamp):
         """
         Objectives:
             - Sets the logging behaviour for outputting requested CSV files and auxiliary output vectors
@@ -392,13 +401,14 @@ class Traffic:
 
         self._log_at_vehicle_level = log_at_vehicle_level
         self._log_at_trj_point_level = log_at_trj_point_level
-        self._print_detection = print_detection
+        self._print_commandline = print_commandline
 
         if log_at_vehicle_level:
             df_size = len(self.__all_vehicles)
             self._auxilary_departure_times = np.zeros(df_size, dtype=np.float)
             self._axilary_elapsed_time = np.zeros(df_size, dtype=np.float)
             self._auxilary_ID = ['' for i in range(df_size)]
+            self._auxilary_num_sent_to_trj_planner = np.zeros(df_size, dtype=np.int8)
 
         if log_at_trj_point_level:
             # open a file to store trajectory points
@@ -411,17 +421,18 @@ class Traffic:
         else:
             self.full_traj_csv_file = None
 
-    def set_departure_time_for_csv(self, departure_time, indx, id):
+    def set_row_vehicle_level_csv(self, departure_time, veh):
         """
         Sets the departure time of an individual vehicle that is just served.
 
         :param departure_time: departure time in seconds
-        :param indx: row index in the sorted CSV file that has list of all vehicles
-        :param id: ID of the vehicle being recorded
+        :param veh: vehicle to be recorder
+        :type veh: Vehicle
         """
-
+        indx = veh.csv_indx
         self._auxilary_departure_times[indx] = departure_time
-        self._auxilary_ID[indx] = id
+        self._auxilary_ID[indx] = veh.ID
+        self._auxilary_num_sent_to_trj_planner[indx] = veh._times_sent_to_traj_planner
 
     def set_elapsed_sim_time(self, elapsed_t):
         """
@@ -439,6 +450,7 @@ class Traffic:
         self.__all_vehicles['ID'] = self._auxilary_ID
         # the column to store simulation time per scenario
         self.__all_vehicles['elapsed time'] = self._axilary_elapsed_time
+        self.__all_vehicles['num_sent_to_trj_planner'] = self._auxilary_num_sent_to_trj_planner
 
         filepath = os.path.join(
             'log/' + inter_name + '/' + start_time_stamp + '_' + str(
@@ -470,14 +482,14 @@ class Traffic:
     def update_vehicles_info(self, lanes, simulation_time, max_speed, min_headway, k):
         """
         Objectives
-            - Appends arrived vehicles from the csv file to ``lanes.vehlist``
+            - Appends arrived vehicles from the csv file to :any:`Lanes`
             - Assigns their earliest arrival time
 
         :param lanes: vehicles are added to this data structure
-        :type lanes: dictionary of array as of Lanes()
+        :type lanes: Lanes
         :param simulation_time: current simulation clock in seconds measured from zero
-        :param max_speed: maximum allowable speed at the intersection in m/s
-        :param min_headway: min headway in sec/veh
+        :param max_speed: maximum allowable speed at the intersection in :math:`m/s`
+        :param min_headway: min headway in :math:`sec/veh`
         :param k: one more than the degree of polynomial to compute trajectory of connected vehicles. We need it here to preallocate the vector that keeps the polynomial coefficients for connected vehicles.
         """
 
@@ -504,9 +516,10 @@ class Traffic:
             veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed,
                           dest, length, amin, amax, indx, k)
 
-            if self._print_detection:
+            if self._print_commandline:
                 print(
-                    r'\\\ ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane + 1).zfill(2) + ':' +
+                    r'\\\ ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane + 1).zfill(
+                        2) + ':' +
                     '({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s)'.format(det_time, dist, speed))
 
             # append it to its lane
@@ -541,7 +554,7 @@ class Traffic:
                 raise Exception("The detected vehicle could not be classified.")
 
             # now that we have a trajectory, we can set the earliest departure time
-            veh.set_earliest_arrival(t_earliest)
+            veh.set_earliest_departure(t_earliest)
 
             indx += 1
 
@@ -551,10 +564,11 @@ class Traffic:
     @staticmethod
     def get_volumes(lanes, num_lanes, det_range):
         """
-        Unit of volume in each lane is veh/sec/lane. Uses the fundamental traffic flow equation :math:`F=D*S`.
+        Unit of volume in each lane is :math:`veh/sec/lane`. Uses the fundamental traffic flow equation :math:`F=D*S`.
 
 
         :param lanes: includes all vehicles
+        :type lanes: Lanes
         :param num_lanes: number of lanes
         :param det_range: detection range is needed to compute space-mean-speed
         :return volumes: array of volume level per lanes
@@ -563,23 +577,32 @@ class Traffic:
         volumes = np.zeros(num_lanes, dtype=float)
         for lane in range(num_lanes):
             num_of_vehs = len(lanes.vehlist[lane])
-            volumes[lane] = num_of_vehs / det_range * stats.hmean([lanes.vehlist[lane][veh_indx].curr_speed
-                                                                   for veh_indx in range(len(lanes.vehlist[lane]))
-                                                                   ]) if num_of_vehs > 0 else 0.0
+            if num_of_vehs > 0:
+                curr_speed = np.array([veh.trajectory[2, veh.first_trj_point_indx]
+                                       for veh in lanes.vehlist[lane]], dtype=np.float)
+                indx = curr_speed > 0
+                if any(indx):
+                    s = stats.hmean(curr_speed[indx])
+                    volumes[lane] = num_of_vehs / det_range * s
+                else:
+                    volumes[lane] = 0.0
+            else:
+                volumes[lane] = 0.0
+
         return volumes
 
-    def serve_update_at_stop_bar(self, lanes, simulation_time, num_lanes, print_departure):
+    def serve_update_at_stop_bar(self, lanes, simulation_time, num_lanes, print_commandline):
         """
         This looks for/removes the served vehicles.
 
         :param lanes: includes all vehicles
+        :type lanes: Lanes
         :param simulation_time: current simulation clock
         :param num_lanes: number of lanes
-        :param print_departure:
+        :param print_commandline:
         """
 
         for lane in range(num_lanes):
-
             if bool(lanes.vehlist[lane]):  # not an empty lane
 
                 last_veh_indx_to_remove = -1
@@ -590,11 +613,11 @@ class Traffic:
                     if dep_time < simulation_time:  # served! remove it.
 
                         last_veh_indx_to_remove += 1
-                        if print_departure:
+                        if print_commandline:
                             print('/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID +
                                   '@({:>4.1f} s)'.format(dep_time))
                         if self._log_at_vehicle_level:
-                            self.set_departure_time_for_csv(dep_time, veh.csv_indx, veh.ID)
+                            self.set_row_vehicle_level_csv(dep_time, veh)
 
                     elif det_time < simulation_time:  # RESET EXISTING VEHICLES TRAJECTORY
                         veh.reset_trj_points(self.scenario_num, lane, simulation_time, self.full_traj_csv_file)
@@ -604,3 +627,125 @@ class Traffic:
 
                 if last_veh_indx_to_remove > -1:  # removes vehicles 0, 1, ..., veh_indx
                     lanes.purge_served_vehs(lane, last_veh_indx_to_remove)
+
+
+def earliest_arrival_connected(det_time, speed, dist, amin, amax, max_speed, min_headway=0, t_earliest=0):
+    """
+    Uses the maximum of the followings to compute the earliest time vehicle can reach to the stop bar:
+        - Accelerate/Decelerate to the maximum allowable speed and maintain the speed till departure
+        - Distance is short, it accelerates/decelerated to the best speed and departs
+        - Departs at the minimum headway with its lead vehicle (only for followers close enough to their lead)
+
+    :param det_time:
+    :param speed:
+    :param dist:
+    :param amin:
+    :param amax:
+    :param max_speed:
+    :param min_headway:
+    :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
+    :return:
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
+
+    """
+    a = amax if speed <= max_speed else amin
+    dist_to_max_speed = (max_speed ** 2 - speed ** 2) / (2 * a)
+
+    if dist_to_max_speed <= dist:
+        return max(
+            det_time + (max_speed - speed) / a + (dist - dist_to_max_speed) / max_speed  # min time to get to stop bar
+            , t_earliest + min_headway)
+
+    else:  # not enough time and distance to accelerate/decelerate to max speed
+        v_dest = np.sqrt(speed ** 2 + 2 * a * dist)
+        return max(
+            det_time + (max_speed - v_dest) / a  # min time to get to stop bar
+            , t_earliest + min_headway
+        )
+
+
+def earliest_arrival_conventional(det_time, speed, dist, min_headway=0, t_earliest=0):
+    """
+    Uses the maximum of the followings to compute the earliest time vehicle can reach to the stop bar:
+        - Maintains the detected speed till departure
+        - Departs at the minimum headway with the vehicle in front
+
+    :param det_time:
+    :param speed:
+    :param dist:
+    :param min_headway:
+    :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
+    :return:
+
+    .. note::
+        Enter ``min_headway`` and ``t_earliest`` as zeros (default values), if a vehicle is the first in its lane.
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
+    """
+    return max(
+        det_time + dist / speed
+        , t_earliest + min_headway
+    )
+
+
+class TrajectoryPlanner:
+
+    def __init__(self, max_speed, min_headway, k, m):
+        """Instantiates the **trajectory** classes"""
+
+        self.lead_conventional_trj_estimator = LeadConventional(max_speed, min_headway)
+        self.lead_connected_trj_optimizer = LeadConnected(max_speed, min_headway, k, m)
+        self.follower_conventional_trj_estimator = FollowerConventional(max_speed, min_headway)
+        self.follower_connected_trj_optimizer = FollowerConnected(max_speed, min_headway, k, m)
+
+        self._max_speed = max_speed
+
+    def plan_trajectory(self, lanes, veh, lane, veh_indx, print_commandline, identifier, optional_packages_found):
+        """
+        :param lanes:
+        :type lanes: Lanes
+        :param veh:
+        :type veh: Vehicle
+        :param lane:
+        :param veh_indx:
+        :param print_commandline:
+        :param identifier: Shows type of assigned trajectory
+        :param optional_packages_found:
+        """
+        veh_type, departure_time = veh.veh_type, veh.scheduled_departure
+        if veh_indx > 0 and veh_type == 1:  # Follower CAV
+            lead_veh = lanes.vehlist[lane][veh_indx - 1]
+            lead_poly, lead_departure_time = lead_veh.poly_coeffs, lead_veh.scheduled_departure
+            lead_det_time = lead_veh.trajectory[0:, lead_veh.first_trj_point_indx]
+            model = self.follower_connected_trj_optimizer.set_model(veh, departure_time, 0, self._max_speed,
+                                                                    lead_poly, lead_det_time,
+                                                                    lead_departure_time)
+            self.follower_connected_trj_optimizer.solve(veh, model, departure_time, self._max_speed, lane, veh_indx)
+
+        elif veh_indx > 0 and veh_type == 0:  # Follower Conventional
+            lead_veh = lanes.vehlist[lane][veh_indx - 1]
+            self.follower_conventional_trj_estimator.solve(veh, lead_veh)
+        elif veh_indx == 0 and veh_type == 1:  # Lead CAV
+            model = self.lead_connected_trj_optimizer.set_model(veh, departure_time, 0, self._max_speed, True)
+            self.lead_connected_trj_optimizer.solve(veh, model, departure_time, self._max_speed, lane, veh_indx)
+        elif veh_indx == 0 and veh_type == 0:  # Lead Conventional
+            self.lead_conventional_trj_estimator.solve(veh)
+        else:
+            raise Exception('One of lead/follower conventional/connected should have occurred.')
+
+        if abs(veh.trajectory[0, veh.last_trj_point_indx] - veh.scheduled_departure) > 0.1:
+            raise Exception('The planned trj does not match the scheduled time.')
+
+        veh.increment_times_sent_to_traj_planner()
+
+        if optional_packages_found:
+            test_trj_points(veh)
+
+        if print_commandline:
+            veh.print_trj_points(lane, veh_indx, identifier)

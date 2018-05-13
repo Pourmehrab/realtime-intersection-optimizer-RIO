@@ -8,37 +8,22 @@
 ####################################
 
 
-import sys
-import time
-from datetime import datetime
-
-from src.time_keeper import TimeKeeper
-from src.intersection import Intersection, Lanes, Traffic
-# Signal Optimizers
-from src.signal import GA_SPaT, Pretimed
-# Trajectory Optimizers
-from src.trajectory import FollowerConnected, FollowerConventional, LeadConnected, LeadConventional
-# testing
-from src.optional.test.unit_tests import test_scheduled_arrivals, test_trj_points
-
-
 def check_py_ver():
-    """ checks the python version to meet the requirement (``ver 3.5.2``)"""
-    expect_major, expect_minor, expect_rev = 3, 5, 2
+    """ checks the python version to meet the requirement (``ver 3.6.4``)"""
+    expect_major, expect_minor, expect_rev = 3, 6, 4
     if sys.version_info[0] >= expect_major and sys.version_info[1] >= expect_minor and sys.version_info[
         2] >= expect_rev:
         print("Python version requirement is met.\n")
     else:
         print(
-            "INFO: Script developed and tested with Python " + str(expect_major) + "." + str(expect_minor) + "." + str(
-                expect_rev))
-        print("Please update Python")
+            "INFO: Script developed and tested with Python " + str(expect_major) + "." + str(
+                expect_minor) + "." + str(expect_rev))
+        print("Please update python interpreter.")
         sys.exit(-1)
 
 
 def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level,
-              log_signal_status, print_clock, print_signal_detail, print_trj_info, test_time, print_detection,
-              print_departure):
+              log_signal_status, print_commandline, optional_packages_found):
     """
     For logging and printing of information set boolean variables:
         - ``log_at_trj_point_level`` saves a csv under ``\log`` directory that contains all trajectory points for all vehicles
@@ -79,12 +64,8 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     :param log_at_vehicle_level:
     :param log_at_trj_point_level:
     :param log_signal_status:
-    :param print_clock:
-    :param print_signal_detail:
-    :param print_trj_info:
-    :param test_time: in seconds from start of simulation
-    :param print_detection:
-    :param print_departure:
+    :param print_commandline:
+    :param optional_packages_found: optional packages for testing
     :return:
 
 
@@ -111,13 +92,7 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     lanes = Lanes(num_lanes)
 
     # load entire traffic generated in csv file
-    traffic = Traffic(inter_name, sc, log_at_vehicle_level, log_at_trj_point_level, print_detection, start_time_stamp)
-
-    # initialize trajectory planners
-    lead_conventional_trj_estimator = LeadConventional(max_speed, min_headway)
-    lead_connected_trj_optimizer = LeadConnected(max_speed, min_headway, k, m)
-    follower_conventional_trj_estimator = FollowerConventional(max_speed, min_headway)
-    follower_connected_trj_optimizer = FollowerConnected(max_speed, min_headway, k, m)
+    traffic = Traffic(inter_name, sc, log_at_vehicle_level, log_at_trj_point_level, print_commandline, start_time_stamp)
 
     # Set the signal control method
     if method == "GA":
@@ -126,13 +101,15 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
         # NOTE TEH SET OF ALLOWABLE PHASE ARRAY IS ZERO-BASED (not like what inputted in data.py)
         allowable_phase = (0, 1, 2, 3,)
         signal = GA_SPaT(inter_name, allowable_phase, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
-                         print_signal_detail)
+                         do_traj_computation, print_commandline,optional_packages_found)
     elif method == "pretimed":
         signal = Pretimed(inter_name, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
-                          print_signal_detail)
+                          do_traj_computation, print_commandline,optional_packages_found)
 
     elif method == "MCF" or method == "actuated":
         raise Exception("This signal control method is not complete yet.")  # todo develop these
+
+    trajectory_planner = TrajectoryPlanner(max_speed, min_headway, k, m)
 
     # get the time when first vehicle shows up
     first_detection_time = traffic.get_first_detection_time()
@@ -141,72 +118,42 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
 
     # here we start doing optimization for all scenarios included in the csv file
     if log_at_vehicle_level:
-        t_start = time.clock()  # to measure total run time (IS NOT THE SIMULATION TIME)
+        t_start = perf_counter()  # to measure total run time (IS NOT THE SIMULATION TIME)
 
     while True:  # stops when all rows of csv are processed (a break statement controls this)
         simulation_time = time_keeper.clock  # gets current simulation clock
-        if print_clock:
+        if print_commandline:
             print("\nUPDATE AT CLOCK: {:>5.1f} SEC #################################".format(
                 simulation_time))
 
         # UPDATE VEHICLES
         # remove/record served vehicles and phases
-        traffic.serve_update_at_stop_bar(lanes, simulation_time, num_lanes, print_departure)
+        traffic.serve_update_at_stop_bar(lanes, simulation_time, num_lanes, print_commandline)
         # add/update vehicles
         traffic.update_vehicles_info(lanes, simulation_time, max_speed, min_headway, k)
         # update SPaT
-        signal.update_SPaT(simulation_time)
+        signal.update_SPaT(simulation_time, sc)
 
         # update space mean speed
         volumes = traffic.get_volumes(lanes, num_lanes, det_range)
-        critical_volume_ratio = 3600 * volumes.max() / min_headway
+        critical_volume_ratio = 3_600 * volumes.max() / min_headway
 
         # DO SIGNAL OPTIMIZATION
-        if method == "GA":  # change the one inside the while loop as well
-            signal.solve(lanes, num_lanes, max_speed, critical_volume_ratio)
-        elif method == "pretimed":
-            signal.solve(lanes, num_lanes, max_speed)
+        if method in ("GA", "pretimed"):
+            signal.solve(lanes, num_lanes, max_speed, critical_volume_ratio, trajectory_planner)
+        else:
+            raise Exception("The chosen signal method is not developed yet.")
 
-        test_scheduled_arrivals(lanes, num_lanes)  # just for testing purpose
-
-        # now we should have sufficient SPaT to serve all
-        if do_traj_computation:  # does trajectory optimization
-            for lane in range(num_lanes):  # note it goes over lanes by order
-                if bool(lanes.vehlist[lane]):  # not an empty lane
-                    for veh_indx, veh in enumerate(lanes.vehlist[lane]):
-                        if veh.redo_trj_allowed:  # false if we want to keep previous trajectory
-                            veh_type, arrival_time = veh.veh_type, veh.scheduled_arrival
-                            if veh_indx > 0 and veh_type == 1:  # Follower CAV
-                                lead_veh = lanes.vehlist[lane][veh_indx - 1]
-                                lead_poly, lead_arrival_time = lead_veh.poly_coeffs, lead_veh.scheduled_arrival
-                                lead_det_time = lead_veh.trajectory[0:, lead_veh.first_trj_point_indx]
-                                model = follower_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed,
-                                                                                   lead_poly, lead_det_time,
-                                                                                   lead_arrival_time)
-                                follower_connected_trj_optimizer.solve(veh, model, arrival_time, max_speed)
-                            elif veh_indx > 0 and veh_type == 0:  # Follower Conventional
-                                lead_veh = lanes.vehlist[lane][veh_indx - 1]
-                                follower_conventional_trj_estimator.solve(veh, lead_veh)
-                            elif veh_indx == 0 and veh_type == 1:  # Lead CAV
-                                model = lead_connected_trj_optimizer.set_model(veh, arrival_time, 0, max_speed, True)
-                                lead_connected_trj_optimizer.solve(veh, model, arrival_time, max_speed)
-                            elif veh_indx == 0 and veh_type == 0:  # Lead Conventional
-                                lead_conventional_trj_estimator.solve(veh)
-
-                            test_trj_points(veh.first_trj_point_indx, veh.last_trj_point_indx, veh.trajectory, veh.ID,
-                                            simulation_time)  # todo remove if not testing
-                            veh.redo_trj_allowed = False  # todo eventually works with the fusion outputs
-
-                        if print_trj_info and simulation_time >= test_time:
-                            veh.print_trj_points(lane, veh_indx)
+        if optional_packages_found:
+            test_scheduled_arrivals(lanes, num_lanes, max_speed)
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_arrived() and lanes.all_served(num_lanes):
             if log_at_vehicle_level:
-                t_end = time.clock()  # THIS IS NOT SIMULATION TIME! IT"S JUST TIMING THE ALGORITHM
-                traffic.set_elapsed_sim_time(t_end - t_start)
-                if print_clock:
-                    print("\n### ELAPSED TIME: {:>5d} ms ###".format(int(1000 * (t_end - t_start))))
+                elapsed_time = perf_counter() - t_start  # THIS IS NOT SIMULATION TIME! IT"S JUST TIMING THE ALGORITHM
+                traffic.set_elapsed_sim_time(elapsed_time)
+                if print_commandline:
+                    print("\n### ELAPSED TIME: {:>5d} ms ###".format(int(1000 * elapsed_time)))
 
                 # save the csv which has travel time column appended
                 traffic.save_veh_level_csv(inter_name, start_time_stamp)
@@ -224,16 +171,29 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
 
 
 if __name__ == "__main__":
+    # IMPORT NECESSARY PACKAGES
+    import sys
+    from time import perf_counter
+
+    from src.time_keeper import TimeKeeper
+    from src.intersection import Intersection, Lanes, Traffic, TrajectoryPlanner
+    # Signal Optimizers
+    from src.signal import GA_SPaT, Pretimed
+
+    # testing
+    try:
+        from src.optional.test.unit_tests import test_scheduled_arrivals
+
+        optional_packages_found = True
+    except ModuleNotFoundError:
+        optional_packages_found = False
 
     # ################## SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR
-    do_traj_computation = False
+    do_traj_computation = True
     log_at_vehicle_level = True
     log_at_trj_point_level = True
     log_signal_status = True
-    print_trj_info, test_time = True, 0.0  # prints arrival departures in command line
-    print_signal_detail = True  # prints signal info in command line
-    print_clock = True  # prints the timer in command line
-    print_detection, print_departure = True, True  # prints arrivals sent to the algorithm, ...
+    print_commandline = True
 
     print("Interpreter Information")
     print("Python Path: ", sys.executable)
@@ -252,11 +212,10 @@ if __name__ == "__main__":
         inter_name, method, run_mode = sys.argv[1], sys.argv[2], sys.argv[3]
 
         if run_mode == 'simulation':
-            target_sc = 5
-            for sc in range(target_sc, target_sc + 1):
+            target_sc = 1
+            for sc in range(1, target_sc + 1):
                 run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level,
-                          log_signal_status, print_clock, print_signal_detail, print_trj_info, test_time,
-                          print_detection, print_departure)
+                          log_signal_status, print_commandline, optional_packages_found)
 
         elif run_mode == 'realtime':
             raise Exception('real-time mode is not available yet.')

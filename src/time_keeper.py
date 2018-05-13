@@ -35,4 +35,6 @@ class TimeKeeper:
         """Move simulation clock forward"""
         self.clock += self._res
 
-
+    def get_running_clock(self):
+        """Get the current clock"""
+        return self.clock
