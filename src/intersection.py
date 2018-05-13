@@ -8,7 +8,8 @@
 '''
     Intersection: gets parameters that are needed to specify the configuration of problem
 '''
-import os, csv
+import csv
+import os
 
 import numpy as np
 import pandas as pd

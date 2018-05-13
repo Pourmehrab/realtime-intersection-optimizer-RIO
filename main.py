@@ -77,9 +77,8 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
         University of Florida
     """
     # to mark saved csv file
-    if log_at_vehicle_level or log_at_trj_point_level or log_signal_status:
-        start_time_stamp = 'output'
-        # start_time_stamp = datetime.utcnow().strftime('%B %d %Y - %H:%M:%S')
+    start_time_stamp = datetime.utcnow().strftime(' %d%B%Y-%H:%M:%S')
+    # start_time_stamp = 'output'
 
     intersection = Intersection(inter_name)
     # get some useful values
@@ -101,10 +100,10 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
         # NOTE TEH SET OF ALLOWABLE PHASE ARRAY IS ZERO-BASED (not like what inputted in data.py)
         allowable_phase = (0, 1, 2, 3,)
         signal = GA_SPaT(inter_name, allowable_phase, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
-                         do_traj_computation, print_commandline,optional_packages_found)
+                         do_traj_computation, print_commandline, optional_packages_found)
     elif method == "pretimed":
         signal = Pretimed(inter_name, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
-                          do_traj_computation, print_commandline,optional_packages_found)
+                          do_traj_computation, print_commandline, optional_packages_found)
 
     elif method == "MCF" or method == "actuated":
         raise Exception("This signal control method is not complete yet.")  # todo develop these
@@ -173,6 +172,7 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
 if __name__ == "__main__":
     # IMPORT NECESSARY PACKAGES
     import sys
+    from datetime import datetime
     from time import perf_counter
 
     from src.time_keeper import TimeKeeper
