@@ -176,9 +176,9 @@ if __name__ == "__main__":
     from time import perf_counter
 
     from src.time_keeper import TimeKeeper
-    from src.intersection import Intersection, Lanes, Traffic
+    from src.intersection import Intersection, Lanes, Traffic, TrajectoryPlanner
     # Signal Optimizers
-    from src.signal import GA_SPaT, Pretimed, TrajectoryPlanner
+    from src.signal import GA_SPaT, Pretimed
 
     # testing
     try:

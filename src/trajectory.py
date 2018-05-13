@@ -116,29 +116,21 @@ Use Case:
         """
         trajectory = veh.trajectory
         first_trj_point_indx = veh.first_trj_point_indx
-        det_time, det_dist, det_speed = trajectory[:, first_trj_point_indx]
+        det_time, det_dist = trajectory[:2, first_trj_point_indx]
 
-        arrival_time = det_time + det_dist / det_speed
+        v = det_dist / veh.scheduled_departure
 
-        t = self.discretize_time_interval(det_time, arrival_time)
-        s = np.array([det_speed for t_i in t])
-        d = np.array([det_dist - det_speed *
-                      (t_i - det_time) for t_i in t])
-
-        t_augment = self.discretize_time_interval(t[-1] + self.RES, veh.scheduled_departure)
-        d_augment = [0 for t in t_augment]
-        s_augment = [0 for t in t_augment]
-
-        t = np.append(t, t_augment)
-        d = np.append(d, d_augment)
-        s = np.append(s, s_augment)
+        t = self.discretize_time_interval(det_time, veh.scheduled_departure)
+        s = np.array([v for t_i in t])
+        d = np.array([det_dist - v * (t_i - det_time) for t_i in t])
 
         self.set_trajectory(veh, t, d, s)
 
+        # -------------------------------------------------------
+        # FOLLOWER CONVENTIONAL TRAJECTORY ESTIMATOR
+        # -------------------------------------------------------
 
-# -------------------------------------------------------
-# FOLLOWER CONVENTIONAL TRAJECTORY ESTIMATOR
-# -------------------------------------------------------
+
 class FollowerConventional(Trajectory):
     """
     Estimates the trajectory for a follower conventional vehicle assuming a car following model. In the current implementation, Gipps car-following model [#]_ is used.

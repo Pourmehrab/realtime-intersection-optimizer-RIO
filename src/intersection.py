@@ -15,6 +15,8 @@ import pandas as pd
 from scipy import stats
 
 from data.data import *
+from src.optional.test.unit_tests import test_trj_points
+from src.trajectory import LeadConventional, LeadConnected, FollowerConventional, FollowerConnected
 
 
 class Intersection:
@@ -196,6 +198,7 @@ class Vehicle:
         :type self.reschedule_departure: bool
         :param self.freshly_scheduled: True if a vehicle is just scheduled a **different** departure and ready for being assigned a trajectory
         :type self.freshly_scheduled: bool
+        :param self._times_sent_to_traj_planner: number of times this vehicle is sent to trajectory planner
         .. note::
             - By definition ``scheduled_departure`` is always greater than or equal to ``earliest_arrival``.
             - Prior to run, make sure teh specified size for trajectory array by ``MAX_NUM_TRAJECTORY_POINTS`` is enough to store all under the worst case.
@@ -224,6 +227,7 @@ class Vehicle:
 
         self.earliest_departure, self.scheduled_departure = 0.0, 0.0
         self.reschedule_departure, self.freshly_scheduled = True, False
+        self._times_sent_to_traj_planner = 0
 
     def reset_trj_points(self, sc, lane, time_threshold, file):
         """
@@ -321,6 +325,10 @@ class Vehicle:
         else:
             raise Exception('The numeric code of vehicle type is not known.')
 
+    def increment_times_sent_to_traj_planner(self):
+        """Increments the count on how many times sent to trajectory planner"""
+        self._times_sent_to_traj_planner += 1
+
     def print_trj_points(self, lane, veh_indx, identifier):
         """
         Print the first and last trajectory points information. This may be used either when a plan is scheduled or a trajectory is computed.
@@ -342,20 +350,6 @@ class Vehicle:
                 self.trajectory[2, last_trj_indx],
                 last_trj_indx - first_trj_indx + 1
             ))
-
-    # def needs_traj(self):
-    #     """
-    #     Checks if the trajectory model should be run (returns ``True``) or not (``False``). Cases:
-    #         - If vehicle is closer than a certain distance specified by ``MIN_DIST_TO_STOP_BAR``, no need to update the trajectory.
-    #         -
-    #     :return: Whether trajectory should be computed (True), or not (False)
-    #     """
-    #
-    #     curr_distance_to_stop_bar = self.trajectory[1, self.first_trj_point_indx]
-    #     if self.freshly_scheduled and curr_distance_to_stop_bar > self.MIN_DIST_TO_STOP_BAR:
-    #         return True
-    #     else:
-    #         return False
 
 
 class Traffic:
@@ -414,6 +408,7 @@ class Traffic:
             self._auxilary_departure_times = np.zeros(df_size, dtype=np.float)
             self._axilary_elapsed_time = np.zeros(df_size, dtype=np.float)
             self._auxilary_ID = ['' for i in range(df_size)]
+            self._auxilary_num_sent_to_trj_planner = np.zeros(df_size, dtype=np.int8)
 
         if log_at_trj_point_level:
             # open a file to store trajectory points
@@ -426,17 +421,18 @@ class Traffic:
         else:
             self.full_traj_csv_file = None
 
-    def set_departure_time_for_csv(self, departure_time, indx, id):
+    def set_row_vehicle_level_csv(self, departure_time, veh):
         """
         Sets the departure time of an individual vehicle that is just served.
 
         :param departure_time: departure time in seconds
-        :param indx: row index in the sorted CSV file that has list of all vehicles
-        :param id: ID of the vehicle being recorded
+        :param veh: vehicle to be recorder
+        :type veh: Vehicle
         """
-
+        indx = veh.csv_indx
         self._auxilary_departure_times[indx] = departure_time
-        self._auxilary_ID[indx] = id
+        self._auxilary_ID[indx] = veh.ID
+        self._auxilary_num_sent_to_trj_planner[indx] = veh._times_sent_to_traj_planner
 
     def set_elapsed_sim_time(self, elapsed_t):
         """
@@ -454,6 +450,7 @@ class Traffic:
         self.__all_vehicles['ID'] = self._auxilary_ID
         # the column to store simulation time per scenario
         self.__all_vehicles['elapsed time'] = self._axilary_elapsed_time
+        self.__all_vehicles['num_sent_to_trj_planner'] = self._auxilary_num_sent_to_trj_planner
 
         filepath = os.path.join(
             'log/' + inter_name + '/' + start_time_stamp + '_' + str(
@@ -620,7 +617,7 @@ class Traffic:
                             print('/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID +
                                   '@({:>4.1f} s)'.format(dep_time))
                         if self._log_at_vehicle_level:
-                            self.set_departure_time_for_csv(dep_time, veh.csv_indx, veh.ID)
+                            self.set_row_vehicle_level_csv(dep_time, veh)
 
                     elif det_time < simulation_time:  # RESET EXISTING VEHICLES TRAJECTORY
                         veh.reset_trj_points(self.scenario_num, lane, simulation_time, self.full_traj_csv_file)
@@ -695,3 +692,60 @@ def earliest_arrival_conventional(det_time, speed, dist, min_headway=0, t_earlie
         det_time + dist / speed
         , t_earliest + min_headway
     )
+
+
+class TrajectoryPlanner:
+
+    def __init__(self, max_speed, min_headway, k, m):
+        """Instantiates the **trajectory** classes"""
+
+        self.lead_conventional_trj_estimator = LeadConventional(max_speed, min_headway)
+        self.lead_connected_trj_optimizer = LeadConnected(max_speed, min_headway, k, m)
+        self.follower_conventional_trj_estimator = FollowerConventional(max_speed, min_headway)
+        self.follower_connected_trj_optimizer = FollowerConnected(max_speed, min_headway, k, m)
+
+        self._max_speed = max_speed
+
+    def plan_trajectory(self, lanes, veh, lane, veh_indx, print_commandline, identifier, optional_packages_found):
+        """
+        :param lanes:
+        :type lanes: Lanes
+        :param veh:
+        :type veh: Vehicle
+        :param lane:
+        :param veh_indx:
+        :param print_commandline:
+        :param identifier: Shows type of assigned trajectory
+        :param optional_packages_found:
+        """
+        veh_type, departure_time = veh.veh_type, veh.scheduled_departure
+        if veh_indx > 0 and veh_type == 1:  # Follower CAV
+            lead_veh = lanes.vehlist[lane][veh_indx - 1]
+            lead_poly, lead_departure_time = lead_veh.poly_coeffs, lead_veh.scheduled_departure
+            lead_det_time = lead_veh.trajectory[0:, lead_veh.first_trj_point_indx]
+            model = self.follower_connected_trj_optimizer.set_model(veh, departure_time, 0, self._max_speed,
+                                                                    lead_poly, lead_det_time,
+                                                                    lead_departure_time)
+            self.follower_connected_trj_optimizer.solve(veh, model, departure_time, self._max_speed, lane, veh_indx)
+
+        elif veh_indx > 0 and veh_type == 0:  # Follower Conventional
+            lead_veh = lanes.vehlist[lane][veh_indx - 1]
+            self.follower_conventional_trj_estimator.solve(veh, lead_veh)
+        elif veh_indx == 0 and veh_type == 1:  # Lead CAV
+            model = self.lead_connected_trj_optimizer.set_model(veh, departure_time, 0, self._max_speed, True)
+            self.lead_connected_trj_optimizer.solve(veh, model, departure_time, self._max_speed, lane, veh_indx)
+        elif veh_indx == 0 and veh_type == 0:  # Lead Conventional
+            self.lead_conventional_trj_estimator.solve(veh)
+        else:
+            raise Exception('One of lead/follower conventional/connected should have occurred.')
+
+        if abs(veh.trajectory[0, veh.last_trj_point_indx] - veh.scheduled_departure) > 0.1:
+            raise Exception('The planned trj does not match the scheduled time.')
+
+        veh.increment_times_sent_to_traj_planner()
+
+        if optional_packages_found:
+            test_trj_points(veh)
+
+        if print_commandline:
+            veh.print_trj_points(lane, veh_indx, identifier)
