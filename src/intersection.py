@@ -146,15 +146,13 @@ class Vehicle:
     """
     Objectives:
         - Defines the vehicle object that keeps all necessary information
-            - Those which are coming from fusion
-            - Those which are defined to be decided in the program: `trajectory[time, distance, speed], earliest_arrival, scheduled_departure, poly_coeffs, _do_trj`
         - Update/record the trajectory points once they are expired
         - Keep trajectory indexes updated
         - Print useful info once a plan is scheduled
         - Decides if a trajectory re-computation is needed
         - Quality controls the assigned trajectory
 
-    .. note:: Make sure the MAX_NUM_TRAJECTORY_POINTS to preallocate the trajectories is enough for given problem
+    .. note:: Make sure the ``MAX_NUM_TRAJECTORY_POINTS`` to preallocate the trajectories is enough for a given problem
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -172,12 +170,12 @@ class Vehicle:
         .. attention::
             - The last trajectory point index less than the first means no trajectory has been computed yet
             - The last trajectory index is set to -1 and the first to 0 for initialization purpose
-            - The shape of trajectory matrix is :math:`3*n` where :math:`n` is the maximum number of trajectory points to be held. The first, second, and third rows correspond to time, distance, and speed profile, respectively.
+            - The shape of trajectory matrix is :math:`3 \\times n` where :math:`n` is the maximum number of trajectory points to be held. The first, second, and third rows correspond to time, distance, and speed profile, respectively.
             - The vehicle detection time shall be recorded in ``init_time``. GA depends on this field to compute travel time when computing *badness* if an individual.
 
         :param det_id:          the *ID* assigned to this vehicle by radio or a generator
         :type det_id:           str
-        :param det_type:        0: CNV, 1: CAV
+        :param det_type:        0: :term:`CNV`, 1: :term:`CAV`
         :param det_time:        detection time in :math:`s` from reference time
         :param speed:           detection speed in :math:`m/s`
         :param dist:            detection distance to stop bar in :math:`m`
@@ -191,9 +189,9 @@ class Vehicle:
         :param self.trajectory: keeps the trajectory points as columns of a 3 by N array that N is ``MAX_NUM_TRAJECTORY_POINTS``
         :param self.first_trj_point_indx: points to the column of the ``trajectory`` array where the current point is stored. This gets updated as the time goes by.
         :param self.last_trj_point_indx: similarly, points to the column of the ``trajectory`` where last trajectory point is stored.
-        :param self.poly_coeffs: only CAVs trajectories are represented in the form of polynomials as well as the trajectory matrix
-        :type self.poly_coeffs: array
-        :param self.earliest_arrival: the earliest arrival time at the stop bar
+        :param self.poly: only CAVs trajectories are represented in the form of polynomials as well as the trajectory matrix
+        :type self.poly: dictionary that keeps the reference time and the coefficients to reproduce trajectory of an AV
+        :param self.earliest_departure: the earliest arrival time at the stop bar
         :param self.scheduled_departure: the scheduled arrival time at the stop bar
         :param self.reschedule_departure: True if a vehicle is open to receive a new departure time, False if want to keep previous trajectory
         :type self.reschedule_departure: bool
@@ -209,14 +207,13 @@ class Vehicle:
         self.ID = det_id
         self.veh_type = det_type
         self.init_time = det_time
-        # self.curr_speed = speed
         self.distance = dist
         self.length = length
         self.max_decel_rate = amin
         self.max_accel_rate = amax
         self.destination = dest
         self.desired_speed = des_speed
-        self.csv_indx = indx  # is used to find vehicle in original csv file
+        self.csv_indx = indx  # is used to find vehicle in the original CSV file
 
         self.trajectory = np.zeros((3, self.MAX_NUM_TRAJECTORY_POINTS), dtype=np.float)  # the shape is important
         self.first_trj_point_indx = 0
@@ -224,7 +221,7 @@ class Vehicle:
         self.trajectory[:, self.first_trj_point_indx] = [det_time, dist, speed, ]
 
         if det_type == 1:
-            self.poly_coeffs = np.zeros(k)
+            self.poly = {'ref time': 0.0, 'coeffs': np.zeros(k)}
 
         self.earliest_departure, self.scheduled_departure = 0.0, 0.0
         self.reschedule_departure, self.freshly_scheduled = True, False
@@ -297,9 +294,10 @@ class Vehicle:
             if print_signal_detail:
                 self.print_trj_points(lane, veh_indx, '@')
 
-    def set_poly_coeffs(self, beta):
+    def set_poly(self, beta, t_ref):
         """Sets the coefficients that define the polynomial that defines trajectory of a connected vehicle"""
-        self.poly_coeffs = beta
+        self.poly['ref time'] = t_ref
+        self.poly['coeffs'] = beta
 
     def set_first_trj_point_indx(self, indx):
         """Sets the fist column index that points to the trajectory start"""
@@ -313,8 +311,8 @@ class Vehicle:
     def map_veh_type2str(code):
         """
         For the purpose of printing, this method translates the vehicle codes. Currently, it supports:
-            - 0 : Conventional Vehicle (**CNV**)
-            - 1 : Connected and Automated Vehicle (**CAV**)
+            - 0 : Conventional Vehicle (:term:`CNV`)
+            - 1 : Connected and Automated Vehicle (:term:`CAV`)
 
         :param code: numeric code for the vehicle type
         :type code: int
@@ -340,7 +338,8 @@ class Vehicle:
         """
         veh_type_str = self.map_veh_type2str(self.veh_type)
         first_trj_indx, last_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx
-        rank = '1st' if veh_indx == 0 else ('2nd' if veh_indx == 1 else str(veh_indx + 1) + 'th')
+        rank = '1st' if veh_indx == 0 else (
+            '2nd' if veh_indx == 1 else ('3rd' if veh_indx == 2 else str(veh_indx + 1) + 'th'))
         lane_rank = rank + ' in L' + str(lane + 1).zfill(2)
         print(
             '>' + identifier + '> ' + veh_type_str + ':' + str(self.ID) + ':' + lane_rank +
@@ -719,22 +718,19 @@ class TrajectoryPlanner:
         :param identifier: Shows type of assigned trajectory
         :param optional_packages_found:
         """
+        veh.increment_times_sent_to_traj_planner()
         veh_type, departure_time = veh.veh_type, veh.scheduled_departure
         if veh_indx > 0 and veh_type == 1:  # Follower CAV
             lead_veh = lanes.vehlist[lane][veh_indx - 1]
-            lead_poly, lead_departure_time = lead_veh.poly_coeffs, lead_veh.scheduled_departure
-            lead_det_time = lead_veh.trajectory[0:, lead_veh.first_trj_point_indx]
-            model = self.follower_connected_trj_optimizer.set_model(veh, departure_time, 0, self._max_speed,
-                                                                    lead_poly, lead_det_time,
-                                                                    lead_departure_time)
-            self.follower_connected_trj_optimizer.solve(veh, model, departure_time, self._max_speed, lane, veh_indx)
+            model = self.follower_connected_trj_optimizer.set_model(veh, lead_veh)
+            self.follower_connected_trj_optimizer.solve(veh, model, self._max_speed)
 
         elif veh_indx > 0 and veh_type == 0:  # Follower Conventional
             lead_veh = lanes.vehlist[lane][veh_indx - 1]
             self.follower_conventional_trj_estimator.solve(veh, lead_veh)
         elif veh_indx == 0 and veh_type == 1:  # Lead CAV
-            model = self.lead_connected_trj_optimizer.set_model(veh, departure_time, 0, self._max_speed, True)
-            self.lead_connected_trj_optimizer.solve(veh, model, departure_time, self._max_speed, lane, veh_indx)
+            model = self.lead_connected_trj_optimizer.set_model(veh, True)
+            self.lead_connected_trj_optimizer.solve(veh, model, self._max_speed)
         elif veh_indx == 0 and veh_type == 0:  # Lead Conventional
             self.lead_conventional_trj_estimator.solve(veh)
         else:
@@ -742,8 +738,6 @@ class TrajectoryPlanner:
 
         if abs(veh.trajectory[0, veh.last_trj_point_indx] - veh.scheduled_departure) > 0.1:
             raise Exception('The planned trj does not match the scheduled time.')
-
-        veh.increment_times_sent_to_traj_planner()
 
         if optional_packages_found:
             test_trj_points(veh)
