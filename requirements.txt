@@ -1,5 +1,6 @@
 scipy==1.0.1
 numpy==1.14.2
-sortedcontainers==1.5.9
 pandas==0.22.0
+sortedcontainers==1.5.9
 cplex==12.8.0.0
+pysnmp==4.4.4

@@ -22,37 +22,36 @@ np.random.seed(2018)
 
 class Signal:
     """
-The class serves the following goals:
-    - Keeps the SPaT decision updated
-    - Makes SPaT decisions through variety of control methods. For now it supports:
-        - Pre-timed control
-        - Genetic Algorithm
-        - Min Cost Flow model
+    The class serves the following goals:
+        - Keeps the SPaT decision updated
+        - Makes SPaT decisions through variety of control methods. For now it supports:
+            - Pre-timed control
+            - Genetic Algorithm
+            - Min Cost Flow model
 
-Set the class variable ``LAG`` to the time (in seconds) that from start of green is not valid to schedule any departurs.
+    Set the class variable ``LAG`` to the time (in seconds) that from start of green is not valid to schedule any departurs.
 
-.. note::
-    - ``LAG`` also is used in ``Trajectory()`` class. Set them consistent.
-    - ``LARGE_NUM`` is a large number to initialize badness of alternatives in GA. Make sure cannot be beaten by worst alternative.
-    - The signal status is saved under ``\log\<intersection name>\`` directory.
+    .. note::
+        - ``LAG`` also is used in ``Trajectory()`` class. Set them consistent.
+        - ``LARGE_NUM`` is a large number to initialize badness of alternatives in GA. Make sure cannot be beaten by worst alternative.
+        - The signal status is saved under ``\log\<intersection name>\`` directory.
 
-Use Case:
+    Use Case:
 
-    Instantiate like::
+        Instantiate like::
 
-        $ signal = GA_SPaT/Pretimed(.)
+            $ signal = GA_SPaT/Pretimed(.)
 
-    Perform SPaT computation by::
+        Perform SPaT computation by::
 
-        $ signal.solve(.)
+            $ signal.solve(.)
 
     :param LAG: the lag time from start of green when a vehicle can depart
 
-
-:Author:
-    Mahmoud Pourmehrab <pourmehrab@gmail.com>
-:Date:
-    April-2018
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
     LAG = 0.0  # to allow vehicle cross after green (in seconds)
     LARGE_NUM = 999_999_999

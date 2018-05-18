@@ -492,9 +492,8 @@ class FollowerConnected(LeadConnected):
         super().__init__(max_speed, min_headway, k, m)
 
         constraint = [["beta_" + str(n) for n in range(self.k)], [0.0] * self.k]
-        self._lp_model.linear_constraints.add(
-            lin_expr=[constraint] * self.m, senses=["G"] * self.m, rhs=[0.0] * self.m,
-            names=["min_headway_" + str(j) for j in range(self.m)])
+        self._lp_model.linear_constraints.add(lin_expr=[constraint] * self.m, senses=["G"] * self.m, rhs=[0.0] * self.m,
+                                              names=["min_headway_" + str(j) for j in range(self.m)])
 
     def set_model(self, veh, lead_veh):
         """

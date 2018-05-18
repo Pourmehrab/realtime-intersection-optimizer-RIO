@@ -186,8 +186,8 @@ class Vehicle:
         :param self.trajectory: keeps the trajectory points as columns of a 3 by N array that N is ``MAX_NUM_TRAJECTORY_POINTS``
         :param self.first_trj_point_indx: points to the column of the ``trajectory`` array where the current point is stored. This gets updated as the time goes by.
         :param self.last_trj_point_indx: similarly, points to the column of the ``trajectory`` where last trajectory point is stored.
-        :param self.poly: only CAVs trajectories are represented in the form of polynomials as well as the trajectory matrix
-        :type self.poly: dictionary that keeps the reference time and the coefficients to reproduce trajectory of an AV
+        :param self.poly: keeps the reference time and the coefficients to reproduce trajectory of an AV
+        :type self.poly: dict
         :param self.earliest_departure: the earliest arrival time at the stop bar
         :param self.scheduled_departure: the scheduled arrival time at the stop bar
         :param self.reschedule_departure: True if a vehicle is open to receive a new departure time, False if want to keep previous trajectory
@@ -266,6 +266,7 @@ class Vehicle:
     def set_scheduled_departure(self, t_scheduled, d_scheduled, s_scheduled, lane, veh_indx, print_signal_detail):
         """
         It only schedules if the new departure time is different and vehicle is far enough for trajectory assignment
+        
         .. note::
             - When a new vehicle is scheduled, it has two trajectory points: one for the current state and the other for the final state.
             - If the vehicle is closer than ``MIN_DIST_TO_STOP_BAR``, avoids appending the schedule.
