@@ -719,7 +719,7 @@ class TrajectoryPlanner:
         veh_type, departure_time = veh.veh_type, veh.scheduled_departure
         if veh_indx > 0 and veh_type == 1:  # Follower CAV
             lead_veh = lanes.vehlist[lane][veh_indx - 1]
-            model = self.follower_connected_trj_optimizer.set_model(veh)
+            model = self.follower_connected_trj_optimizer.set_model(veh, lead_veh)
             self.follower_connected_trj_optimizer.solve(veh, model)
         elif veh_indx > 0 and veh_type == 0:  # Follower Conventional
             lead_veh = lanes.vehlist[lane][veh_indx - 1]

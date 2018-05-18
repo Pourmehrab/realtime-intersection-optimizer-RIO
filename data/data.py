@@ -33,14 +33,14 @@ def get_general_params(inter_name):
         max_speed = 17.8816  # 40 mph
         min_headway = 1.5
         det_range = 500.0  # 1640 ft
-        k, m = int(5), int(5)
+        k, m = int(10), int(15)
         num_lanes = int(6)
 
     elif inter_name == 'reserv':
         max_speed = 15.0
         min_headway = 2.0
         det_range = 500.0
-        k, m = int(10), int(20)
+        k, m = int(15), int(10)
         num_lanes = int(12)
 
     else:

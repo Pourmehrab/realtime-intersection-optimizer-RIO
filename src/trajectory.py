@@ -311,10 +311,11 @@ class LeadConnected(Trajectory):
         self._lp_model.objective.set_sense(self._lp_model.objective.sense.minimize)
         self._lp_model.set_problem_name('CAV trajectory optimization')
         self._lp_model.set_problem_type(cplex.Cplex().problem_type.LP)
-        self._lp_model.set_log_stream(None)
-        self._lp_model.set_error_stream(None)
-        self._lp_model.set_warning_stream(None)
-        self._lp_model.set_results_stream(None)
+        self._lp_model.parameters.read.datacheck.set(2)
+        # self._lp_model.set_log_stream(None)
+        # self._lp_model.set_error_stream(None)
+        # self._lp_model.set_warning_stream(None)
+        # self._lp_model.set_results_stream(None)
 
         var_name = ["beta_" + str(n) for n in range(self.k)]
         self._lp_model.variables.add(obj=[1.0 for n in range(self.k)],
@@ -323,14 +324,11 @@ class LeadConnected(Trajectory):
         constraint = [var_name, [0.0 for n in range(self.k)]]
         self._lp_model.linear_constraints.add(
             lin_expr=
-            [[["beta_0"], [1.0]], [["beta_1"], [1.0]], constraint, constraint] + \
-            [constraint for j in range(self.m)] + \
-            [constraint for j in range(self.m)] + \
-            [constraint for j in range(self.m)] + \
-            [constraint for j in range(self.m)]
+            [[["beta_0"], [1.0]], [["beta_1"], [1.0]]] + [constraint] * 2 + \
+            [constraint for j in range(self.m)] * 4
             ,
             senses=
-            ["E", "E", "E", "E"] + \
+            ["E"] * 4 + \
             ["G" for j in range(self.m)] + \
             ["L" for j in range(self.m)] + \
             ["G" for j in range(self.m)] + \
@@ -339,9 +337,7 @@ class LeadConnected(Trajectory):
             rhs=
             [0.0, 0.0, 1.0, 1.0] + \
             [-max_speed for j in range(self.m)] + \
-            [0.0 for j in range(self.m)] + \
-            [1.0 for j in range(self.m)] + \
-            [1.0 for j in range(self.m)]
+            [0.0 for j in range(self.m)] * 3
             ,
             names=
             ["match_det_dist", "match_det_speed", "match_dep_dist", "match_dep_speed"] + \
@@ -425,7 +421,7 @@ class LeadConnected(Trajectory):
 
         try:
             model.solve()
-        except CplexSolverError:
+        except cplex.exceptions.CplexSolverError:
             print("Exception raised during solve")
             return
 
@@ -442,6 +438,9 @@ class LeadConnected(Trajectory):
             dep_speed -= dv
 
         if dep_speed < 0:  # no optimal found in the while loop above
+            model.write("model.lp")
+            stat = model.get_stats()
+            s = model.solution.get_linear_slacks()
             raise Exception("CPLEX failed to find optimal trajectory for vehicle " + str(veh.ID))
 
         beta = np.flip(np.array(model.solution.get_values(["beta_" + str(n) for n in range(self.k)])), 0)
