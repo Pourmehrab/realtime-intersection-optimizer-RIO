@@ -163,7 +163,7 @@
 <h1>1. Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="introduction">
 <h2>1.1. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>The program is to simulate the performance of an isolated intersection under traffic of automated vehicles and conventional vehicles with variety of signal control methods. It is developed as part of the <a class="reference internal" href="#term-avian"><span class="xref std std-term">AVIAN</span></a> project supported by National Science Foundation under <a class="reference external" href="https://www.nsf.gov/awardsearch/showAward?AWD_ID=1446813&amp;HistoricalAwards=false">grant award 1446813</a>. The base implementation was done in MATLAB programming language in 2015 - 2017 (see <a class="footnote-reference" href="#id2" id="id1">[1]</a>). For comments and questions please contact email me at <a class="reference external" href="mailto:mpourmehrab&#37;&#52;&#48;ufl&#46;edu">mpourmehrab<span>&#64;</span>ufl<span>&#46;</span>edu</a>. For details on the AVIAN project visit <a class="reference external" href="http://avian.essie.ufl.edu">AVIAN.ESSIE.UFL.EDU</a>.</p>
+<p>The program is to simulate the performance of an isolated intersection under traffic of automated vehicles and conventional vehicles with variety of signal control methods. It is developed as part of the <a class="reference internal" href="#term-avian"><span class="xref std std-term">AVIAN</span></a> project supported by National Science Foundation under <a class="reference external" href="https://www.nsf.gov/awardsearch/showAward?AWD_ID=1446813&amp;HistoricalAwards=false">grant award 1446813</a>. The base implementation was done in MATLAB programming language in 2015 - 2017 (see <a class="footnote-reference" href="#id7" id="id1">[1]</a>). For comments and questions please contact email me at <a class="reference external" href="mailto:mpourmehrab&#37;&#52;&#48;ufl&#46;edu">mpourmehrab<span>&#64;</span>ufl<span>&#46;</span>edu</a>. For details on the AVIAN project visit <a class="reference external" href="http://avian.essie.ufl.edu">AVIAN.ESSIE.UFL.EDU</a>.</p>
 <blockquote>
 <div><div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -217,12 +217,14 @@ $ pip3 install -r requirements.txt
 </div>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
-<ul class="last simple">
-<li>As of now, no traffic generator module is developed as part of the main workflow. The traffic is input in csv format under <code class="docutils literal notranslate"><span class="pre">/data/&lt;intersection</span> <span class="pre">name&gt;/</span></code> directory.</li>
-<li>For simulation, the directory <code class="docutils literal notranslate"><span class="pre">/data/&lt;intersection</span> <span class="pre">name&gt;/</span></code> shall include <code class="docutils literal notranslate"><span class="pre">&lt;timestamp&gt;_sc_sig_phase_level,</span> <span class="pre">_trj_vehicle_level,</span> <span class="pre">_trj_point_level.csv</span></code> which has the scenarios to be tested. Note the filename should match the intersection name.</li>
+<ul class="last">
+<li><p class="first">As of now, no traffic generator module is developed as part of the main workflow. The traffic is input in csv format under <code class="docutils literal notranslate"><span class="pre">/data/&lt;intersection</span> <span class="pre">name&gt;/</span></code> directory.</p>
+</li>
+<li><p class="first">For simulation, the directory <code class="docutils literal notranslate"><span class="pre">/data/&lt;intersection</span> <span class="pre">name&gt;/</span></code> shall include <code class="docutils literal notranslate"><span class="pre">&lt;timestamp&gt;_sc_sig_phase_level,</span> <span class="pre">_trj_vehicle_level,</span> <span class="pre">_trj_point_level.csv</span></code> which has the scenarios to be tested. Note the filename should match the intersection name.</p>
+</li>
 <li><dl class="first docutils">
 <dt>The csv file must include columns with the following heading:</dt>
-<dd><ul class="first last">
+<dd><ul class="first last simple">
 <li><cite>lane</cite>: lane index (one-based)</li>
 <li><cite>type</cite>: vehicle type {0: <a class="reference internal" href="#term-cnv"><span class="xref std std-term">CNV</span></a>, 1: <a class="reference internal" href="#term-cav"><span class="xref std std-term">CAV</span></a>}</li>
 <li><cite>arrival time</cite>: arrival time at the stop bar measured in second from a fix reference point</li>
@@ -235,6 +237,132 @@ $ pip3 install -r requirements.txt
 </ul>
 </dd>
 </dl>
+<table border="1" class="docutils">
+<colgroup>
+<col width="10%" />
+<col width="10%" />
+<col width="10%" />
+<col width="10%" />
+<col width="10%" />
+<col width="10%" />
+<col width="10%" />
+<col width="10%" />
+<col width="10%" />
+<col width="10%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><th class="stub">lane</th>
+<td>type</td>
+<td>arrival time</td>
+<td>L</td>
+<td>maxAcc</td>
+<td>maxDec</td>
+<td>dest</td>
+<td>curSpd</td>
+<td>desSpd</td>
+<td>dist</td>
+</tr>
+<tr class="row-even"><th class="stub">4</th>
+<td>1</td>
+<td>33.2</td>
+<td>4.6</td>
+<td>2</td>
+<td>-2.5</td>
+<td>0</td>
+<td>5.7</td>
+<td>16.3</td>
+<td>500</td>
+</tr>
+<tr class="row-odd"><th class="stub">2</th>
+<td>0</td>
+<td>27.6</td>
+<td>4.8</td>
+<td>2</td>
+<td>-2.5</td>
+<td>1</td>
+<td>5.5</td>
+<td>18</td>
+<td>500</td>
+</tr>
+<tr class="row-even"><th class="stub">6</th>
+<td>1</td>
+<td>35.2</td>
+<td>4.8</td>
+<td>2</td>
+<td>-2.5</td>
+<td>1</td>
+<td>8.1</td>
+<td>17.6</td>
+<td>500</td>
+</tr>
+<tr class="row-odd"><th class="stub">8</th>
+<td>1</td>
+<td>41.2</td>
+<td>4.6</td>
+<td>2</td>
+<td>-2.5</td>
+<td>2</td>
+<td>9.7</td>
+<td>17.5</td>
+<td>500</td>
+</tr>
+<tr class="row-even"><th class="stub">3</th>
+<td>0</td>
+<td>49</td>
+<td>3.7</td>
+<td>2</td>
+<td>-2.5</td>
+<td>0</td>
+<td>10.8</td>
+<td>18.5</td>
+<td>500</td>
+</tr>
+<tr class="row-odd"><th class="stub">1</th>
+<td>1</td>
+<td>28.6</td>
+<td>4</td>
+<td>2</td>
+<td>-2.5</td>
+<td>1</td>
+<td>5.4</td>
+<td>18.5</td>
+<td>500</td>
+</tr>
+<tr class="row-even"><th class="stub">4</th>
+<td>0</td>
+<td>40</td>
+<td>4.2</td>
+<td>2</td>
+<td>-2.5</td>
+<td>0</td>
+<td>7.8</td>
+<td>16.7</td>
+<td>500</td>
+</tr>
+<tr class="row-odd"><th class="stub">6</th>
+<td>0</td>
+<td>50.8</td>
+<td>4.2</td>
+<td>2</td>
+<td>-2.5</td>
+<td>2</td>
+<td>9.4</td>
+<td>16.9</td>
+<td>500</td>
+</tr>
+<tr class="row-even"><th class="stub">7</th>
+<td>1</td>
+<td>64.9</td>
+<td>4.6</td>
+<td>2</td>
+<td>-2.5</td>
+<td>2</td>
+<td>11.3</td>
+<td>17.2</td>
+<td>500</td>
+</tr>
+</tbody>
+</table>
 </li>
 </ul>
 </div>
@@ -243,7 +371,7 @@ $ pip3 install -r requirements.txt
 <dt>You can add any intersection in the <code class="docutils literal notranslate"><span class="pre">src/intersection/data.py</span></code>. The list of all available intersections is:</dt>
 <dd><ul class="first last simple">
 <li><code class="docutils literal notranslate"><span class="pre">13th16th</span></code>: A physical one, google map it in Gainesville for the image and lane assignment detail</li>
-<li><code class="docutils literal notranslate"><span class="pre">TERL</span></code>: Located at <cite>2612 Springhill Road, Tallahassee, FL 32305</cite>. Note the lane numbering in the code is 1: Southbound (all movements), 2: Westbound (through and right turn), 3: Westbound (left turn), 4: Northbound (all movements), 5: Eastbound (through and right turn), 6: Eastbound (left turn).</li>
+<li><code class="docutils literal notranslate"><span class="pre">TERL</span></code>: Located at <a class="reference external" href="https://goo.gl/maps/qiwW7TJe4co">2612 Springhill Road, Tallahassee, FL 32305</a>. Note the lane numbering in the code is 1: Southbound (all movements), 2: Westbound (through and right turn), 3: Westbound (left turn), 4: Northbound (all movements), 5: Eastbound (through and right turn), 6: Eastbound (left turn).</li>
 <li><code class="docutils literal notranslate"><span class="pre">reserv</span></code>:  for the reservation based model intersection that has 12 incoming lanes: 3 per approach and all lanes are exclusive (for more detail check <a class="reference external" href="http://www.cs.utexas.edu/~aim/">UT Texas AIM</a>).</li>
 <li>Some possible intersections to add are <code class="docutils literal notranslate"><span class="pre">RTS,</span> <span class="pre">42nd40th,</span> <span class="pre">SolarPark</span></code></li>
 </ul>
@@ -264,7 +392,7 @@ $ pip3 install -r requirements.txt
 </dd>
 </dl>
 <p>The <strong>UML diagram</strong> of the project is as the following (<em>you may want to zoom in</em>):</p>
-<div class="figure align-center" id="id3">
+<div class="figure align-center" id="id8">
 <img alt="map to buried treasure" src="_images/UML.JPG" />
 <p class="caption"><span class="caption-text">The UML diagram of project.</span></p>
 </div>
@@ -273,7 +401,7 @@ $ pip3 install -r requirements.txt
 <h2>1.2. Terms<a class="headerlink" href="#terms" title="Permalink to this headline">¶</a></h2>
 <dl class="glossary docutils">
 <dt id="term-avian">AVIAN</dt>
-<dd>Autonomous Vehicles at Intelligent intersections and Advanced Networks</dd>
+<dd>Autonomous Vehicles at Intelligent intersections and Advanced Networks. Read more <a class="reference external" href="http://avian.essie.ufl.edu">here</a>.</dd>
 <dt id="term-spat">SPaT</dt>
 <dd>Signal Phase and Timing</dd>
 <dt id="term-cav">CAV</dt>
@@ -281,15 +409,21 @@ $ pip3 install -r requirements.txt
 <dt id="term-cnv">CNV</dt>
 <dd>Conventional Vehicle</dd>
 <dt id="term-trajectory">Trajectory</dt>
-<dd>A list of triples (time stamp, distance to stop bar, speed) to describe a vehicle’s movement</dd>
+<dd>A list of triples (time stamp, distance to stop bar, speed) to describe a vehicle’s movement.</dd>
+<dt id="term-lp">LP</dt>
+<dd>Linear Program used to optimize the AVs trajectories. Read more <a class="reference external" href="https://en.wikipedia.org/wiki/Linear_programming">here</a>.</dd>
+<dt id="term-cplex">CPLEX</dt>
+<dd>An optimization solver developed by IBM. Read more <a class="reference external" href="https://en.wikipedia.org/wiki/CPLEX">here</a>.</dd>
 <dt id="term-gipps-cf">Gipps CF</dt>
-<dd>A car following model developed by Gipps 1981 that models conventional vehicles movement</dd>
+<dd>A car following model developed by Gipps 1981 that models conventional vehicles movement. Read more <a class="reference external" href="https://en.wikipedia.org/wiki/Gipps%27_model">here</a>.</dd>
+<dt id="term-pretimed">pretimed</dt>
+<dd>Refers to a type of signal control that the phase sequence and timing is predefined and get executed in a cyclic manner. Read section 5.2.1 of the <a class="reference external" href="http://www.signaltiming.com/The_Signal_Timing_Manual_08082008.pdf">Traffic Signal Timing Manual</a>.</dd>
 <dt id="term-ga">GA</dt>
-<dd>Genetic Algorithm to optimize SPaTs decision</dd>
+<dd>Genetic Algorithm used to optimize SPaTs decision. Read more <a class="reference external" href="https://en.wikipedia.org/wiki/Genetic_algorithm">here</a>.</dd>
 <dt id="term-badness">badness</dt>
 <dd>In the context of GA, badness defines as the negative of fitness of an individual where less is preferred.</dd>
 <dt id="term-mcf">MCF</dt>
-<dd>Minimum Cost Flow model to optimize SPaTs decision</dd>
+<dd>Minimum Cost Flow model used to optimize SPaTs decision. Read more <a class="reference external" href="https://en.wikipedia.org/wiki/Minimum-cost_flow_problem">here</a>.</dd>
 </dl>
 </div>
 <div class="section" id="main-script">
@@ -303,7 +437,7 @@ $ pip3 install -r requirements.txt
 
 <dl class="function">
 <dt id="main.run_avian">
-<code class="descclassname">main.</code><code class="descname">run_avian</code><span class="sig-paren">(</span><em>inter_name</em>, <em>method</em>, <em>sc</em>, <em>do_traj_computation</em>, <em>log_at_vehicle_level</em>, <em>log_at_trj_point_level</em>, <em>log_signal_status</em>, <em>print_commandline</em>, <em>optional_packages_found</em><span class="sig-paren">)</span><a class="headerlink" href="#main.run_avian" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">main.</code><code class="descname">run_avian</code><span class="sig-paren">(</span><em>inter_name</em>, <em>method</em>, <em>sc</em>, <em>start_time_stamp</em>, <em>do_traj_computation</em>, <em>log_at_vehicle_level</em>, <em>log_at_trj_point_level</em>, <em>log_signal_status</em>, <em>print_commandline</em>, <em>optional_packages_found</em><span class="sig-paren">)</span><a class="headerlink" href="#main.run_avian" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
 <dt>For logging and printing of information set boolean variables:</dt>
 <dd><ul class="first last simple">
@@ -336,7 +470,7 @@ $ pip3 install -r requirements.txt
 <dt>signal: one of followings</dt>
 <dd><ul class="first last">
 <li><a class="reference internal" href="[3].signal.html#src.signal.GA_SPaT" title="src.signal.GA_SPaT"><code class="xref any py py-class docutils literal notranslate"><span class="pre">GA_SPaT</span></code></a></li>
-<li><a class="reference internal" href="[3].signal.html#src.signal.Pretimed" title="src.signal.Pretimed"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Pretimed</span></code></a></li>
+<li><a class="reference internal" href="#term-pretimed"><code class="xref any std std-term docutils literal notranslate"><span class="pre">Pretimed</span></code></a></li>
 </ul>
 </dd>
 </dl>
@@ -402,7 +536,7 @@ $ pip3 install -r requirements.txt
 </table>
 </dd></dl>
 
-<table class="docutils footnote" frame="void" id="id2" rules="none">
+<table class="docutils footnote" frame="void" id="id7" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
 <tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Pourmehrab, M., Elefteriadou, L., Ranka, S., &amp; Martin-Gasulla, M. (2017). <em>Optimizing Signalized Intersections Performance under Conventional and Automated Vehicles Traffic</em>. arXiv preprint arXiv:1707.01748 (<a class="reference external" href="https://arxiv.org/abs/1707.01748">link</a>).</td></tr>
