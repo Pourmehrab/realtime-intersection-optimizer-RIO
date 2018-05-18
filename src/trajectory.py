@@ -121,7 +121,7 @@ Use Case:
         v = det_dist / veh.scheduled_departure
 
         t = self.discretize_time_interval(det_time, veh.scheduled_departure)
-        s = np.array([v for t_i in t])
+        s = np.array([v] * len(t))
         d = np.array([det_dist - v * (t_i - det_time) for t_i in t])
 
         self.set_trajectory(veh, t, d, s)
@@ -318,33 +318,19 @@ class LeadConnected(Trajectory):
         # self._lp_model.set_results_stream(None)
 
         var_name = ["beta_" + str(n) for n in range(self.k)]
-        self._lp_model.variables.add(obj=[1.0 for n in range(self.k)],
-                                     names=var_name, lb=[-cplex.infinity for n in range(self.k)])
+        self._lp_model.variables.add(obj=[1.0] * self.k, names=var_name, lb=[-cplex.infinity] * self.k)
 
-        constraint = [var_name, [0.0 for n in range(self.k)]]
+        constraint = [var_name, [0.0] * self.k]
         self._lp_model.linear_constraints.add(
             lin_expr=
-            [[["beta_0"], [1.0]], [["beta_1"], [1.0]]] + [constraint] * 2 + \
-            [constraint for j in range(self.m)] * 4
-            ,
-            senses=
-            ["E"] * 4 + \
-            ["G" for j in range(self.m)] + \
-            ["L" for j in range(self.m)] + \
-            ["G" for j in range(self.m)] + \
-            ["L" for j in range(self.m)]
-            ,
-            rhs=
-            [0.0, 0.0, 1.0, 1.0] + \
-            [-max_speed for j in range(self.m)] + \
-            [0.0 for j in range(self.m)] * 3
-            ,
-            names=
-            ["match_det_dist", "match_det_speed", "match_dep_dist", "match_dep_speed"] + \
-            ["ub_speed_" + str(j) for j in range(self.m)] + \
-            ["lb_speed_" + str(j) for j in range(self.m)] + \
-            ["ub_acc_" + str(j) for j in range(self.m)] + \
-            ["lb_acc_" + str(j) for j in range(self.m)])
+            [[["beta_0"], [1.0]], [["beta_1"], [1.0]]] + [constraint] * (2 + 4 * self.m),
+            senses=["E"] * 4 + ["G"] * self.m + ["L"] * self.m + ["G"] * self.m + ["L"] * self.m,
+            rhs=[0.0] * 4 + [-max_speed] * self.m + [0.0] * (3 * self.m),
+            names=["match_det_dist", "match_det_speed", "match_dep_dist", "match_dep_speed"] + \
+                  ["ub_speed_" + str(j) for j in range(self.m)] + \
+                  ["lb_speed_" + str(j) for j in range(self.m)] + \
+                  ["ub_acc_" + str(j) for j in range(self.m)] + \
+                  ["lb_acc_" + str(j) for j in range(self.m)])
 
     def set_model(self, veh):
 
@@ -381,16 +367,16 @@ class LeadConnected(Trajectory):
         self._lp_model.linear_constraints.set_rhs(
             [("match_det_dist", det_dist), ("match_det_speed", -det_speed), ("match_dep_dist", dep_dist),
              ("match_dep_speed", -dep_speed)] + list(
-                zip(["ub_acc_" + str(j) for j in range(self.m)], [-amax for j in range(self.m)])) + list(
-                zip(["lb_acc_" + str(j) for j in range(self.m)], [-amin for j in range(self.m)])))
+                zip(["ub_acc_" + str(j) for j in range(self.m)], [-amax] * self.m)) + list(
+                zip(["lb_acc_" + str(j) for j in range(self.m)], [-amin] * self.m)))
 
         var_name = ["beta_" + str(n) for n in range(self.k)]
         self._lp_model.linear_constraints.set_coefficients(
-            zip(["match_dep_dist" for n in range(self.k)], var_name,
+            zip(["match_dep_dist"] * self.k, var_name,
                 np.array([arrival_time_relative ** n for n in range(self.k)], dtype=float)))
 
         self._lp_model.linear_constraints.set_coefficients(
-            list(zip(["match_dep_speed" for n in range(self.k)], var_name,
+            list(zip(["match_dep_speed"] * self.k, var_name,
                      np.array([n * arrival_time_relative ** (n - 1) for n in range(self.k)]))))
 
         control_points = np.linspace(arrival_time_relative / self.m, arrival_time_relative, self.m, endpoint=False)
@@ -398,10 +384,10 @@ class LeadConnected(Trajectory):
             speed_coeff = np.array([n * time ** (n - 1) for n in range(self.k)])
             acc_coeff = np.array([speed_coeff[n] * (n - 1) for n in range(self.k)]) / time
             self._lp_model.linear_constraints.set_coefficients(
-                list(zip(["ub_speed_" + str(j) for n in range(self.k)], var_name, speed_coeff)) +
-                list(zip(["lb_speed_" + str(j) for n in range(self.k)], var_name, speed_coeff)) +
-                list(zip(["ub_acc_" + str(j) for n in range(self.k)], var_name, acc_coeff)) +
-                list(zip(["lb_acc_" + str(j) for n in range(self.k)], var_name, acc_coeff)))
+                list(zip(["ub_speed_" + str(j)] * self.k, var_name, speed_coeff)) +
+                list(zip(["lb_speed_" + str(j)] * self.k, var_name, speed_coeff)) +
+                list(zip(["ub_acc_" + str(j)] * self.k, var_name, acc_coeff)) +
+                list(zip(["lb_acc_" + str(j)] * self.k, var_name, acc_coeff)))
 
         return self._lp_model
 
@@ -490,7 +476,7 @@ class FollowerConnected(LeadConnected):
     :Date:
         April-2018
     """
-    GAP_CTRL_STARTS = 2
+    GAP_CTRL_STARTS = 2.0
     SAFE_MIN_GAP = 4.8
 
     def __init__(self, max_speed, min_headway, k, m):
@@ -505,11 +491,9 @@ class FollowerConnected(LeadConnected):
         """
         super().__init__(max_speed, min_headway, k, m)
 
-        constraint = [["beta_" + str(n) for n in range(self.k)], [0.0 for n in range(self.k)]]
+        constraint = [["beta_" + str(n) for n in range(self.k)], [0.0] * self.k]
         self._lp_model.linear_constraints.add(
-            lin_expr=[constraint for j in range(self.m)],
-            senses=["G" for j in range(self.m)],
-            rhs=[0.0 for j in range(self.m)],
+            lin_expr=[constraint] * self.m, senses=["G"] * self.m, rhs=[0.0] * self.m,
             names=["min_headway_" + str(j) for j in range(self.m)])
 
     def set_model(self, veh, lead_veh):
