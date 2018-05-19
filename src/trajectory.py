@@ -115,10 +115,9 @@ Use Case:
         :type veh: Vehicle
         """
         trajectory = veh.trajectory
-        first_trj_point_indx = veh.first_trj_point_indx
-        det_time, det_dist = trajectory[:2, first_trj_point_indx]
+        det_time, det_dist = trajectory[:2, veh.first_trj_point_indx]
 
-        v = det_dist / veh.scheduled_departure
+        v = det_dist / (veh.scheduled_departure - det_time)
 
         t = self.discretize_time_interval(det_time, veh.scheduled_departure)
         s = np.array([v] * len(t))
@@ -382,7 +381,7 @@ class LeadConnected(Trajectory):
             j_prime = j + 1
             speed_coeff = np.array([n * (j_prime / M) ** n for n in range(self.k)],
                                    dtype=float) / departure_time_relative
-            acc_coeff = np.array([0.0] * 2 + [(n - 1) * speed_coeff[n] for n in range(self.k)]) * M / (
+            acc_coeff = np.array([0.0] * 2 + [(n - 1) * speed_coeff[n] for n in range(2, self.k)]) * M / (
                     j_prime * departure_time_relative)
             self._lp_model.linear_constraints.set_coefficients(
                 list(zip(["ub_speed_" + str(j)] * self.k, var_name, speed_coeff)) +
@@ -407,9 +406,9 @@ class LeadConnected(Trajectory):
         dep_time, dep_dist, dep_speed = trajectory[:, veh.last_trj_point_indx]
         departure_time_relative = dep_time - det_time
 
-        model.parameters.tune_problem()
         try:
             model.solve()
+            model.write("model.lp")  # todo remove
         except cplex.exceptions.CplexSolverError:
             print("Exception raised during solve")
             return
@@ -417,17 +416,17 @@ class LeadConnected(Trajectory):
         dv = trajectory[2, veh.last_trj_point_indx] / self.SPEED_DECREMENT_SIZE
         dep_speed = trajectory[2, veh.last_trj_point_indx] - dv
 
-        while model.solution.get_status() not in {1, } and dep_speed >= 0:
+        while model.solution.get_status() not in {1, } and dep_speed >= 0.0:
             model.linear_constraints.set_rhs([("dep_speed", -dep_speed)])
             try:
                 model.solve()
+                model.write("model.lp")  # todo remove
             except CplexSolverError:
                 print("Exception raised during solve")
                 return
             dep_speed -= dv
 
         if dep_speed < 0:  # no optimal found in the while loop above
-            model.write("model.lp")
             stat = model.get_stats()
             s = model.solution.get_linear_slacks()
             raise Exception("CPLEX failed to find optimal trajectory for vehicle " + str(veh.ID))
@@ -520,9 +519,7 @@ class FollowerConnected(LeadConnected):
         follower_det_time, follower_dep_time = veh.trajectory[0, veh.first_trj_point_indx], veh.trajectory[
             0, veh.last_trj_point_indx]
         lead_dep_time = lead_veh.trajectory[0, lead_veh.last_trj_point_indx]
-
         start_relative_ctrl_time, end_relative_ctrl_time = self.GAP_CTRL_STARTS, lead_dep_time - follower_det_time
-
         departure_time_relative = follower_dep_time - follower_det_time
 
         if end_relative_ctrl_time > start_relative_ctrl_time + self.m * self.EPS:

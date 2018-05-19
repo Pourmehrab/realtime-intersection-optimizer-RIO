@@ -16,6 +16,14 @@ from data.data import *
 from src.optional.test.unit_tests import test_trj_points
 from src.trajectory import LeadConventional, LeadConnected, FollowerConventional, FollowerConnected
 
+# testing
+try:
+    from src.optional.vis.vistrj import VisualizeSpaceTime
+
+    optional_packages_found = True
+except ModuleNotFoundError:
+    optional_packages_found = False
+
 
 class Intersection:
     """
@@ -704,6 +712,11 @@ class TrajectoryPlanner:
 
         self._max_speed = max_speed
 
+        if optional_packages_found:  # todo not necessary
+            self._visualizer = VisualizeSpaceTime(6)
+        else:
+            self._visualizer = None
+
     def plan_trajectory(self, lanes, veh, lane, veh_indx, print_commandline, identifier, optional_packages_found):
         """
         :param lanes:
@@ -732,6 +745,10 @@ class TrajectoryPlanner:
             self.lead_conventional_trj_estimator.solve(veh)
         else:
             raise Exception('One of lead/follower conventional/connected should have occurred.')
+
+        if self._visualizer is not None:
+            self._visualizer.add_multi_trj_matplotlib(veh, lane, veh.veh_type)
+            self._visualizer.export_matplot(0, 500, 0, 300)
 
         if abs(veh.trajectory[0, veh.last_trj_point_indx] - veh.scheduled_departure) > 0.1:
             raise Exception('The planned trj does not match the scheduled time.')
