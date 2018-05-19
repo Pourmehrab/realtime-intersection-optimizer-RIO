@@ -262,9 +262,9 @@ import cplex
 class LeadConnected(Trajectory):
     """
     .. note::
-        - Trajectory function: :math:`f(t)   = \sum_{n=0}^{k-1} \\beta_n \\times t^n`
-        - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n \\times \\beta_n \\times t^{n-1}`
-        - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n \\times (n-1) \\times  \\beta_n \\times t^{n-2}`
+        - Trajectory function: :math:`f(t)   = \sum_{n=0}^{k-1} \\b_n \\times t^n`
+        - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n \\times \\b_n \\times t^{n-1}`
+        - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n \\times (n-1) \\times  \\b_n \\times t^{n-2}`
 
     :param NUM_DIGS: The accuracy to keep decimals
     :param SPEED_DECREMENT_SIZE: The final speed decrements from maximum to 0 by step-size defined by maximum speed divided by this
@@ -312,25 +312,24 @@ class LeadConnected(Trajectory):
         self._lp_model.set_problem_name('CAV trajectory optimization')
         self._lp_model.set_problem_type(cplex.Cplex().problem_type.LP)
         self._lp_model.parameters.read.datacheck.set(2)
-        # self._lp_model.set_log_stream(None)
-        # self._lp_model.set_error_stream(None)
-        # self._lp_model.set_warning_stream(None)
-        # self._lp_model.set_results_stream(None)
+        f = './log/cplex_run.log'
+        self._lp_model.set_log_stream(f)
+        self._lp_model.set_error_stream(f)
+        self._lp_model.set_warning_stream(f)
+        self._lp_model.set_results_stream(f)
 
-        var_name = ["beta_" + str(n) for n in range(self.k)]
+        var_name = ["b_" + str(n) for n in range(self.k)]
         self._lp_model.variables.add(obj=[1.0] * self.k, names=var_name, lb=[-cplex.infinity] * self.k)
 
-        constraint = [var_name, [0.0] * self.k]
+        constraint = [var_name, [1.0] * self.k]  # default must be 1.0
         self._lp_model.linear_constraints.add(
             lin_expr=
-            [[["beta_0"], [1.0]], [["beta_1"], [1.0]]] + [constraint] * (2 + 4 * self.m),
+            [[["b_0"], [1.0]], [["b_1"], [1.0]]] + [constraint] * (2 + 4 * self.m),
             senses=["E"] * 4 + ["G"] * self.m + ["L"] * self.m + ["G"] * self.m + ["L"] * self.m,
             rhs=[0.0] * 4 + [-max_speed] * self.m + [0.0] * (3 * self.m),
-            names=["match_det_dist", "match_det_speed", "match_dep_dist", "match_dep_speed"] + \
-                  ["ub_speed_" + str(j) for j in range(self.m)] + \
-                  ["lb_speed_" + str(j) for j in range(self.m)] + \
-                  ["ub_acc_" + str(j) for j in range(self.m)] + \
-                  ["lb_acc_" + str(j) for j in range(self.m)])
+            names=["det_dist", "det_speed", "dep_dist", "dep_speed"] + ["ub_speed_" + str(j) for j in range(self.m)] + [
+                "lb_speed_" + str(j) for j in range(self.m)] + ["ub_acc_" + str(j) for j in range(self.m)] + [
+                      "lb_acc_" + str(j) for j in range(self.m)])
 
     def set_model(self, veh):
 
@@ -358,31 +357,33 @@ class LeadConnected(Trajectory):
 
         first_trj_point_indx = veh.first_trj_point_indx
         det_time, det_dist, det_speed = trajectory[:, first_trj_point_indx]
-        arrival_time_relative = dep_time - det_time
+        departure_time_relative = dep_time - det_time
 
         self._lp_model.objective.set_linear(zip(
-            ["beta_" + str(n) for n in range(self.k)],
-            [arrival_time_relative ** n / n for n in range(1, self.k + 1)]))
+            ["b_" + str(n) for n in range(self.k)],
+            departure_time_relative * np.array([1 / (n + 1) for n in range(0, self.k)], dtype=float)))
 
         self._lp_model.linear_constraints.set_rhs(
-            [("match_det_dist", det_dist), ("match_det_speed", -det_speed), ("match_dep_dist", dep_dist),
-             ("match_dep_speed", -dep_speed)] + list(
+            [("det_dist", det_dist), ("det_speed", -det_speed), ("dep_dist", dep_dist),
+             ("dep_speed", -dep_speed)] + list(
                 zip(["ub_acc_" + str(j) for j in range(self.m)], [-amax] * self.m)) + list(
                 zip(["lb_acc_" + str(j) for j in range(self.m)], [-amin] * self.m)))
 
-        var_name = ["beta_" + str(n) for n in range(self.k)]
-        self._lp_model.linear_constraints.set_coefficients(
-            zip(["match_dep_dist"] * self.k, var_name,
-                np.array([arrival_time_relative ** n for n in range(self.k)], dtype=float)))
+        var_name = ["b_" + str(n) for n in range(self.k)]
+        # self._lp_model.linear_constraints.set_coefficients(
+        #     zip(["dep_dist"] * self.k, var_name, [1.0] * range(self.k)))
 
-        self._lp_model.linear_constraints.set_coefficients(
-            list(zip(["match_dep_speed"] * self.k, var_name,
-                     np.array([n * arrival_time_relative ** (n - 1) for n in range(self.k)]))))
+        self._lp_model.linear_constraints.set_coefficients(list(zip(["dep_speed"] * self.k, var_name,
+                                                                    np.array([n for n in range(self.k)],
+                                                                             dtype=float) / departure_time_relative)))
 
-        control_points = np.linspace(arrival_time_relative / self.m, arrival_time_relative, self.m, endpoint=False)
-        for j, time in enumerate(control_points):
-            speed_coeff = np.array([n * time ** (n - 1) for n in range(self.k)])
-            acc_coeff = np.array([speed_coeff[n] * (n - 1) for n in range(self.k)]) / time
+        M = self.m + 1
+        for j in range(self.m):
+            j_prime = j + 1
+            speed_coeff = np.array([n * (j_prime / M) ** n for n in range(self.k)],
+                                   dtype=float) / departure_time_relative
+            acc_coeff = np.array([0.0] * 2 + [(n - 1) * speed_coeff[n] for n in range(self.k)]) * M / (
+                    j_prime * departure_time_relative)
             self._lp_model.linear_constraints.set_coefficients(
                 list(zip(["ub_speed_" + str(j)] * self.k, var_name, speed_coeff)) +
                 list(zip(["lb_speed_" + str(j)] * self.k, var_name, speed_coeff)) +
@@ -404,7 +405,9 @@ class LeadConnected(Trajectory):
         trajectory = veh.trajectory
         det_time = trajectory[0, veh.first_trj_point_indx]
         dep_time, dep_dist, dep_speed = trajectory[:, veh.last_trj_point_indx]
+        departure_time_relative = dep_time - det_time
 
+        model.parameters.tune_problem()
         try:
             model.solve()
         except cplex.exceptions.CplexSolverError:
@@ -415,7 +418,7 @@ class LeadConnected(Trajectory):
         dep_speed = trajectory[2, veh.last_trj_point_indx] - dv
 
         while model.solution.get_status() not in {1, } and dep_speed >= 0:
-            model.linear_constraints.set_rhs([("match_dep_speed", -dep_speed)])
+            model.linear_constraints.set_rhs([("dep_speed", -dep_speed)])
             try:
                 model.solve()
             except CplexSolverError:
@@ -429,8 +432,8 @@ class LeadConnected(Trajectory):
             s = model.solution.get_linear_slacks()
             raise Exception("CPLEX failed to find optimal trajectory for vehicle " + str(veh.ID))
 
-        beta = np.flip(np.array(model.solution.get_values(["beta_" + str(n) for n in range(self.k)])), 0)
-        f = np.poly1d(beta)
+        f = np.poly1d(np.flip(np.array(model.solution.get_values(["b_" + str(n) for n in range(self.k)]))
+                              / np.array([departure_time_relative ** n for n in range(self.k)], dtype=float), 0))
         f_prime = np.polyder(f)
 
         t, d, s = self.compute_trj_points(f, f_prime, dep_time - det_time)
@@ -491,9 +494,9 @@ class FollowerConnected(LeadConnected):
         """
         super().__init__(max_speed, min_headway, k, m)
 
-        constraint = [["beta_" + str(n) for n in range(self.k)], [0.0] * self.k]
+        constraint = [["b_" + str(n) for n in range(self.k)], [0.0] * self.k]
         self._lp_model.linear_constraints.add(lin_expr=[constraint] * self.m, senses=["G"] * self.m, rhs=[0.0] * self.m,
-                                              names=["min_headway_" + str(j) for j in range(self.m)])
+                                              names=["min_gap_" + str(j) for j in range(self.m)])
 
     def set_model(self, veh, lead_veh):
         """
@@ -514,10 +517,14 @@ class FollowerConnected(LeadConnected):
 
         self._lp_model = super().set_model(veh)
 
-        follower_det_time = veh.trajectory[0, veh.first_trj_point_indx]
+        follower_det_time, follower_dep_time = veh.trajectory[0, veh.first_trj_point_indx], veh.trajectory[
+            0, veh.last_trj_point_indx]
         lead_dep_time = lead_veh.trajectory[0, lead_veh.last_trj_point_indx]
 
         start_relative_ctrl_time, end_relative_ctrl_time = self.GAP_CTRL_STARTS, lead_dep_time - follower_det_time
+
+        departure_time_relative = follower_dep_time - follower_det_time
+
         if end_relative_ctrl_time > start_relative_ctrl_time + self.m * self.EPS:
             n_traj_lead = lead_veh.last_trj_point_indx - lead_veh.first_trj_point_indx + 1
             # if lead_veh.veh_type == 1:
@@ -541,12 +548,11 @@ class FollowerConnected(LeadConnected):
             ctrl_points_relative_time = np.zeros(self.m)
             rhs = np.zeros(self.m) - 1
 
-        self._lp_model.linear_constraints.set_rhs(zip(["min_headway_" + str(j) for j in range(self.m)], rhs))
-        var_name, j = ["beta_" + str(n) for n in range(self.k)], 0
-        for time in ctrl_points_relative_time:
-            dist_coeff = np.array([time ** n for n in range(self.k)], dtype=float)
+        self._lp_model.linear_constraints.set_rhs(zip(["min_gap_" + str(j) for j in range(self.m)], rhs))
+        var_name = ["b_" + str(n) for n in range(self.k)]
+        for j, time in enumerate(ctrl_points_relative_time):
+            dist_coeff = np.array([(time / departure_time_relative) ** n for n in range(self.k)], dtype=float)
             self._lp_model.linear_constraints.set_coefficients(
-                zip(["min_headway_" + str(j) for n in range(self.k)], var_name, dist_coeff))
-            j += 1
+                zip(["min_gap_" + str(j) for n in range(self.k)], var_name, dist_coeff))
 
         return self._lp_model
