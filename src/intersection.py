@@ -689,6 +689,7 @@ def earliest_arrival_conventional(det_time, speed, dist, min_headway=0, t_earlie
 
     .. note::
         Enter ``min_headway`` and ``t_earliest`` as zeros (default values), if a vehicle is the first in its lane.
+
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
@@ -701,6 +702,14 @@ def earliest_arrival_conventional(det_time, speed, dist, min_headway=0, t_earlie
 
 
 class TrajectoryPlanner:
+    """
+    Plans trajectories of all type. This makes calls to trajectory classes' methods.
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
+    """
 
     def __init__(self, max_speed, min_headway, k, m):
         """Instantiates the **trajectory** classes"""
@@ -748,7 +757,7 @@ class TrajectoryPlanner:
 
         if self._visualizer is not None:
             self._visualizer.add_multi_trj_matplotlib(veh, lane, veh.veh_type)
-            self._visualizer.export_matplot(0, 500, 0, 300)
+            self._visualizer.export_matplot(0, 550, 20, 200)
 
         if abs(veh.trajectory[0, veh.last_trj_point_indx] - veh.scheduled_departure) > 0.1:
             raise Exception('The planned trj does not match the scheduled time.')

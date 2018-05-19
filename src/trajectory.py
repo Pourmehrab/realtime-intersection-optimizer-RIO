@@ -331,7 +331,6 @@ class LeadConnected(Trajectory):
                       "lb_acc_" + str(j) for j in range(self.m)])
 
     def set_model(self, veh):
-
         """
         Overrides the generic coefficients to build the specific :term:`LP` model for the AV trajectory.
 
@@ -359,27 +358,22 @@ class LeadConnected(Trajectory):
         departure_time_relative = dep_time - det_time
 
         self._lp_model.objective.set_linear(zip(
-            ["b_" + str(n) for n in range(self.k)],
-            departure_time_relative * np.array([1 / (n + 1) for n in range(0, self.k)], dtype=float)))
+            ["b_" + str(n) for n in range(self.k)], np.array([1 / (n + 1) for n in range(self.k)], dtype=float)))
 
         self._lp_model.linear_constraints.set_rhs(
-            [("det_dist", det_dist), ("det_speed", -det_speed), ("dep_dist", dep_dist),
-             ("dep_speed", -dep_speed)] + list(
-                zip(["ub_acc_" + str(j) for j in range(self.m)], [-amax] * self.m)) + list(
-                zip(["lb_acc_" + str(j) for j in range(self.m)], [-amin] * self.m)))
+            [("det_dist", det_dist), ("det_speed", -det_speed * departure_time_relative), ("dep_dist", dep_dist),
+             ("dep_speed", -dep_speed * departure_time_relative)] +
+            list(zip(["ub_acc_" + str(j) for j in range(self.m)], [-amax] * self.m)) +
+            list(zip(["lb_acc_" + str(j) for j in range(self.m)], [-amin] * self.m)))
 
         var_name = ["b_" + str(n) for n in range(self.k)]
-        # self._lp_model.linear_constraints.set_coefficients(
-        #     zip(["dep_dist"] * self.k, var_name, [1.0] * range(self.k)))
-
         self._lp_model.linear_constraints.set_coefficients(list(zip(["dep_speed"] * self.k, var_name,
-                                                                    np.array([n for n in range(self.k)],
-                                                                             dtype=float) / departure_time_relative)))
+                                                                    np.arange(self.k, dtype=float))))
 
         M = self.m + 1
         for j in range(self.m):
             j_prime = j + 1
-            speed_coeff = np.array([n * (j_prime / M) ** n for n in range(self.k)],
+            speed_coeff = np.array([n * (j_prime / M) ** (n - 1) for n in range(self.k)],
                                    dtype=float) / departure_time_relative
             acc_coeff = np.array([0.0] * 2 + [(n - 1) * speed_coeff[n] for n in range(2, self.k)]) * M / (
                     j_prime * departure_time_relative)
@@ -533,23 +527,23 @@ class FollowerConnected(LeadConnected):
             #                     range(self.m)]) + self.SAFE_MIN_GAP
             if n_traj_lead >= self.m:
                 step = -int(n_traj_lead / self.m)
-
-                ctrl_points_relative_time = lead_veh.trajectory[0,
-                                            lead_veh.last_trj_point_indx:lead_veh.last_trj_point_indx + step * self.m:step]
+                ctrl_lead_relative_time = lead_veh.trajectory[0,
+                                          lead_veh.last_trj_point_indx:lead_veh.last_trj_point_indx + step * self.m:step] - \
+                                          follower_det_time
                 rhs = lead_veh.trajectory[1,
                       lead_veh.last_trj_point_indx:lead_veh.last_trj_point_indx + step * self.m:step] + self.SAFE_MIN_GAP
             else:
-                ctrl_points_relative_time = np.zeros(self.m)
+                ctrl_lead_relative_time = np.zeros(self.m)
                 rhs = np.zeros(self.m) - 1
         else:
-            ctrl_points_relative_time = np.zeros(self.m)
+            ctrl_lead_relative_time = np.zeros(self.m)
             rhs = np.zeros(self.m) - 1
 
         self._lp_model.linear_constraints.set_rhs(zip(["min_gap_" + str(j) for j in range(self.m)], rhs))
         var_name = ["b_" + str(n) for n in range(self.k)]
-        for j, time in enumerate(ctrl_points_relative_time):
+        for j, time in enumerate(ctrl_lead_relative_time):
             dist_coeff = np.array([(time / departure_time_relative) ** n for n in range(self.k)], dtype=float)
             self._lp_model.linear_constraints.set_coefficients(
-                zip(["min_gap_" + str(j) for n in range(self.k)], var_name, dist_coeff))
+                zip(["min_gap_" + str(j)] * self.k, var_name, dist_coeff))
 
         return self._lp_model
