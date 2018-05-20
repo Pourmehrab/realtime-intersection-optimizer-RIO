@@ -261,9 +261,9 @@ import cplex
 class LeadConnected(Trajectory):
     """
     .. note::
-        - Trajectory function: :math:`f(t)   = \sum_{n=0}^{k-1} \\b_n \\times t^n`
-        - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n \\times \\b_n \\times t^{n-1}`
-        - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n \\times (n-1) \\times  \\b_n \\times t^{n-2}`
+        - Trajectory function: :math:`f(t)   = \sum_{n=0}^{k-1} b_n \\times t^n`
+        - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n \\times b_n \\times t^{n-1}`
+        - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n \\times (n-1) \\times  b_n \\times t^{n-2}`
 
     :param NUM_DIGS: The accuracy to keep decimals
     :param SPEED_DECREMENT_SIZE: The final speed decrements from maximum to 0 by step-size defined by maximum speed divided by this
@@ -399,7 +399,6 @@ class LeadConnected(Trajectory):
         det_time = trajectory[0, veh.first_trj_point_indx]
         dep_time, dep_dist, dep_speed = trajectory[:, veh.last_trj_point_indx]
         departure_time_relative = dep_time - det_time
-
         try:
             model.solve()
             model.write("model.lp")  # todo remove
@@ -415,14 +414,14 @@ class LeadConnected(Trajectory):
             try:
                 model.solve()
                 model.write("model.lp")  # todo remove
-            except CplexSolverError:
+            except cplex.exceptions.CplexSolverError:
                 print("Exception raised during solve")
                 return
             dep_speed -= dv
 
         if dep_speed < 0:  # no optimal found in the while loop above
             stat = model.get_stats()
-            s = model.solution.get_linear_slacks()
+            slack = model.solution.get_linear_slacks()
             raise Exception("CPLEX failed to find optimal trajectory for vehicle " + str(veh.ID))
 
         f = np.poly1d(np.flip(np.array(model.solution.get_values(["b_" + str(n) for n in range(self.k)]))
@@ -518,15 +517,8 @@ class FollowerConnected(LeadConnected):
 
         if end_relative_ctrl_time > start_relative_ctrl_time + self.m * self.EPS:
             n_traj_lead = lead_veh.last_trj_point_indx - lead_veh.first_trj_point_indx + 1
-            # if lead_veh.veh_type == 1:
-            #     ctrl_points_relative_time = np.linspace(start_relative_ctrl_time, end_relative_ctrl_time, self.m,
-            #                                             endpoint=True)
-            #     ctrl_points_relative_time_lead = ctrl_points_relative_time + follower_det_time - lead_veh.poly[
-            #         'ref time']
-            #     rhs = np.array([np.polyval(lead_veh.poly['coeffs'], ctrl_points_relative_time_lead[j]) for j in
-            #                     range(self.m)]) + self.SAFE_MIN_GAP
             if n_traj_lead >= self.m:
-                step = -int(n_traj_lead / self.m)
+                step = -int((n_traj_lead - 1) / self.m)
                 ctrl_lead_relative_time = lead_veh.trajectory[0,
                                           lead_veh.last_trj_point_indx:lead_veh.last_trj_point_indx + step * self.m:step] - \
                                           follower_det_time

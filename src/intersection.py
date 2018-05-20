@@ -20,7 +20,7 @@ from src.trajectory import LeadConventional, LeadConnected, FollowerConventional
 try:
     from src.optional.vis.vistrj import VisualizeSpaceTime
 
-    optional_packages_found = True
+    optional_packages_found = False  # True
 except ModuleNotFoundError:
     optional_packages_found = False
 
@@ -545,7 +545,7 @@ class Traffic:
                     # happens when a connected vehicle is NOT the first in the lane
                     t_earliest = earliest_arrival_connected(det_time, speed, dist,
                                                             amin, amax, max_speed,
-                                                            min_headway, t_earliest)
+                                                            min_headway, lanes.vehlist[lane][-2].earliest_departure)
             elif det_type == 0:
                 if len(lanes.vehlist[lane]) == 1:
                     # vehicles is a lead conventional vehicle
@@ -555,7 +555,7 @@ class Traffic:
                     # vehicles is a lead conventional vehicle
                     # happens when a conventional vehicle is NOT the first in the lane
                     t_earliest = earliest_arrival_conventional(det_time, speed, dist,
-                                                               min_headway, t_earliest)
+                                                               min_headway, lanes.vehlist[lane][-2].earliest_departure)
             else:
                 raise Exception("The detected vehicle could not be classified.")
 
@@ -756,7 +756,7 @@ class TrajectoryPlanner:
             raise Exception('One of lead/follower conventional/connected should have occurred.')
 
         if self._visualizer is not None:
-            self._visualizer.add_multi_trj_matplotlib(veh, lane, veh.veh_type)
+            self._visualizer.add_multi_trj_matplotlib(veh, lane)
             self._visualizer.export_matplot(0, 550, 20, 200)
 
         if abs(veh.trajectory[0, veh.last_trj_point_indx] - veh.scheduled_departure) > 0.1:

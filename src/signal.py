@@ -393,7 +393,7 @@ class Pretimed(Signal):
         April-2018
     """
 
-    NUM_CYCLES = 2
+    NUM_CYCLES = 5
 
     def __init__(self, inter_name, first_detection_time, num_lanes, min_headway, log_signal_status, sc,
                  start_time_stamp, do_traj_computation, print_commandline, optional_packages_found):
