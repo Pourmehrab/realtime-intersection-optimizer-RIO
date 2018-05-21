@@ -9,11 +9,11 @@
 def get_general_params(inter_name):
     """
     Returns max speed (:math:`m/s`), min_headway (:math:`s`), detection range (:math:`m`), :math:`k, m`, number of lanes. Where:
-        - :math:`k` =  # :math:`n` will be in 0, ..., k-1 (odd degree of polynomial is preferred: k to be even)
+        - :math:`k` =  # :math:`n` will be in 0, ..., k-1 (odd degree of polynomial is preferred: k to be even and **at least** 5)
         - :math:`m` =  # to discretize the time interval
 
     .. note::
-        - The distance to stop bar will be input from either csv file or fusion. However, the number provided here is used for generic computations.
+        - The distance to stop bar will be input from either CSV file or fusion. However, the number provided here is used for generic computations.
 
     .. warning:: Is required for trajectory optimization
 
@@ -33,14 +33,14 @@ def get_general_params(inter_name):
         max_speed = 17.8816  # 40 mph
         min_headway = 1.5
         det_range = 500.0  # 1640 ft
-        k, m = int(10), int(20)
+        k, m = int(11), int(15)
         num_lanes = int(6)
 
     elif inter_name == 'reserv':
         max_speed = 15.0
         min_headway = 2.0
         det_range = 500.0
-        k, m = int(10), int(20)
+        k, m = int(15), int(10)
         num_lanes = int(12)
 
     else:

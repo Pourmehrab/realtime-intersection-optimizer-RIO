@@ -22,8 +22,8 @@ def check_py_ver():
         sys.exit(-1)
 
 
-def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level,
-              log_signal_status, print_commandline, optional_packages_found):
+def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log_at_vehicle_level,
+              log_at_trj_point_level, log_signal_status, print_commandline, optional_packages_found):
     """
     For logging and printing of information set boolean variables:
         - ``log_at_trj_point_level`` saves a csv under ``\log`` directory that contains all trajectory points for all vehicles
@@ -76,11 +76,6 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     :Organization:
         University of Florida
     """
-    # to mark saved csv file
-    if log_at_vehicle_level or log_at_trj_point_level or log_signal_status:
-        start_time_stamp = 'output'
-        # start_time_stamp = datetime.utcnow().strftime('%B %d %Y - %H:%M:%S')
-
     intersection = Intersection(inter_name)
     # get some useful values
     num_lanes = intersection.get_num_lanes()
@@ -94,25 +89,26 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     # load entire traffic generated in csv file
     traffic = Traffic(inter_name, sc, log_at_vehicle_level, log_at_trj_point_level, print_commandline, start_time_stamp)
 
+    # get the time when first vehicle shows up
+    first_detection_time = traffic.get_first_detection_time()
+
     # Set the signal control method
     if method == "GA":
         # define what subset of phase-lane incidence matrix should be used
         # minimal set of phase indices to cover all movements (17, 9, 8, 15) for 13th16th intersection
         # NOTE TEH SET OF ALLOWABLE PHASE ARRAY IS ZERO-BASED (not like what inputted in data.py)
         allowable_phase = (0, 1, 2, 3,)
-        signal = GA_SPaT(inter_name, allowable_phase, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
-                         do_traj_computation, print_commandline,optional_packages_found)
+        signal = GA_SPaT(inter_name, allowable_phase, first_detection_time, num_lanes, min_headway, log_signal_status,
+                         sc, start_time_stamp, do_traj_computation, print_commandline, optional_packages_found)
     elif method == "pretimed":
-        signal = Pretimed(inter_name, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
-                          do_traj_computation, print_commandline,optional_packages_found)
+        signal = Pretimed(inter_name, first_detection_time, num_lanes, min_headway, log_signal_status, sc,
+                          start_time_stamp, do_traj_computation, print_commandline, optional_packages_found)
 
     elif method == "MCF" or method == "actuated":
         raise Exception("This signal control method is not complete yet.")  # todo develop these
 
     trajectory_planner = TrajectoryPlanner(max_speed, min_headway, k, m)
 
-    # get the time when first vehicle shows up
-    first_detection_time = traffic.get_first_detection_time()
     # set the start time to it
     time_keeper = TimeKeeper(first_detection_time)
 
@@ -123,7 +119,7 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
     while True:  # stops when all rows of csv are processed (a break statement controls this)
         simulation_time = time_keeper.clock  # gets current simulation clock
         if print_commandline:
-            print("\nUPDATE AT CLOCK: {:>5.1f} SEC #################################".format(
+            print("\n################################# CLOCK: {:>5.1f} SEC #################################".format(
                 simulation_time))
 
         # UPDATE VEHICLES
@@ -173,6 +169,7 @@ def run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level,
 if __name__ == "__main__":
     # IMPORT NECESSARY PACKAGES
     import sys
+    from datetime import datetime
     from time import perf_counter
 
     from src.time_keeper import TimeKeeper
@@ -199,8 +196,7 @@ if __name__ == "__main__":
     print("Python Path: ", sys.executable)
     print("Python Version: ", sys.version)
 
-    # Check the interpreter to make sure using right python version
-    check_py_ver()
+    check_py_ver()  # Check the interpreter to make sure using right python version
 
     if len(sys.argv) != 4 or \
             sys.argv[1] not in ["13th16th", "TERL", "reserv", ] or \
@@ -212,9 +208,18 @@ if __name__ == "__main__":
         inter_name, method, run_mode = sys.argv[1], sys.argv[2], sys.argv[3]
 
         if run_mode == 'simulation':
-            target_sc = 1
-            for sc in range(1, target_sc + 1):
-                run_avian(inter_name, method, sc, do_traj_computation, log_at_vehicle_level, log_at_trj_point_level,
+            if print_commandline:
+                print(
+                    "\n################################# CLOCK: {:>5.1f} SEC #################################".format(
+                        0.0))
+
+            # to mark saved csv file
+            start_time_stamp = datetime.utcnow().strftime(' %d%B%Y_%H-%M-%S')
+
+            target_sc = 2
+            for sc in range(target_sc, target_sc + 1):
+                run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log_at_vehicle_level,
+                          log_at_trj_point_level,
                           log_signal_status, print_commandline, optional_packages_found)
 
         elif run_mode == 'realtime':
