@@ -311,11 +311,10 @@ class LeadConnected(Trajectory):
         self._lp_model.set_problem_name('CAV trajectory optimization')
         self._lp_model.set_problem_type(cplex.Cplex().problem_type.LP)
         self._lp_model.parameters.read.datacheck.set(2)
-        f = './log/cplex_run.log'
-        self._lp_model.set_log_stream(f)
-        self._lp_model.set_error_stream(f)
-        self._lp_model.set_warning_stream(f)
-        self._lp_model.set_results_stream(f)
+        self._lp_model.set_log_stream(None)
+        self._lp_model.set_error_stream(None)
+        self._lp_model.set_warning_stream(None)
+        self._lp_model.set_results_stream(None)
 
         var_name = ["b_" + str(n) for n in range(self.k)]
         self._lp_model.variables.add(obj=[1.0] * self.k, names=var_name, lb=[-cplex.infinity] * self.k)

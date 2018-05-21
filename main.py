@@ -22,8 +22,8 @@ def check_py_ver():
         sys.exit(-1)
 
 
-def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log_at_vehicle_level,
-              log_at_trj_point_level, log_signal_status, print_commandline, optional_packages_found):
+def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log_csv, print_commandline,
+              optional_packages_found):
     """
     For logging and printing of information set boolean variables:
         - ``log_at_trj_point_level`` saves a csv under ``\log`` directory that contains all trajectory points for all vehicles
@@ -61,9 +61,7 @@ def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log
     :param sc: scenario number (*should match the appendix of the input csv filename*)
     :type sc: int
     :param do_traj_computation:
-    :param log_at_vehicle_level:
-    :param log_at_trj_point_level:
-    :param log_signal_status:
+    :param log_csv:
     :param print_commandline:
     :param optional_packages_found: optional packages for testing
     :return:
@@ -87,7 +85,7 @@ def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log
     lanes = Lanes(num_lanes)
 
     # load entire traffic generated in csv file
-    traffic = Traffic(inter_name, sc, log_at_vehicle_level, log_at_trj_point_level, print_commandline, start_time_stamp)
+    traffic = Traffic(inter_name, sc, log_csv, print_commandline, start_time_stamp)
 
     # get the time when first vehicle shows up
     first_detection_time = traffic.get_first_detection_time()
@@ -98,10 +96,10 @@ def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log
         # minimal set of phase indices to cover all movements (17, 9, 8, 15) for 13th16th intersection
         # NOTE TEH SET OF ALLOWABLE PHASE ARRAY IS ZERO-BASED (not like what inputted in data.py)
         allowable_phase = (0, 1, 2, 3,)
-        signal = GA_SPaT(inter_name, allowable_phase, first_detection_time, num_lanes, min_headway, log_signal_status,
+        signal = GA_SPaT(inter_name, allowable_phase, first_detection_time, num_lanes, min_headway, log_csv,
                          sc, start_time_stamp, do_traj_computation, print_commandline, optional_packages_found)
     elif method == "pretimed":
-        signal = Pretimed(inter_name, first_detection_time, num_lanes, min_headway, log_signal_status, sc,
+        signal = Pretimed(inter_name, first_detection_time, num_lanes, min_headway, log_csv, sc,
                           start_time_stamp, do_traj_computation, print_commandline, optional_packages_found)
 
     elif method == "MCF" or method == "actuated":
@@ -113,7 +111,7 @@ def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log
     time_keeper = TimeKeeper(first_detection_time)
 
     # here we start doing optimization for all scenarios included in the csv file
-    if log_at_vehicle_level:
+    if log_csv:
         t_start = perf_counter()  # to measure total run time (IS NOT THE SIMULATION TIME)
 
     while True:  # stops when all rows of csv are processed (a break statement controls this)
@@ -145,7 +143,7 @@ def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_arrived() and lanes.all_served(num_lanes):
-            if log_at_vehicle_level:
+            if log_csv:
                 elapsed_time = perf_counter() - t_start  # THIS IS NOT SIMULATION TIME! IT"S JUST TIMING THE ALGORITHM
                 traffic.set_elapsed_sim_time(elapsed_time)
                 if print_commandline:
@@ -154,9 +152,8 @@ def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log
                 # save the csv which has travel time column appended
                 traffic.save_veh_level_csv(inter_name, start_time_stamp)
 
-            if log_at_trj_point_level:
+            if log_csv:
                 traffic.close_trj_csv()  # cus this is written line y line
-            if log_signal_status:
                 signal.close_sig_csv()
             return  # this halts the program
 
@@ -187,10 +184,8 @@ if __name__ == "__main__":
 
     # ################## SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR
     do_traj_computation = True
-    log_at_vehicle_level = True
-    log_at_trj_point_level = True
-    log_signal_status = True
-    print_commandline = True
+    log_csv = True
+    print_commandline = False
 
     print("Interpreter Information")
     print("Python Path: ", sys.executable)
@@ -214,13 +209,12 @@ if __name__ == "__main__":
                         0.0))
 
             # to mark saved csv file
-            start_time_stamp = datetime.utcnow().strftime(' %d%B%Y_%H-%M-%S')
+            start_time_stamp = 'output'  # datetime.utcnow().strftime(' %d%B%Y_%H-%M-%S')
 
-            target_sc = 2
-            for sc in range(target_sc, target_sc + 1):
-                run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log_at_vehicle_level,
-                          log_at_trj_point_level,
-                          log_signal_status, print_commandline, optional_packages_found)
+            target_sc = 1
+            for sc in range(target_sc, target_sc + 45):
+                run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log_csv, print_commandline,
+                          optional_packages_found)
 
         elif run_mode == 'realtime':
             raise Exception('real-time mode is not available yet.')

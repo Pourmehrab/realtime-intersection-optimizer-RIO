@@ -378,8 +378,7 @@ class Traffic:
         April-2018
     """
 
-    def __init__(self, inter_name, sc, log_at_vehicle_level, log_at_trj_point_level, print_commandline,
-                 start_time_stamp):
+    def __init__(self, inter_name, sc, log_csv, print_commandline, start_time_stamp):
         """
         Objectives:
             - Sets the logging behaviour for outputting requested CSV files and auxiliary output vectors
@@ -405,18 +404,16 @@ class Traffic:
         # note this is cumulative and won't reset after a scenario is done
         self._current_row_indx = -1
 
-        self._log_at_vehicle_level = log_at_vehicle_level
-        self._log_at_trj_point_level = log_at_trj_point_level
+        self._log_csv = log_csv
         self._print_commandline = print_commandline
 
-        if log_at_vehicle_level:
+        if log_csv:
             df_size = len(self.__all_vehicles)
             self._auxilary_departure_times = np.zeros(df_size, dtype=np.float)
             self._axilary_elapsed_time = np.zeros(df_size, dtype=np.float)
             self._auxilary_ID = ['' for i in range(df_size)]
             self._auxilary_num_sent_to_trj_planner = np.zeros(df_size, dtype=np.int8)
 
-        if log_at_trj_point_level:
             # open a file to store trajectory points
             filepath_trj = os.path.join('log/' + inter_name + '/' + start_time_stamp + '_' + str(
                 self.scenario_num) + '_trj_point_level.csv')
@@ -622,7 +619,7 @@ class Traffic:
                         if print_commandline:
                             print('/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID +
                                   '@({:>4.1f} s)'.format(dep_time))
-                        if self._log_at_vehicle_level:
+                        if self._log_csv:
                             self.set_row_vehicle_level_csv(dep_time, veh)
 
                     elif det_time < simulation_time:  # RESET EXISTING VEHICLES TRAJECTORY

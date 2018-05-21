@@ -395,11 +395,11 @@ class Pretimed(Signal):
 
     NUM_CYCLES = 5
 
-    def __init__(self, inter_name, first_detection_time, num_lanes, min_headway, log_signal_status, sc,
+    def __init__(self, inter_name, first_detection_time, num_lanes, min_headway, log_csv, sc,
                  start_time_stamp, do_traj_computation, print_commandline, optional_packages_found):
         """ Initialize the pretimed SPaT """
 
-        super().__init__(inter_name, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
+        super().__init__(inter_name, num_lanes, min_headway, log_csv, sc, start_time_stamp,
                          do_traj_computation, print_commandline, optional_packages_found)
 
         pretimed_signal_plan = data_importer.get_pretimed_parameters(inter_name)
@@ -482,7 +482,7 @@ class GA_SPaT(Signal):
     LAMBDA = 1 / 500
     BADNESS_ACCURACY = 10 ** 2
 
-    def __init__(self, inter_name, allowable_phases, first_detection_time, num_lanes, min_headway, log_signal_status,
+    def __init__(self, inter_name, allowable_phases, first_detection_time, num_lanes, min_headway, log_csv,
                  sc, start_time_stamp, do_traj_computation, print_commandline, optional_packages_found):
         """
 
@@ -492,7 +492,7 @@ class GA_SPaT(Signal):
         :param first_detection_time:
         :param num_lanes:
         :param min_headway:
-        :param log_signal_status:
+        :param log_csv:
         :param sc:
         :param start_time_stamp:
         :param do_traj_computation:
@@ -500,7 +500,7 @@ class GA_SPaT(Signal):
         :param optional_packages_found:
         """
 
-        super().__init__(inter_name, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
+        super().__init__(inter_name, num_lanes, min_headway, log_csv, sc, start_time_stamp,
                          do_traj_computation, print_commandline, optional_packages_found)
 
         self._allowable_phases = allowable_phases
