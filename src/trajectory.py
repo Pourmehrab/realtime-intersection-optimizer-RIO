@@ -385,62 +385,87 @@ class LeadConnected(Trajectory):
 
         return self._lp_model
 
-    def solve(self, veh, model):
+    def solve(self, veh, lead_veh, model):
         """
         Solves an :term:`LP` model for connected vehicle (both lead and follower)
 
-        :param veh:
+        :param veh: subject vehicle
         :type veh: Vehicle
+        :param lead_veh: lead vehicle which could be `None` if no vehicle is in front.
+        :type lead_veh: Vehicle
         :param model:
         :type model: cplex
         :return: coefficients of the polynomial for the ``veh`` object and trajectory points to the trajectory attribute of it
         """
         trajectory = veh.trajectory
-        det_time = trajectory[0, veh.first_trj_point_indx]
+        det_time, det_dist, det_speed = trajectory[:, veh.first_trj_point_indx]
         dep_time, dep_dist, dep_speed = trajectory[:, veh.last_trj_point_indx]
         departure_time_relative = dep_time - det_time
+
         try:
             model.solve()
-            model.write("model.lp")  # todo remove
         except cplex.exceptions.CplexSolverError:
-            print("Exception raised during solve")
-            return
+            raise Exception("Exception raised during solve")
 
-        dv = trajectory[2, veh.last_trj_point_indx] / self.SPEED_DECREMENT_SIZE
-        dep_speed = trajectory[2, veh.last_trj_point_indx] - dv
+        if model.solution.get_status() in {1, }:
+            f = np.poly1d(np.flip(np.array(model.solution.get_values(["b_" + str(n) for n in range(self.k)]))
+                                  / np.array([departure_time_relative ** n for n in range(self.k)], dtype=float), 0))
+            f_prime = np.polyder(f)
 
-        while model.solution.get_status() not in {1, } and dep_speed >= 0.0:
-            model.linear_constraints.set_rhs([("dep_speed", -dep_speed)])
-            try:
-                model.solve()
-                model.write("model.lp")  # todo remove
-            except cplex.exceptions.CplexSolverError:
-                print("Exception raised during solve")
-                return
-            dep_speed -= dv
-
-        if dep_speed < 0:  # no optimal found in the while loop above
-            stat = model.get_stats()
-            slack = model.solution.get_linear_slacks()
-            raise Exception("CPLEX failed to find optimal trajectory for vehicle " + str(veh.ID))
-
-        f = np.poly1d(np.flip(np.array(model.solution.get_values(["b_" + str(n) for n in range(self.k)]))
-                              / np.array([departure_time_relative ** n for n in range(self.k)], dtype=float), 0))
-        f_prime = np.polyder(f)
-
-        t, d, s = self.compute_trj_points(f, f_prime, dep_time - det_time)
-        t += det_time
+            t, d, s = self.compute_trj_points(f, f_prime, dep_time - det_time)
+            t += det_time
+            veh.set_poly(f, t[0])
+        elif lead_veh is None:
+            t, d, s = self.optimize_follower_connected_trj(veh, lead_veh)
+        else:
+            t, d, s = self.optimize_lead_connected_trj(veh, departure_time_relative, dep_speed)
 
         self.set_trajectory(veh, t, d, s)
 
-        veh.set_poly(f, t[0])
-
-    def compute_trj_points(self, f, f_prime, arrival_time_relative):
-        t = self.discretize_time_interval(0, arrival_time_relative)
+    def compute_trj_points(self, f, f_prime, departure_time_relative):
+        """
+        Converts the polynomial trajectory to the trajectory points
+        :param f:
+        :param f_prime:
+        :param departure_time_relative: span of the trajectory
+        :return: t, d, s
+        """
+        t = self.discretize_time_interval(0, departure_time_relative)
         d = np.polyval(f, t)
         s = np.polyval(-f_prime, t)
 
         return t, d, s
+
+    def optimize_lead_connected_trj(self, veh, departure_time_relative, dep_speed):
+        """
+        Computes a bi-linear trajectory for the vehicle
+
+        :param veh: subject vehicle
+        :type veh: Vehicle
+        :return:
+        """
+        det_time, det_dist, det_speed = veh.trajectory[:, veh.first_trj_point_indx]
+        t_rel_intersect = (det_dist - dep_speed * departure_time_relative) / (det_speed - dep_speed)
+        if 0 <= t_rel_intersect <= departure_time_relative:
+            t = self.discretize_time_interval(0, departure_time_relative)
+            d = [(departure_time_relative - t_i) * dep_speed if t_i >= t_rel_intersect
+                 else det_dist - det_speed * t_i for t_i in t]
+            s = [dep_speed if t_i >= t_rel_intersect else det_speed for t_i in t]
+            t += veh.trajectory[0, veh.first_trj_point_indx]
+
+            return t, d, s
+        else:
+            raise Exception('look into the matter (intersection time is not within the range)')
+
+    def optimize_follower_connected_trj(self, veh, lead_veh):
+        """
+        A place holder for the optimize_follower_connected_trj() class.
+
+        :param veh:
+        :param lead_veh:
+        :return:
+        """
+        raise NotImplementedError("Must override optimize_follower_connected_trj() in the child class.")
 
 
 # -------------------------------------------------------
@@ -517,7 +542,7 @@ class FollowerConnected(LeadConnected):
 
         if end_relative_ctrl_time > start_relative_ctrl_time + self.m * self.EPS:
             n_traj_lead = lead_veh.last_trj_point_indx - lead_veh.first_trj_point_indx + 1
-            if n_traj_lead >= self.m:
+            if n_traj_lead > self.m:
                 step = -int((n_traj_lead - 1) / self.m)
                 ctrl_lead_relative_time = lead_veh.trajectory[0,
                                           lead_veh.last_trj_point_indx:lead_veh.last_trj_point_indx + step * self.m:step] - \
@@ -539,3 +564,25 @@ class FollowerConnected(LeadConnected):
                 zip(["min_gap_" + str(j)] * self.k, var_name, dist_coeff))
 
         return self._lp_model
+
+    def optimize_follower_connected_trj(self, veh, lead_veh):
+        """
+
+        :param veh: subject vehicle
+        :type veh: Vehicle
+        :param lead_veh: lead vehicle which could be `None` if no vehicle is in front.
+        :type lead_veh: Vehicle
+        :return:
+        """
+        det_time, det_dist, det_speed = veh.trajectory[:, veh.first_trj_point_indx]
+        dep_headway = lead_veh.trajectory[0, lead_veh.last_trj_point_indx] - veh.trajectory[0, veh.last_trj_point_indx]
+        t, d, s = lead_veh.trajectory[:, lead_veh.first_trj_point_indx:lead_veh.last_trj_point_indx]
+        t += dep_headway  # to shift the trajectory
+
+        dt = t[0] - det_time
+        v = (det_dist - d[0]) / dt
+        t_augment = self.discretize_time_interval(0, dt)
+        d_augment = [det_dist - v * t_i for t_i in t]
+        s_augment = [v] * len(t_augment)
+
+        return map(np.concatenate, [[t_augment, t], [d_augment, d], [s_augment, s]])
