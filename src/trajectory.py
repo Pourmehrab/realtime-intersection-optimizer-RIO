@@ -54,7 +54,7 @@ class Trajectory:
         """
         if end_time <= start_time:
             return np.array([])
-        elif end_time - start_time % self.RES > self.EPS:
+        elif (end_time - start_time) % self.RES > self.EPS:
             trj_time_stamps = np.append(np.arange(start_time, end_time, Trajectory.RES, dtype=float), end_time)
         else:
             trj_time_stamps = np.arange(start_time, end_time, Trajectory.RES, dtype=float)

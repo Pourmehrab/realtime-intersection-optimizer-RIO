@@ -166,7 +166,7 @@ def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log
 if __name__ == "__main__":
     # IMPORT NECESSARY PACKAGES
     import sys
-    from datetime import datetime
+    # from datetime import datetime
     from time import perf_counter
 
     from src.time_keeper import TimeKeeper
@@ -185,7 +185,7 @@ if __name__ == "__main__":
     # ################## SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR
     do_traj_computation = True
     log_csv = True
-    print_commandline = False
+    print_commandline = True
 
     print("Interpreter Information")
     print("Python Path: ", sys.executable)
@@ -211,8 +211,8 @@ if __name__ == "__main__":
             # to mark saved csv file
             start_time_stamp = 'output'  # datetime.utcnow().strftime(' %d%B%Y_%H-%M-%S')
 
-            target_sc = 1
-            for sc in range(target_sc, target_sc + 45):
+            target_sc = 3
+            for sc in range(target_sc, target_sc + 1):
                 run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log_csv, print_commandline,
                           optional_packages_found)
 
