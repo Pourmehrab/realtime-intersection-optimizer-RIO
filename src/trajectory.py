@@ -51,13 +51,15 @@ class Trajectory:
         """
         Discretize the given time interval to a numpy array of time stamps
 
+        .. warning:: It is inclusion-wise of the beginning and end of the interval.
+
         """
         if end_time <= start_time:
-            return np.array([])
+            raise Exception('cannot go backward in time')
         elif (end_time - start_time) % self.RES > self.EPS:
             trj_time_stamps = np.append(np.arange(start_time, end_time, Trajectory.RES, dtype=float), end_time)
         else:
-            trj_time_stamps = np.arange(start_time, end_time, Trajectory.RES, dtype=float)
+            trj_time_stamps = np.arange(start_time, end_time + self.EPS, Trajectory.RES, dtype=float)
 
         return trj_time_stamps
 
@@ -415,9 +417,9 @@ class LeadConnected(Trajectory):
             t += det_time
             veh.set_poly(f, t[0])
         elif lead_veh is None:
-            t, d, s = self.optimize_follower_connected_trj(veh, lead_veh)
-        else:
             t, d, s = self.optimize_lead_connected_trj(veh, departure_time_relative, dep_speed)
+        else:
+            t, d, s = self.optimize_follower_connected_trj(veh, lead_veh)  # is defined in the child class
 
         self.set_trajectory(veh, t, d, s)
 
@@ -456,15 +458,15 @@ class LeadConnected(Trajectory):
         else:
             raise Exception('look into the matter (intersection time is not within the range)')
 
-    def optimize_follower_connected_trj(self, veh, lead_veh):
-        """
-        A place holder for the optimize_follower_connected_trj() class.
-
-        :param veh:
-        :param lead_veh:
-        :return:
-        """
-        raise NotImplementedError("Must override optimize_follower_connected_trj() in the child class.")
+    # def optimize_follower_connected_trj(self, veh, lead_veh):
+    #     """
+    #     A place holder for the optimize_follower_connected_trj() class.
+    #
+    #     :param veh:
+    #     :param lead_veh:
+    #     :return:
+    #     """
+    #     raise NotImplementedError("Must override optimize_follower_connected_trj() in the child class.")
 
 
 # -------------------------------------------------------
@@ -564,8 +566,22 @@ class FollowerConnected(LeadConnected):
 
         return self._lp_model
 
+    def solve(self, veh, lead_veh, model):
+        """
+
+        :param veh: subject vehicle
+        :type veh: Vehicle
+        :param lead_veh: the vehicle in front of the subject
+        :type lead_veh: Vehicle
+        :param model:
+        :return:
+        """
+        super().solve(veh, lead_veh, model)
+
     def optimize_follower_connected_trj(self, veh, lead_veh):
         """
+        .. warning::
+            This method is called in the parent class (:any:`FollowerConnected`) solve method.
 
         :param veh: subject vehicle
         :type veh: Vehicle
@@ -573,15 +589,17 @@ class FollowerConnected(LeadConnected):
         :type lead_veh: Vehicle
         :return:
         """
-        det_time, det_dist, det_speed = veh.trajectory[:, veh.first_trj_point_indx]
-        dep_headway = lead_veh.trajectory[0, lead_veh.last_trj_point_indx] - veh.trajectory[0, veh.last_trj_point_indx]
-        t, d, s = lead_veh.trajectory[:, lead_veh.first_trj_point_indx:lead_veh.last_trj_point_indx]
+        t, d, s = np.copy(lead_veh.trajectory[:, lead_veh.first_trj_point_indx:lead_veh.last_trj_point_indx + 1])
+        dep_headway = veh.trajectory[0, veh.last_trj_point_indx] - lead_veh.trajectory[0, lead_veh.last_trj_point_indx]
         t += dep_headway  # to shift the trajectory
+
+        det_time, det_dist = veh.trajectory[:2, veh.first_trj_point_indx]
 
         dt = t[0] - det_time
         v = (det_dist - d[0]) / dt
         t_augment = self.discretize_time_interval(0, dt)
-        d_augment = [det_dist - v * t_i for t_i in t]
+        d_augment = [det_dist - v * t_i for t_i in t_augment]
         s_augment = [v] * len(t_augment)
+        t_augment += det_time
 
-        return map(np.concatenate, [[t_augment, t], [d_augment, d], [s_augment, s]])
+        return map(np.concatenate, [[t_augment[:-1], t], [d_augment[:-1], d], [s_augment[:-1], s]])
