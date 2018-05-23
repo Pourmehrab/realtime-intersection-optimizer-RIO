@@ -545,8 +545,8 @@ class GA_SPaT(Signal):
         self._flush_upcoming_SPaTs()
 
         any_unserved_vehicle = self._do_base_SPaT(lanes, num_lanes, max_speed, trajectory_planner)
-        if any(
-                any_unserved_vehicle):  # if the base SPaT serves, don't bother doing GA # correct max phase length in case goes above the range
+        if any(any_unserved_vehicle):
+            # if the base SPaT serves, don't bother doing GA # correct max phase length in case goes above the range
             max_phase_length = min(len(self.__allowable_phases), self.MAX_PHASE_LENGTH)
             cycle_length = self._get_optimal_cycle_length(critical_volume_ratio, 1)
             self.__best_GA_alt = {
@@ -566,6 +566,7 @@ class GA_SPaT(Signal):
                 population[badness] = {'phase_seq': phase_seq, 'time_split': time_split}
 
             for phase_length in range(2, max_phase_length + 1):
+                population = SortedDict({})  # keeps the individuals
                 cycle_length = self._get_optimal_cycle_length(critical_volume_ratio, phase_length)
                 half_max_indx = phase_length // 2  # need this for crossover
 
@@ -590,7 +591,7 @@ class GA_SPaT(Signal):
                             # evaluate badness function
                             badness = self._evaluate_badness(phase_seq, time_split, lanes, num_lanes)
                             population[badness] = {'phase_seq': phase_seq, 'time_split': time_split}
-                population = SortedDict({})  # keeps the individuals
+
 
             if self.__best_GA_alt['SPaT']['badness_measure'] == self.LARGE_NUM:
                 raise Exception("GA failed to find any serving SPaT")
