@@ -330,17 +330,14 @@ class Signal:
             if any_unserved_vehicle[lane]:
                 for veh_indx in range(first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
                     veh = lanes.vehlist[lane][veh_indx]
-
                     if veh_indx == 0:
                         max_departure_time = max(max_departure_time, veh.earliest_departure) + self._min_headway
                     else:
                         lead_veh_scheduled_departure = lanes.vehlist[lane][veh_indx - 1].scheduled_departure
                         max_departure_time = max(max_departure_time, veh.earliest_departure,
                                                  lead_veh_scheduled_departure) + self._min_headway
-
                     served_vehicle_time[lane][veh_indx] = max_departure_time
                     veh.reschedule_departure = True
-
         return served_vehicle_time
 
     def _set_non_base_scheduled_departures(self, lanes, scheduled_departure, num_lanes, max_speed, trajectory_planner):
@@ -503,7 +500,7 @@ class GA_SPaT(Signal):
         super().__init__(inter_name, num_lanes, min_headway, log_csv, sc, start_time_stamp,
                          do_traj_computation, print_commandline, optional_packages_found)
 
-        self._allowable_phases = allowable_phases
+        self.__allowable_phases = allowable_phases
 
         self._y, self._ar, self.min_green, self.max_green = data_importer.get_signal_params(inter_name)
         self._ts_min, self._ts_max = self.min_green + self._y + self._ar, self.max_green + self._y + self._ar
@@ -528,7 +525,7 @@ class GA_SPaT(Signal):
         .. attention::
             - We define :term:`badness` (the opposite of fitness) as the measure that less of it is preferred for choosing a SPaT.
             - GA has access to only the given subset of phases provided by ``allowable_phases`` from the full set in ``data.py`` file.
-            - If an alternative beats the best known SPaT, it takes the ``best_SPaT`` spot inside the ``evaluate_badness()`` call.
+            - If an alternative beats the best known SPaT, it takes the ``__best_SPaT`` spot inside the ``evaluate_badness()`` call.
             - GA tries cycles with 1 up to the defined number of phases and for each it computes the cycle length using the time budget concept in traffic flow theory.
             - GA keeps the alternative in a sorted dictionary that the key is ``badness`` and the value keeps the corresponding SPaT decision. This helps when we want to replace worse individuals with new ones from crossover.
             - The phase sequence are randomly drawn from the set of phases **without** replacement.
@@ -548,21 +545,19 @@ class GA_SPaT(Signal):
         self._flush_upcoming_SPaTs()
 
         any_unserved_vehicle = self._do_base_SPaT(lanes, num_lanes, max_speed, trajectory_planner)
-
-        if any(any_unserved_vehicle):  # if the base SPaT serves, don't bother doing GA
-            # correct max phase length in case goes above the range
-            max_phase_length = min(len(self._allowable_phases), self.MAX_PHASE_LENGTH)
-
+        if any(
+                any_unserved_vehicle):  # if the base SPaT serves, don't bother doing GA # correct max phase length in case goes above the range
+            max_phase_length = min(len(self.__allowable_phases), self.MAX_PHASE_LENGTH)
             cycle_length = self._get_optimal_cycle_length(critical_volume_ratio, 1)
-            self.best_SPaT = {'phase_seq': self._mutate_seq(1), 'time_split': self._mutate_timing(cycle_length, 1),
-                              'badness_measure': self.LARGE_NUM}
+            self.__best_GA_alt = {
+                'SPaT': {'phase_seq': self._mutate_seq(1), 'time_split': self._mutate_timing(cycle_length, 1),
+                         'badness_measure': self.LARGE_NUM},
+                'scheduled_departures': {lane: np.zeros(len(lanes.vehlist[lane]), dtype=float) for lane in
+                                         range(num_lanes)},
+                'any_unserved_vehicle': any_unserved_vehicle,
+                'first_unserved_indx': np.copy(lanes.first_unsrvd_indx),
+            }
 
-            self.best_scheduled_departures = {lane: np.zeros(len(lanes.vehlist[lane]), dtype=float) for lane in
-                                              range(num_lanes)}
-            self.best_any_unserved_vehicle = any_unserved_vehicle
-            self.best_first_unsrvd_indx = np.copy(lanes.first_unsrvd_indx)
-
-            # POPULATE THE FIRST GENERATION
             population = SortedDict({})
             for individual in range(self.POPULATION_SIZE):
                 phase_seq = self._mutate_seq(1)
@@ -574,21 +569,19 @@ class GA_SPaT(Signal):
                 cycle_length = self._get_optimal_cycle_length(critical_volume_ratio, phase_length)
                 half_max_indx = phase_length // 2  # need this for crossover
 
-                # POPULATE THE FIRST GENERATION
                 for individual in range(self.POPULATION_SIZE):
                     phase_seq = self._mutate_seq(phase_length)
                     time_split = self._mutate_timing(cycle_length, phase_length)
                     badness = self._evaluate_badness(phase_seq, time_split, lanes, num_lanes)
                     population[badness] = {'phase_seq': phase_seq, 'time_split': time_split}
 
-                # do GA operations in-place
+                # perform GA operations in-place
                 for i in range(self.MAX_ITERATION_PER_PHASE):
                     for j in range(self.CROSSOVER_SIZE):
                         # ELITE SELECTION
                         # in the next round, the top ones will automatically be removed when crossover
                         badness_list = list(population.keys())
-                        if len(population) > 3:
-                            # CROSSOVER
+                        if len(population) > 3:  # CROSSOVER
                             del population[badness_list[-1]]  # delete the worst member and then add one
                             parents_indx = np.random.choice(badness_list[:-1], 2, replace=False)
                             phase_seq, time_split = self._cross_over(population[parents_indx[0]],
@@ -599,20 +592,22 @@ class GA_SPaT(Signal):
                             population[badness] = {'phase_seq': phase_seq, 'time_split': time_split}
                 population = SortedDict({})  # keeps the individuals
 
-            if self.best_SPaT['badness_measure'] == self.LARGE_NUM:
+            if self.__best_GA_alt['SPaT']['badness_measure'] == self.LARGE_NUM:
                 raise Exception("GA failed to find any serving SPaT")
-            else:
-                # record the best SPaT
-                for indx, phase in enumerate(self.best_SPaT['phase_seq']):
-                    self._append_extend_phase(int(phase), self.best_SPaT['time_split'][indx] - self._y - self._ar)
-
-                if any(self.best_any_unserved_vehicle):
-                    self.best_scheduled_departures = self._do_non_base_SPaT(lanes, num_lanes,
-                                                                            self.best_first_unsrvd_indx,
-                                                                            self.best_scheduled_departures,
-                                                                            self.best_any_unserved_vehicle)
-                    self._set_non_base_scheduled_departures(lanes, self.best_scheduled_departures, num_lanes, max_speed,
-                                                            trajectory_planner)
+            else:  # record the best SPaT
+                for indx, phase in enumerate(self.__best_GA_alt['SPaT']['phase_seq']):
+                    self._append_extend_phase(int(phase),
+                                              self.__best_GA_alt['SPaT']['time_split'][indx] - self._y - self._ar)
+                # if any(self.__best_GA_alt['any_unserved_vehicle']):
+                # self.__best_GA_alt['scheduled_departures'] = self._do_non_base_SPaT(lanes, num_lanes,
+                #                                                                     self.__best_GA_alt[
+                #                                                                         'first_unserved_indx'],
+                #                                                                     self.__best_GA_alt[
+                #                                                                         'scheduled_departures'],
+                #                                                                     self.__best_GA_alt[
+                #                                                                         'any_unserved_vehicle'])
+                self._set_non_base_scheduled_departures(lanes, self.__best_GA_alt['scheduled_departures'], num_lanes,
+                                                        max_speed, trajectory_planner)
 
     def _evaluate_badness(self, phase_seq, time_split, lanes, num_lanes):
         """
@@ -640,14 +635,11 @@ class GA_SPaT(Signal):
         mean_travel_time, throughput = 0.0, 0  # if no vehicle is found return zero throughput
         temporary_scheduled_departures = {lane: np.zeros(len(lanes.vehlist[lane]), dtype=float) for lane in
                                           range(num_lanes)}
-
         # keeps departure time of last vehicle to be served by progressing in the given SPaT
         served_vehicle_time = np.zeros(num_lanes, dtype=float)
         # keeps index of last vehicle to be served by progressing SPaT
         first_unsrvd_indx = np.copy(lanes.first_unsrvd_indx)
-
         any_unserved_vehicle = [first_unsrvd_indx[lane] <= lanes.last_vehicle_indx[lane] for lane in range(num_lanes)]
-
         phase_indx, phase_length = 0, len(phase_seq)
         start_green = self.SPaT_end[-1] + self.LAG
         while any(any_unserved_vehicle) and phase_indx < phase_length:  # serve all with the current phasing
@@ -683,14 +675,13 @@ class GA_SPaT(Signal):
 
         badness = int(
             (self.LAMBDA * mean_travel_time - throughput) * self.BADNESS_ACCURACY) if throughput > 0 else self.LARGE_NUM
-        if self.best_SPaT['badness_measure'] > badness:
-            self.best_SPaT['badness_measure'] = badness
-            self.best_SPaT['phase_seq'] = tuple(phase_seq)
-            self.best_SPaT['time_split'] = tuple(time_split)
-
-            self.best_scheduled_departures = deepcopy(temporary_scheduled_departures)
-            self.best_any_unserved_vehicle = any_unserved_vehicle
-            self.best_first_unsrvd_indx = first_unsrvd_indx
+        if self.__best_GA_alt['SPaT']['badness_measure'] > badness:
+            self.__best_GA_alt = {
+                'SPaT': {'phase_seq': tuple(phase_seq), 'time_split': tuple(time_split), 'badness_measure': badness},
+                'scheduled_departures': deepcopy(temporary_scheduled_departures),
+                'any_unserved_vehicle': any_unserved_vehicle,
+                'first_unserved_indx': first_unsrvd_indx,
+            }
 
         return badness
 
@@ -722,7 +713,7 @@ class GA_SPaT(Signal):
         :param phase_length:
         :return: seq
         """
-        seq = tuple(np.random.choice(self._allowable_phases, phase_length, replace=False))
+        seq = tuple(np.random.choice(self.__allowable_phases, phase_length, replace=False))
         return seq
 
     def _mutate_timing(self, cycle_length, phase_length):

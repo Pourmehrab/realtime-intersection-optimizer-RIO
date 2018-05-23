@@ -54,7 +54,7 @@ class Trajectory:
         .. warning:: It is inclusion-wise of the beginning and end of the interval.
 
         """
-        if end_time <= start_time:
+        if end_time <= start_time - self.EPS:
             raise Exception('cannot go backward in time')
         elif (end_time - start_time) % self.RES > self.EPS:
             trj_time_stamps = np.append(np.arange(start_time, end_time, Trajectory.RES, dtype=float), end_time)

@@ -110,7 +110,7 @@ def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log
     # set the start time to it
     time_keeper = TimeKeeper(first_detection_time)
 
-    # here we start doing optimization for all scenarios included in the csv file
+    # here we start doing optimization for all scenarios included in the CSV file
     if log_csv:
         t_start = perf_counter()  # to measure total run time (IS NOT THE SIMULATION TIME)
 
@@ -144,7 +144,7 @@ def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_arrived() and lanes.all_served(num_lanes):
             if log_csv:
-                elapsed_time = perf_counter() - t_start  # THIS IS NOT SIMULATION TIME! IT"S JUST TIMING THE ALGORITHM
+                elapsed_time = perf_counter() - t_start  # THIS IS NOT SIMULATION TIME! IT'S JUST FOR TIMING THE ALGORITHM
                 traffic.set_elapsed_sim_time(elapsed_time)
                 if print_commandline:
                     print("\n### ELAPSED TIME: {:>5d} ms ###".format(int(1000 * elapsed_time)))
@@ -211,7 +211,7 @@ if __name__ == "__main__":
             # to mark saved csv file
             start_time_stamp = 'output'  # datetime.utcnow().strftime(' %d%B%Y_%H-%M-%S')
 
-            target_sc = 3
+            target_sc = 42
             for sc in range(target_sc, target_sc + 1):
                 run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log_csv, print_commandline,
                           optional_packages_found)

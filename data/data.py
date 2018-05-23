@@ -9,7 +9,7 @@
 def get_general_params(inter_name):
     """
     Returns max speed (:math:`m/s`), min_headway (:math:`s`), detection range (:math:`m`), :math:`k, m`, number of lanes. Where:
-        - :math:`k` =  # :math:`n` will be in 0, ..., k-1 (odd degree of polynomial is preferred: k to be even and **at least** 5)
+        - :math:`k` =  # :math:`n` will be in :math:`0, \\ldots, k-1` (odd degree of polynomial is preferred: k to be even and **at least** 5)
         - :math:`m` =  # to discretize the time interval
 
     .. note::
@@ -164,6 +164,7 @@ def get_conflict_dict(inter_name):
 def get_phases(inter_name):
     """
     Returns a dictionary of sets
+
     The key is the phase number is one-based
     The value to a key is set of lanes included in that phase (lanes are one-based too)
     Use the phase enumerator for new intersections of refine manually

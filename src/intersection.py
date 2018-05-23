@@ -653,7 +653,6 @@ def earliest_arrival_connected(det_time, speed, dist, amin, amax, max_speed, min
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
         April-2018
-
     """
     a = amax if speed <= max_speed else amin
     dist_to_max_speed = (max_speed ** 2 - speed ** 2) / (2 * a)
