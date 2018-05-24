@@ -1,7 +1,7 @@
 ####################################
 # File name: signal.py             #
 # Author: Mahmoud Pourmehrab       #
-# Email: mpourmehrab@ufl.edu       #
+# Email: pourmehrab@gmail.com      #
 # Last Modified: Apr/24/2018       #
 ####################################
 

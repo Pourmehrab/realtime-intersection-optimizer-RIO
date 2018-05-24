@@ -1,7 +1,7 @@
 ####################################
 # File name: trajectory.py         #
 # Author: Mahmoud Pourmehrab       #
-# Email: mpourmehrab@ufl.edu       #
+# Email: pourmehrab@gmail.com      #
 # Last Modified: Apr/23/2018       #
 ####################################
 
@@ -28,7 +28,7 @@ class Trajectory:
 
 
     :param RES: time difference between two consecutive trajectory points in seconds used in :any:`discretize_time_interval()` (be careful not to exceed max size of trajectory)
-    :param EPS: small number that lower than that is approximated by zero
+    :param SMALL_POS_NUM: small number that lower than that is approximated by zero
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -37,7 +37,7 @@ class Trajectory:
     """
 
     RES = 1
-    EPS = 0.01
+    SMALL_POS_NUM = 0.01
 
     def __init__(self, max_speed, min_headway):
         """
@@ -54,12 +54,12 @@ class Trajectory:
         .. warning:: It is inclusion-wise of the beginning and end of the interval.
 
         """
-        if end_time <= start_time - self.EPS:
+        if end_time <= start_time - self.SMALL_POS_NUM:
             raise Exception('cannot go backward in time')
-        elif (end_time - start_time) % self.RES > self.EPS:
+        elif (end_time - start_time) % self.RES > self.SMALL_POS_NUM:
             trj_time_stamps = np.append(np.arange(start_time, end_time, Trajectory.RES, dtype=float), end_time)
         else:
-            trj_time_stamps = np.arange(start_time, end_time + self.EPS, Trajectory.RES, dtype=float)
+            trj_time_stamps = np.arange(start_time, end_time + self.SMALL_POS_NUM, Trajectory.RES, dtype=float)
 
         return trj_time_stamps
 
@@ -187,7 +187,7 @@ Use Case:
         lead_trj_indx = lead_veh.first_trj_point_indx
         lead_last_trj_point_indx = lead_veh.last_trj_point_indx
 
-        if lead_trajectory[0, lead_trj_indx] - follower_trajectory[0, follower_trj_indx] <= self.EPS:
+        if lead_trajectory[0, lead_trj_indx] - follower_trajectory[0, follower_trj_indx] <= self.SMALL_POS_NUM:
             lead_trj_indx += 1  # this shifts appropriately the trajectory computation
 
         while lead_trj_indx <= lead_last_trj_point_indx:
@@ -196,7 +196,7 @@ Use Case:
             follower_speed = follower_trajectory[2, follower_trj_indx]
             gap = follower_trajectory[1, follower_trj_indx] - lead_trajectory[1, lead_trj_indx]
             dt = lead_trajectory[0, lead_trj_indx] - follower_trajectory[0, follower_trj_indx]
-            if lead_speed <= self.EPS:  # Gipps doesn't work well for near zero speed
+            if lead_speed <= self.SMALL_POS_NUM:  # Gipps doesn't work well for near zero speed
                 v_get_behind = (gap - lead_length) / dt
                 v = min(v_get_behind, follower_desired_speed) if v_get_behind >= 0 else 0.0
                 follower_trajectory[0, next_trj_indx] = lead_trajectory[0, lead_trj_indx]
@@ -235,7 +235,7 @@ Use Case:
         t_follower_end = follower_trajectory[0, follower_trj_indx]
 
         t_departure_relative = veh.scheduled_departure - t_follower_end
-        if t_departure_relative > self.EPS:
+        if t_departure_relative > self.SMALL_POS_NUM:
             v_departure_relative = d_follower_end / t_departure_relative
 
             t_augment = self.discretize_time_interval(self.RES, t_departure_relative)
@@ -347,7 +347,7 @@ class LeadConnected(Trajectory):
 
         :param veh: vehicle object that its trajectory is meant to be computed
         :type veh: Vehicle
-        :return: cplex LP model. Should return the model since the follower optimizer adds constraints to this model
+        :return: CPLEX LP model. Should return the model since the follower optimizer adds constraints to this model
         """
         dep_time, dep_dist, dep_speed = veh.trajectory[:, veh.last_trj_point_indx]
 
@@ -395,7 +395,7 @@ class LeadConnected(Trajectory):
         :param lead_veh: lead vehicle which could be `None` if no vehicle is in front.
         :type lead_veh: Vehicle
         :param model:
-        :type model: cplex
+        :type model: CPLEX
         :return: coefficients of the polynomial for the ``veh`` object and trajectory points to the trajectory attribute of it
         """
         trajectory = veh.trajectory
@@ -530,7 +530,7 @@ class FollowerConnected(LeadConnected):
         :type veh: Vehicle
         :param lead_veh: the vehicle in front
         :type lead_veh: Vehicle
-        :return: the cplex LP model to be solved by solve() method
+        :return: the CPLEX LP model to be solved by solve() method
         """
 
         self._lp_model = super().set_model(veh)
@@ -541,7 +541,7 @@ class FollowerConnected(LeadConnected):
         start_relative_ctrl_time, end_relative_ctrl_time = self.GAP_CTRL_STARTS, lead_dep_time - follower_det_time
         departure_time_relative = follower_dep_time - follower_det_time
 
-        if end_relative_ctrl_time > start_relative_ctrl_time + self.m * self.EPS:
+        if end_relative_ctrl_time > start_relative_ctrl_time + self.m * self.SMALL_POS_NUM:
             n_traj_lead = lead_veh.last_trj_point_indx - lead_veh.first_trj_point_indx + 1
             if n_traj_lead > self.m:
                 step = -int((n_traj_lead - 1) / self.m)
@@ -587,7 +587,7 @@ class FollowerConnected(LeadConnected):
         :type veh: Vehicle
         :param lead_veh: lead vehicle which could be `None` if no vehicle is in front.
         :type lead_veh: Vehicle
-        :return:
+        :return: trajectory of the subject vehicle
         """
         t, d, s = np.copy(lead_veh.trajectory[:, lead_veh.first_trj_point_indx:lead_veh.last_trj_point_indx + 1])
         dep_headway = veh.trajectory[0, veh.last_trj_point_indx] - lead_veh.trajectory[0, lead_veh.last_trj_point_indx]

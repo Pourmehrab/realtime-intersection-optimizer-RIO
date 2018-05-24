@@ -1,7 +1,7 @@
 ####################################
 # File name: intersection.py       #
 # Author: Mahmoud Pourmehrab       #
-# Email: mpourmehrab@ufl.edu       #
+# Email: pourmehrab@gmail.com      #
 # Last Modified: Apr/22/2018       #
 ####################################
 
@@ -189,7 +189,7 @@ class Vehicle:
         :param length:          length of vehicle in :math:`m`
         :param amin:            desirable deceleration rate in :math:`m/s^2`
         :param amax:            desired acceleration rate in :math:`m/s^2`
-        :param indx:            the original row index in the input csv file
+        :param indx:            the original row index in the input CSV file
         :param k:               number of coefficients to represent the trajectory if vehicle is connected
         :param self.trajectory: keeps the trajectory points as columns of a 3 by N array that N is ``MAX_NUM_TRAJECTORY_POINTS``
         :param self.first_trj_point_indx: points to the column of the ``trajectory`` array where the current point is stored. This gets updated as the time goes by.
@@ -234,7 +234,7 @@ class Vehicle:
 
     def reset_trj_points(self, sc, lane, time_threshold, file):
         """
-        Writes the trajectory points in the csv file if their time stamp is before the ``time_threshold`` and then removes them by updating the first trajectory point.
+        Writes the trajectory points in the CSV file if their time stamp is before the ``time_threshold`` and then removes them by updating the first trajectory point.
 
         .. warning::
             Before calling this make sure at least the first trajectory point's time stamp is less than provided time threshold or such a call would be pointless.
@@ -242,17 +242,17 @@ class Vehicle:
         :param sc: scenario number being simulated
         :param lane: lane number that is zero-based  (it records it one-based)
         :param time_threshold: any trajectory point before this is considered expired (normally its simulation time)
-        :param file: initialized in :any:`Traffic.__init__()` method, if ``None``, this does not record points in csv.
+        :param file: initialized in :any:`Traffic.__init__()` method, if ``None``, this does not record points in CSV.
         """
         trj_indx, max_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx
         time, distance, speed = self.trajectory[:, trj_indx]
 
-        if file is None:  # don't have to write csv
+        if file is None:  # don't have to write CSV
             while time < time_threshold and trj_indx <= max_trj_indx:
                 trj_indx += 1
                 time = self.trajectory[0, trj_indx]
 
-        else:  # get full info and write trajectory points to the csv file
+        else:  # get full info and write trajectory points to the CSV file
             writer = csv.writer(file, delimiter=',')
             while time < time_threshold and trj_indx <= max_trj_indx:
                 writer.writerows([[sc, self.ID, self.veh_type, lane + 1, time, distance, speed]])
@@ -361,15 +361,15 @@ class Vehicle:
 class Traffic:
     """
     Objectives:
-        - Adds new vehicles from the csv file to the ``lanes.vehlist`` structure
-        - Appends travel time, ID, and elapsed time columns and save csv
+        - Adds new vehicles from the CSV file to the ``lanes.vehlist`` structure
+        - Appends travel time, ID, and elapsed time columns and save CSV
         - Manages scenario indexing, resetting, and more
         - Computes volumes in lanes
         - removes/records served vehicles
 
     .. note::
-        - The csv should be located under the ``data/`` directory with the valid name consistent to what inputted as an
-            argument and what exists in the data.py file.
+        - The CSV should be located under the ``data/`` directory with the valid name consistent to what inputted as an
+            argument and what exists in the ``data.py`` file.
         - The scenario number should be appended to the name of intersection followed by an underscore.
 
     :Author:
@@ -386,7 +386,7 @@ class Traffic:
             - Initializes the first scenario number to run
         """
 
-        # get the path to the csv file and load up the traffic
+        # get the path to the CSV file and load up the traffic
         filepath = os.path.join(
             'data/' + inter_name + '/' + inter_name + '_' + str(sc) + '.csv')
         if os.path.exists(filepath):
@@ -466,7 +466,7 @@ class Traffic:
 
     def last_veh_arrived(self):
         """
-        :return: True if all vehicles from the input csv have been added at some point, False otherwise.
+        :return: True if all vehicles from the input CSV have been added at some point, False otherwise.
 
         .. note::
             The fact that all vehicles are *added* does not equal to all *served*. Thus, we check if any vehicle is in any of the incoming lanes before halting the program.
@@ -485,7 +485,7 @@ class Traffic:
     def update_vehicles_info(self, lanes, simulation_time, max_speed, min_headway, k):
         """
         Objectives
-            - Appends arrived vehicles from the csv file to :any:`Lanes`
+            - Appends arrived vehicles from the CSV file to :any:`Lanes`
             - Assigns their earliest arrival time
 
         :param lanes: vehicles are added to this data structure
@@ -503,7 +503,7 @@ class Traffic:
         while indx <= max_indx and self.__all_vehicles['arrival time'][indx] <= simulation_time:
 
             # read the arrived vehicle's information
-            lane = int(self.__all_vehicles['lane'][indx]) - 1  # csv file has lanes coded in one-based
+            lane = int(self.__all_vehicles['lane'][indx]) - 1  # CSV file has lanes coded in one-based
             det_id = 'xyz' + str(indx).zfill(3)  # pad zeros if necessary
             det_type = self.__all_vehicles['type'][indx]  # 0: CNV, 1: CAV
             det_time = float(self.__all_vehicles['arrival time'][indx])
@@ -561,7 +561,7 @@ class Traffic:
 
             indx += 1
 
-        # to keep track of how much of csv is processed
+        # to keep track of how much of CSV is processed
         self._current_row_indx = indx - 1
 
     @staticmethod
@@ -646,7 +646,7 @@ def earliest_arrival_connected(det_time, speed, dist, amin, amax, max_speed, min
     :param amax:
     :param max_speed:
     :param min_headway:
-    :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
+    :param t_earliest: earliest timemap_veh_type2str of lead vehicle that is only needed if the vehicle is a follower vehicle
     :return:
 
     :Author:

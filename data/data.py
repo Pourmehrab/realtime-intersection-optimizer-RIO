@@ -1,19 +1,22 @@
 ####################################
 # File name: data.py               #
 # Author: Mahmoud Pourmehrab       #
-# Email: mpourmehrab@ufl.edu       #
+# Email: pourmehrab@gmail.com      #
 # Last Modified: Apr/22/2018       #
 ####################################
 
 # GENERAL PARAMETERS
 def get_general_params(inter_name):
     """
-    Returns max speed (:math:`m/s`), min_headway (:math:`s`), detection range (:math:`m`), :math:`k, m`, number of lanes. Where:
-        - :math:`k` =  # :math:`n` will be in :math:`0, \\ldots, k-1` (odd degree of polynomial is preferred: k to be even and **at least** 5)
-        - :math:`m` =  # to discretize the time interval
+    :return:
+        - max speed (:math:`m/s`)
+        - min_headway (:math:`s`)
+        - detection range (:math:`m`)
+        - :math:`k, m` (check :any:`LeadConnected` for the definitions)
 
     .. note::
         - The distance to stop bar will be input from either CSV file or fusion. However, the number provided here is used for generic computations.
+        - odd degree of polynomial is recommended: k to be even and **at least** 5
 
     .. warning:: Is required for trajectory optimization
 
@@ -250,3 +253,26 @@ def get_signal_params(inter_name):
         raise Exception('Signal parameters are not known for this intersection.')
 
     return yellow, allred, min_green, max_green
+
+
+def get_sig_ctrl_interface_params(inter_name):
+    """
+    :return:
+        - ...
+
+    .. note::
+        - ...
+
+
+    :Author:
+        Ash Omidvar <put your email here>
+    :Date:
+        May-2018
+    """
+    if inter_name == 'TERL':
+        raise Exception('Ash put the data here and explain them above.')
+
+    else:
+        raise Exception('Simulation parameters are not known for this intersection.')
+
+    return
