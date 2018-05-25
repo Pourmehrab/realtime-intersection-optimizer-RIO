@@ -125,7 +125,7 @@ class Lanes:
         :type lane: int
         :param indx: from vehicle 0 to ``indx`` are intended to be removed by this method
         """
-        del self.vehlist[lane][0:indx + 1]
+        del self.vehlist.get(lane)[0:indx + 1]
         num_served = indx + 1
         self.decrement_first_unsrvd_indx(lane, num_served)
         self.decrement_last_veh_indx(lane, num_served)
@@ -334,6 +334,18 @@ class Vehicle:
         """Increments the count on how many times sent to trajectory planner"""
         self._times_sent_to_traj_planner += 1
 
+    def get_arrival_schedule(self):
+        """
+        :return: The triple :math:`(t,d,s)` corresponding to the arrival of subject vehicle
+        """
+        return self.trajectory[:, self.first_trj_point_indx]
+
+    def get_departure_schedule(self):
+        """
+        :return: The triple :math:`(t,d,s)` corresponding to the departure of subject vehicle
+        """
+        return self.trajectory[:, self.last_trj_point_indx]
+
     def print_trj_points(self, lane, veh_indx, identifier):
         """
         Print the first and last trajectory points information. This may be used either when a plan is scheduled or a trajectory is computed.
@@ -349,12 +361,13 @@ class Vehicle:
         lane_rank = rank + ' in L' + str(lane + 1).zfill(2)
         print(
             '>' + identifier + '> ' + veh_type_str + ':' + str(self.ID) + ':' + lane_rank +
-            ': ({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s) -> ({:>4.1f}, {:>4.1f}, {:>4.1f}), {:>3d} points.'.format(
+            ': ({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s) -> ({:>4.1f}, {:>4.1f}, {:>4.1f}), {:>3d} points, {:>2d} attempts'.format(
                 self.trajectory[0, first_trj_indx], self.trajectory[1, first_trj_indx],
                 self.trajectory[2, first_trj_indx],
                 self.trajectory[0, last_trj_indx], self.trajectory[1, last_trj_indx],
                 self.trajectory[2, last_trj_indx],
-                last_trj_indx - first_trj_indx + 1
+                last_trj_indx - first_trj_indx + 1,
+                self._times_sent_to_traj_planner
             ))
 
 
@@ -532,7 +545,7 @@ class Traffic:
             # compute trajectory to get the earliest departure time
             if det_type == 1:
                 # For CAVs, the earliest travel time is computed by invoking the following method
-                if len(lanes.vehlist[lane]) == 1:
+                if len(lanes.vehlist.get(lane)) == 1:
                     # vehicles is a lead connected vehicle
                     # happens when a connected vehicle is the first in the lane
                     t_earliest = earliest_arrival_connected(det_time, speed, dist,
@@ -542,9 +555,9 @@ class Traffic:
                     # happens when a connected vehicle is NOT the first in the lane
                     t_earliest = earliest_arrival_connected(det_time, speed, dist,
                                                             amin, amax, max_speed,
-                                                            min_headway, lanes.vehlist[lane][-2].earliest_departure)
+                                                            min_headway, lanes.vehlist.get(lane)[-2].earliest_departure)
             elif det_type == 0:
-                if len(lanes.vehlist[lane]) == 1:
+                if len(lanes.vehlist.get(lane)) == 1:
                     # vehicles is a lead conventional vehicle
                     # happens when a conventional vehicle is the first in the lane
                     t_earliest = earliest_arrival_conventional(det_time, speed, dist)
@@ -552,7 +565,7 @@ class Traffic:
                     # vehicles is a lead conventional vehicle
                     # happens when a conventional vehicle is NOT the first in the lane
                     t_earliest = earliest_arrival_conventional(det_time, speed, dist,
-                                                               min_headway, lanes.vehlist[lane][-2].earliest_departure)
+                                                               min_headway, lanes.vehlist.get(lane)[-2].earliest_departure)
             else:
                 raise Exception("The detected vehicle could not be classified.")
 
@@ -579,10 +592,10 @@ class Traffic:
         # initialize volumes vector
         volumes = np.zeros(num_lanes, dtype=float)
         for lane in range(num_lanes):
-            num_of_vehs = len(lanes.vehlist[lane])
+            num_of_vehs = len(lanes.vehlist.get(lane))
             if num_of_vehs > 0:
                 curr_speed = np.array([veh.trajectory[2, veh.first_trj_point_indx]
-                                       for veh in lanes.vehlist[lane]], dtype=np.float)
+                                       for veh in lanes.vehlist.get(lane)], dtype=np.float)
                 indx = curr_speed > 0
                 if any(indx):
                     s = stats.hmean(curr_speed[indx])
@@ -606,10 +619,10 @@ class Traffic:
         """
 
         for lane in range(num_lanes):
-            if bool(lanes.vehlist[lane]):  # not an empty lane
+            if bool(lanes.vehlist.get(lane)):  # not an empty lane
 
                 last_veh_indx_to_remove = -1
-                for veh_indx, veh in enumerate(lanes.vehlist[lane]):
+                for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
 
                     det_time = veh.trajectory[0, veh.first_trj_point_indx]
                     dep_time = veh.trajectory[0, veh.last_trj_point_indx]
@@ -737,11 +750,11 @@ class TrajectoryPlanner:
         veh.increment_times_sent_to_traj_planner()
         veh_type, departure_time = veh.veh_type, veh.scheduled_departure
         if veh_indx > 0 and veh_type == 1:  # Follower CAV
-            lead_veh = lanes.vehlist[lane][veh_indx - 1]
+            lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
             model = self.follower_connected_trj_optimizer.set_model(veh, lead_veh)
             self.follower_connected_trj_optimizer.solve(veh, lead_veh, model)
         elif veh_indx > 0 and veh_type == 0:  # Follower Conventional
-            lead_veh = lanes.vehlist[lane][veh_indx - 1]
+            lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
             self.follower_conventional_trj_estimator.solve(veh, lead_veh)
         elif veh_indx == 0 and veh_type == 1:  # Lead CAV
             model = self.lead_connected_trj_optimizer.set_model(veh)

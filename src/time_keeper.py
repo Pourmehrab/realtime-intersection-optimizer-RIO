@@ -14,8 +14,8 @@ class TimeKeeper:
 
     For time management we use seconds since the **Epoch** , or::
 
-        $ import time
-        $ time.time()
+        >>> import time
+        >>> time.time()
 
     .. figure:: images/time.png
             :align: center

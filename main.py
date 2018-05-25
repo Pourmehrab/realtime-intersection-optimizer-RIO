@@ -166,8 +166,8 @@ def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log
 
 if __name__ == "__main__":
     # IMPORT NECESSARY PACKAGES
-    import sys
-    # from datetime import datetime
+    import sys, os
+    from datetime import datetime
     from time import perf_counter, time
 
     from src.time_keeper import TimeKeeper
@@ -202,16 +202,15 @@ if __name__ == "__main__":
         raise Exception("Check the input arguments and try again.")
     else:  # input arguments are good, run the rest
         inter_name, method, run_mode = sys.argv[1], sys.argv[2], sys.argv[3]
+        if not os.path.isdir('./log/' + inter_name):
+            os.mkdir('./log/' + inter_name)
 
         if run_mode == 'simulation':
             if print_commandline:
                 print(
                     "\n################################# CLOCK: {:>5.1f} SEC #################################".format(
                         0.0))
-
-            # to mark saved CSV file
-            start_time_stamp = 'output'  # datetime.utcnow().strftime(' %d%B%Y_%H-%M-%S')
-
+            start_time_stamp = datetime.utcnow().strftime(' %d%B%Y_%H-%M-%S')  # only for naming the CSV files
             target_sc = 42
             for sc in range(target_sc, target_sc + 1):
                 run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log_csv, print_commandline,

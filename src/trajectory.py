@@ -28,7 +28,7 @@ class Trajectory:
 
 
     :param RES: time difference between two consecutive trajectory points in seconds used in :any:`discretize_time_interval()` (be careful not to exceed max size of trajectory)
-    :param SMALL_POS_NUM: small number that lower than that is approximated by zero
+    :param SMALL_POS_NUM: small positive number that lower than that is approximated by zero
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -60,7 +60,6 @@ class Trajectory:
             trj_time_stamps = np.append(np.arange(start_time, end_time, Trajectory.RES, dtype=float), end_time)
         else:
             trj_time_stamps = np.arange(start_time, end_time + self.SMALL_POS_NUM, Trajectory.RES, dtype=float)
-
         return trj_time_stamps
 
     @staticmethod
@@ -93,11 +92,11 @@ Use Case:
 
     Instantiate like::
 
-        $ lead_conventional_trj_estimator = LeadConventional(.)
+        >>> lead_conventional_trj_estimator = LeadConventional(.)
 
     Perform trajectory computation by::
 
-        $ lead_conventional_trj_estimator.solve(veh)
+        >>> lead_conventional_trj_estimator.solve(veh)
 
 
 :Author:
@@ -116,9 +115,7 @@ Use Case:
         :param veh: the lead conventional vehicle
         :type veh: Vehicle
         """
-        trajectory = veh.trajectory
-        det_time, det_dist = trajectory[:2, veh.first_trj_point_indx]
-
+        det_time, det_dist, _ = veh.get_arrival_schedule()
         v = det_dist / (veh.scheduled_departure - det_time)
 
         t = self.discretize_time_interval(det_time, veh.scheduled_departure)
@@ -140,11 +137,11 @@ Use Case:
 
     Instantiate like::
 
-        $ follower_conventional_trj_estimator = FollowerConventional(.)
+        >>> follower_conventional_trj_estimator = FollowerConventional(.)
 
     Perform trajectory computation by::
 
-        $ follower_conventional_trj_estimator.solve(veh, .)
+        >>> follower_conventional_trj_estimator.solve(veh, .)
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -274,11 +271,11 @@ class LeadConnected(Trajectory):
 
         Instantiate like::
 
-            $ lead_connected_trj_optimizer = LeadConnected(.)
+            >>> lead_connected_trj_optimizer = LeadConnected(.)
 
         Perform trajectory computation by::
 
-            $ lead_conventional_trj_estimator.solve(veh)
+            >>> lead_conventional_trj_estimator.solve(veh)
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -349,13 +346,10 @@ class LeadConnected(Trajectory):
         :type veh: Vehicle
         :return: CPLEX LP model. Should return the model since the follower optimizer adds constraints to this model
         """
-        dep_time, dep_dist, dep_speed = veh.trajectory[:, veh.last_trj_point_indx]
 
-        trajectory = veh.trajectory
         amin, amax = veh.max_decel_rate, veh.max_accel_rate
-
-        first_trj_point_indx = veh.first_trj_point_indx
-        det_time, det_dist, det_speed = trajectory[:, first_trj_point_indx]
+        det_time, det_dist, det_speed = veh.get_arrival_schedule()
+        dep_time, dep_dist, dep_speed = veh.get_departure_schedule()
         departure_time_relative = dep_time - det_time
 
         self._lp_model.objective.set_linear(zip(
@@ -398,9 +392,8 @@ class LeadConnected(Trajectory):
         :type model: CPLEX
         :return: coefficients of the polynomial for the ``veh`` object and trajectory points to the trajectory attribute of it
         """
-        trajectory = veh.trajectory
-        det_time, det_dist, det_speed = trajectory[:, veh.first_trj_point_indx]
-        dep_time, dep_dist, dep_speed = trajectory[:, veh.last_trj_point_indx]
+        det_time, det_dist, det_speed = veh.get_arrival_schedule()
+        dep_time, dep_dist, dep_speed = veh.get_departure_schedule()
         departure_time_relative = dep_time - det_time
 
         try:
@@ -445,7 +438,7 @@ class LeadConnected(Trajectory):
         :type veh: Vehicle
         :return:
         """
-        det_time, det_dist, det_speed = veh.trajectory[:, veh.first_trj_point_indx]
+        det_time, det_dist, det_speed = veh.get_arrival_schedule()
         t_rel_intersect = (det_dist - dep_speed * departure_time_relative) / (det_speed - dep_speed)
         if 0 <= t_rel_intersect <= departure_time_relative:
             t = self.discretize_time_interval(0, departure_time_relative)
@@ -482,12 +475,12 @@ class FollowerConnected(LeadConnected):
 
         Instantiate like::
 
-            $ follower_connected_trj_optimizer = FollowerConnected(.)
+            >>> follower_connected_trj_optimizer = FollowerConnected(.)
 
         Perform trajectory computation by::
 
-            $ model = follower_connected_trj_optimizer.set_model(.)
-            $ follower_connected_trj_optimizer.solve(veh, .)
+            >>> model = follower_connected_trj_optimizer.set_model(.)
+            >>> follower_connected_trj_optimizer.solve(veh, .)
 
     :param GAP_CTRL_STARTS: This is the relative time when gap control constraints get added
     :param SAFE_MIN_GAP: The minimum safe distance to keep from lead vehicles (in :math:`m`) [*can be speed dependent*]
@@ -535,9 +528,9 @@ class FollowerConnected(LeadConnected):
 
         self._lp_model = super().set_model(veh)
 
-        follower_det_time, follower_dep_time = veh.trajectory[0, veh.first_trj_point_indx], veh.trajectory[
-            0, veh.last_trj_point_indx]
-        lead_dep_time = lead_veh.trajectory[0, lead_veh.last_trj_point_indx]
+        follower_det_time, _, _ = veh.get_arrival_schedule()
+        follower_dep_time, _, _ = veh.get_departure_schedule()
+        lead_dep_time, _, _ = lead_veh.get_departure_schedule()
         start_relative_ctrl_time, end_relative_ctrl_time = self.GAP_CTRL_STARTS, lead_dep_time - follower_det_time
         departure_time_relative = follower_dep_time - follower_det_time
 
@@ -589,17 +582,18 @@ class FollowerConnected(LeadConnected):
         :type lead_veh: Vehicle
         :return: trajectory of the subject vehicle
         """
+        lead_dep_time, _, _ = lead_veh.get_departure_schedule()
+        foll_det_time, foll_det_dist, _ = veh.get_arrival_schedule()
+        foll_dep_time, foll_dep_dist, _ = veh.get_departure_schedule()
+        dep_headway = foll_dep_time - lead_dep_time
         t, d, s = np.copy(lead_veh.trajectory[:, lead_veh.first_trj_point_indx:lead_veh.last_trj_point_indx + 1])
-        dep_headway = veh.trajectory[0, veh.last_trj_point_indx] - lead_veh.trajectory[0, lead_veh.last_trj_point_indx]
         t += dep_headway  # to shift the trajectory
 
-        det_time, det_dist = veh.trajectory[:2, veh.first_trj_point_indx]
-
-        dt = t[0] - det_time
-        v = (det_dist - d[0]) / dt
+        dt = t[0] - foll_det_time
+        v = (foll_det_dist - d[0]) / dt
         t_augment = self.discretize_time_interval(0, dt)
-        d_augment = [det_dist - v * t_i for t_i in t_augment]
+        d_augment = [foll_det_dist - v * t_i for t_i in t_augment]
         s_augment = [v] * len(t_augment)
-        t_augment += det_time
+        t_augment += foll_det_time
 
         return map(np.concatenate, [[t_augment[:-1], t], [d_augment[:-1], d], [s_augment[:-1], s]])

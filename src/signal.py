@@ -270,19 +270,19 @@ class Signal:
             for lane in self._pli[phase]:
                 if any_unserved_vehicle[lane]:
                     for veh_indx in range(lanes.first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
-                        veh = lanes.vehlist[lane][veh_indx]
+                        veh = lanes.vehlist.get(lane)[veh_indx]
                         if veh.reschedule_departure:
                             t_earliest = veh.earliest_departure
                             if veh_indx == 0:
                                 t_scheduled = max(t_earliest, green_starts)
                             else:
-                                lead_veh_scheduled_departure = lanes.vehlist[lane][veh_indx - 1].scheduled_departure
+                                lead_veh_scheduled_departure = lanes.vehlist.get(lane)[veh_indx - 1].scheduled_departure
                                 t_scheduled = max(t_earliest, green_starts,
                                                   lead_veh_scheduled_departure + self._min_headway)
                             if t_scheduled <= yellow_ends:
                                 lanes.increment_first_unsrvd_indx(lane)
-                                veh.set_scheduled_departure(t_scheduled, 0, max_speed, lane, veh_indx,
-                                                            self._print_commandline)  # since this is final
+                                t, d, s = t_scheduled, 0, max_speed
+                                veh.set_scheduled_departure(t, d, s, lane, veh_indx, self._print_commandline)
 
                                 if self._do_traj_computation and veh.freshly_scheduled:
                                     trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx,
@@ -329,11 +329,11 @@ class Signal:
         for lane in range(num_lanes):
             if any_unserved_vehicle[lane]:
                 for veh_indx in range(first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
-                    veh = lanes.vehlist[lane][veh_indx]
+                    veh = lanes.vehlist.get(lane)[veh_indx]
                     if veh_indx == 0:
                         max_departure_time = max(max_departure_time, veh.earliest_departure) + self._min_headway
                     else:
-                        lead_veh_scheduled_departure = lanes.vehlist[lane][veh_indx - 1].scheduled_departure
+                        lead_veh_scheduled_departure = lanes.vehlist.get(lane)[veh_indx - 1].scheduled_departure
                         max_departure_time = max(max_departure_time, veh.earliest_departure,
                                                  lead_veh_scheduled_departure) + self._min_headway
                     served_vehicle_time[lane][veh_indx] = max_departure_time
@@ -358,10 +358,10 @@ class Signal:
 
         for lane in range(num_lanes):
             for veh_indx in range(lanes.first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
-                veh = lanes.vehlist[lane][veh_indx]
+                veh = lanes.vehlist.get(lane)[veh_indx]
                 if veh.reschedule_departure:
-                    veh.set_scheduled_departure(scheduled_departure[lane][veh_indx], 0, max_speed, lane, veh_indx,
-                                                self._print_commandline)
+                    t, d, s = scheduled_departure.get(lane)[veh_indx], 0, max_speed
+                    veh.set_scheduled_departure(t, d, s, lane, veh_indx, self._print_commandline)
                     if self._do_traj_computation and veh.freshly_scheduled:
                         trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx,
                                                            self._print_commandline, '#', self._optional_packages_found)
@@ -440,7 +440,8 @@ class Pretimed(Signal):
             for indx, phase in enumerate(self._phase_seq):
                 self._append_extend_phase(int(phase), self._green_dur[indx])
         if any(any_unserved_vehicle):
-            scheduled_departures = {lane: np.zeros(len(lanes.vehlist[lane]), dtype=float) for lane in range(num_lanes)}
+            scheduled_departures = {lane: np.zeros(len(lanes.vehlist.get(lane)), dtype=float) for lane in
+                                    range(num_lanes)}
             scheduled_departures = self._do_non_base_SPaT(lanes, num_lanes, lanes.first_unsrvd_indx,
                                                           scheduled_departures, any_unserved_vehicle)
             self._set_non_base_scheduled_departures(lanes, scheduled_departures, num_lanes, max_speed,
@@ -552,7 +553,7 @@ class GA_SPaT(Signal):
             self.__best_GA_alt = {
                 'SPaT': {'phase_seq': self._mutate_seq(1), 'time_split': self._mutate_timing(cycle_length, 1),
                          'badness_measure': self.LARGE_NUM},
-                'scheduled_departures': {lane: np.zeros(len(lanes.vehlist[lane]), dtype=float) for lane in
+                'scheduled_departures': {lane: np.zeros(len(lanes.vehlist.get(lane)), dtype=float) for lane in
                                          range(num_lanes)},
                 'any_unserved_vehicle': any_unserved_vehicle,
                 'first_unserved_indx': np.copy(lanes.first_unsrvd_indx),
@@ -592,23 +593,14 @@ class GA_SPaT(Signal):
                             badness = self._evaluate_badness(phase_seq, time_split, lanes, num_lanes)
                             population[badness] = {'phase_seq': phase_seq, 'time_split': time_split}
 
-
-            if self.__best_GA_alt['SPaT']['badness_measure'] == self.LARGE_NUM:
+            if self.__best_GA_alt.get('SPaT').get('badness_measure') == self.LARGE_NUM:
                 raise Exception("GA failed to find any serving SPaT")
-            else:  # record the best SPaT
-                for indx, phase in enumerate(self.__best_GA_alt['SPaT']['phase_seq']):
-                    self._append_extend_phase(int(phase),
-                                              self.__best_GA_alt['SPaT']['time_split'][indx] - self._y - self._ar)
-                # if any(self.__best_GA_alt['any_unserved_vehicle']):
-                # self.__best_GA_alt['scheduled_departures'] = self._do_non_base_SPaT(lanes, num_lanes,
-                #                                                                     self.__best_GA_alt[
-                #                                                                         'first_unserved_indx'],
-                #                                                                     self.__best_GA_alt[
-                #                                                                         'scheduled_departures'],
-                #                                                                     self.__best_GA_alt[
-                #                                                                         'any_unserved_vehicle'])
-                self._set_non_base_scheduled_departures(lanes, self.__best_GA_alt['scheduled_departures'], num_lanes,
-                                                        max_speed, trajectory_planner)
+            else:
+                for indx, phase in enumerate(self.__best_GA_alt.get('SPaT').get('phase_seq')):
+                    self._append_extend_phase(int(phase), self.__best_GA_alt.get('SPaT').get('time_split')[
+                        indx] - self._y - self._ar)
+                self._set_non_base_scheduled_departures(lanes, self.__best_GA_alt.get('scheduled_departures'),
+                                                        num_lanes, max_speed, trajectory_planner)
 
     def _evaluate_badness(self, phase_seq, time_split, lanes, num_lanes):
         """
@@ -634,7 +626,7 @@ class GA_SPaT(Signal):
         """
 
         mean_travel_time, throughput = 0.0, 0  # if no vehicle is found return zero throughput
-        temporary_scheduled_departures = {lane: np.zeros(len(lanes.vehlist[lane]), dtype=float) for lane in
+        temporary_scheduled_departures = {lane: np.zeros(len(lanes.vehlist.get(lane)), dtype=float) for lane in
                                           range(num_lanes)}
         # keeps departure time of last vehicle to be served by progressing in the given SPaT
         served_vehicle_time = np.zeros(num_lanes, dtype=float)
@@ -650,7 +642,7 @@ class GA_SPaT(Signal):
                 if any_unserved_vehicle[lane]:
                     while True:
                         veh_indx = first_unsrvd_indx[lane]
-                        veh = lanes.vehlist[lane][veh_indx]
+                        veh = lanes.vehlist.get(lane)[veh_indx]
 
                         t_earliest = veh.earliest_departure
                         # depending on if we are keeping the prev trajectory or not, schedule or reschedule departure
@@ -944,11 +936,11 @@ class Enumerate_SPaT(Signal):
         self._flush_upcoming_SPaTs()
 
         # keeps index of last vehicle to be served by progressing SPaT
-        served_vehicle_indx = np.array([0 if bool(lanes.vehlist[lane]) else -1 for lane in range(num_lanes)],
+        served_vehicle_indx = np.array([0 if bool(lanes.vehlist.get(lane)) else -1 for lane in range(num_lanes)],
                                        dtype=np.int)
 
         # keeps index of last vehicle to be served by progressing SPaT
-        last_vehicle_indx = np.array([len(lanes.vehlist[lane]) - 1 for lane in range(num_lanes)], dtype=np.int)
+        last_vehicle_indx = np.array([len(lanes.vehlist.get(lane)) - 1 for lane in range(num_lanes)], dtype=np.int)
 
         def all_not_served(a, b):
             for i in range(len(a)):
@@ -976,12 +968,12 @@ class Enumerate_SPaT(Signal):
                     # check if the lane is not empty and there are vehicles
                     if last_vehicle_indx[lane] > -1 and veh_indx <= last_vehicle_indx[lane]:
 
-                        while veh_indx <= last_vehicle_indx[lane] and lanes.vehlist[lane][
+                        while veh_indx <= last_vehicle_indx[lane] and lanes.vehlist.get(lane)[
                             veh_indx].earlst - start_time <= self.max_green:
                             # count and time processing new vehicles
                             temp_throughput[lane] += 1
-                            if lanes.vehlist[lane][veh_indx].earlst > time_phase_ends:
-                                time_phase_ends = max(lanes.vehlist[lane][veh_indx].earlst,
+                            if lanes.vehlist.get(lane)[veh_indx].earlst > time_phase_ends:
+                                time_phase_ends = max(lanes.vehlist.get(lane)[veh_indx].earlst,
                                                       time_phase_ends + self._min_headway)
 
                             veh_indx += 1
