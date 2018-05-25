@@ -1,0 +1,499 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>data.data &mdash; AVIAN 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html">
+          
+
+          
+            
+            <img src="../../_static/uf_logo_AVIAN.jpg" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../[0].overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../[1].simulator.html">2. Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../[1].simulator.html#module-data.data">3. Python Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../[2].intersection.html">4. Intersection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../[3].signal.html">5. Signal Phase and Timing (SPaT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../[4].trajectory.html">6. Trajectory</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">AVIAN</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>data.data</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for data.data</h1><div class="highlight"><pre>
+<span></span><span class="c1">####################################</span>
+<span class="c1"># File name: data.py               #</span>
+<span class="c1"># Author: Mahmoud Pourmehrab       #</span>
+<span class="c1"># Email: pourmehrab@gmail.com      #</span>
+<span class="c1"># Last Modified: Apr/22/2018       #</span>
+<span class="c1">####################################</span>
+
+<span class="c1"># GENERAL PARAMETERS</span>
+<div class="viewcode-block" id="get_general_params"><a class="viewcode-back" href="../../[1].simulator.html#data.data.get_general_params">[docs]</a><span class="k">def</span> <span class="nf">get_general_params</span><span class="p">(</span><span class="n">inter_name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :return:</span>
+<span class="sd">        - max speed (:math:`m/s`)</span>
+<span class="sd">        - min_headway (:math:`s`)</span>
+<span class="sd">        - detection range (:math:`m`)</span>
+<span class="sd">        - :math:`k, m` (check :any:`LeadConnected` for the definitions)</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        - The distance to stop bar will be input from either CSV file or fusion. However, the number provided here is used for generic computations.</span>
+<span class="sd">        - odd degree of polynomial is recommended: k to be even and **at least** 5</span>
+
+<span class="sd">    .. warning:: Is required for trajectory optimization</span>
+
+<span class="sd">    :Author:</span>
+<span class="sd">        Mahmoud Pourmehrab &lt;pourmehrab@gmail.com&gt;</span>
+<span class="sd">    :Date:</span>
+<span class="sd">        April-2018</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">inter_name</span> <span class="o">==</span> <span class="s1">&#39;13th16th&#39;</span><span class="p">:</span>
+        <span class="n">max_speed</span> <span class="o">=</span> <span class="mf">15.0</span>
+        <span class="n">min_headway</span> <span class="o">=</span> <span class="mf">2.0</span>
+        <span class="n">det_range</span> <span class="o">=</span> <span class="mf">500.0</span>
+        <span class="n">k</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+        <span class="n">num_lanes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">inter_name</span> <span class="o">==</span> <span class="s1">&#39;TERL&#39;</span><span class="p">:</span>
+        <span class="n">max_speed</span> <span class="o">=</span> <span class="mf">17.8816</span>  <span class="c1"># 40 mph</span>
+        <span class="n">min_headway</span> <span class="o">=</span> <span class="mf">1.5</span>
+        <span class="n">det_range</span> <span class="o">=</span> <span class="mf">500.0</span>  <span class="c1"># 1640 ft</span>
+        <span class="n">k</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">11</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
+        <span class="n">num_lanes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">inter_name</span> <span class="o">==</span> <span class="s1">&#39;reserv&#39;</span><span class="p">:</span>
+        <span class="n">max_speed</span> <span class="o">=</span> <span class="mf">15.0</span>
+        <span class="n">min_headway</span> <span class="o">=</span> <span class="mf">2.0</span>
+        <span class="n">det_range</span> <span class="o">=</span> <span class="mf">500.0</span>
+        <span class="n">k</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">15</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">num_lanes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Simulation parameters are not known for this intersection.&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">max_speed</span><span class="p">,</span> <span class="n">min_headway</span><span class="p">,</span> <span class="n">det_range</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">num_lanes</span></div>
+
+
+<span class="c1"># PRETIMED CONTROL PARAMETERS</span>
+<div class="viewcode-block" id="get_pretimed_parameters"><a class="viewcode-back" href="../../[1].simulator.html#data.data.get_pretimed_parameters">[docs]</a><span class="k">def</span> <span class="nf">get_pretimed_parameters</span><span class="p">(</span><span class="n">inter_name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This returns the parameters needed for pre-timed control.</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        - The sequence field includes the phases and is zero-based.</span>
+<span class="sd">        - You need to compute green splits and yellows, all-reds based on traffic flow theory.</span>
+
+<span class="sd">    :Author:</span>
+<span class="sd">        Mahmoud Pourmehrab &lt;pourmehrab@gmail.com&gt;</span>
+<span class="sd">    :Date:</span>
+<span class="sd">        April-2018</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">inter_name</span> <span class="o">==</span> <span class="s1">&#39;13th16th&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># todo compute these</span>
+
+    <span class="k">elif</span> <span class="n">inter_name</span> <span class="o">==</span> <span class="s1">&#39;TERL&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;green_dur&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mf">12.0</span><span class="p">,</span> <span class="mf">12.0</span><span class="p">,</span> <span class="mf">12.0</span><span class="p">,</span> <span class="mf">12.0</span><span class="p">),</span> <span class="s1">&#39;phase_seq&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,),</span> <span class="s1">&#39;yellow&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">,</span> <span class="s1">&#39;all-red&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">}</span>
+
+    <span class="k">elif</span> <span class="n">inter_name</span> <span class="o">==</span> <span class="s1">&#39;reserv&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;green_dur&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mf">25.0</span><span class="p">,</span> <span class="mf">25.0</span><span class="p">,</span> <span class="mf">25.0</span><span class="p">,</span> <span class="mf">25.0</span><span class="p">),</span> <span class="s1">&#39;phase_seq&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,),</span> <span class="s1">&#39;yellow&#39;</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span> <span class="s1">&#39;all-red&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">}</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Pretimed parameters is not known for this intersection.&#39;</span><span class="p">)</span></div>
+
+
+<span class="c1"># GA CONTROL PARAMETERS</span>
+<div class="viewcode-block" id="get_conflict_dict"><a class="viewcode-back" href="../../[1].simulator.html#data.data.get_conflict_dict">[docs]</a><span class="k">def</span> <span class="nf">get_conflict_dict</span><span class="p">(</span><span class="n">inter_name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns a **dictionary** of sets where the **keys** are lane numbers and must be coded in one-based and the **value** for each key is a set of lane numbers that are in conflict with the key lane (again must be one based).</span>
+
+<span class="sd">    An intersection configuration can be specified by its lanes and movements (left, through, right) that are allowed in each lane. The lane-lane incidence matrix of an intersection is a squared matrix that holds 1 (shown by solid circles in the figures), if two lanes are in conflict. The standard types of conflicts that may wanted to be avoided are cross, merge, and diverge conflicts. Depending on the design, the definition of conflicts points can be broader or more limited. For instance, if volume of a lane is too low and extensive gaps can be found, some of conflict points can be relaxed as non-conflicting points. In the following figures, only cross and merge conflict points are indicated.</span>
+
+<span class="sd">    .. figure:: images/TERL.JPG</span>
+<span class="sd">       :width: 4cm</span>
+<span class="sd">       :height: 4cm</span>
+<span class="sd">       :align: center</span>
+<span class="sd">       :alt: map to buried treasure</span>
+
+<span class="sd">       The TERL facility.</span>
+
+<span class="sd">    .. figure:: images/reserv.JPG</span>
+<span class="sd">       :width: 8cm</span>
+<span class="sd">       :height: 8cm</span>
+<span class="sd">       :align: center</span>
+<span class="sd">       :alt: map to buried treasure</span>
+
+<span class="sd">       The reservation-based intersection.</span>
+
+<span class="sd">    .. figure:: images/13th16th.JPG</span>
+<span class="sd">       :width: 10cm</span>
+<span class="sd">       :height: 10cm</span>
+<span class="sd">       :align: center</span>
+<span class="sd">       :alt: map to buried treasure</span>
+
+<span class="sd">       The intersection of 13th and 16th, Gainesville, FL.</span>
+
+<span class="sd">    :Author:</span>
+<span class="sd">        Mahmoud Pourmehrab &lt;pourmehrab@gmail.com&gt;</span>
+<span class="sd">    :Date:</span>
+<span class="sd">        April-2018</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">inter_name</span> <span class="o">==</span> <span class="s1">&#39;13th16th&#39;</span><span class="p">:</span>
+        <span class="n">lli</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="p">{</span><span class="mi">7</span><span class="p">},</span>
+               <span class="mi">2</span><span class="p">:</span> <span class="p">{</span><span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">13</span><span class="p">},</span>
+               <span class="mi">3</span><span class="p">:</span> <span class="p">{</span><span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">9</span><span class="p">},</span>
+               <span class="mi">4</span><span class="p">:</span> <span class="p">{</span><span class="mi">7</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">10</span><span class="p">},</span>
+               <span class="mi">5</span><span class="p">:</span> <span class="p">{</span><span class="mi">16</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">14</span><span class="p">},</span>
+               <span class="mi">6</span><span class="p">:</span> <span class="p">{</span><span class="mi">10</span><span class="p">},</span>
+               <span class="mi">7</span><span class="p">:</span> <span class="p">{</span><span class="mi">10</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">},</span>
+               <span class="mi">8</span><span class="p">:</span> <span class="p">{</span><span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">12</span><span class="p">},</span>
+               <span class="mi">9</span><span class="p">:</span> <span class="p">{</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">3</span><span class="p">},</span>
+               <span class="mi">10</span><span class="p">:</span> <span class="p">{</span><span class="mi">13</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">15</span><span class="p">},</span>
+               <span class="mi">11</span><span class="p">:</span> <span class="p">{</span><span class="mi">13</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">16</span><span class="p">},</span>
+               <span class="mi">12</span><span class="p">:</span> <span class="p">{</span><span class="mi">13</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">},</span>
+               <span class="mi">13</span><span class="p">:</span> <span class="p">{</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">},</span>
+               <span class="mi">14</span><span class="p">:</span> <span class="p">{</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">},</span>
+               <span class="mi">15</span><span class="p">:</span> <span class="p">{</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">6</span><span class="p">},</span>
+               <span class="mi">16</span><span class="p">:</span> <span class="p">{</span><span class="mi">12</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">11</span><span class="p">}}</span>
+        <span class="c1"># note (17, 9, 8, 15,) covers all lanes</span>
+
+    <span class="k">elif</span> <span class="n">inter_name</span> <span class="o">==</span> <span class="s1">&#39;TERL&#39;</span><span class="p">:</span>
+        <span class="n">lli</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="p">{</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">2</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">3</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">4</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">},</span>
+               <span class="mi">5</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">6</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="p">},</span> <span class="p">}</span>
+        <span class="c1"># note (1, 2, 3, 4, ) covers all lanes</span>
+
+    <span class="k">elif</span> <span class="n">inter_name</span> <span class="o">==</span> <span class="s1">&#39;reserv&#39;</span><span class="p">:</span>
+        <span class="n">lli</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="p">{</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">},</span>
+               <span class="mi">2</span><span class="p">:</span> <span class="p">{</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">},</span>
+               <span class="mi">3</span><span class="p">:</span> <span class="p">{</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">},</span>
+               <span class="mi">4</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">},</span>
+               <span class="mi">5</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">},</span>
+               <span class="mi">6</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">},</span>
+               <span class="mi">7</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">},</span>
+               <span class="mi">8</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">},</span>
+               <span class="mi">9</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">},</span>
+               <span class="mi">10</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">},</span>
+               <span class="mi">11</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">},</span>
+               <span class="mi">12</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">}}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Set of conflicting lanes is not known for this intersection.&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">lli</span></div>
+
+
+<div class="viewcode-block" id="get_phases"><a class="viewcode-back" href="../../[1].simulator.html#data.data.get_phases">[docs]</a><span class="k">def</span> <span class="nf">get_phases</span><span class="p">(</span><span class="n">inter_name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns a dictionary of sets</span>
+
+<span class="sd">    The key is the phase number is one-based</span>
+<span class="sd">    The value to a key is set of lanes included in that phase (lanes are one-based too)</span>
+<span class="sd">    Use the phase enumerator for new intersections of refine manually</span>
+<span class="sd">    The rule is each set must include non-conflicting lanes</span>
+<span class="sd">    # todo add the phase enumarator to the project</span>
+
+<span class="sd">    :Author:</span>
+<span class="sd">        Mahmoud Pourmehrab &lt;pourmehrab@gmail.com&gt;</span>
+<span class="sd">    :Date:</span>
+<span class="sd">        April-2018</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">inter_name</span> <span class="o">==</span> <span class="s1">&#39;13th16th&#39;</span><span class="p">:</span>
+        <span class="n">pli</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">2</span><span class="p">:</span> <span class="p">{</span><span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">3</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">4</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">5</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">6</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">7</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">8</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">9</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">10</span><span class="p">:</span> <span class="p">{</span><span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">11</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">12</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">13</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">14</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">15</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">16</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">17</span><span class="p">:</span> <span class="p">{</span><span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">18</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">}}</span>
+
+    <span class="k">if</span> <span class="n">inter_name</span> <span class="o">==</span> <span class="s1">&#39;TERL&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="p">},</span>  <span class="c1"># Southbound (signal controller: phase 2)</span>
+                <span class="mi">2</span><span class="p">:</span> <span class="p">{</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">},</span>  <span class="c1"># Eastbound (signal controller: phase 3)</span>
+                <span class="mi">3</span><span class="p">:</span> <span class="p">{</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="p">},</span>  <span class="c1"># Westbound (signal controller: phase 4)</span>
+                <span class="mi">4</span><span class="p">:</span> <span class="p">{</span><span class="mi">4</span><span class="p">,</span> <span class="p">},</span>  <span class="c1"># Northbound (signal controller: phase 6)</span>
+                <span class="mi">5</span><span class="p">:</span> <span class="p">{</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="p">},</span>  <span class="c1"># dual opposite throughs</span>
+                <span class="mi">6</span><span class="p">:</span> <span class="p">{</span><span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">},</span>  <span class="c1"># dual left turns</span>
+                <span class="p">}</span>
+
+    <span class="k">elif</span> <span class="n">inter_name</span> <span class="o">==</span> <span class="s1">&#39;reserv&#39;</span><span class="p">:</span>
+        <span class="n">pli</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">2</span><span class="p">:</span> <span class="p">{</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">3</span><span class="p">:</span> <span class="p">{</span><span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="p">},</span>
+               <span class="mi">4</span><span class="p">:</span> <span class="p">{</span><span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="p">}}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Set of phases is not known for this intersection.&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">pli</span></div>
+
+
+<div class="viewcode-block" id="get_signal_params"><a class="viewcode-back" href="../../[1].simulator.html#data.data.get_signal_params">[docs]</a><span class="k">def</span> <span class="nf">get_signal_params</span><span class="p">(</span><span class="n">inter_name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Required for GA signal control</span>
+<span class="sd">    ALL yellow, all-red, min green, max green times are in seconds</span>
+
+<span class="sd">    :Author:</span>
+<span class="sd">        Mahmoud Pourmehrab &lt;pourmehrab@gmail.com&gt;</span>
+<span class="sd">    :Date:</span>
+<span class="sd">        April-2018</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">inter_name</span> <span class="o">==</span> <span class="s1">&#39;13th16th&#39;</span><span class="p">:</span>
+        <span class="n">yellow</span> <span class="o">=</span> <span class="mf">1.5</span>
+        <span class="n">allred</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="n">min_green</span> <span class="o">=</span> <span class="mf">5.0</span>
+        <span class="n">max_green</span> <span class="o">=</span> <span class="mf">25.0</span>
+
+    <span class="k">elif</span> <span class="n">inter_name</span> <span class="o">==</span> <span class="s1">&#39;TERL&#39;</span><span class="p">:</span>
+        <span class="n">yellow</span> <span class="o">=</span> <span class="mf">1.5</span>
+        <span class="n">allred</span> <span class="o">=</span> <span class="mf">1.5</span>
+        <span class="n">min_green</span> <span class="o">=</span> <span class="mf">4.6</span>
+        <span class="n">max_green</span> <span class="o">=</span> <span class="mf">25.0</span>
+
+    <span class="k">elif</span> <span class="n">inter_name</span> <span class="o">==</span> <span class="s1">&#39;reserv&#39;</span><span class="p">:</span>
+        <span class="n">yellow</span> <span class="o">=</span> <span class="mf">3.0</span>
+        <span class="n">allred</span> <span class="o">=</span> <span class="mf">1.5</span>
+        <span class="n">min_green</span> <span class="o">=</span> <span class="mf">5.0</span>
+        <span class="n">max_green</span> <span class="o">=</span> <span class="mf">40.0</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Signal parameters are not known for this intersection.&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">yellow</span><span class="p">,</span> <span class="n">allred</span><span class="p">,</span> <span class="n">min_green</span><span class="p">,</span> <span class="n">max_green</span></div>
+
+
+<div class="viewcode-block" id="get_sig_ctrl_interface_params"><a class="viewcode-back" href="../../[1].simulator.html#data.data.get_sig_ctrl_interface_params">[docs]</a><span class="k">def</span> <span class="nf">get_sig_ctrl_interface_params</span><span class="p">(</span><span class="n">inter_name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :return:</span>
+<span class="sd">        - ...</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        - ...</span>
+
+
+<span class="sd">    :Author:</span>
+<span class="sd">        Ash Omidvar &lt;put your email here&gt;</span>
+<span class="sd">    :Date:</span>
+<span class="sd">        May-2018</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">inter_name</span> <span class="o">==</span> <span class="s1">&#39;TERL&#39;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Ash put the data here and explain them above.&#39;</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Simulation parameters are not known for this intersection.&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Mahmoud Pourmehrab.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0.0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="../../_static/copybutton.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
+      });
+  </script> 
+
+</body>
+</html>

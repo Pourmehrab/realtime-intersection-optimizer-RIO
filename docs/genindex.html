@@ -87,10 +87,11 @@
             
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="[0].overview.html">1. Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="[1].simulator.html">2. Simulator/Data</a></li>
-<li class="toctree-l1"><a class="reference internal" href="[2].intersection.html">3. Intersection</a></li>
-<li class="toctree-l1"><a class="reference internal" href="[3].signal.html">4. Signal Phase and Timing (SPaT)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="[4].trajectory.html">5. Trajectory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1].simulator.html">2. Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1].simulator.html#module-data.data">3. Python Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[2].intersection.html">4. Intersection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[3].signal.html">5. Signal Phase and Timing (SPaT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[4].trajectory.html">6. Trajectory</a></li>
 </ul>
 
             
@@ -169,6 +170,7 @@
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
+ | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
@@ -316,6 +318,8 @@
 </li>
       <li><a href="[0].overview.html#term-cnv"><strong>CNV</strong></a>
 </li>
+      <li><a href="[4].trajectory.html#src.trajectory.LeadConnected.compute_trj_points">compute_trj_points() (src.trajectory.LeadConnected method)</a>
+</li>
       <li><a href="[0].overview.html#term-cplex"><strong>CPLEX</strong></a>
 </li>
       <li><a href="[3].signal.html#src.signal.GA_SPaT.CROSSOVER_SIZE">CROSSOVER_SIZE (src.signal.GA_SPaT attribute)</a>
@@ -372,7 +376,11 @@
 </li>
       <li><a href="[3].signal.html#src.signal.GA_SPaT">GA_SPaT (class in src.signal)</a>
 </li>
+      <li><a href="[2].intersection.html#src.intersection.Vehicle.get_arrival_schedule">get_arrival_schedule() (src.intersection.Vehicle method)</a>
+</li>
       <li><a href="[1].simulator.html#data.data.get_conflict_dict">get_conflict_dict() (in module data.data)</a>
+</li>
+      <li><a href="[2].intersection.html#src.intersection.Vehicle.get_departure_schedule">get_departure_schedule() (src.intersection.Vehicle method)</a>
 </li>
       <li><a href="[2].intersection.html#src.intersection.Intersection.get_det_range">get_det_range() (src.intersection.Intersection method)</a>
 </li>
@@ -382,10 +390,10 @@
 </li>
       <li><a href="[2].intersection.html#src.intersection.Intersection.get_max_speed">get_max_speed() (src.intersection.Intersection method)</a>
 </li>
-      <li><a href="[2].intersection.html#src.intersection.Intersection.get_min_headway">get_min_headway() (src.intersection.Intersection method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="[2].intersection.html#src.intersection.Intersection.get_min_headway">get_min_headway() (src.intersection.Intersection method)</a>
+</li>
       <li><a href="[2].intersection.html#src.intersection.Intersection.get_num_lanes">get_num_lanes() (src.intersection.Intersection method)</a>
 </li>
       <li><a href="[1].simulator.html#data.data.get_phases">get_phases() (in module data.data)</a>
@@ -395,6 +403,8 @@
       <li><a href="[1].simulator.html#data.data.get_pretimed_parameters">get_pretimed_parameters() (in module data.data)</a>
 </li>
       <li><a href="[1].simulator.html#src.time_keeper.TimeKeeper.get_running_clock">get_running_clock() (src.time_keeper.TimeKeeper method)</a>
+</li>
+      <li><a href="[1].simulator.html#data.data.get_sig_ctrl_interface_params">get_sig_ctrl_interface_params() (in module data.data)</a>
 </li>
       <li><a href="[1].simulator.html#data.data.get_signal_params">get_signal_params() (in module data.data)</a>
 </li>
@@ -491,6 +501,18 @@
   </ul></td>
 </tr></table>
 
+<h2 id="O">O</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="[4].trajectory.html#src.trajectory.FollowerConnected.optimize_follower_connected_trj">optimize_follower_connected_trj() (src.trajectory.FollowerConnected method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="[4].trajectory.html#src.trajectory.LeadConnected.optimize_lead_connected_trj">optimize_lead_connected_trj() (src.trajectory.LeadConnected method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -570,6 +592,8 @@
 
       <ul>
         <li><a href="[3].signal.html#src.signal.Pretimed.solve">(src.signal.Pretimed method)</a>
+</li>
+        <li><a href="[4].trajectory.html#src.trajectory.FollowerConnected.solve">(src.trajectory.FollowerConnected method)</a>
 </li>
         <li><a href="[4].trajectory.html#src.trajectory.FollowerConventional.solve">(src.trajectory.FollowerConventional method)</a>
 </li>
@@ -682,6 +706,7 @@
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/copybutton.js"></script>
       <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
