@@ -133,8 +133,8 @@ def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log
         # DO SIGNAL OPTIMIZATION
         signal.solve(lanes, num_lanes, max_speed, critical_volume_ratio, trajectory_planner)
 
-        if optional_packages_found: # todo remove after testing
-            test_departure_of_trj(lanes, num_lanes, max_speed)
+        if optional_packages_found:  # todo remove after testing
+            test_departure_of_trj(lanes, num_lanes, max_speed, min_headway, [0] * num_lanes, lanes.last_vehicle_indx)
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_arrived() and lanes.all_served(num_lanes):
@@ -211,3 +211,15 @@ if __name__ == "__main__":
             raise Exception('real-time mode is not available yet.')
 
     print("\nProgram Terminated.")
+
+
+class Singleton(type):
+    """
+    Only to make singleton classes.
+    """
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]

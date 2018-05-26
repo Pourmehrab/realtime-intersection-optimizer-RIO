@@ -13,6 +13,7 @@ import pandas as pd
 from scipy import stats
 
 from data.data import *
+from main import Singleton
 from src.optional.test.unit_tests import test_trj_points
 from src.trajectory import LeadConventional, LeadConnected, FollowerConventional, FollowerConnected
 
@@ -25,7 +26,7 @@ except ModuleNotFoundError:
     optional_packages_found = False
 
 
-class Intersection:
+class Intersection(metaclass=Singleton):
     """
     Objectives:
         - Keeps intersection parameters
@@ -565,7 +566,8 @@ class Traffic:
                     # vehicles is a lead conventional vehicle
                     # happens when a conventional vehicle is NOT the first in the lane
                     t_earliest = earliest_arrival_conventional(det_time, speed, dist,
-                                                               min_headway, lanes.vehlist.get(lane)[-2].earliest_departure)
+                                                               min_headway,
+                                                               lanes.vehlist.get(lane)[-2].earliest_departure)
             else:
                 raise Exception("The detected vehicle could not be classified.")
 

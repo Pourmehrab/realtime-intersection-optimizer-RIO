@@ -5,8 +5,10 @@
 # Last Modified: Apr/22/2018       #
 ####################################
 
+from main import Singleton
 
-class TimeKeeper:
+
+class TimeKeeper(metaclass=Singleton):
     """
     Objectives:
         - Keeps the time
@@ -42,8 +44,6 @@ class TimeKeeper:
         """
         self.clock = sim_start
         self._res = resolution
-
-
 
     def next_sim_step(self):
         """Move simulation clock forward"""

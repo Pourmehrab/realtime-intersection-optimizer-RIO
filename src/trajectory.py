@@ -6,13 +6,14 @@
 ####################################
 
 import numpy as np
+from main import Singleton
 
 
 # -------------------------------------------------------
 # TRAJECTORY SUPER CLASS
 # -------------------------------------------------------
 
-class Trajectory:
+class Trajectory(metaclass=Singleton):
     """
     Is the abstract class for computing the trajectory points. Four subclasses inherited from this parent class:
         - :any:`LeadConventional`
