@@ -251,16 +251,14 @@ class Signal(metaclass=Singleton):
 
         :param lanes:
         :type lanes: Lanes
-        :param num_lanes:
-        :param max_speed:
+        :param intersection:
+        :type intersection: Intersection
         :param trajectory_planner:
         :type trajectory_planner: src.intersection.TrajectoryPlanner
         :return: The ``lanes.first_unsrvd_indx`` array that keeps index off the first unserved vehicle in each lane, is initialized to zero before calling this method and gets updated by the end of this call. It also returns ``served_vehicle_time`` that shows the schedule
         """
-
-        num_lanes = intersection._general_params.get('num_lanes')
-        max_speed = intersection._general_params.get('max_speed')
-        min_headway = intersection._general_params.get('min_headway')
+        num_lanes, max_speed, min_headway = map(intersection._general_params.get,
+                                                ['num_lanes', 'max_speed', 'min_headway'])
         any_unserved_vehicle = [lanes.first_unsrvd_indx[lane] <= lanes.last_vehicle_indx[lane] for lane in
                                 range(num_lanes)]
 
@@ -285,8 +283,7 @@ class Signal(metaclass=Singleton):
                                 veh.set_scheduled_departure(t, d, s, lane, veh_indx, intersection)
 
                                 if self._do_traj_computation and veh.freshly_scheduled:
-                                    trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx,
-                                                                       self._print_commandline, '*', )
+                                    trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, '*', )
                                     veh.reschedule_departure, veh.freshly_scheduled = False, False
                                 else:
                                     break  # no more room in this phase (no point to continue)
@@ -352,24 +349,32 @@ class Signal(metaclass=Singleton):
         :param lanes:
         :type lanes: Lanes
         :param scheduled_departure:
-        :param num_lanes:
-        :param max_speed: by default the departure speed is maximum allowable speed in :math:`m/s`
         :param trajectory_planner:
         :type trajectory_planner: TrajectoryPlanner
         """
-        num_lanes = intersection._general_params.get('num_lanes')
-        max_speed = intersection._general_params.get('max_speed')
-        for lane in range(num_lanes):
-            for veh_indx in range(lanes.first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
-                veh = lanes.vehlist.get(lane)[veh_indx]
-                if veh.reschedule_departure:
-                    t, d, s = scheduled_departure.get(lane)[veh_indx], 0, max_speed
+        max_speed, phase_cover_set, lag_on_green, min_headway = map(intersection._general_params.get,
+                                                                    ['max_speed', 'phase_cover_set', 'lag_on_green',
+                                                                     'min_headway'])
+        time_phase_ends = self.SPaT_end[-1] - self._ar
+        for phase in phase_cover_set:
+            time_phase_ends += self._ar
+            for lane in self._pli.get(phase):
+                for veh_indx in range(lanes.first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
+                    veh = lanes.vehlist.get(lane)[veh_indx]
+                    t_earliest = veh.earliest_departure
+                    if veh_indx == 0:
+                        t_scheduled = max(t_earliest, time_phase_ends + lag_on_green)
+                    else:
+                        lead_veh_dep_time = lanes.vehlist.get(lane)[veh_indx - 1].scheduled_departure
+                        t_scheduled = max(t_earliest, time_phase_ends + lag_on_green, lead_veh_dep_time + min_headway)
+                    time_phase_ends = t_scheduled
+                    t, d, s = t_scheduled, 0, max_speed
                     veh.set_scheduled_departure(t, d, s, lane, veh_indx, intersection)
-                    if self._do_traj_computation and veh.freshly_scheduled:
-                        trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, self._print_commandline, '#')
+                    if self._do_traj_computation:
+                        trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, '#')
                         veh.freshly_scheduled = False
-                else:
-                    continue
+                    else:
+                        continue
 
 
 # -------------------------------------------------------
@@ -519,9 +524,7 @@ class GA_SPaT(Signal):
         :param trajectory_planner:
         :type trajectory_planner: TrajectoryPlanner
         """
-        num_lanes = intersection._general_params.get('num_lanes')
-        max_speed = intersection._general_params.get('max_speed')
-        large_positive_num = intersection._general_params.get('large_positive_num')
+        num_lanes, large_positive_num = map(intersection._general_params.get, ['num_lanes', 'large_positive_num'])
         self._flush_upcoming_SPaTs()
         any_unserved_vehicle = self._do_base_SPaT(lanes, intersection, trajectory_planner)
         if any(any_unserved_vehicle):
@@ -605,11 +608,9 @@ class GA_SPaT(Signal):
         :type intersection: Intersection
         :return: The corresponding :term:`badness` for given SPaT defined by ``phase_seq`` and ``time_split`` to be added to the population. It also sets, if qualified, this individual as the best known so far.
         """
-        num_lanes = intersection._general_params.get('num_lanes')
-        lag_on_green = intersection._general_params.get('lag_on_green')
-        large_positive_num = intersection._general_params.get('large_positive_num')
-        min_headway = intersection._general_params.get('min_headway')
-
+        num_lanes, large_positive_num, lag_on_green, min_headway = map(intersection._general_params.get,
+                                                                       ['num_lanes', 'large_positive_num',
+                                                                        'lag_on_green', 'min_headway'])
         mean_travel_time, throughput = 0.0, 0  # if no vehicle is found return zero throughput
         temporary_scheduled_departures = {lane: np.zeros(len(lanes.vehlist.get(lane)), dtype=float) for lane in
                                           range(num_lanes)}
@@ -628,7 +629,7 @@ class GA_SPaT(Signal):
                             t_scheduled = max(t_earliest, green_starts)
                         else:
                             lead_veh_dep_time = lanes.vehlist.get(lane)[
-                                veh_indx - 1].scheduled_departure if veh_indx < lanes.first_unsrvd_indx[lane] else \
+                                veh_indx - 1].scheduled_departure if veh_indx <= lanes.first_unsrvd_indx[lane] else \
                                 temporary_scheduled_departures.get(lane)[veh_indx - 1]
                             t_scheduled = max(t_earliest, green_starts, lead_veh_dep_time + min_headway)
                         if t_scheduled <= yellow_ends:
@@ -636,7 +637,6 @@ class GA_SPaT(Signal):
                             travel_time = t_scheduled - veh.init_time
                             mean_travel_time = ((mean_travel_time * throughput) + travel_time) / (throughput + 1)
                             throughput += 1
-
                             temporary_scheduled_departures[lane][veh_indx] = t_scheduled
                             if first_unsrvd_indx[lane] > lanes.last_vehicle_indx[lane]:
                                 any_unserved_vehicle[lane] = False

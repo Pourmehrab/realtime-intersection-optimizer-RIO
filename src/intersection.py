@@ -728,7 +728,7 @@ class TrajectoryPlanner(metaclass=Singleton):
         else:
             self._visualizer = None
 
-    def plan_trajectory(self, lanes, veh, lane, veh_indx, print_commandline, identifier):
+    def plan_trajectory(self, lanes, veh, lane, veh_indx, intersection, identifier):
         """
         :param lanes:
         :type lanes: Lanes
@@ -736,7 +736,7 @@ class TrajectoryPlanner(metaclass=Singleton):
         :type veh: Vehicle
         :param lane:
         :param veh_indx:
-        :param print_commandline:
+        :param intersection:
         :param identifier: Shows type of assigned trajectory
         """
         veh.increment_times_sent_to_traj_planner()
@@ -766,5 +766,5 @@ class TrajectoryPlanner(metaclass=Singleton):
         if optional_packages_found:
             test_trj_points(veh)
 
-        if print_commandline:
+        if intersection._general_params.get('print_commandline'):
             veh.print_trj_points(lane, veh_indx, identifier)

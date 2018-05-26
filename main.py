@@ -10,6 +10,8 @@
 class Singleton(type):
     """
     Only to make singleton classes.
+
+    The credit for this goes to `this <https://stackoverflow.com/q/6760685>`_ stackoverflow  post.
     """
     _instances = {}
 
@@ -163,7 +165,7 @@ if __name__ == "__main__":
     # IMPORT NECESSARY PACKAGES
     import sys, os
     from datetime import datetime
-    from time import perf_counter, time
+    from time import perf_counter
 
     from src.time_keeper import TimeKeeper
     from src.intersection import Intersection, Lanes, Traffic, TrajectoryPlanner
@@ -196,7 +198,7 @@ if __name__ == "__main__":
         if run_mode == 'simulation':
             print(
                 "\n################################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
-            start_time_stamp = datetime.utcnow().strftime(' %d%B%Y_%H-%M-%S')  # only for naming the CSV files
+            start_time_stamp = datetime.now().strftime('%m-%d-%Y_%H:%M:%S')  # only for naming the CSV files
             target_sc = 42
             for sc in range(target_sc, target_sc + 1):
                 run_avian(inter_name, method, sc, start_time_stamp)

@@ -406,7 +406,7 @@ class LeadConnected(Trajectory):
             t += det_time
             veh.set_poly(f, t[0])
         elif lead_veh is None:
-            t, d, s = self.optimize_lead_connected_trj(veh, departure_time_relative, dep_speed)
+            t, d, s = self.optimize_lead_connected_trj(veh)
         else:
             t, d, s = self.optimize_follower_connected_trj(veh, lead_veh)  # is defined in the child class
 
@@ -426,36 +426,22 @@ class LeadConnected(Trajectory):
 
         return t, d, s
 
-    def optimize_lead_connected_trj(self, veh, departure_time_relative, dep_speed):
+    def optimize_lead_connected_trj(self, veh):
         """
-        Computes a bi-linear trajectory for the vehicle
+        Computes a linear trajectory for the vehicle. This case should not happen except for the case the LP has no solution.
 
         :param veh: subject vehicle
         :type veh: Vehicle
-        :return:
+        :return: trajectory of subject lead CAV
         """
-        det_time, det_dist, det_speed = veh.get_arrival_schedule()
-        t_rel_intersect = (det_dist - dep_speed * departure_time_relative) / (det_speed - dep_speed)
-        if 0 <= t_rel_intersect <= departure_time_relative:
-            t = self.discretize_time_interval(0, departure_time_relative)
-            d = [(departure_time_relative - t_i) * dep_speed if t_i >= t_rel_intersect
-                 else det_dist - det_speed * t_i for t_i in t]
-            s = [dep_speed if t_i >= t_rel_intersect else det_speed for t_i in t]
-            t += veh.trajectory[0, veh.first_trj_point_indx]
+        det_time, det_dist, _ = veh.get_arrival_schedule()
+        v = det_dist / (veh.scheduled_departure - det_time)
 
-            return t, d, s
-        else:
-            raise Exception('look into the matter (intersection time is not within the range)')
+        t = self.discretize_time_interval(det_time, veh.scheduled_departure)
+        s = np.array([v] * len(t))
+        d = np.array([det_dist - v * (t_i - det_time) for t_i in t])
 
-    # def optimize_follower_connected_trj(self, veh, lead_veh):
-    #     """
-    #     A place holder for the optimize_follower_connected_trj() class.
-    #
-    #     :param veh:
-    #     :param lead_veh:
-    #     :return:
-    #     """
-    #     raise NotImplementedError("Must override optimize_follower_connected_trj() in the child class.")
+        return t, d, s
 
 
 # -------------------------------------------------------
