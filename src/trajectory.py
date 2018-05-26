@@ -27,26 +27,21 @@ class Trajectory(metaclass=Singleton):
             - If a particular vehicle is intended to be skipped, simply set ``vehicle.reschedule_departure`` to ``False``
             - If the whole simulation is intended to be run without trajectory planer, set ``vehicle.reschedule_departure`` in ``main.py`` to False.
 
-
-    :param TIME_RESOLUTION: time difference between two consecutive trajectory points in seconds used in :any:`discretize_time_interval()` (be careful not to exceed max size of trajectory)
-    :param SMALL_POS_NUM: small positive number that lower than that is approximated by zero
-
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
         April-2018
     """
 
-    TIME_RESOLUTION = 1.0
-    SMALL_POS_NUM = 0.01
-
-    def __init__(self, max_speed, min_headway):
+    def __init__(self, intersection):
         """
         :param max_speed: Trajectories are designed to respect the this speed limit (in :math:`m/s`).
         :param min_headway: This is the minimum headway that vehicles in a lane can be served (in :math:`sec/veh`)
         """
-        self._max_speed = max_speed
-        self._min_headway = min_headway
+        self._max_speed = intersection._general_params.get('max_speed')
+        self._min_headway = intersection._general_params.get('min_headway')
+        self._small_positive_num = intersection._general_params.get('small_positive_num')
+        self._trj_time_resolution = intersection._general_params.get('trj_time_resolution')
 
     def discretize_time_interval(self, start_time, end_time):
         """
@@ -55,13 +50,13 @@ class Trajectory(metaclass=Singleton):
         .. warning:: It is inclusion-wise of the beginning and end of the interval.
 
         """
-        if end_time <= start_time - self.SMALL_POS_NUM:
+        if end_time <= start_time - self._small_positive_num:
             raise Exception('cannot go backward in time')
-        elif (end_time - start_time) % self.TIME_RESOLUTION > self.SMALL_POS_NUM:
-            trj_time_stamps = np.append(np.arange(start_time, end_time, Trajectory.TIME_RESOLUTION, dtype=float),
+        elif (end_time - start_time) % self._trj_time_resolution > self._small_positive_num:
+            trj_time_stamps = np.append(np.arange(start_time, end_time, self._trj_time_resolution, dtype=float),
                                         end_time)
         else:
-            trj_time_stamps = np.arange(start_time, end_time + self.SMALL_POS_NUM, Trajectory.TIME_RESOLUTION,
+            trj_time_stamps = np.arange(start_time, end_time + self._small_positive_num, self._trj_time_resolution,
                                         dtype=float)
         return trj_time_stamps
 
@@ -108,8 +103,8 @@ Use Case:
     April-2018
     """
 
-    def __init__(self, max_speed, min_headway):
-        super().__init__(max_speed, min_headway)
+    def __init__(self, intersection):
+        super().__init__(intersection)
 
     def solve(self, veh):
         """
@@ -154,8 +149,8 @@ Use Case:
 .. [#] Gipps, Peter G. *A behavioural car-following model for computer simulation*. Transportation Research Part B: Methodological 15.2 (1981): 105-111 (`link <https://www.sciencedirect.com/science/article/pii/0191261581900370>`_).
     """
 
-    def __init__(self, max_speed, min_headway):
-        super().__init__(max_speed, min_headway)
+    def __init__(self, intersection):
+        super().__init__(intersection)
 
     def solve(self, veh, lead_veh):
         """
@@ -187,7 +182,7 @@ Use Case:
         lead_trj_indx = lead_veh.first_trj_point_indx
         lead_last_trj_point_indx = lead_veh.last_trj_point_indx
 
-        if lead_trajectory[0, lead_trj_indx] - follower_trajectory[0, follower_trj_indx] <= self.SMALL_POS_NUM:
+        if lead_trajectory[0, lead_trj_indx] - follower_trajectory[0, follower_trj_indx] <= self._small_positive_num:
             lead_trj_indx += 1  # this shifts appropriately the trajectory computation
 
         while lead_trj_indx <= lead_last_trj_point_indx:
@@ -196,7 +191,7 @@ Use Case:
             follower_speed = follower_trajectory[2, follower_trj_indx]
             gap = follower_trajectory[1, follower_trj_indx] - lead_trajectory[1, lead_trj_indx]
             dt = lead_trajectory[0, lead_trj_indx] - follower_trajectory[0, follower_trj_indx]
-            if lead_speed <= self.SMALL_POS_NUM:  # Gipps doesn't work well for near zero speed
+            if lead_speed <= self._small_positive_num:  # Gipps doesn't work well for near zero speed
                 v_get_behind = (gap - lead_length) / dt
                 v = min(v_get_behind, follower_desired_speed) if v_get_behind >= 0 else 0.0
                 follower_trajectory[0, next_trj_indx] = lead_trajectory[0, lead_trj_indx]
@@ -235,16 +230,14 @@ Use Case:
         t_follower_end = follower_trajectory[0, follower_trj_indx]
 
         t_departure_relative = veh.scheduled_departure - t_follower_end
-        if t_departure_relative > self.SMALL_POS_NUM:
+        if t_departure_relative > self._small_positive_num:
             v_departure_relative = d_follower_end / t_departure_relative
 
-            t_augment = self.discretize_time_interval(self.TIME_RESOLUTION, t_departure_relative)
+            t_augment = self.discretize_time_interval(self._trj_time_resolution, t_departure_relative)
             d_augment = [d_follower_end - t * v_departure_relative for t in t_augment]
             v_augment = [v_departure_relative for t in t_augment]
         else:
-            t_augment = []
-            d_augment = []
-            v_augment = []
+            t_augment, d_augment, v_augment = [], [], []
 
         last_index = follower_trj_indx + len(t_augment) + 1
         follower_trajectory[0, follower_trj_indx + 1:last_index] = t_augment + t_follower_end
@@ -288,7 +281,7 @@ class LeadConnected(Trajectory):
     NUM_DIGS = 3
     SPEED_DECREMENT_SIZE = 10
 
-    def __init__(self, max_speed, min_headway, k, m):
+    def __init__(self, intersection):
         """
          Objectives:
             - Sets :math:`k, m` values
@@ -304,9 +297,9 @@ class LeadConnected(Trajectory):
         :param m: number of points (exclusive of boundaries) to control speed/acceleration
         :param m: int
         """
-        super().__init__(max_speed, min_headway)
+        super().__init__(intersection)
 
-        self.k, self.m = k, m
+        self.k, self.m = intersection._general_params.get('k'), intersection._general_params.get('m')
 
         self._lp_model = cplex.Cplex()
         self._lp_model.objective.set_sense(self._lp_model.objective.sense.minimize)
@@ -326,7 +319,7 @@ class LeadConnected(Trajectory):
             lin_expr=
             [[["b_0"], [1.0]], [["b_1"], [1.0]]] + [constraint] * (2 + 4 * self.m),
             senses=["E"] * 4 + ["G"] * self.m + ["L"] * self.m + ["G"] * self.m + ["L"] * self.m,
-            rhs=[0.0] * 4 + [-max_speed] * self.m + [0.0] * (3 * self.m),
+            rhs=[0.0] * 4 + [-intersection._general_params.get('max_speed')] * self.m + [0.0] * (3 * self.m),
             names=["det_dist", "det_speed", "dep_dist", "dep_speed"] + ["ub_speed_" + str(j) for j in range(self.m)] + [
                 "lb_speed_" + str(j) for j in range(self.m)] + ["ub_acc_" + str(j) for j in range(self.m)] + [
                       "lb_acc_" + str(j) for j in range(self.m)])
@@ -496,7 +489,7 @@ class FollowerConnected(LeadConnected):
     GAP_CTRL_STARTS = 2.0
     SAFE_MIN_GAP = 4.8
 
-    def __init__(self, max_speed, min_headway, k, m):
+    def __init__(self, intersection):
         """
         Adds the safe headway constraints at the control points to the inherited model.
 
@@ -506,7 +499,7 @@ class FollowerConnected(LeadConnected):
         :param m:
 
         """
-        super().__init__(max_speed, min_headway, k, m)
+        super().__init__(intersection)
 
         constraint = [["b_" + str(n) for n in range(self.k)], [0.0] * self.k]
         self._lp_model.linear_constraints.add(lin_expr=[constraint] * self.m, senses=["G"] * self.m, rhs=[0.0] * self.m,
@@ -537,7 +530,7 @@ class FollowerConnected(LeadConnected):
         start_relative_ctrl_time, end_relative_ctrl_time = self.GAP_CTRL_STARTS, lead_dep_time - follower_det_time
         departure_time_relative = follower_dep_time - follower_det_time
 
-        if end_relative_ctrl_time > start_relative_ctrl_time + self.m * self.SMALL_POS_NUM:
+        if end_relative_ctrl_time > start_relative_ctrl_time + self.m * self._small_positive_num:
             n_traj_lead = lead_veh.last_trj_point_indx - lead_veh.first_trj_point_indx + 1
             if n_traj_lead > self.m:
                 step = -int((n_traj_lead - 1) / self.m)

@@ -31,6 +31,8 @@ class Intersection(metaclass=Singleton):
     Objectives:
         - Keeps intersection parameters
 
+    .. todo:: make this a dataclass
+
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
@@ -42,29 +44,10 @@ class Intersection(metaclass=Singleton):
         :param int_name: comes from what user input in the command line as the intersection name
         """
         self.name = int_name
-        self._max_speed, self._min_headway, self._det_range, self._K, self._M, self._num_lanes = get_general_params(
-            int_name)
-
-    def get_poly_params(self):
-        """
-        :return: K and M
-        """
-        return self._K, self._M
-
-    def get_num_lanes(self):
-        return self._num_lanes
-
-    def get_max_speed(self):
-        return self._max_speed
-
-    def get_min_headway(self):
-        return self._min_headway
-
-    def get_det_range(self):
-        return self._det_range
+        self._general_params = get_general_params(int_name)
 
 
-class Lanes:
+class Lanes(metaclass=Singleton):
     """
     Dictionary that the key is lane index and value is an arrays that keeps queue of vehicle in that lane.
 
@@ -83,13 +66,14 @@ class Lanes:
 
     """
 
-    def __init__(self, num_lanes):
-        '''
+    def __init__(self, intersection):
+        """
         Data Structure for keeping vehicles in order in the lanes in the form of a dictionary of arrays
 
-        :param num_lanes: number of lanes
-        '''
-
+        :param intersection: keeps parameters related to the intersection
+        :type intersection: Intersection
+        """
+        num_lanes = intersection._general_params.get('num_lanes')
         self.vehlist = {l: [] for l in range(num_lanes)}
 
         self.reset_first_unsrvd_indx(num_lanes)
@@ -165,11 +149,9 @@ class Vehicle:
     :Date:
         April-2018
     """
-    EPS = 0.01  # small number that lower than that is approximated by zero
-    MAX_NUM_TRAJECTORY_POINTS = 300  # check if it's enough to preallocate the trajectory
-    MIN_DIST_TO_STOP_BAR = 50  # lower than this (in m) do not update schedule todo where else used?
 
-    def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx, k):
+    def __init__(self, det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx,
+                 intersection):
         """
         Initializes the vehicle object.
 
@@ -191,7 +173,9 @@ class Vehicle:
         :param amin:            desirable deceleration rate in :math:`m/s^2`
         :param amax:            desired acceleration rate in :math:`m/s^2`
         :param indx:            the original row index in the input CSV file
-        :param k:               number of coefficients to represent the trajectory if vehicle is connected
+        :param intersection:
+        :type intersection:
+
         :param self.trajectory: keeps the trajectory points as columns of a 3 by N array that N is ``MAX_NUM_TRAJECTORY_POINTS``
         :param self.first_trj_point_indx: points to the column of the ``trajectory`` array where the current point is stored. This gets updated as the time goes by.
         :param self.last_trj_point_indx: similarly, points to the column of the ``trajectory`` where last trajectory point is stored.
@@ -221,13 +205,14 @@ class Vehicle:
         self.desired_speed = des_speed
         self.csv_indx = indx  # is used to find vehicle in the original CSV file
 
-        self.trajectory = np.zeros((3, self.MAX_NUM_TRAJECTORY_POINTS), dtype=np.float)  # the shape is important
+        self.trajectory = np.zeros((3, intersection._general_params.get('max_num_traj_points')),
+                                   dtype=np.float)  # the shape is important
         self.first_trj_point_indx = 0
         self.last_trj_point_indx = -1
         self.trajectory[:, self.first_trj_point_indx] = [det_time, dist, speed, ]
 
         if det_type == 1:
-            self.poly = {'ref time': 0.0, 'coeffs': np.zeros(k)}
+            self.poly = {'ref time': 0.0, 'coeffs': np.zeros(intersection._general_params.get('k'))}
 
         self.earliest_departure, self.scheduled_departure = 0.0, 0.0
         self.reschedule_departure, self.freshly_scheduled = True, False
@@ -272,7 +257,7 @@ class Vehicle:
         """
         self.earliest_departure = t_earliest  # this is the absolute earliest time
 
-    def set_scheduled_departure(self, t_scheduled, d_scheduled, s_scheduled, lane, veh_indx, print_signal_detail):
+    def set_scheduled_departure(self, t_scheduled, d_scheduled, s_scheduled, lane, veh_indx, intersection):
         """
         It only schedules if the new departure time is different and vehicle is far enough for trajectory assignment
         
@@ -288,17 +273,20 @@ class Vehicle:
         :param veh_indx: The index of this vehicle in ots lane (*for printing purpose only*)
         :param print_signal_detail: ``True`` if we want to print schedule
         """
+        min_dist_to_stop_bar = intersection._general_params.get('min_dist_to_stop_bar')
+        small_positive_num = intersection._general_params.get('small_positive_num')
+
         first_trj_indx = self.first_trj_point_indx
         current_dist_to_stop_bar = self.trajectory[1, first_trj_indx]
-        if current_dist_to_stop_bar >= self.MIN_DIST_TO_STOP_BAR and abs(
-                t_scheduled - self.trajectory[0, self.last_trj_point_indx]) > self.EPS:
+        if current_dist_to_stop_bar >= min_dist_to_stop_bar and abs(
+                t_scheduled - self.trajectory[0, self.last_trj_point_indx]) > small_positive_num:
             self.freshly_scheduled = True
 
             self.scheduled_departure = t_scheduled
             self.set_last_trj_point_indx(self.first_trj_point_indx + 1)
             self.trajectory[:, self.last_trj_point_indx] = [t_scheduled, d_scheduled, s_scheduled]
 
-            if print_signal_detail:
+            if intersection._general_params.get('print_commandline'):
                 self.print_trj_points(lane, veh_indx, '@')
 
     def set_poly(self, beta, t_ref):
@@ -372,7 +360,7 @@ class Vehicle:
             ))
 
 
-class Traffic:
+class Traffic(metaclass=Singleton):
     """
     Objectives:
         - Adds new vehicles from the CSV file to the ``lanes.vehlist`` structure
@@ -392,14 +380,14 @@ class Traffic:
         April-2018
     """
 
-    def __init__(self, inter_name, sc, log_csv, print_commandline, start_time_stamp):
+    def __init__(self, intersection, sc, start_time_stamp):
         """
         Objectives:
             - Sets the logging behaviour for outputting requested CSV files and auxiliary output vectors
             - Imports the CSV file that includes the traffic and sorts it
             - Initializes the first scenario number to run
         """
-
+        inter_name = intersection._general_params.get('inter_name')
         # get the path to the CSV file and load up the traffic
         filepath = os.path.join(
             'data/' + inter_name + '/' + inter_name + '_' + str(sc) + '.csv')
@@ -418,10 +406,10 @@ class Traffic:
         # note this is cumulative and won't reset after a scenario is done
         self._current_row_indx = -1
 
-        self._log_csv = log_csv
-        self._print_commandline = print_commandline
+        self._log_csv = intersection._general_params.get('log_csv')
+        self._print_commandline = intersection._general_params.get('print_commandline')
 
-        if log_csv:
+        if self._log_csv:
             df_size = len(self.__all_vehicles)
             self._auxilary_departure_times = np.zeros(df_size, dtype=np.float)
             self._axilary_elapsed_time = np.zeros(df_size, dtype=np.float)
@@ -496,7 +484,7 @@ class Traffic:
         """
         return np.nanmin(self.__all_vehicles['arrival time'].values)
 
-    def update_vehicles_info(self, lanes, simulation_time, max_speed, min_headway, k):
+    def update_vehicles_info(self, lanes, simulation_time, intersection):
         """
         Objectives
             - Appends arrived vehicles from the CSV file to :any:`Lanes`
@@ -505,9 +493,8 @@ class Traffic:
         :param lanes: vehicles are added to this data structure
         :type lanes: Lanes
         :param simulation_time: current simulation clock in seconds measured from zero
-        :param max_speed: maximum allowable speed at the intersection in :math:`m/s`
-        :param min_headway: min headway in :math:`sec/veh`
-        :param k: one more than the degree of polynomial to compute trajectory of connected vehicles. We need it here to preallocate the vector that keeps the polynomial coefficients for connected vehicles.
+        :param intersection: intersection
+        :type intersection: Intersection
         """
 
         # SEE IF ANY NEW VEHICLES HAS ARRIVED
@@ -531,7 +518,7 @@ class Traffic:
 
             # create the vehicle and get the earliest departure time
             veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed,
-                          dest, length, amin, amax, indx, k)
+                          dest, length, amin, amax, indx, intersection)
 
             if self._print_commandline:
                 print(
@@ -544,7 +531,9 @@ class Traffic:
             lanes.increment_last_veh_indx(lane)
 
             # compute trajectory to get the earliest departure time
+            min_headway = intersection._general_params.get('min_headway')
             if det_type == 1:
+                max_speed = intersection._general_params.get('max_speed')
                 # For CAVs, the earliest travel time is computed by invoking the following method
                 if len(lanes.vehlist.get(lane)) == 1:
                     # vehicles is a lead connected vehicle
@@ -580,18 +569,20 @@ class Traffic:
         self._current_row_indx = indx - 1
 
     @staticmethod
-    def get_volumes(lanes, num_lanes, det_range):
+    def get_volumes(lanes, intersection):
         """
         Unit of volume in each lane is :math:`veh/sec/lane`. Uses the fundamental traffic flow equation :math:`F=D \\times S`.
 
 
         :param lanes: includes all vehicles
         :type lanes: Lanes
-        :param num_lanes: number of lanes
-        :param det_range: detection range is needed to compute space-mean-speed
+        :param intersection:
+        :type intersection:
         :return volumes: array of volume level per lanes
         """
         # initialize volumes vector
+        num_lanes = intersection._general_params.get('num_lanes')
+        det_range = intersection._general_params.get('det_range')
         volumes = np.zeros(num_lanes, dtype=float)
         for lane in range(num_lanes):
             num_of_vehs = len(lanes.vehlist.get(lane))
@@ -609,17 +600,17 @@ class Traffic:
 
         return volumes
 
-    def serve_update_at_stop_bar(self, lanes, simulation_time, num_lanes, print_commandline):
+    def serve_update_at_stop_bar(self, lanes, simulation_time, intersection):
         """
         This looks for/removes the served vehicles.
 
         :param lanes: includes all vehicles
         :type lanes: Lanes
         :param simulation_time: current simulation clock
-        :param num_lanes: number of lanes
-        :param print_commandline:
+        :param intersection:
+        :type intersection: Intersection
         """
-
+        num_lanes = intersection._general_params.get('num_lanes')
         for lane in range(num_lanes):
             if bool(lanes.vehlist.get(lane)):  # not an empty lane
 
@@ -631,7 +622,7 @@ class Traffic:
                     if dep_time < simulation_time:  # served! remove it.
 
                         last_veh_indx_to_remove += 1
-                        if print_commandline:
+                        if intersection._general_params.get('print_commandline'):
                             print('/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID +
                                   '@({:>4.1f} s)'.format(dep_time))
                         if self._log_csv:
@@ -712,7 +703,7 @@ def earliest_arrival_conventional(det_time, speed, dist, min_headway=0, t_earlie
     )
 
 
-class TrajectoryPlanner:
+class TrajectoryPlanner(metaclass=Singleton):
     """
     Plans trajectories of all type. This makes calls to trajectory classes' methods.
 
@@ -722,15 +713,15 @@ class TrajectoryPlanner:
         April-2018
     """
 
-    def __init__(self, max_speed, min_headway, k, m):
+    def __init__(self, intersection):
         """Instantiates the **trajectory** classes"""
 
-        self.lead_conventional_trj_estimator = LeadConventional(max_speed, min_headway)
-        self.lead_connected_trj_optimizer = LeadConnected(max_speed, min_headway, k, m)
-        self.follower_conventional_trj_estimator = FollowerConventional(max_speed, min_headway)
-        self.follower_connected_trj_optimizer = FollowerConnected(max_speed, min_headway, k, m)
+        self.lead_conventional_trj_estimator = LeadConventional(intersection)
+        self.lead_connected_trj_optimizer = LeadConnected(intersection)
+        self.follower_conventional_trj_estimator = FollowerConventional(intersection)
+        self.follower_connected_trj_optimizer = FollowerConnected(intersection)
 
-        self._max_speed = max_speed
+        self._max_speed = inter_name = intersection._general_params.get('max_speed')
 
         if optional_packages_found:  # todo remove after testing
             self._visualizer = VisualizeSpaceTime(6)

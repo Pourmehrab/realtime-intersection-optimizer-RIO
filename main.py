@@ -7,6 +7,18 @@
 # Last Modified: Apr/24/2018       #
 ####################################
 
+class Singleton(type):
+    """
+    Only to make singleton classes.
+    """
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
 def check_py_ver():
     """ checks the python version to meet the requirement (``ver 3.6.4``)"""
     expect_major, expect_minor, expect_rev = 3, 6, 4
@@ -21,8 +33,7 @@ def check_py_ver():
         sys.exit(-1)
 
 
-def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log_csv, print_commandline,
-              optional_packages_found):
+def run_avian(inter_name, method, sc, start_time_stamp):
     """
     .. note::
         - Trajectories must end at the stop bar, i.e. the distance to stop bar converges to zero, even if they are temporarily assigned.
@@ -76,17 +87,11 @@ def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log
         University of Florida
     """
     intersection = Intersection(inter_name)
-    # get some useful values
-    num_lanes = intersection.get_num_lanes()
-    max_speed = intersection.get_max_speed()  # in m/s
-    min_headway = intersection.get_min_headway()  # in seconds
-    det_range = intersection.get_det_range()  # detection range in meters
-    k, m = intersection.get_poly_params()  # polynomial degree and discretization level for trajectory optimization of CAVs
 
-    lanes = Lanes(num_lanes)
+    lanes = Lanes(intersection)
 
     # load entire traffic generated in CSV file
-    traffic = Traffic(inter_name, sc, log_csv, print_commandline, start_time_stamp)
+    traffic = Traffic(intersection, sc, start_time_stamp)
 
     # get the time when first vehicle shows up
     first_detection_time = traffic.get_first_detection_time()
@@ -96,58 +101,56 @@ def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log
         # define what subset of phase-lane incidence matrix should be used
         # minimal set of phase indices to cover all movements (17, 9, 8, 15) for 13th16th intersection
         # NOTE TEH SET OF ALLOWABLE PHASE ARRAY IS ZERO-BASED (not like what inputted in data.py)
-        allowable_phase = (0, 1, 2, 3,)
-        signal = GA_SPaT(inter_name, allowable_phase, first_detection_time, num_lanes, min_headway, log_csv,
-                         sc, start_time_stamp, do_traj_computation, print_commandline)
+        signal = GA_SPaT(first_detection_time, intersection, sc, start_time_stamp)
     elif method == "pretimed":
-        signal = Pretimed(inter_name, first_detection_time, num_lanes, min_headway, log_csv, sc,
-                          start_time_stamp, do_traj_computation, print_commandline)
+        signal = Pretimed(first_detection_time, intersection, sc, start_time_stamp)
 
-    trajectory_planner = TrajectoryPlanner(max_speed, min_headway, k, m)
+    trajectory_planner = TrajectoryPlanner(intersection)
 
     # set the start time to it
     time_keeper = TimeKeeper(first_detection_time)
 
     # here we start doing optimization for all scenarios included in the CSV file
-    if log_csv:
+    if intersection._general_params.get('log_csv'):
         t_start = perf_counter()  # to measure total run time (IS NOT THE SIMULATION TIME)
 
     while True:  # stops when all rows of CSV are processed (a break statement controls this)
         simulation_time = time_keeper.clock  # gets current simulation clock
-        if print_commandline:
+        if intersection._general_params.get('print_commandline'):
             print("\n################################# CLOCK: {:>5.1f} SEC #################################".format(
                 simulation_time))
 
         # UPDATE VEHICLES
         # remove/record served vehicles and phases
-        traffic.serve_update_at_stop_bar(lanes, simulation_time, num_lanes, print_commandline)
+        traffic.serve_update_at_stop_bar(lanes, simulation_time, intersection)
         # add/update vehicles
-        traffic.update_vehicles_info(lanes, simulation_time, max_speed, min_headway, k)
+        traffic.update_vehicles_info(lanes, simulation_time, intersection)
         # update SPaT
         signal.update_SPaT(simulation_time, sc)
 
         # update space mean speed
-        volumes = traffic.get_volumes(lanes, num_lanes, det_range)
-        critical_volume_ratio = 3_600 * volumes.max() / min_headway
+        volumes = traffic.get_volumes(lanes, intersection)
+        critical_volume_ratio = 3_600 * volumes.max() / intersection._general_params.get('min_headway')
 
         # DO SIGNAL OPTIMIZATION
-        signal.solve(lanes, num_lanes, max_speed, critical_volume_ratio, trajectory_planner)
+        signal.solve(lanes, intersection, critical_volume_ratio, trajectory_planner)
 
-        if optional_packages_found:  # todo remove after testing
-            test_departure_of_trj(lanes, num_lanes, max_speed, min_headway, [0] * num_lanes, lanes.last_vehicle_indx)
+        if intersection._general_params.get('test_mode'):  # todo remove after testing
+            num_lanes = intersection._general_params.get('num_lanes')
+            test_departure_of_trj(lanes, intersection, [0] * num_lanes, lanes.last_vehicle_indx)
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_arrived() and lanes.all_served(num_lanes):
-            if log_csv:
+            if intersection._general_params.get('log_csv'):
                 elapsed_time = perf_counter() - t_start  # THIS IS NOT SIMULATION TIME! IT'S JUST FOR TIMING THE ALGORITHM
                 traffic.set_elapsed_sim_time(elapsed_time)
-                if print_commandline:
+                if intersection._general_params.get('print_commandline'):
                     print("\n### ELAPSED TIME: {:>5d} ms ###".format(int(1000 * elapsed_time)))
 
                 # save the csv which has travel time column appended
                 traffic.save_veh_level_csv(inter_name, start_time_stamp)
 
-            if log_csv:
+            if intersection._general_params.get('log_csv'):
                 traffic.close_trj_csv()  # cus this is written line y line
                 signal.close_sig_csv()
             return  # this halts the program
@@ -170,15 +173,8 @@ if __name__ == "__main__":
     # testing
     try:
         from src.optional.test.unit_tests import test_departure_of_trj
-
-        optional_packages_found = True
     except ModuleNotFoundError:
-        optional_packages_found = False
-
-    # ################## SET SOME PARAMETERS ON LOGGING AND PRINTING BEHAVIOUR
-    do_traj_computation = True
-    log_csv = True
-    print_commandline = True
+        pass
 
     print("Interpreter Information")
     print("Python Path: ", sys.executable)
@@ -198,28 +194,13 @@ if __name__ == "__main__":
             os.mkdir('./log/' + inter_name)
 
         if run_mode == 'simulation':
-            if print_commandline:
-                print(
-                    "\n################################# CLOCK: {:>5.1f} SEC #################################".format(
-                        0.0))
+            print(
+                "\n################################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
             start_time_stamp = datetime.utcnow().strftime(' %d%B%Y_%H-%M-%S')  # only for naming the CSV files
             target_sc = 42
             for sc in range(target_sc, target_sc + 1):
-                run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log_csv, print_commandline,
-                          optional_packages_found)
+                run_avian(inter_name, method, sc, start_time_stamp)
         elif run_mode == 'realtime':
             raise Exception('real-time mode is not available yet.')
 
     print("\nProgram Terminated.")
-
-
-class Singleton(type):
-    """
-    Only to make singleton classes.
-    """
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]

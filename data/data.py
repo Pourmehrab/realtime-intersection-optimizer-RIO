@@ -13,6 +13,8 @@ def get_general_params(inter_name):
         - min_headway (:math:`s`)
         - detection range (:math:`m`)
         - :math:`k, m` (check :any:`LeadConnected` for the definitions)
+        - total number of incoming lanes
+        - a subset of mutually exclusive phases that cover all lanes for use in :any:`_set_non_base_scheduled_departures`
 
     .. note::
         - The distance to stop bar will be input from either CSV file or fusion. However, the number provided here is used for generic computations.
@@ -20,36 +22,76 @@ def get_general_params(inter_name):
 
     .. warning:: Is required for trajectory optimization
 
+    :param LAG: the lag time from start of green when a vehicle can depart
+
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
         April-2018
     """
     if inter_name == '13th16th':
-        max_speed = 15.0
-        min_headway = 2.0
-        det_range = 500.0
-        k, m = int(10), int(20)
-        num_lanes = int(16)
-
+        return {'inter_name': '13th16th',
+                'max_speed': 15.0,
+                'min_headway': 2.0,
+                'det_range': 500.0,
+                'k': int(10),
+                'm': int(20),
+                'num_lanes': int(16),
+                'phase_cover_set': None,  # todo: add this
+                'small_positive_num': 0.01,  # small number that lower than that is approximated by zero
+                'large_positive_num': 999_999_999,  # small number that lower than that is approximated by zero
+                'lag_on_green': 1.0,  # to allow vehicle cross after green (in seconds)
+                'max_num_traj_points': int(300),  # check if it's enough to preallocate the trajectory
+                'min_dist_to_stop_bar': 50,  # lower than this (in m) do not update schedule todo where else used?
+                'do_traj_computation': True,
+                'trj_time_resolution': 1.0,
+                # time difference between two consecutive trajectory points in seconds used in :any:`discretize_time_interval()` (be careful not to exceed max size of trajectory)
+                'log_csv': True,
+                'print_commandline': True,
+                'test_mode': True,
+                }
     elif inter_name == 'TERL':
-        max_speed = 17.8816  # 40 mph
-        min_headway = 1.5
-        det_range = 500.0  # 1640 ft
-        k, m = int(11), int(15)
-        num_lanes = int(6)
-
+        return {'inter_name': 'TERL',
+                'max_speed': 17.8816,  # 40 mph
+                'min_headway': 1.5,
+                'det_range': 500.0,
+                'k': int(11),
+                'm': int(15),
+                'num_lanes': int(6),
+                'phase_cover_set': (0, 1, 2, 3,),
+                'small_positive_num': 0.01,  # small number that lower than that is approximated by zero
+                'large_positive_num': 999_999_999,  # small number that lower than that is approximated by zero
+                'lag_on_green': 1.0,  # to allow vehicle cross after green (in seconds)
+                'max_num_traj_points': int(300),  # check if it's enough to preallocate the trajectory
+                'min_dist_to_stop_bar': 50,  # lower than this (in m) do not update schedule todo where else used?
+                'do_traj_computation': True,
+                'trj_time_resolution': 1.0,
+                'log_csv': True,
+                'print_commandline': True,
+                'test_mode': True,
+                }
     elif inter_name == 'reserv':
-        max_speed = 15.0
-        min_headway = 2.0
-        det_range = 500.0
-        k, m = int(15), int(10)
-        num_lanes = int(12)
-
+        return {'inter_name': 'reserv',
+                'max_speed': 15.0,
+                'min_headway': 2.0,
+                'det_range': 500.0,
+                'k': int(11),
+                'm': int(15),
+                'num_lanes': int(12),
+                'phase_cover_set': None,  # todo: add this
+                'small_positive_num': 0.01,  # small number that lower than that is approximated by zero
+                'large_positive_num': 999_999_999,  # small number that lower than that is approximated by zero
+                'lag_on_green': 1.0,  # to allow vehicle cross after green (in seconds)
+                'max_num_traj_points': int(300),  # check if it's enough to preallocate the trajectory
+                'min_dist_to_stop_bar': 50,  # lower than this (in m) do not update schedule todo where else used?
+                'do_traj_computation': True,
+                'trj_time_resolution': 1.0,
+                'log_csv': True,
+                'print_commandline': True,
+                'test_mode': True,
+                }
     else:
         raise Exception('Simulation parameters are not known for this intersection.')
-
-    return max_speed, min_headway, det_range, k, m, num_lanes
 
 
 # PRETIMED CONTROL PARAMETERS
@@ -61,6 +103,9 @@ def get_pretimed_parameters(inter_name):
         - The sequence field includes the phases and is zero-based.
         - You need to compute green splits and yellows, all-reds based on traffic flow theory.
 
+    .. warning::
+            Must choose ``NUM_CYCLES`` at least 2.
+
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
@@ -71,16 +116,51 @@ def get_pretimed_parameters(inter_name):
         return None  # todo compute these
 
     elif inter_name == 'TERL':
-        return {'green_dur': (12.0, 12.0, 12.0, 12.0), 'phase_seq': (0, 1, 2, 3,), 'yellow': 1.5, 'all-red': 1.5}
+        return {'green_dur': (12.0, 12.0, 12.0, 12.0), 'phase_seq': (0, 1, 2, 3,), 'yellow': 1.5, 'all-red': 1.5,
+                'num_cycles': 5}
 
     elif inter_name == 'reserv':
-        return {'green_dur': (25.0, 25.0, 25.0, 25.0), 'phase_seq': (0, 1, 2, 3,), 'yellow': 3.0, 'all-red': 1.5}
+        return {'green_dur': (25.0, 25.0, 25.0, 25.0), 'phase_seq': (0, 1, 2, 3,), 'yellow': 3.0, 'all-red': 1.5,
+                'num_cycles': 5}
 
     else:
-        raise Exception('Pretimed parameters is not known for this intersection.')
+        raise Exception('Pretimed parameters are not known for this intersection.')
 
 
 # GA CONTROL PARAMETERS
+def get_GA_parameters(inter_name):
+    """
+
+    - max_phase_length: do not include more than this in a phase sequence (is exclusive of the last: 1,2, ..., ``MAX_PHASE_LENGTH``-1)
+    - population_size: this is the maximum size of individuals per iteration of :term:`GA`
+    - max_iteration_per_phase:
+    - crossover_size: this specifies how many of the individuals from ``POPULATION_SIZE`` to be computed using crossover..
+    - lambda: The weight factor to convert average travel time to throughput and give the :term:`badness` of an individual.
+    - badness_accuracy: 10 raised to the number of digits we want to keep when hashing the :term:`badness` of an individual
+    - allowable_phases: subset of all possible phases to be used.
+
+    :return:
+    """
+    if inter_name == '13th16th':
+        return None  # todo add these
+
+    elif inter_name == 'TERL':
+        return {'max_phase_length': 4,
+                'population_size': 20,
+                'max_iteration_per_phase': 10,
+                'crossover_size': 10,
+                'lambda': 1 / 500,
+                'badness_accuracy': 10 ** 2,
+                'allowable_phases': (0, 1, 2, 3,),
+                }
+
+    elif inter_name == 'reserv':
+        return None  # todo add these
+
+    else:
+        raise Exception('GA parameters are not known for this intersection.')
+
+
 def get_conflict_dict(inter_name):
     """
     Returns a **dictionary** of sets where the **keys** are lane numbers and must be coded in one-based and the **value** for each key is a set of lane numbers that are in conflict with the key lane (again must be one based).
