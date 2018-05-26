@@ -98,13 +98,10 @@ def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log
         # NOTE TEH SET OF ALLOWABLE PHASE ARRAY IS ZERO-BASED (not like what inputted in data.py)
         allowable_phase = (0, 1, 2, 3,)
         signal = GA_SPaT(inter_name, allowable_phase, first_detection_time, num_lanes, min_headway, log_csv,
-                         sc, start_time_stamp, do_traj_computation, print_commandline, optional_packages_found)
+                         sc, start_time_stamp, do_traj_computation, print_commandline)
     elif method == "pretimed":
         signal = Pretimed(inter_name, first_detection_time, num_lanes, min_headway, log_csv, sc,
-                          start_time_stamp, do_traj_computation, print_commandline, optional_packages_found)
-
-    elif method == "MCF" or method == "actuated":
-        raise Exception("This signal control method is not complete yet.")  # todo develop these
+                          start_time_stamp, do_traj_computation, print_commandline)
 
     trajectory_planner = TrajectoryPlanner(max_speed, min_headway, k, m)
 
@@ -134,13 +131,10 @@ def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log
         critical_volume_ratio = 3_600 * volumes.max() / min_headway
 
         # DO SIGNAL OPTIMIZATION
-        if method in ("GA", "pretimed"):
-            signal.solve(lanes, num_lanes, max_speed, critical_volume_ratio, trajectory_planner)
-        else:
-            raise Exception("The chosen signal method is not developed yet.")
+        signal.solve(lanes, num_lanes, max_speed, critical_volume_ratio, trajectory_planner)
 
-        if optional_packages_found:
-            test_scheduled_arrivals(lanes, num_lanes, max_speed)
+        if optional_packages_found: # todo remove after testing
+            test_departure_of_trj(lanes, num_lanes, max_speed)
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_arrived() and lanes.all_served(num_lanes):
@@ -161,8 +155,6 @@ def run_avian(inter_name, method, sc, start_time_stamp, do_traj_computation, log
         else:  # this is the last scenario but still some vehicles have not been served
             time_keeper.next_sim_step()
 
-    # Nothing after the while loop gets executed
-
 
 if __name__ == "__main__":
     # IMPORT NECESSARY PACKAGES
@@ -177,7 +169,7 @@ if __name__ == "__main__":
 
     # testing
     try:
-        from src.optional.test.unit_tests import test_scheduled_arrivals
+        from src.optional.test.unit_tests import test_departure_of_trj
 
         optional_packages_found = True
     except ModuleNotFoundError:
@@ -195,9 +187,9 @@ if __name__ == "__main__":
     check_py_ver()  # Check the interpreter to make sure using right python version
 
     if len(sys.argv) != 4 or \
-            sys.argv[1] not in ["13th16th", "TERL", "reserv", ] or \
-            sys.argv[2] not in ["GA", "MCF", "pretimed", "actuated"] or \
-            sys.argv[3] not in ["simulation", "realtime"]:
+            sys.argv[1] not in {"13th16th", "TERL", "reserv", } or \
+            sys.argv[2] not in {"GA", "MCF", "pretimed", "actuated"} or \
+            sys.argv[3] not in {"simulation", "realtime"}:
 
         raise Exception("Check the input arguments and try again.")
     else:  # input arguments are good, run the rest

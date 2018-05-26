@@ -8,15 +8,18 @@
 import csv
 import os
 from copy import deepcopy
-
 import numpy as np
 # from numba import jit
 from sortedcontainers import SortedDict
-
 import data.data as data_importer
 
-# Trajectory Optimizers
+# testing
+try:
+    from src.optional.test.unit_tests import test_SPaT_alternative
 
+    optional_packages_found = True
+except ModuleNotFoundError:
+    optional_packages_found = False
 np.random.seed(2018)
 
 
@@ -40,11 +43,11 @@ class Signal:
 
         Instantiate like::
 
-            $ signal = GA_SPaT/Pretimed(.)
+            >>> signal = GA_SPaT/Pretimed(.)
 
         Perform SPaT computation by::
 
-            $ signal.solve(.)
+            >>> signal.solve(.)
 
     :param LAG: the lag time from start of green when a vehicle can depart
 
@@ -57,7 +60,7 @@ class Signal:
     LARGE_NUM = 999_999_999
 
     def __init__(self, inter_name, num_lanes, min_headway, log_signal_status, sc, start_time_stamp,
-                 do_traj_computation, print_commandline, optional_packages_found):
+                 do_traj_computation, print_commandline):
         """
         Elements:
             - Sequence keeps the sequence of phases to be executed from 0
@@ -92,7 +95,6 @@ class Signal:
 
         self._do_traj_computation = do_traj_computation
         self._print_commandline = print_commandline
-        self._optional_packages_found = optional_packages_found
 
     def _set_lane_lane_incidence(self, num_lanes):
         """
@@ -134,8 +136,7 @@ class Signal:
 
     def _append_extend_phase(self, phase, actual_green):
         """
-        Append a phase to the SPaT (append a phase and its green to the end of signal array)
-        Note SPaT decision is the sequence and green duration of phases
+        Appends a phase to the :term:`SPaT` (append/extend a phase and its green to the end of signal array)
 
         :param phase: phase to be added
         :param actual_green: green duration of that phase
@@ -164,7 +165,7 @@ class Signal:
         :param volumes:
         :return:
         """
-        self._critical_phase_volumes = np.array([max(volumes[self._pli[phase]]) for phase in self._allowable_phases])
+        self._critical_phase_volumes = np.array([max(volumes[self._pli.get(phase)]) for phase in self._allowable_phases])
 
     def update_SPaT(self, time_threshold, sc):
         """
@@ -267,7 +268,7 @@ class Signal:
 
         for phase_indx, phase in enumerate(self.SPaT_sequence):
             green_starts, yellow_ends = self.SPaT_start[phase_indx] + self.LAG, self.SPaT_end[phase_indx] - self._ar
-            for lane in self._pli[phase]:
+            for lane in self._pli.get(phase):
                 if any_unserved_vehicle[lane]:
                     for veh_indx in range(lanes.first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
                         veh = lanes.vehlist.get(lane)[veh_indx]
@@ -286,8 +287,7 @@ class Signal:
 
                                 if self._do_traj_computation and veh.freshly_scheduled:
                                     trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx,
-                                                                       self._print_commandline, '*',
-                                                                       self._optional_packages_found)
+                                                                       self._print_commandline, '*', )
                                     veh.reschedule_departure, veh.freshly_scheduled = False, False
                                 else:
                                     break  # no more room in this phase (no point to continue)
@@ -363,8 +363,7 @@ class Signal:
                     t, d, s = scheduled_departure.get(lane)[veh_indx], 0, max_speed
                     veh.set_scheduled_departure(t, d, s, lane, veh_indx, self._print_commandline)
                     if self._do_traj_computation and veh.freshly_scheduled:
-                        trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, self._print_commandline, '#',
-                                                           self._optional_packages_found)
+                        trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, self._print_commandline, '#')
                         veh.freshly_scheduled = False
                 else:
                     continue
@@ -375,11 +374,11 @@ class Signal:
 # -------------------------------------------------------
 class Pretimed(Signal):
     """
-    .. note::
-        Assumptions:
-            - The sequence and duration are pre-determined
-            - Cycle length is computed using the time budget concept in traffic flow theory
-                * min and max of 60 and 120 seconds bound the *cycle length*
+    .. note:: Assumptions:
+        - The sequence and duration are pre-determined
+        - Cycle length is computed using the time budget concept in traffic flow theory
+            * min and max of 60 and 120 seconds bound the *cycle length*
+
     .. warning::
         Must choose ``NUM_CYCLES`` at least 2.
 
@@ -393,11 +392,11 @@ class Pretimed(Signal):
     NUM_CYCLES = 5
 
     def __init__(self, inter_name, first_detection_time, num_lanes, min_headway, log_csv, sc,
-                 start_time_stamp, do_traj_computation, print_commandline, optional_packages_found):
-        """ Initialize the pretimed SPaT """
+                 start_time_stamp, do_traj_computation, print_commandline):
+        """ Initializes the pretimed SPaT """
 
         super().__init__(inter_name, num_lanes, min_headway, log_csv, sc, start_time_stamp,
-                         do_traj_computation, print_commandline, optional_packages_found)
+                         do_traj_computation, print_commandline)
 
         pretimed_signal_plan = data_importer.get_pretimed_parameters(inter_name)
         self._phase_seq = pretimed_signal_plan['phase_seq']
@@ -481,7 +480,7 @@ class GA_SPaT(Signal):
     BADNESS_ACCURACY = 10 ** 2
 
     def __init__(self, inter_name, allowable_phases, first_detection_time, num_lanes, min_headway, log_csv,
-                 sc, start_time_stamp, do_traj_computation, print_commandline, optional_packages_found):
+                 sc, start_time_stamp, do_traj_computation, print_commandline):
         """
 
         :param inter_name:
@@ -495,11 +494,10 @@ class GA_SPaT(Signal):
         :param start_time_stamp:
         :param do_traj_computation:
         :param print_commandline:
-        :param optional_packages_found:
         """
 
         super().__init__(inter_name, num_lanes, min_headway, log_csv, sc, start_time_stamp,
-                         do_traj_computation, print_commandline, optional_packages_found)
+                         do_traj_computation, print_commandline)
 
         self.__allowable_phases = allowable_phases
 
@@ -635,10 +633,9 @@ class GA_SPaT(Signal):
         any_unserved_vehicle = [first_unsrvd_indx[lane] <= lanes.last_vehicle_indx[lane] for lane in range(num_lanes)]
         phase_indx, phase_length = 0, len(phase_seq)
         start_green = self.SPaT_end[-1] + self.LAG
-        while any(any_unserved_vehicle) and phase_indx < phase_length:  # serve all with the current phasing
+        while any(any_unserved_vehicle) and phase_indx < phase_length:  # serve all with the current phase
             end_yellow = start_green - self.LAG + time_split[phase_indx] - self._ar
-            phase = phase_seq[phase_indx]
-            for lane in self._pli[phase]:
+            for lane in self._pli.get(phase_seq[phase_indx]):
                 if any_unserved_vehicle[lane]:
                     while True:
                         veh_indx = first_unsrvd_indx[lane]
@@ -657,7 +654,7 @@ class GA_SPaT(Signal):
                             throughput += 1
 
                             served_vehicle_time[lane] = t_scheduled
-                            temporary_scheduled_departures[lane][veh_indx] = t_scheduled
+                            temporary_scheduled_departures.get(lane)[veh_indx] = t_scheduled
                             if first_unsrvd_indx[lane] > lanes.last_vehicle_indx[lane]:
                                 any_unserved_vehicle[lane] = False
                                 break
@@ -666,16 +663,19 @@ class GA_SPaT(Signal):
             phase_indx += 1
             start_green = end_yellow + self._ar
 
+        # if optional_packages_found:  # todo remove after testing
+        #     test_SPaT_alternative(temporary_scheduled_departures, lanes.first_unsrvd_indx, lanes.last_vehicle_indx,
+        #                           self._min_headway)
+
         badness = int(
             (self.LAMBDA * mean_travel_time - throughput) * self.BADNESS_ACCURACY) if throughput > 0 else self.LARGE_NUM
-        if self.__best_GA_alt['SPaT']['badness_measure'] > badness:
+        if self.__best_GA_alt.get('SPaT').get('badness_measure') > badness:
             self.__best_GA_alt = {
                 'SPaT': {'phase_seq': tuple(phase_seq), 'time_split': tuple(time_split), 'badness_measure': badness},
                 'scheduled_departures': deepcopy(temporary_scheduled_departures),
                 'any_unserved_vehicle': any_unserved_vehicle,
                 'first_unserved_indx': first_unsrvd_indx,
             }
-
         return badness
 
     def _get_optimal_cycle_length(self, critical_volume_ratio, phase_length):
@@ -757,5 +757,3 @@ class GA_SPaT(Signal):
                             for i in range(phase_length)])
 
         return phase_seq, time_split
-
-

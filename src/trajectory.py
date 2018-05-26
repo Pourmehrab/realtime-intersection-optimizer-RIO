@@ -27,7 +27,7 @@ class Trajectory:
             - If the whole simulation is intended to be run without trajectory planer, set ``vehicle.reschedule_departure`` in ``main.py`` to False.
 
 
-    :param RES: time difference between two consecutive trajectory points in seconds used in :any:`discretize_time_interval()` (be careful not to exceed max size of trajectory)
+    :param TIME_RESOLUTION: time difference between two consecutive trajectory points in seconds used in :any:`discretize_time_interval()` (be careful not to exceed max size of trajectory)
     :param SMALL_POS_NUM: small positive number that lower than that is approximated by zero
 
     :Author:
@@ -36,7 +36,7 @@ class Trajectory:
         April-2018
     """
 
-    RES = 1
+    TIME_RESOLUTION = 1.0
     SMALL_POS_NUM = 0.01
 
     def __init__(self, max_speed, min_headway):
@@ -49,17 +49,19 @@ class Trajectory:
 
     def discretize_time_interval(self, start_time, end_time):
         """
-        Discretize the given time interval to a numpy array of time stamps
+        Discretize the given time interval to an array of time stamps
 
         .. warning:: It is inclusion-wise of the beginning and end of the interval.
 
         """
         if end_time <= start_time - self.SMALL_POS_NUM:
             raise Exception('cannot go backward in time')
-        elif (end_time - start_time) % self.RES > self.SMALL_POS_NUM:
-            trj_time_stamps = np.append(np.arange(start_time, end_time, Trajectory.RES, dtype=float), end_time)
+        elif (end_time - start_time) % self.TIME_RESOLUTION > self.SMALL_POS_NUM:
+            trj_time_stamps = np.append(np.arange(start_time, end_time, Trajectory.TIME_RESOLUTION, dtype=float),
+                                        end_time)
         else:
-            trj_time_stamps = np.arange(start_time, end_time + self.SMALL_POS_NUM, Trajectory.RES, dtype=float)
+            trj_time_stamps = np.arange(start_time, end_time + self.SMALL_POS_NUM, Trajectory.TIME_RESOLUTION,
+                                        dtype=float)
         return trj_time_stamps
 
     @staticmethod
@@ -235,7 +237,7 @@ Use Case:
         if t_departure_relative > self.SMALL_POS_NUM:
             v_departure_relative = d_follower_end / t_departure_relative
 
-            t_augment = self.discretize_time_interval(self.RES, t_departure_relative)
+            t_augment = self.discretize_time_interval(self.TIME_RESOLUTION, t_departure_relative)
             d_augment = [d_follower_end - t * v_departure_relative for t in t_augment]
             v_augment = [v_departure_relative for t in t_augment]
         else:
@@ -561,26 +563,25 @@ class FollowerConnected(LeadConnected):
 
     def solve(self, veh, lead_veh, model):
         """
+        The only reason this class method exist is to access :any:`optimize_follower_connected_trj` method.
 
         :param veh: subject vehicle
         :type veh: Vehicle
         :param lead_veh: the vehicle in front of the subject
         :type lead_veh: Vehicle
-        :param model:
-        :return:
+        :param model: the follower's CPLEX model
         """
         super().solve(veh, lead_veh, model)
 
     def optimize_follower_connected_trj(self, veh, lead_veh):
         """
-        .. warning::
-            This method is called in the parent class (:any:`FollowerConnected`) solve method.
+        Works based on the concept of hypothetical trajectory.
 
         :param veh: subject vehicle
         :type veh: Vehicle
         :param lead_veh: lead vehicle which could be `None` if no vehicle is in front.
         :type lead_veh: Vehicle
-        :return: trajectory of the subject vehicle
+        :return: trajectory of the subject follower AV in case the LP has no solution.
         """
         lead_dep_time, _, _ = lead_veh.get_departure_schedule()
         foll_det_time, foll_det_dist, _ = veh.get_arrival_schedule()

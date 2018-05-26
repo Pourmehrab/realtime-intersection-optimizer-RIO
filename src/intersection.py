@@ -580,7 +580,7 @@ class Traffic:
     @staticmethod
     def get_volumes(lanes, num_lanes, det_range):
         """
-        Unit of volume in each lane is :math:`veh/sec/lane`. Uses the fundamental traffic flow equation :math:`F=D*S`.
+        Unit of volume in each lane is :math:`veh/sec/lane`. Uses the fundamental traffic flow equation :math:`F=D \\times S`.
 
 
         :param lanes: includes all vehicles
@@ -730,12 +730,12 @@ class TrajectoryPlanner:
 
         self._max_speed = max_speed
 
-        if optional_packages_found:  # todo not necessary
+        if optional_packages_found:  # todo remove after testing
             self._visualizer = VisualizeSpaceTime(6)
         else:
             self._visualizer = None
 
-    def plan_trajectory(self, lanes, veh, lane, veh_indx, print_commandline, identifier, optional_packages_found):
+    def plan_trajectory(self, lanes, veh, lane, veh_indx, print_commandline, identifier):
         """
         :param lanes:
         :type lanes: Lanes
@@ -745,7 +745,6 @@ class TrajectoryPlanner:
         :param veh_indx:
         :param print_commandline:
         :param identifier: Shows type of assigned trajectory
-        :param optional_packages_found:
         """
         veh.increment_times_sent_to_traj_planner()
         veh_type, departure_time = veh.veh_type, veh.scheduled_departure

@@ -19,6 +19,8 @@ class TimeKeeper:
 
     .. figure:: images/time.png
             :align: center
+            :width: 10cm
+            :height: 8cm
             :alt: map to buried treasure
 
             Time management in python `source <https://wiki.python.org/moin/WorkingWithTime>`_.
