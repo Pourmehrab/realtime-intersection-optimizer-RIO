@@ -22,8 +22,8 @@ class Singleton(type):
 
 
 def check_py_ver():
-    """ checks the python version to meet the requirement (``ver 3.6.4``)"""
-    expect_major, expect_minor, expect_rev = 3, 6, 4
+    """ checks the python version to meet the requirement"""
+    expect_major, expect_minor, expect_rev = 3, 6, 0
     if sys.version_info[0] >= expect_major and sys.version_info[1] >= expect_minor and sys.version_info[
         2] >= expect_rev:
         print("Python version requirement is met.\n")
@@ -48,9 +48,6 @@ def run_avian(inter_name, method, sc, start_time_stamp):
     :param sc: scenario number (*should match the appendix of the input CSV filename*)
     :type sc: int
     :param start_time_stamp: The UTC time stamp to name the CSV files
-    :param log_csv: If ``True``, the results get stored in the CSV files.
-    :param print_commandline: If ``True``, details will be shown on real-time in the command line
-    :param optional_packages_found: optional packages for testing
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
