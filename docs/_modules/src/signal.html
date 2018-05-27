@@ -1,0 +1,982 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>src.signal &mdash; AVIAN 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html">
+          
+
+          
+            
+            <img src="../../_static/uf_logo_AVIAN.jpg" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../[0].overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../[1].simulator.html">2. Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../[1].simulator.html#module-data.data">3. Python Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../[2].intersection.html">4. Intersection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../[3].signal.html">5. Signal Phase and Timing (SPaT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../[4].trajectory.html">6. Trajectory</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">AVIAN</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>src.signal</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for src.signal</h1><div class="highlight"><pre>
+<span></span><span class="c1">####################################</span>
+<span class="c1"># File name: signal.py             #</span>
+<span class="c1"># Author: Mahmoud Pourmehrab       #</span>
+<span class="c1"># Email: pourmehrab@gmail.com      #</span>
+<span class="c1"># Last Modified: Apr/24/2018       #</span>
+<span class="c1">####################################</span>
+
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="c1"># from numba import jit</span>
+<span class="kn">from</span> <span class="nn">sortedcontainers</span> <span class="k">import</span> <span class="n">SortedDict</span>
+
+<span class="kn">import</span> <span class="nn">data.data</span> <span class="k">as</span> <span class="nn">data_importer</span>
+
+<span class="c1"># Trajectory Optimizers</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">2018</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Signal"><a class="viewcode-back" href="../../[3].signal.html#src.signal.Signal">[docs]</a><span class="k">class</span> <span class="nc">Signal</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The class serves the following goals:</span>
+<span class="sd">        - Keeps the SPaT decision updated</span>
+<span class="sd">        - Makes SPaT decisions through variety of control methods. For now it supports:</span>
+<span class="sd">            - Pre-timed control</span>
+<span class="sd">            - Genetic Algorithm</span>
+<span class="sd">            - Min Cost Flow model</span>
+
+<span class="sd">    Set the class variable ``LAG`` to the time (in seconds) that from start of green is not valid to schedule any departurs.</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        - ``LAG`` also is used in ``Trajectory()`` class. Set them consistent.</span>
+<span class="sd">        - ``LARGE_NUM`` is a large number to initialize badness of alternatives in GA. Make sure cannot be beaten by worst alternative.</span>
+<span class="sd">        - The signal status is saved under ``\log\&lt;intersection name&gt;\`` directory.</span>
+
+<span class="sd">    Use Case:</span>
+
+<span class="sd">        Instantiate like::</span>
+
+<span class="sd">            $ signal = GA_SPaT/Pretimed(.)</span>
+
+<span class="sd">        Perform SPaT computation by::</span>
+
+<span class="sd">            $ signal.solve(.)</span>
+
+<span class="sd">    :param LAG: the lag time from start of green when a vehicle can depart</span>
+
+<span class="sd">    :Author:</span>
+<span class="sd">        Mahmoud Pourmehrab &lt;pourmehrab@gmail.com&gt;</span>
+<span class="sd">    :Date:</span>
+<span class="sd">        April-2018</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">LAG</span> <span class="o">=</span> <span class="mf">0.0</span>  <span class="c1"># to allow vehicle cross after green (in seconds)</span>
+    <span class="n">LARGE_NUM</span> <span class="o">=</span> <span class="mi">999</span><span class="n">_999_999</span>
+
+<div class="viewcode-block" id="Signal.__init__"><a class="viewcode-back" href="../../[3].signal.html#src.signal.Signal.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inter_name</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">min_headway</span><span class="p">,</span> <span class="n">log_signal_status</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">start_time_stamp</span><span class="p">,</span>
+                 <span class="n">do_traj_computation</span><span class="p">,</span> <span class="n">print_commandline</span><span class="p">,</span> <span class="n">optional_packages_found</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Elements:</span>
+<span class="sd">            - Sequence keeps the sequence of phases to be executed from 0</span>
+<span class="sd">            - ``green_dur`` keeps the amount of green allocated to each phase</span>
+<span class="sd">            - ``yellow`` and ``all-red`` is a fix amount at the end of all phases (look at class variables)</span>
+<span class="sd">            - start keeps the absolute time (in seconds) when each phase starts</span>
+
+<span class="sd">        .. note:: SPaT starts executing from index 0 to the end of each list.</span>
+
+<span class="sd">    :Author:</span>
+<span class="sd">        Mahmoud Pourmehrab &lt;pourmehrab@gmail.com&gt;</span>
+<span class="sd">    :Date:</span>
+<span class="sd">        April-2018</span>
+<span class="sd">       &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inter_name</span> <span class="o">=</span> <span class="n">inter_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_lanes</span> <span class="o">=</span> <span class="n">num_lanes</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_min_headway</span> <span class="o">=</span> <span class="n">min_headway</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_lane_lane_incidence</span><span class="p">(</span><span class="n">num_lanes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_phase_lane_incidence</span><span class="p">(</span><span class="n">num_lanes</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">log_signal_status</span><span class="p">:</span>
+            <span class="n">filepath_sig</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="s1">&#39;log/&#39;</span> <span class="o">+</span> <span class="n">inter_name</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">start_time_stamp</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;_sig_phase_level.csv&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sig_csv_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath_sig</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+            <span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sig_csv_file</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+            <span class="n">writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">([</span><span class="s1">&#39;sc&#39;</span><span class="p">,</span> <span class="s1">&#39;phase&#39;</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sig_csv_file</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sig_csv_file</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_do_traj_computation</span> <span class="o">=</span> <span class="n">do_traj_computation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_print_commandline</span> <span class="o">=</span> <span class="n">print_commandline</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optional_packages_found</span> <span class="o">=</span> <span class="n">optional_packages_found</span></div>
+
+<div class="viewcode-block" id="Signal._set_lane_lane_incidence"><a class="viewcode-back" href="../../[3].signal.html#src.signal.Signal._set_lane_lane_incidence">[docs]</a>    <span class="k">def</span> <span class="nf">_set_lane_lane_incidence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This converts a dictionary of the form:</span>
+<span class="sd">        key is a lane and value is *set* of lanes that are in conflict with key (note numbering starts from 1 not 0) to ``lane_lane_incidence`` which includes the conflict matrix :math:`|L|\\times |L|` where element :math:`ij` is 1 if :math:`i` and :math:`j` are conflicting movements</span>
+
+<span class="sd">        :param num_lanes:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># gets the conflict dictionary for this intersection</span>
+        <span class="n">conf_dict</span> <span class="o">=</span> <span class="n">data_importer</span><span class="o">.</span><span class="n">get_conflict_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inter_name</span><span class="p">)</span>
+
+        <span class="c1"># lane-lane incidence dictionary (lane: set of lanes in conflict with lane)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lane_lane_incidence</span> <span class="o">=</span> <span class="p">{</span><span class="n">l</span><span class="p">:</span> <span class="nb">set</span><span class="p">([])</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_lanes</span><span class="p">)}</span>
+
+        <span class="c1"># the whole following loop makes lanes zero-based</span>
+        <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">conf</span> <span class="ow">in</span> <span class="n">conf_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">conf</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_lane_lane_incidence</span><span class="p">[</span><span class="n">l</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># these are conflicting lanes</span></div>
+
+<div class="viewcode-block" id="Signal._set_phase_lane_incidence"><a class="viewcode-back" href="../../[3].signal.html#src.signal.Signal._set_phase_lane_incidence">[docs]</a>    <span class="k">def</span> <span class="nf">_set_phase_lane_incidence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets the phase-phase incidence matrix of the intersection</span>
+
+<span class="sd">        .. todo:: automate phase enumerator</span>
+
+<span class="sd">        :param num_lanes:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">phase_lane_incidence_one_based</span> <span class="o">=</span> <span class="n">data_importer</span><span class="o">.</span><span class="n">get_phases</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inter_name</span><span class="p">)</span>
+        <span class="c1"># if phase_lane_incidence_one_based is None:  # todo add this to the readme</span>
+        <span class="c1">#     phase_lane_incidence_one_based = phase_enumerator(num_lanes, self._lane_lane_incidence, self._inter_name)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pli</span> <span class="o">=</span> <span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">phase_lane_incidence_one_based</span><span class="p">))}</span>
+
+        <span class="c1"># the whole following loop makes lanes and phases zero-based</span>
+        <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">conf</span> <span class="ow">in</span> <span class="n">phase_lane_incidence_one_based</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">conf</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_pli</span><span class="p">[</span><span class="n">l</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># these are lanes that belong to this phase</span></div>
+
+<div class="viewcode-block" id="Signal._append_extend_phase"><a class="viewcode-back" href="../../[3].signal.html#src.signal.Signal._append_extend_phase">[docs]</a>    <span class="k">def</span> <span class="nf">_append_extend_phase</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">actual_green</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Append a phase to the SPaT (append a phase and its green to the end of signal array)</span>
+<span class="sd">        Note SPaT decision is the sequence and green duration of phases</span>
+
+<span class="sd">        :param phase: phase to be added</span>
+<span class="sd">        :param actual_green: green duration of that phase</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_sequence</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">phase</span><span class="p">:</span>  <span class="c1"># extend this phase</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_start</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">actual_green</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ar</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_print_commandline</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;&gt;-&gt; Phase </span><span class="si">{:d}</span><span class="s1"> extended (ends @ </span><span class="si">{:&gt;2.1f}</span><span class="s1"> sec)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SPaT_sequence</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                                                                             <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># append a new phase</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_sequence</span> <span class="o">+=</span> <span class="p">[</span><span class="n">phase</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_green_dur</span> <span class="o">+=</span> <span class="p">[</span><span class="n">actual_green</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_start</span> <span class="o">+=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span> <span class="o">+=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">SPaT_start</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">actual_green</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ar</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_print_commandline</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;&gt;&gt;&gt; Phase </span><span class="si">{:d}</span><span class="s1"> appended (ends @ </span><span class="si">{:&gt;5.1f}</span><span class="s1"> sec)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">phase</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span></div>
+
+<div class="viewcode-block" id="Signal.set_critical_phase_volumes"><a class="viewcode-back" href="../../[3].signal.html#src.signal.Signal.set_critical_phase_volumes">[docs]</a>    <span class="k">def</span> <span class="nf">set_critical_phase_volumes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">volumes</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Not used in GA since the phasing configuration is unknown prior to cycle length formula</span>
+<span class="sd">        that is derived from time budget concept</span>
+
+<span class="sd">        .. warning::</span>
+<span class="sd">            Do not call this on a signal method that does not take ``allowable_phases`` as input</span>
+
+<span class="sd">        :param volumes:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_critical_phase_volumes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">volumes</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_pli</span><span class="p">[</span><span class="n">phase</span><span class="p">]])</span> <span class="k">for</span> <span class="n">phase</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_allowable_phases</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="Signal.update_SPaT"><a class="viewcode-back" href="../../[3].signal.html#src.signal.Signal.update_SPaT">[docs]</a>    <span class="k">def</span> <span class="nf">update_SPaT</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_threshold</span><span class="p">,</span> <span class="n">sc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Performs two tasks to update SPaT based on the given clock:</span>
+<span class="sd">            - Removes terminated phase (happens when the all-red is passed)</span>
+<span class="sd">            - Checks for  SPaT to not get empty after being updated</span>
+
+<span class="sd">        .. attention::</span>
+<span class="sd">            - If all phases are getting purged, either make longer SPaT decisions or reduce the simulation steps.</span>
+
+<span class="sd">        :param time_threshold: Normally the current clock of simulation or real-time in :math:`s`</span>
+<span class="sd">        :param sc: scenario number to be recorded in CSV</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">time_threshold</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;If all phases get purged, SPaT becomes empty!&#39;</span><span class="p">)</span>
+
+        <span class="n">phase_indx</span><span class="p">,</span> <span class="n">any_to_be_purged</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">False</span>
+        <span class="n">file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sig_csv_file</span>
+
+        <span class="k">if</span> <span class="n">file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">while</span> <span class="n">time_threshold</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span><span class="p">[</span><span class="n">phase_indx</span><span class="p">]:</span>
+                <span class="n">any_to_be_purged</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">phase_indx</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># record in csv</span>
+            <span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+            <span class="k">while</span> <span class="n">time_threshold</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span><span class="p">[</span><span class="n">phase_indx</span><span class="p">]:</span>
+                <span class="n">any_to_be_purged</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">writer</span><span class="o">.</span><span class="n">writerows</span><span class="p">(</span>
+                    <span class="p">[[</span><span class="n">sc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_sequence</span><span class="p">[</span><span class="n">phase_indx</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_start</span><span class="p">[</span><span class="n">phase_indx</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span><span class="p">[</span><span class="n">phase_indx</span><span class="p">]]])</span>
+                <span class="n">file</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+                <span class="n">phase_indx</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">any_to_be_purged</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_print_commandline</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;&lt;&lt;&lt; Phase(s) &#39;</span> <span class="o">+</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_sequence</span><span class="p">[:</span><span class="n">phase_indx</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39; expired&#39;</span><span class="p">)</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_sequence</span><span class="p">[:</span><span class="n">phase_indx</span><span class="p">]</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_green_dur</span><span class="p">[:</span><span class="n">phase_indx</span><span class="p">]</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_start</span><span class="p">[:</span><span class="n">phase_indx</span><span class="p">]</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span><span class="p">[:</span><span class="n">phase_indx</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Signal.close_sig_csv"><a class="viewcode-back" href="../../[3].signal.html#src.signal.Signal.close_sig_csv">[docs]</a>    <span class="k">def</span> <span class="nf">close_sig_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Closes the signal csv file&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sig_csv_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Signal._flush_upcoming_SPaTs"><a class="viewcode-back" href="../../[3].signal.html#src.signal.Signal._flush_upcoming_SPaTs">[docs]</a>    <span class="k">def</span> <span class="nf">_flush_upcoming_SPaTs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Just leaves the first SPaT and flushes the rest. One more severe variant to this is to even reduce the the green time of first phase.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SPaT_sequence</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_print_commandline</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;&lt;&lt;&lt; Phase(s) &#39;</span> <span class="o">+</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_sequence</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span> <span class="o">+</span> <span class="s1">&#39; flushed&#39;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_sequence</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">SPaT_sequence</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_green_dur</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">SPaT_green_dur</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_start</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">SPaT_start</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span></div>
+
+    <span class="c1"># @jit()</span>
+<div class="viewcode-block" id="Signal._do_base_SPaT"><a class="viewcode-back" href="../../[3].signal.html#src.signal.Signal._do_base_SPaT">[docs]</a>    <span class="k">def</span> <span class="nf">_do_base_SPaT</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lanes</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">max_speed</span><span class="p">,</span> <span class="n">trajectory_planner</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method aims to serve as many vehicles as possible given the available SPaT. Depending on the signal method, the set of current SPaT could be different. For example:</span>
+
+<span class="sd">            - If called by :any:`Pretimed()` solver, the current SPaT may include multiple phases as a pretimed SPaT never gets flushed.</span>
+<span class="sd">            - If called by :any:`GA_SPaT()` solver, since the SPaT gets flushed before calling. The goal is to serve as many vehicles with only the single current phase in SPaT.</span>
+<span class="sd">            - It plans trajectories if necessary.</span>
+
+<span class="sd">        The condition to be served is to meet the following criteria:</span>
+<span class="sd">            - Respect the minimum headway to the lead vehicle (if present)</span>
+<span class="sd">            - Respect the initiation of green plus a lag time specified by LAG as a class variable</span>
+<span class="sd">            - Respect the earliest available time at the stop bar controlled by the speed limit  acc/dec rates</span>
+<span class="sd">            - Vehicle is allowed to acquire a new trajectory (``veh.reschedule_departure`` holds True)</span>
+
+<span class="sd">        The method does not compute or return the badness metric since the it does not aim to change current phase and timing.</span>
+
+<span class="sd">        It may only gets called once per each Signal solve call prior to computation of the new SPaTs.</span>
+
+<span class="sd">        The schedule keeps the earliest departures at the stop bars of each lane and gets updated when a signal decision goes permanent. It is made by a dictionary of arrays (key is lane, value is sorted earliest departures).</span>
+
+<span class="sd">        ``lanes.first_unsrvd_indx`` and setting the schedule of any possible served vehicles make the main result of this method. The ``lanes.first_unsrvd_indx`` will be used after this to avoid reserving and double-counting those already served with base SPaT. This also returns ``any_unserved_vehicle`` array that has True if any lane has vehicles that could not be unserved with base SPaT.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            - Since base SPaT never gets changed (for safety and practical reasons), any vehicle served by it has to get ``reschedule_departure`` value set to ``False``.</span>
+<span class="sd">            - It is feasible that if fusion algorithm updates the info on this vehicle and wants an update on trajectory, it rolls back the ``reschedule_departure`` to be ``True``. However, this should be decided outside this method.</span>
+<span class="sd">            - The reason that this does not return schedule of departures is because they are already set inside this method. Late, the set method skips these.</span>
+<span class="sd">            - If a vehicle gets a schedule and has more than one trajectory point, the last index should reset to the first index so when the trajectory is set there would be two points.</span>
+<span class="sd">            - all-red from the end and ``LAG`` time from the beginning of a phase are note utilizes by any vehicle.</span>
+<span class="sd">            - The ``veh.reschedule_departure`` is set to False for vehicles that get schedules here, however if decided a vehcile needs to be rescheduled, make it True wherever that decision is being made.</span>
+
+<span class="sd">        :param lanes:</span>
+<span class="sd">        :type lanes: Lanes</span>
+<span class="sd">        :param num_lanes:</span>
+<span class="sd">        :param max_speed:</span>
+<span class="sd">        :param trajectory_planner:</span>
+<span class="sd">        :type trajectory_planner: src.intersection.TrajectoryPlanner</span>
+<span class="sd">        :return: The ``lanes.first_unsrvd_indx`` array that keeps index off the first unserved vehicle in each lane, is initialized to zero before calling this method and gets updated by the end of this call. It also returns ``served_vehicle_time`` that shows the schedule</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">any_unserved_vehicle</span> <span class="o">=</span> <span class="p">[</span><span class="n">lanes</span><span class="o">.</span><span class="n">first_unsrvd_indx</span><span class="p">[</span><span class="n">lane</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">lanes</span><span class="o">.</span><span class="n">last_vehicle_indx</span><span class="p">[</span><span class="n">lane</span><span class="p">]</span> <span class="k">for</span> <span class="n">lane</span> <span class="ow">in</span>
+                                <span class="nb">range</span><span class="p">(</span><span class="n">num_lanes</span><span class="p">)]</span>
+
+        <span class="k">for</span> <span class="n">phase_indx</span><span class="p">,</span> <span class="n">phase</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SPaT_sequence</span><span class="p">):</span>
+            <span class="n">green_starts</span><span class="p">,</span> <span class="n">yellow_ends</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_start</span><span class="p">[</span><span class="n">phase_indx</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">LAG</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span><span class="p">[</span><span class="n">phase_indx</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ar</span>
+            <span class="k">for</span> <span class="n">lane</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pli</span><span class="p">[</span><span class="n">phase</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">any_unserved_vehicle</span><span class="p">[</span><span class="n">lane</span><span class="p">]:</span>
+                    <span class="k">for</span> <span class="n">veh_indx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">lanes</span><span class="o">.</span><span class="n">first_unsrvd_indx</span><span class="p">[</span><span class="n">lane</span><span class="p">],</span> <span class="n">lanes</span><span class="o">.</span><span class="n">last_vehicle_indx</span><span class="p">[</span><span class="n">lane</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                        <span class="n">veh</span> <span class="o">=</span> <span class="n">lanes</span><span class="o">.</span><span class="n">vehlist</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lane</span><span class="p">)[</span><span class="n">veh_indx</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="n">veh</span><span class="o">.</span><span class="n">reschedule_departure</span><span class="p">:</span>
+                            <span class="n">t_earliest</span> <span class="o">=</span> <span class="n">veh</span><span class="o">.</span><span class="n">earliest_departure</span>
+                            <span class="k">if</span> <span class="n">veh_indx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                                <span class="n">t_scheduled</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">t_earliest</span><span class="p">,</span> <span class="n">green_starts</span><span class="p">)</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">lead_veh_scheduled_departure</span> <span class="o">=</span> <span class="n">lanes</span><span class="o">.</span><span class="n">vehlist</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lane</span><span class="p">)[</span><span class="n">veh_indx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">scheduled_departure</span>
+                                <span class="n">t_scheduled</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">t_earliest</span><span class="p">,</span> <span class="n">green_starts</span><span class="p">,</span>
+                                                  <span class="n">lead_veh_scheduled_departure</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_headway</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">t_scheduled</span> <span class="o">&lt;=</span> <span class="n">yellow_ends</span><span class="p">:</span>
+                                <span class="n">lanes</span><span class="o">.</span><span class="n">increment_first_unsrvd_indx</span><span class="p">(</span><span class="n">lane</span><span class="p">)</span>
+                                <span class="n">t</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="n">t_scheduled</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">max_speed</span>
+                                <span class="n">veh</span><span class="o">.</span><span class="n">set_scheduled_departure</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">lane</span><span class="p">,</span> <span class="n">veh_indx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_print_commandline</span><span class="p">)</span>
+
+                                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_do_traj_computation</span> <span class="ow">and</span> <span class="n">veh</span><span class="o">.</span><span class="n">freshly_scheduled</span><span class="p">:</span>
+                                    <span class="n">trajectory_planner</span><span class="o">.</span><span class="n">plan_trajectory</span><span class="p">(</span><span class="n">lanes</span><span class="p">,</span> <span class="n">veh</span><span class="p">,</span> <span class="n">lane</span><span class="p">,</span> <span class="n">veh_indx</span><span class="p">,</span>
+                                                                       <span class="bp">self</span><span class="o">.</span><span class="n">_print_commandline</span><span class="p">,</span> <span class="s1">&#39;*&#39;</span><span class="p">,</span>
+                                                                       <span class="bp">self</span><span class="o">.</span><span class="n">_optional_packages_found</span><span class="p">)</span>
+                                    <span class="n">veh</span><span class="o">.</span><span class="n">reschedule_departure</span><span class="p">,</span> <span class="n">veh</span><span class="o">.</span><span class="n">freshly_scheduled</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span>
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="k">break</span>  <span class="c1"># no more room in this phase (no point to continue)</span>
+                        <span class="k">else</span><span class="p">:</span>  <span class="c1"># next vehicle may want trajectory</span>
+                            <span class="n">lanes</span><span class="o">.</span><span class="n">increment_first_unsrvd_indx</span><span class="p">(</span><span class="n">lane</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">lanes</span><span class="o">.</span><span class="n">first_unsrvd_indx</span><span class="p">[</span><span class="n">lane</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">lanes</span><span class="o">.</span><span class="n">last_vehicle_indx</span><span class="p">[</span><span class="n">lane</span><span class="p">]:</span>
+                        <span class="n">any_unserved_vehicle</span><span class="p">[</span><span class="n">lane</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="n">any_unserved_vehicle</span></div>
+
+    <span class="c1"># @jit()</span>
+<div class="viewcode-block" id="Signal._do_non_base_SPaT"><a class="viewcode-back" href="../../[3].signal.html#src.signal.Signal._do_non_base_SPaT">[docs]</a>    <span class="k">def</span> <span class="nf">_do_non_base_SPaT</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lanes</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">first_unsrvd_indx</span><span class="p">,</span> <span class="n">served_vehicle_time</span><span class="p">,</span> <span class="n">any_unserved_vehicle</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Most of times the base SPaT prior to running a ``solve()`` method does not serve all vehicles. However, vehicles</span>
+<span class="sd">        require trajectory to be provided. One way to address this is to assign them the best temporal trajectory which</span>
+<span class="sd">        only has some of general qualities necessary for continuation of program. In this method we do the followings</span>
+<span class="sd">        to compute the ``departure times`` of such trajectories:</span>
+
+<span class="sd">            - Without use of phases, schedule vehicles one after the other at minimum headway restricted by the saturation headway. This gives an overestimate of teh departure time since one vehicle gets served by intersection at a time, while having allowing to depart in phases let multiple simultaneous departures.</span>
+<span class="sd">            - This may be called after a signal ``solve()`` method decided to complete those that did not get served.</span>
+<span class="sd">            - Also this assumes min headway after green starts instead of ``LAG`` time which is a simplification.</span>
+<span class="sd">            - If a vehicle gets a schedule and has more than one trajectory point, the last index should reset to the first index so when the trajectory is set there would be two points.</span>
+
+
+<span class="sd">        .. warning::</span>
+<span class="sd">            - Since the departure times are definitely temporal, DO NOT set ``reschedule_departure`` to ``False``.</span>
+<span class="sd">            - The ``lanes.first_unsrvd_indx`` cannot be used since it does not keep GA newly served vehicles. However, it would work for pretimed since the method is static.</span>
+
+<span class="sd">        :param lanes:</span>
+<span class="sd">        :type lanes: Lanes</span>
+<span class="sd">        :param num_lanes:</span>
+<span class="sd">        :param first_unsrvd_indx: keeps the index of first unserved vehicle in lanes.</span>
+<span class="sd">        :param served_vehicle_time: includes schedule of departures for those served by base SPaT</span>
+<span class="sd">        :param any_unserved_vehicle: `Has `False`` for the lane that has all vehicles scheduled through base SPaT and the ``solve()``, ``True`` otherwise.</span>
+<span class="sd">        :return: ``served_vehicle_time`` that now includes the schedules of all vehicle except those served through base SPaT</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">max_departure_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">lane</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_lanes</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">any_unserved_vehicle</span><span class="p">[</span><span class="n">lane</span><span class="p">]:</span>
+                <span class="k">for</span> <span class="n">veh_indx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">first_unsrvd_indx</span><span class="p">[</span><span class="n">lane</span><span class="p">],</span> <span class="n">lanes</span><span class="o">.</span><span class="n">last_vehicle_indx</span><span class="p">[</span><span class="n">lane</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="n">veh</span> <span class="o">=</span> <span class="n">lanes</span><span class="o">.</span><span class="n">vehlist</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lane</span><span class="p">)[</span><span class="n">veh_indx</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">veh_indx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">max_departure_time</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_departure_time</span><span class="p">,</span> <span class="n">veh</span><span class="o">.</span><span class="n">earliest_departure</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_headway</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">lead_veh_scheduled_departure</span> <span class="o">=</span> <span class="n">lanes</span><span class="o">.</span><span class="n">vehlist</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lane</span><span class="p">)[</span><span class="n">veh_indx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">scheduled_departure</span>
+                        <span class="n">max_departure_time</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_departure_time</span><span class="p">,</span> <span class="n">veh</span><span class="o">.</span><span class="n">earliest_departure</span><span class="p">,</span>
+                                                 <span class="n">lead_veh_scheduled_departure</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_headway</span>
+                    <span class="n">served_vehicle_time</span><span class="p">[</span><span class="n">lane</span><span class="p">][</span><span class="n">veh_indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">max_departure_time</span>
+                    <span class="n">veh</span><span class="o">.</span><span class="n">reschedule_departure</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="n">served_vehicle_time</span></div>
+
+<div class="viewcode-block" id="Signal._set_non_base_scheduled_departures"><a class="viewcode-back" href="../../[3].signal.html#src.signal.Signal._set_non_base_scheduled_departures">[docs]</a>    <span class="k">def</span> <span class="nf">_set_non_base_scheduled_departures</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lanes</span><span class="p">,</span> <span class="n">scheduled_departure</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">max_speed</span><span class="p">,</span> <span class="n">trajectory_planner</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets the scheduled departure in the trajectory of the vehicle and plans trajectory of vehicle</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            - Departure schedule of those which were served by base SPaT is set in ``base_badness()`` and not here.</span>
+
+<span class="sd">        :param lanes:</span>
+<span class="sd">        :type lanes: Lanes</span>
+<span class="sd">        :param scheduled_departure:</span>
+<span class="sd">        :param num_lanes:</span>
+<span class="sd">        :param max_speed: by default the departure speed is maximum allowable speed in :math:`m/s`</span>
+<span class="sd">        :param trajectory_planner:</span>
+<span class="sd">        :type trajectory_planner: src.intersection.TrajectoryPlanner</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="n">lane</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_lanes</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">veh_indx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">lanes</span><span class="o">.</span><span class="n">first_unsrvd_indx</span><span class="p">[</span><span class="n">lane</span><span class="p">],</span> <span class="n">lanes</span><span class="o">.</span><span class="n">last_vehicle_indx</span><span class="p">[</span><span class="n">lane</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">veh</span> <span class="o">=</span> <span class="n">lanes</span><span class="o">.</span><span class="n">vehlist</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lane</span><span class="p">)[</span><span class="n">veh_indx</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">veh</span><span class="o">.</span><span class="n">reschedule_departure</span><span class="p">:</span>
+                    <span class="n">t</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="n">scheduled_departure</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lane</span><span class="p">)[</span><span class="n">veh_indx</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="n">max_speed</span>
+                    <span class="n">veh</span><span class="o">.</span><span class="n">set_scheduled_departure</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">lane</span><span class="p">,</span> <span class="n">veh_indx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_print_commandline</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_do_traj_computation</span> <span class="ow">and</span> <span class="n">veh</span><span class="o">.</span><span class="n">freshly_scheduled</span><span class="p">:</span>
+                        <span class="n">trajectory_planner</span><span class="o">.</span><span class="n">plan_trajectory</span><span class="p">(</span><span class="n">lanes</span><span class="p">,</span> <span class="n">veh</span><span class="p">,</span> <span class="n">lane</span><span class="p">,</span> <span class="n">veh_indx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_print_commandline</span><span class="p">,</span> <span class="s1">&#39;#&#39;</span><span class="p">,</span>
+                                                           <span class="bp">self</span><span class="o">.</span><span class="n">_optional_packages_found</span><span class="p">)</span>
+                        <span class="n">veh</span><span class="o">.</span><span class="n">freshly_scheduled</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">continue</span></div></div>
+
+
+<span class="c1"># -------------------------------------------------------</span>
+<span class="c1"># Pre-timed Signal Control</span>
+<span class="c1"># -------------------------------------------------------</span>
+<div class="viewcode-block" id="Pretimed"><a class="viewcode-back" href="../../[3].signal.html#src.signal.Pretimed">[docs]</a><span class="k">class</span> <span class="nc">Pretimed</span><span class="p">(</span><span class="n">Signal</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    .. note::</span>
+<span class="sd">        Assumptions:</span>
+<span class="sd">            - The sequence and duration are pre-determined</span>
+<span class="sd">            - Cycle length is computed using the time budget concept in traffic flow theory</span>
+<span class="sd">                * min and max of 60 and 120 seconds bound the *cycle length*</span>
+<span class="sd">    .. warning::</span>
+<span class="sd">        Must choose ``NUM_CYCLES`` at least 2.</span>
+
+
+<span class="sd">    :Author:</span>
+<span class="sd">        Mahmoud Pourmehrab &lt;pourmehrab@gmail.com&gt;</span>
+<span class="sd">    :Date:</span>
+<span class="sd">        April-2018</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">NUM_CYCLES</span> <span class="o">=</span> <span class="mi">5</span>
+
+<div class="viewcode-block" id="Pretimed.__init__"><a class="viewcode-back" href="../../[3].signal.html#src.signal.Pretimed.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inter_name</span><span class="p">,</span> <span class="n">first_detection_time</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">min_headway</span><span class="p">,</span> <span class="n">log_csv</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span>
+                 <span class="n">start_time_stamp</span><span class="p">,</span> <span class="n">do_traj_computation</span><span class="p">,</span> <span class="n">print_commandline</span><span class="p">,</span> <span class="n">optional_packages_found</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initialize the pretimed SPaT &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">inter_name</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">min_headway</span><span class="p">,</span> <span class="n">log_csv</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">start_time_stamp</span><span class="p">,</span>
+                         <span class="n">do_traj_computation</span><span class="p">,</span> <span class="n">print_commandline</span><span class="p">,</span> <span class="n">optional_packages_found</span><span class="p">)</span>
+
+        <span class="n">pretimed_signal_plan</span> <span class="o">=</span> <span class="n">data_importer</span><span class="o">.</span><span class="n">get_pretimed_parameters</span><span class="p">(</span><span class="n">inter_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_phase_seq</span> <span class="o">=</span> <span class="n">pretimed_signal_plan</span><span class="p">[</span><span class="s1">&#39;phase_seq&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_green_dur</span> <span class="o">=</span> <span class="n">pretimed_signal_plan</span><span class="p">[</span><span class="s1">&#39;green_dur&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ar</span> <span class="o">=</span> <span class="n">pretimed_signal_plan</span><span class="p">[</span><span class="s1">&#39;yellow&#39;</span><span class="p">],</span> <span class="n">pretimed_signal_plan</span><span class="p">[</span><span class="s1">&#39;all-red&#39;</span><span class="p">]</span>
+
+        <span class="c1"># add a dummy phase to initiate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_sequence</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_phase_seq</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_green_dur</span> <span class="o">=</span> <span class="p">[</span><span class="n">first_detection_time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ar</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_start</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span> <span class="o">=</span> <span class="p">[</span><span class="n">first_detection_time</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_print_commandline</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;&gt;&gt;&gt; Phase </span><span class="si">{:d}</span><span class="s1"> appended (ends @ </span><span class="si">{:2.1f}</span><span class="s1"> sec)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SPaT_sequence</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+
+        <span class="k">for</span> <span class="n">cycle</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">NUM_CYCLES</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">indx</span><span class="p">,</span> <span class="n">phase</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_phase_seq</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_append_extend_phase</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">phase</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_green_dur</span><span class="p">[</span><span class="n">indx</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="Pretimed.solve"><a class="viewcode-back" href="../../[3].signal.html#src.signal.Pretimed.solve">[docs]</a>    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lanes</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">max_speed</span><span class="p">,</span> <span class="n">critical_volume_ratio</span><span class="p">,</span> <span class="n">trajectory_planner</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The phases sequence is exactly as the provided in ``data.py``. The flow is:</span>
+<span class="sd">            #. First serves using the available SPaT</span>
+<span class="sd">            #. This simply adds a cycle to SPaT if a cycle is terminated</span>
+<span class="sd">            #. Serves unserved vehicles, if any present</span>
+<span class="sd">            #. Next it provides the departure schedule</span>
+
+<span class="sd">        .. note:: The ``scheduled_departures`` is made only to call ``complete_unserved_vehicles()``. It only stores</span>
+<span class="sd">                    departures for those vehicles nit served bt base SPaT.</span>
+
+<span class="sd">        :param lanes:</span>
+<span class="sd">        :type lanes: Lanes</span>
+<span class="sd">        :param num_lanes:</span>
+<span class="sd">        :param max_speed:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">any_unserved_vehicle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_do_base_SPaT</span><span class="p">(</span><span class="n">lanes</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">max_speed</span><span class="p">,</span> <span class="n">trajectory_planner</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SPaT_sequence</span><span class="p">)</span> <span class="o">//</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_phase_seq</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">NUM_CYCLES</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">indx</span><span class="p">,</span> <span class="n">phase</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_phase_seq</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_append_extend_phase</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">phase</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_green_dur</span><span class="p">[</span><span class="n">indx</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">any_unserved_vehicle</span><span class="p">):</span>
+            <span class="n">scheduled_departures</span> <span class="o">=</span> <span class="p">{</span><span class="n">lane</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lanes</span><span class="o">.</span><span class="n">vehlist</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lane</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">for</span> <span class="n">lane</span> <span class="ow">in</span>
+                                    <span class="nb">range</span><span class="p">(</span><span class="n">num_lanes</span><span class="p">)}</span>
+            <span class="n">scheduled_departures</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_do_non_base_SPaT</span><span class="p">(</span><span class="n">lanes</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">lanes</span><span class="o">.</span><span class="n">first_unsrvd_indx</span><span class="p">,</span>
+                                                          <span class="n">scheduled_departures</span><span class="p">,</span> <span class="n">any_unserved_vehicle</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_non_base_scheduled_departures</span><span class="p">(</span><span class="n">lanes</span><span class="p">,</span> <span class="n">scheduled_departures</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">max_speed</span><span class="p">,</span>
+                                                    <span class="n">trajectory_planner</span><span class="p">)</span></div></div>
+
+
+<span class="c1"># -------------------------------------------------------</span>
+<span class="c1"># Genetic Algorithms</span>
+<span class="c1"># -------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="GA_SPaT"><a class="viewcode-back" href="../../[3].signal.html#src.signal.GA_SPaT">[docs]</a><span class="k">class</span> <span class="nc">GA_SPaT</span><span class="p">(</span><span class="n">Signal</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Under this class, the :term:`SPaT` is decided optimally by a :term:`GA`.</span>
+
+<span class="sd">    :param allowable_phases: subset of all possible phases to be used.</span>
+<span class="sd">    :param MAX_PHASE_LENGTH: do not include more than this in a phase sequence (is exclusive of the last: 1,2, ..., ``MAX_PHASE_LENGTH``-1)</span>
+<span class="sd">    :param POPULATION_SIZE: this is the maximum size of individuals per iteration of :term:`GA`</span>
+<span class="sd">    :param CROSSOVER_SIZE: this specifies how many of the individuals from ``POPULATION_SIZE`` to be computed using crossover..</span>
+<span class="sd">    :param LAMBDA: The weight factor to convert average travel time to throughput and give the :term:`badness` of an individual.</span>
+<span class="sd">    :param BADNESS_ACCURACY: 10 raised to the number of digits we want to keep when hashing the :term:`badness` of an individual</span>
+
+<span class="sd">    .. warning::</span>
+<span class="sd">        - ``allowable_phases`` **must** cover all lanes or some would not get green at all.</span>
+<span class="sd">        - ``allowable_phases`` **must** be zero-based unlike what is provided in ``data.py``</span>
+
+<span class="sd">    :Author:</span>
+<span class="sd">        Mahmoud Pourmehrab &lt;pourmehrab@gmail.com&gt;</span>
+<span class="sd">    :Date:</span>
+<span class="sd">        April-2018</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">MAX_PHASE_LENGTH</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">POPULATION_SIZE</span> <span class="o">=</span> <span class="mi">20</span>
+    <span class="n">MAX_ITERATION_PER_PHASE</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">CROSSOVER_SIZE</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">LAMBDA</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">500</span>
+    <span class="n">BADNESS_ACCURACY</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">**</span> <span class="mi">2</span>
+
+<div class="viewcode-block" id="GA_SPaT.__init__"><a class="viewcode-back" href="../../[3].signal.html#src.signal.GA_SPaT.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inter_name</span><span class="p">,</span> <span class="n">allowable_phases</span><span class="p">,</span> <span class="n">first_detection_time</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">min_headway</span><span class="p">,</span> <span class="n">log_csv</span><span class="p">,</span>
+                 <span class="n">sc</span><span class="p">,</span> <span class="n">start_time_stamp</span><span class="p">,</span> <span class="n">do_traj_computation</span><span class="p">,</span> <span class="n">print_commandline</span><span class="p">,</span> <span class="n">optional_packages_found</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param inter_name:</span>
+<span class="sd">        :param allowable_phases: zero-based subset of phases</span>
+<span class="sd">        :type allowable_phases: tuple</span>
+<span class="sd">        :param first_detection_time:</span>
+<span class="sd">        :param num_lanes:</span>
+<span class="sd">        :param min_headway:</span>
+<span class="sd">        :param log_csv:</span>
+<span class="sd">        :param sc:</span>
+<span class="sd">        :param start_time_stamp:</span>
+<span class="sd">        :param do_traj_computation:</span>
+<span class="sd">        :param print_commandline:</span>
+<span class="sd">        :param optional_packages_found:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">inter_name</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">min_headway</span><span class="p">,</span> <span class="n">log_csv</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">start_time_stamp</span><span class="p">,</span>
+                         <span class="n">do_traj_computation</span><span class="p">,</span> <span class="n">print_commandline</span><span class="p">,</span> <span class="n">optional_packages_found</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__allowable_phases</span> <span class="o">=</span> <span class="n">allowable_phases</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ar</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_green</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_green</span> <span class="o">=</span> <span class="n">data_importer</span><span class="o">.</span><span class="n">get_signal_params</span><span class="p">(</span><span class="n">inter_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ts_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ts_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_green</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ar</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_green</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ar</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ts_diff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_green</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_green</span>
+
+        <span class="c1"># add a dummy phase to initiate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_sequence</span> <span class="o">=</span> <span class="p">[</span><span class="nb">set</span><span class="p">(</span><span class="n">allowable_phases</span><span class="p">)</span><span class="o">.</span><span class="n">pop</span><span class="p">()]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_green_dur</span> <span class="o">=</span> <span class="p">[</span><span class="n">first_detection_time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ar</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_start</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span> <span class="o">=</span> <span class="p">[</span><span class="n">first_detection_time</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_print_commandline</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;&gt;&gt;&gt; Phase </span><span class="si">{:d}</span><span class="s1"> appended (ends @ </span><span class="si">{:2.1f}</span><span class="s1"> sec)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SPaT_sequence</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span></div>
+
+<div class="viewcode-block" id="GA_SPaT.solve"><a class="viewcode-back" href="../../[3].signal.html#src.signal.GA_SPaT.solve">[docs]</a>    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lanes</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">max_speed</span><span class="p">,</span> <span class="n">critical_volume_ratio</span><span class="p">,</span> <span class="n">trajectory_planner</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method implements Genetic Algorithm to determine :term:`SPaT`. The high-level work flow is as the following:</span>
+<span class="sd">            #. From the available :term:`SPaT`, only keep the ongoing one due to safety and practical reasons (*Here we do not change the timing of the first phase, however a variant is to reduce the timing to the minimum green time*).</span>
+<span class="sd">            #. Serve as many as possible with the remaining phase.</span>
+<span class="sd">            #. If any unserved vehicle is present, do :term:`GA`.</span>
+
+<span class="sd">        .. attention::</span>
+<span class="sd">            - We define :term:`badness` (the opposite of fitness) as the measure that less of it is preferred for choosing a SPaT.</span>
+<span class="sd">            - GA has access to only the given subset of phases provided by ``allowable_phases`` from the full set in ``data.py`` file.</span>
+<span class="sd">            - If an alternative beats the best known SPaT, it takes the ``__best_SPaT`` spot inside the ``evaluate_badness()`` call.</span>
+<span class="sd">            - GA tries cycles with 1 up to the defined number of phases and for each it computes the cycle length using the time budget concept in traffic flow theory.</span>
+<span class="sd">            - GA keeps the alternative in a sorted dictionary that the key is ``badness`` and the value keeps the corresponding SPaT decision. This helps when we want to replace worse individuals with new ones from crossover.</span>
+<span class="sd">            - The phase sequence are randomly drawn from the set of phases **without** replacement.</span>
+<span class="sd">            - The timings are random but respects the minimum and maximum green. They also sum to the cycle length.</span>
+<span class="sd">            - Note since the dictionary hashes individuals based on their ``badness``, it may overwrite one individual with anther. Hence the population may fall less than what defined initially.</span>
+<span class="sd">            - The crossover step is in-place, meaning it replaces the individuals with higher badness with crossovered ones. This way elite selection step is implemented at the same time crossover executes.</span>
+<span class="sd">            - Eventually, the best SPaT may not serve all vehicles. In that case, ``_schedule_unserved_vehicles()`` method gets called to provide temporary schedule for the unserved vehicles.</span>
+
+<span class="sd">        :param lanes:</span>
+<span class="sd">        :type lanes: Lanes</span>
+<span class="sd">        :param num_lanes:</span>
+<span class="sd">        :param max_speed:</span>
+<span class="sd">        :param critical_volume_ratio:</span>
+<span class="sd">        :param trajectory_planner:</span>
+<span class="sd">        :type trajectory_planner: TrajectoryPlanner</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_flush_upcoming_SPaTs</span><span class="p">()</span>
+
+        <span class="n">any_unserved_vehicle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_do_base_SPaT</span><span class="p">(</span><span class="n">lanes</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">,</span> <span class="n">max_speed</span><span class="p">,</span> <span class="n">trajectory_planner</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">any_unserved_vehicle</span><span class="p">):</span>
+            <span class="c1"># if the base SPaT serves, don&#39;t bother doing GA # correct max phase length in case goes above the range</span>
+            <span class="n">max_phase_length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__allowable_phases</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">MAX_PHASE_LENGTH</span><span class="p">)</span>
+            <span class="n">cycle_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_optimal_cycle_length</span><span class="p">(</span><span class="n">critical_volume_ratio</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__best_GA_alt</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;SPaT&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;phase_seq&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mutate_seq</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;time_split&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mutate_timing</span><span class="p">(</span><span class="n">cycle_length</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                         <span class="s1">&#39;badness_measure&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">LARGE_NUM</span><span class="p">},</span>
+                <span class="s1">&#39;scheduled_departures&#39;</span><span class="p">:</span> <span class="p">{</span><span class="n">lane</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lanes</span><span class="o">.</span><span class="n">vehlist</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lane</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">for</span> <span class="n">lane</span> <span class="ow">in</span>
+                                         <span class="nb">range</span><span class="p">(</span><span class="n">num_lanes</span><span class="p">)},</span>
+                <span class="s1">&#39;any_unserved_vehicle&#39;</span><span class="p">:</span> <span class="n">any_unserved_vehicle</span><span class="p">,</span>
+                <span class="s1">&#39;first_unserved_indx&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">lanes</span><span class="o">.</span><span class="n">first_unsrvd_indx</span><span class="p">),</span>
+            <span class="p">}</span>
+
+            <span class="n">population</span> <span class="o">=</span> <span class="n">SortedDict</span><span class="p">({})</span>
+            <span class="k">for</span> <span class="n">individual</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">POPULATION_SIZE</span><span class="p">):</span>
+                <span class="n">phase_seq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mutate_seq</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">time_split</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mutate_timing</span><span class="p">(</span><span class="n">cycle_length</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">badness</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_evaluate_badness</span><span class="p">(</span><span class="n">phase_seq</span><span class="p">,</span> <span class="n">time_split</span><span class="p">,</span> <span class="n">lanes</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">)</span>
+                <span class="n">population</span><span class="p">[</span><span class="n">badness</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;phase_seq&#39;</span><span class="p">:</span> <span class="n">phase_seq</span><span class="p">,</span> <span class="s1">&#39;time_split&#39;</span><span class="p">:</span> <span class="n">time_split</span><span class="p">}</span>
+
+            <span class="k">for</span> <span class="n">phase_length</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">max_phase_length</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">population</span> <span class="o">=</span> <span class="n">SortedDict</span><span class="p">({})</span>  <span class="c1"># keeps the individuals</span>
+                <span class="n">cycle_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_optimal_cycle_length</span><span class="p">(</span><span class="n">critical_volume_ratio</span><span class="p">,</span> <span class="n">phase_length</span><span class="p">)</span>
+                <span class="n">half_max_indx</span> <span class="o">=</span> <span class="n">phase_length</span> <span class="o">//</span> <span class="mi">2</span>  <span class="c1"># need this for crossover</span>
+
+                <span class="k">for</span> <span class="n">individual</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">POPULATION_SIZE</span><span class="p">):</span>
+                    <span class="n">phase_seq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mutate_seq</span><span class="p">(</span><span class="n">phase_length</span><span class="p">)</span>
+                    <span class="n">time_split</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mutate_timing</span><span class="p">(</span><span class="n">cycle_length</span><span class="p">,</span> <span class="n">phase_length</span><span class="p">)</span>
+                    <span class="n">badness</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_evaluate_badness</span><span class="p">(</span><span class="n">phase_seq</span><span class="p">,</span> <span class="n">time_split</span><span class="p">,</span> <span class="n">lanes</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">)</span>
+                    <span class="n">population</span><span class="p">[</span><span class="n">badness</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;phase_seq&#39;</span><span class="p">:</span> <span class="n">phase_seq</span><span class="p">,</span> <span class="s1">&#39;time_split&#39;</span><span class="p">:</span> <span class="n">time_split</span><span class="p">}</span>
+
+                <span class="c1"># perform GA operations in-place</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MAX_ITERATION_PER_PHASE</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CROSSOVER_SIZE</span><span class="p">):</span>
+                        <span class="c1"># ELITE SELECTION</span>
+                        <span class="c1"># in the next round, the top ones will automatically be removed when crossover</span>
+                        <span class="n">badness_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">population</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">population</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>  <span class="c1"># CROSSOVER</span>
+                            <span class="k">del</span> <span class="n">population</span><span class="p">[</span><span class="n">badness_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>  <span class="c1"># delete the worst member and then add one</span>
+                            <span class="n">parents_indx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">badness_list</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">2</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                            <span class="n">phase_seq</span><span class="p">,</span> <span class="n">time_split</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cross_over</span><span class="p">(</span><span class="n">population</span><span class="p">[</span><span class="n">parents_indx</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
+                                                                     <span class="n">population</span><span class="p">[</span><span class="n">parents_indx</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
+                                                                     <span class="n">phase_length</span><span class="p">,</span> <span class="n">half_max_indx</span><span class="p">)</span>
+                            <span class="c1"># evaluate badness function</span>
+                            <span class="n">badness</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_evaluate_badness</span><span class="p">(</span><span class="n">phase_seq</span><span class="p">,</span> <span class="n">time_split</span><span class="p">,</span> <span class="n">lanes</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">)</span>
+                            <span class="n">population</span><span class="p">[</span><span class="n">badness</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;phase_seq&#39;</span><span class="p">:</span> <span class="n">phase_seq</span><span class="p">,</span> <span class="s1">&#39;time_split&#39;</span><span class="p">:</span> <span class="n">time_split</span><span class="p">}</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__best_GA_alt</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;SPaT&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;badness_measure&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">LARGE_NUM</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;GA failed to find any serving SPaT&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">indx</span><span class="p">,</span> <span class="n">phase</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__best_GA_alt</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;SPaT&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;phase_seq&#39;</span><span class="p">)):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_append_extend_phase</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">phase</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">__best_GA_alt</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;SPaT&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;time_split&#39;</span><span class="p">)[</span>
+                        <span class="n">indx</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ar</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_set_non_base_scheduled_departures</span><span class="p">(</span><span class="n">lanes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__best_GA_alt</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;scheduled_departures&#39;</span><span class="p">),</span>
+                                                        <span class="n">num_lanes</span><span class="p">,</span> <span class="n">max_speed</span><span class="p">,</span> <span class="n">trajectory_planner</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GA_SPaT._evaluate_badness"><a class="viewcode-back" href="../../[3].signal.html#src.signal.GA_SPaT._evaluate_badness">[docs]</a>    <span class="k">def</span> <span class="nf">_evaluate_badness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">phase_seq</span><span class="p">,</span> <span class="n">time_split</span><span class="p">,</span> <span class="n">lanes</span><span class="p">,</span> <span class="n">num_lanes</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">         This method computes the badness (opposite if fitness) of an alternative using the equation :math:`\lambda \\times t-c`, where:</span>
+<span class="sd">            - :math:`c` is the count of served vehicles in :math:`veh`</span>
+<span class="sd">            - :math:`\lambda` is weight factor in :math:`veh/s`</span>
+<span class="sd">            - :math:`t` is the average travel time in :math:`s`, under the given :term:`SPaT`.</span>
+
+<span class="sd">         .. attention::</span>
+<span class="sd">            - A rough approximate for :math:`\lambda` is the inverse of the detection range.</span>
+<span class="sd">            - Here we do not account for the vehicles served with base :term:`SPaT` as they are already served.</span>
+<span class="sd">            - We create a copy of ``first_unsrvd_indx`` since there is no guarantee this :term:`SPaT` is the best by the end of :term:`GA`.</span>
+<span class="sd">            - The vehicle to be served by this method should have had ``veh.reschedule_departure`` set to ``True``.</span>
+<span class="sd">            - An individual which has ``throughput`` of zero is not qualified for comparison to best known :term:`SPaT`.</span>
+<span class="sd">            - Please note base on the provided definition :term:`badness` can acquire negative values.</span>
+
+<span class="sd">        :param phase_seq:</span>
+<span class="sd">        :param time_split:</span>
+<span class="sd">        :param lanes: holds the traffic intended to be served</span>
+<span class="sd">        :type lanes: Lanes</span>
+<span class="sd">        :param num_lanes:</span>
+<span class="sd">        :return: The corresponding :term:`badness` for given SPaT defined by ``phase_seq`` and ``time_split`` to be added to the population. It also sets, if qualified, this individual as the best known so far.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">mean_travel_time</span><span class="p">,</span> <span class="n">throughput</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mi">0</span>  <span class="c1"># if no vehicle is found return zero throughput</span>
+        <span class="n">temporary_scheduled_departures</span> <span class="o">=</span> <span class="p">{</span><span class="n">lane</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lanes</span><span class="o">.</span><span class="n">vehlist</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lane</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">for</span> <span class="n">lane</span> <span class="ow">in</span>
+                                          <span class="nb">range</span><span class="p">(</span><span class="n">num_lanes</span><span class="p">)}</span>
+        <span class="c1"># keeps departure time of last vehicle to be served by progressing in the given SPaT</span>
+        <span class="n">served_vehicle_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_lanes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="c1"># keeps index of last vehicle to be served by progressing SPaT</span>
+        <span class="n">first_unsrvd_indx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">lanes</span><span class="o">.</span><span class="n">first_unsrvd_indx</span><span class="p">)</span>
+        <span class="n">any_unserved_vehicle</span> <span class="o">=</span> <span class="p">[</span><span class="n">first_unsrvd_indx</span><span class="p">[</span><span class="n">lane</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">lanes</span><span class="o">.</span><span class="n">last_vehicle_indx</span><span class="p">[</span><span class="n">lane</span><span class="p">]</span> <span class="k">for</span> <span class="n">lane</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_lanes</span><span class="p">)]</span>
+        <span class="n">phase_indx</span><span class="p">,</span> <span class="n">phase_length</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">phase_seq</span><span class="p">)</span>
+        <span class="n">start_green</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPaT_end</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">LAG</span>
+        <span class="k">while</span> <span class="nb">any</span><span class="p">(</span><span class="n">any_unserved_vehicle</span><span class="p">)</span> <span class="ow">and</span> <span class="n">phase_indx</span> <span class="o">&lt;</span> <span class="n">phase_length</span><span class="p">:</span>  <span class="c1"># serve all with the current phasing</span>
+            <span class="n">end_yellow</span> <span class="o">=</span> <span class="n">start_green</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">LAG</span> <span class="o">+</span> <span class="n">time_split</span><span class="p">[</span><span class="n">phase_indx</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ar</span>
+            <span class="n">phase</span> <span class="o">=</span> <span class="n">phase_seq</span><span class="p">[</span><span class="n">phase_indx</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">lane</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pli</span><span class="p">[</span><span class="n">phase</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">any_unserved_vehicle</span><span class="p">[</span><span class="n">lane</span><span class="p">]:</span>
+                    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                        <span class="n">veh_indx</span> <span class="o">=</span> <span class="n">first_unsrvd_indx</span><span class="p">[</span><span class="n">lane</span><span class="p">]</span>
+                        <span class="n">veh</span> <span class="o">=</span> <span class="n">lanes</span><span class="o">.</span><span class="n">vehlist</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lane</span><span class="p">)[</span><span class="n">veh_indx</span><span class="p">]</span>
+
+                        <span class="n">t_earliest</span> <span class="o">=</span> <span class="n">veh</span><span class="o">.</span><span class="n">earliest_departure</span>
+                        <span class="c1"># depending on if we are keeping the prev trajectory or not, schedule or reschedule departure</span>
+                        <span class="n">t_scheduled</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">t_earliest</span><span class="p">,</span> <span class="n">start_green</span><span class="p">,</span> <span class="n">served_vehicle_time</span><span class="p">[</span>
+                            <span class="n">lane</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_headway</span><span class="p">)</span>
+
+                        <span class="k">if</span> <span class="n">t_scheduled</span> <span class="o">&lt;=</span> <span class="n">end_yellow</span><span class="p">:</span>
+                            <span class="n">first_unsrvd_indx</span><span class="p">[</span><span class="n">lane</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                            <span class="n">travel_time</span> <span class="o">=</span> <span class="n">t_scheduled</span> <span class="o">-</span> <span class="n">veh</span><span class="o">.</span><span class="n">init_time</span>
+                            <span class="n">mean_travel_time</span> <span class="o">=</span> <span class="p">((</span><span class="n">mean_travel_time</span> <span class="o">*</span> <span class="n">throughput</span><span class="p">)</span> <span class="o">+</span> <span class="n">travel_time</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">throughput</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                            <span class="n">throughput</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                            <span class="n">served_vehicle_time</span><span class="p">[</span><span class="n">lane</span><span class="p">]</span> <span class="o">=</span> <span class="n">t_scheduled</span>
+                            <span class="n">temporary_scheduled_departures</span><span class="p">[</span><span class="n">lane</span><span class="p">][</span><span class="n">veh_indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">t_scheduled</span>
+                            <span class="k">if</span> <span class="n">first_unsrvd_indx</span><span class="p">[</span><span class="n">lane</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">lanes</span><span class="o">.</span><span class="n">last_vehicle_indx</span><span class="p">[</span><span class="n">lane</span><span class="p">]:</span>
+                                <span class="n">any_unserved_vehicle</span><span class="p">[</span><span class="n">lane</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                                <span class="k">break</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">break</span>
+            <span class="n">phase_indx</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">start_green</span> <span class="o">=</span> <span class="n">end_yellow</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ar</span>
+
+        <span class="n">badness</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">LAMBDA</span> <span class="o">*</span> <span class="n">mean_travel_time</span> <span class="o">-</span> <span class="n">throughput</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">BADNESS_ACCURACY</span><span class="p">)</span> <span class="k">if</span> <span class="n">throughput</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">LARGE_NUM</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__best_GA_alt</span><span class="p">[</span><span class="s1">&#39;SPaT&#39;</span><span class="p">][</span><span class="s1">&#39;badness_measure&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">badness</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__best_GA_alt</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;SPaT&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;phase_seq&#39;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">phase_seq</span><span class="p">),</span> <span class="s1">&#39;time_split&#39;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">time_split</span><span class="p">),</span> <span class="s1">&#39;badness_measure&#39;</span><span class="p">:</span> <span class="n">badness</span><span class="p">},</span>
+                <span class="s1">&#39;scheduled_departures&#39;</span><span class="p">:</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">temporary_scheduled_departures</span><span class="p">),</span>
+                <span class="s1">&#39;any_unserved_vehicle&#39;</span><span class="p">:</span> <span class="n">any_unserved_vehicle</span><span class="p">,</span>
+                <span class="s1">&#39;first_unserved_indx&#39;</span><span class="p">:</span> <span class="n">first_unsrvd_indx</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">badness</span></div>
+
+<div class="viewcode-block" id="GA_SPaT._get_optimal_cycle_length"><a class="viewcode-back" href="../../[3].signal.html#src.signal.GA_SPaT._get_optimal_cycle_length">[docs]</a>    <span class="k">def</span> <span class="nf">_get_optimal_cycle_length</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">critical_volume_ratio</span><span class="p">,</span> <span class="n">phase_length</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Uses the time budget concept from traffic flow theory to compute the cycle length :math:`C=\\frac{n \\times ar}{1-V_{cr}}`.</span>
+
+<span class="sd">        .. seealso::</span>
+<span class="sd">            Refer to HCM 2010 for more details.</span>
+
+<span class="sd">        :param critical_volume_ratio:</span>
+<span class="sd">        :param phase_length:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cycle_length</span> <span class="o">=</span> <span class="p">(</span><span class="n">phase_length</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ar</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">critical_volume_ratio</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cycle_length</span> <span class="o">&lt;</span> <span class="mi">60</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">60</span>
+        <span class="k">elif</span> <span class="n">cycle_length</span> <span class="o">&gt;</span> <span class="mi">150</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">150</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">cycle_length</span></div>
+
+<div class="viewcode-block" id="GA_SPaT._mutate_seq"><a class="viewcode-back" href="../../[3].signal.html#src.signal.GA_SPaT._mutate_seq">[docs]</a>    <span class="k">def</span> <span class="nf">_mutate_seq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">phase_length</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a randomized sequence from the provided subset of allowable phases.</span>
+
+<span class="sd">        .. todo:: If two same phases follow each other within the sequence or at the boundary, re-sample carefully with replacement</span>
+
+<span class="sd">        :param phase_length:</span>
+<span class="sd">        :return: seq</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">seq</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__allowable_phases</span><span class="p">,</span> <span class="n">phase_length</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">seq</span></div>
+
+<div class="viewcode-block" id="GA_SPaT._mutate_timing"><a class="viewcode-back" href="../../[3].signal.html#src.signal.GA_SPaT._mutate_timing">[docs]</a>    <span class="k">def</span> <span class="nf">_mutate_timing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cycle_length</span><span class="p">,</span> <span class="n">phase_length</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates the random phase split. A valid timing should respect the min/max green requirement unless it conflicts with the cycle length requirement which in that case we should adjust the maximum green to avoid the slack in time.</span>
+
+<span class="sd">        .. note:: A phase timing should be between :math:`g_{min}+y+ar` and :math:`g_{max}+y+ar`</span>
+
+<span class="sd">        :param cycle_length:</span>
+<span class="sd">        :param phase_length:</span>
+<span class="sd">        :return: time_split</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">phase_length</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">cycle_length</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># under worst case all except one phase get minimum green</span>
+            <span class="c1">#  check if in that case still we can specify the last phase</span>
+            <span class="n">min_G_max</span> <span class="o">=</span> <span class="n">cycle_length</span> <span class="o">-</span> <span class="p">(</span><span class="n">phase_length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ts_min</span>
+            <span class="k">if</span> <span class="n">min_G_max</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ts_max</span><span class="p">:</span>
+                <span class="n">diff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ts_diff</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">diff</span> <span class="o">=</span> <span class="n">min_G_max</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ts_min</span>
+
+            <span class="c1"># create vector of random numbers drawn from uniform distribution</span>
+            <span class="n">rand_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">phase_length</span><span class="p">)</span>
+            <span class="c1"># scale it in a way all sum to the cycle length</span>
+            <span class="n">rand_vec</span> <span class="o">*=</span> <span class="p">((</span><span class="n">cycle_length</span> <span class="o">-</span> <span class="n">phase_length</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ts_min</span><span class="p">)</span> <span class="o">/</span> <span class="n">diff</span><span class="p">)</span> <span class="o">/</span> <span class="n">rand_vec</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+            <span class="n">time_split</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_ts_min</span> <span class="o">+</span> <span class="n">rand_vec</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">diff</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">phase_length</span><span class="p">)],</span>
+                                  <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">time_split</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GA_SPaT._cross_over"><a class="viewcode-back" href="../../[3].signal.html#src.signal.GA_SPaT._cross_over">[docs]</a>    <span class="k">def</span> <span class="nf">_cross_over</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">left_parent</span><span class="p">,</span> <span class="n">right_parent</span><span class="p">,</span> <span class="n">phase_length</span><span class="p">,</span> <span class="n">half_max_indx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Performs the crossover operation in GA.</span>
+
+<span class="sd">        .. todo:: If two same phases follow each other, re-sample carefully with replacement or merge them</span>
+
+<span class="sd">        :param left_parent:</span>
+<span class="sd">        :param right_parent:</span>
+<span class="sd">        :param phase_length:</span>
+<span class="sd">        :param half_max_indx:</span>
+<span class="sd">        :return: child with valid SPaT inherited from provided parents.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">phase_seq</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">left_parent</span><span class="p">[</span><span class="s1">&#39;phase_seq&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">half_max_indx</span> <span class="k">else</span> <span class="n">right_parent</span><span class="p">[</span><span class="s1">&#39;phase_seq&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+                           <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">phase_length</span><span class="p">)])</span>
+        <span class="n">time_split</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">left_parent</span><span class="p">[</span><span class="s1">&#39;time_split&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">right_parent</span><span class="p">[</span><span class="s1">&#39;time_split&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+                            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">phase_length</span><span class="p">)])</span>
+
+        <span class="k">return</span> <span class="n">phase_seq</span><span class="p">,</span> <span class="n">time_split</span></div></div>
+
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Mahmoud Pourmehrab.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0.0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="../../_static/copybutton.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
+      });
+  </script> 
+
+</body>
+</html>

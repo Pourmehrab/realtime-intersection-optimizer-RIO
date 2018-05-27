@@ -5,12 +5,28 @@
 # Last Modified: Apr/22/2018       #
 ####################################
 
+from main import Singleton
 
-class TimeKeeper:
+
+class TimeKeeper(metaclass=Singleton):
     """
     Objectives:
         - Keeps the time
         - Moves the simulation clock forward
+
+    For time management we use seconds since the **Epoch** , or::
+
+        >>> import time
+        >>> time.time()
+
+    .. figure:: images/time.png
+            :align: center
+            :width: 10cm
+            :height: 8cm
+            :alt: map to buried treasure
+
+            Time management in python `source <https://wiki.python.org/moin/WorkingWithTime>`_.
+
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -28,8 +44,6 @@ class TimeKeeper:
         """
         self.clock = sim_start
         self._res = resolution
-
-
 
     def next_sim_step(self):
         """Move simulation clock forward"""
