@@ -140,24 +140,11 @@ class Signal(metaclass=Singleton):
             if intersection._general_params.get('print_commandline'):
                 print('>>> Phase {:d} appended (ends @ {:>5.1f} sec)'.format(phase, self.SPaT_end[-1]))
 
-    def set_critical_phase_volumes(self, volumes):
-        """
-        Not used in GA since the phasing configuration is unknown prior to cycle length formula
-        that is derived from time budget concept
-
-        .. warning::
-            Do not call this on a signal method that does not handle ``allowable_phases``.
-
-        :param volumes:
-       """
-        self._critical_phase_volumes = np.array(
-            [max(volumes[self._pli.get(phase)]) for phase in self._allowable_phases])
-
     def update_SPaT(self, intersection, time_threshold, sc):
         """
         Performs two tasks to update SPaT based on the given clock:
             - Removes terminated phase (happens when the all-red is passed)
-            - Checks for  SPaT to not get empty after being updated
+            - Checks for SPaT to not get empty after being updated
 
         .. attention::
             - If all phases are getting purged, either make longer SPaT decisions or reduce the simulation steps.
