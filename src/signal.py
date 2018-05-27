@@ -87,9 +87,6 @@ class Signal(metaclass=Singleton):
         else:
             self.sig_csv_file = None
 
-        self._do_traj_computation = intersection._general_params.get('do_traj_computation')
-        self._print_commandline = intersection._general_params.get('print_commandline')
-
     def _set_lane_lane_incidence(self, num_lanes):
         """
         This converts a dictionary of the form:
@@ -128,7 +125,7 @@ class Signal(metaclass=Singleton):
             for j in conf:
                 self._pli[l - 1].append(j - 1)  # these are lanes that belong to this phase
 
-    def _append_extend_phase(self, phase, actual_green):
+    def _append_extend_phase(self, phase, actual_green, intersection):
         """
         Appends a phase to the :term:`SPaT` (append/extend a phase and its green to the end of signal array)
 
@@ -137,7 +134,7 @@ class Signal(metaclass=Singleton):
         """
         if self.SPaT_sequence[-1] == phase:  # extend this phase
             self.SPaT_end[-1] = self.SPaT_start[-1] + actual_green + self._y + self._ar
-            if self._print_commandline:
+            if intersection._general_params.get('print_commandline'):
                 print('>-> Phase {:d} extended (ends @ {:>2.1f} sec)'.format(self.SPaT_sequence[-1],
                                                                              self.SPaT_end[-1]))
         else:  # append a new phase
@@ -145,7 +142,7 @@ class Signal(metaclass=Singleton):
             self.SPaT_green_dur += [actual_green]
             self.SPaT_start += [self.SPaT_end[-1]]
             self.SPaT_end += [self.SPaT_start[-1] + actual_green + self._y + self._ar]
-            if self._print_commandline:
+            if intersection._general_params.get('print_commandline'):
                 print('>>> Phase {:d} appended (ends @ {:>5.1f} sec)'.format(phase, self.SPaT_end[-1]))
 
     def set_critical_phase_volumes(self, volumes):
@@ -162,7 +159,7 @@ class Signal(metaclass=Singleton):
         self._critical_phase_volumes = np.array(
             [max(volumes[self._pli.get(phase)]) for phase in self._allowable_phases])
 
-    def update_SPaT(self, time_threshold, sc):
+    def update_SPaT(self, intersection, time_threshold, sc):
         """
         Performs two tasks to update SPaT based on the given clock:
             - Removes terminated phase (happens when the all-red is passed)
@@ -194,7 +191,7 @@ class Signal(metaclass=Singleton):
                 phase_indx += 1
 
         if any_to_be_purged:
-            if self._print_commandline:
+            if intersection._general_params.get('print_commandline'):
                 print('<<< Phase(s) ' + ','.join(str(p) for p in self.SPaT_sequence[:phase_indx]) + ' expired')
             del self.SPaT_sequence[:phase_indx]
             del self.SPaT_green_dur[:phase_indx]
@@ -205,12 +202,12 @@ class Signal(metaclass=Singleton):
         """Closes the signal csv file"""
         self.sig_csv_file.close()
 
-    def _flush_upcoming_SPaTs(self):
+    def _flush_upcoming_SPaTs(self, intersection):
         """
         Just leaves the first SPaT and flushes the rest. One more severe variant to this is to even reduce the the green time of first phase.
         """
         if len(self.SPaT_sequence) > 1:
-            if self._print_commandline:
+            if intersection._general_params.get('print_commandline'):
                 print('<<< Phase(s) ' + ','.join(str(p) for p in self.SPaT_sequence[1:]) + ' flushed')
 
             self.SPaT_sequence = [self.SPaT_sequence[0]]
@@ -257,8 +254,9 @@ class Signal(metaclass=Singleton):
         :type trajectory_planner: src.intersection.TrajectoryPlanner
         :return: The ``lanes.first_unsrvd_indx`` array that keeps index off the first unserved vehicle in each lane, is initialized to zero before calling this method and gets updated by the end of this call. It also returns ``served_vehicle_time`` that shows the schedule
         """
-        num_lanes, max_speed, min_headway = map(intersection._general_params.get,
-                                                ['num_lanes', 'max_speed', 'min_headway'])
+        num_lanes, max_speed, min_headway, do_traj_computation = map(intersection._general_params.get,
+                                                                     ['num_lanes', 'max_speed', 'min_headway',
+                                                                      'do_traj_computation'])
         any_unserved_vehicle = [lanes.first_unsrvd_indx[lane] <= lanes.last_vehicle_indx[lane] for lane in
                                 range(num_lanes)]
 
@@ -282,7 +280,7 @@ class Signal(metaclass=Singleton):
                                 t, d, s = t_scheduled, 0, max_speed
                                 veh.set_scheduled_departure(t, d, s, lane, veh_indx, intersection)
 
-                                if self._do_traj_computation and veh.freshly_scheduled:
+                                if do_traj_computation and veh.freshly_scheduled:
                                     trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, '*', )
                                     veh.reschedule_departure, veh.freshly_scheduled = False, False
                                 else:
@@ -352,9 +350,10 @@ class Signal(metaclass=Singleton):
         :param trajectory_planner:
         :type trajectory_planner: TrajectoryPlanner
         """
-        max_speed, phase_cover_set, lag_on_green, min_headway = map(intersection._general_params.get,
-                                                                    ['max_speed', 'phase_cover_set', 'lag_on_green',
-                                                                     'min_headway'])
+        max_speed, phase_cover_set, lag_on_green, min_headway, do_traj_computation = map(
+            intersection._general_params.get,
+            ['max_speed', 'phase_cover_set', 'lag_on_green',
+             'min_headway', 'do_traj_computation'])
         time_phase_ends = self.SPaT_end[-1] - self._ar
         for phase in phase_cover_set:
             time_phase_ends += self._ar
@@ -370,7 +369,7 @@ class Signal(metaclass=Singleton):
                     time_phase_ends = t_scheduled
                     t, d, s = t_scheduled, 0, max_speed
                     veh.set_scheduled_departure(t, d, s, lane, veh_indx, intersection)
-                    if self._do_traj_computation:
+                    if do_traj_computation and veh.freshly_scheduled:
                         trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, '#')
                         veh.freshly_scheduled = False
                     else:
@@ -412,12 +411,12 @@ class Pretimed(Signal):
         self.SPaT_start = [0.0]
         self.SPaT_end = [first_detection_time]
 
-        if self._print_commandline:
+        if intersection._general_params.get('print_commandline'):
             print('>>> Phase {:d} appended (ends @ {:2.1f} sec)'.format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
 
         for cycle in range(self._num_cycles):
             for indx, phase in enumerate(self._phase_seq):
-                self._append_extend_phase(int(phase), self._green_dur[indx])
+                self._append_extend_phase(int(phase), self._green_dur[indx], intersection)
 
     def solve(self, lanes, intersection, critical_volume_ratio, trajectory_planner):
         """
@@ -440,7 +439,7 @@ class Pretimed(Signal):
 
         if len(self.SPaT_sequence) // len(self._phase_seq) < self._num_cycles - 1:
             for indx, phase in enumerate(self._phase_seq):
-                self._append_extend_phase(int(phase), self._green_dur[indx])
+                self._append_extend_phase(int(phase), self._green_dur[indx], intersection)
         if any(any_unserved_vehicle):
             scheduled_departures = {lane: np.zeros(len(lanes.vehlist.get(lane)), dtype=float) for lane in
                                     range(num_lanes)}
@@ -481,7 +480,7 @@ class GA_SPaT(Signal):
         """
 
         super().__init__(intersection, sc, start_time_stamp)
-        inter_name = intersection._general_params.get('inter_name')
+        inter_name, print_commandline = map(intersection._general_params.get, ['inter_name', 'print_commandline'])
         self.__GA_params = get_GA_parameters(inter_name)
 
         self._y, self._ar, self.min_green, self.max_green = get_signal_params(inter_name)
@@ -494,7 +493,7 @@ class GA_SPaT(Signal):
         self.SPaT_start = [0.0]
         self.SPaT_end = [first_detection_time]
 
-        if self._print_commandline:
+        if print_commandline:
             print('>>> Phase {:d} appended (ends @ {:2.1f} sec)'.format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
 
     def solve(self, lanes, intersection, critical_volume_ratio, trajectory_planner):
@@ -525,7 +524,7 @@ class GA_SPaT(Signal):
         :type trajectory_planner: TrajectoryPlanner
         """
         num_lanes, large_positive_num = map(intersection._general_params.get, ['num_lanes', 'large_positive_num'])
-        self._flush_upcoming_SPaTs()
+        self._flush_upcoming_SPaTs(intersection)
         any_unserved_vehicle = self._do_base_SPaT(lanes, intersection, trajectory_planner)
         if any(any_unserved_vehicle):
             # if the base SPaT serves, don't bother doing GA # correct max phase length in case goes above the range
@@ -580,7 +579,7 @@ class GA_SPaT(Signal):
             else:
                 for indx, phase in enumerate(self.__best_GA_alt.get('SPaT').get('phase_seq')):
                     self._append_extend_phase(int(phase), self.__best_GA_alt.get('SPaT').get('time_split')[
-                        indx] - self._y - self._ar)
+                        indx] - self._y - self._ar, intersection)
                 self._set_non_base_scheduled_departures(lanes, self.__best_GA_alt.get('scheduled_departures'),
                                                         trajectory_planner, intersection)
 

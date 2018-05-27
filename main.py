@@ -127,8 +127,10 @@ def run_avian(inter_name, method, sc, start_time_stamp):
         traffic.serve_update_at_stop_bar(lanes, simulation_time, intersection)
         # add/update vehicles
         traffic.update_vehicles_info(lanes, simulation_time, intersection)
+        # update earliest departure schedule
+        lanes.refresh_earliest_departure_times(lanes, intersection)
         # update SPaT
-        signal.update_SPaT(simulation_time, sc)
+        signal.update_SPaT(intersection, simulation_time, sc)
 
         # update space mean speed
         volumes = traffic.get_volumes(lanes, intersection)

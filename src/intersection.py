@@ -79,6 +79,41 @@ class Lanes(metaclass=Singleton):
         self.reset_first_unsrvd_indx(num_lanes)
         self.last_vehicle_indx = np.zeros(num_lanes, dtype=np.int) - 1
 
+    @staticmethod
+    def refresh_earliest_departure_times(lanes, intersection):
+        """" Computes the earliest departure time for all vehicles """
+        # compute trajectory to get the earliest departure time
+        num_lanes, min_headway, max_speed = map(intersection._general_params.get,
+                                                ['num_lanes', 'min_headway', 'max_speed'])
+        for lane in range(num_lanes):
+            if bool(lanes.vehlist[lane]):  # not an empty lane
+                for veh_indx, veh in enumerate(lanes.vehlist[lane]):
+                    if veh.veh_type == 1:
+                        # For CAVs, the earliest travel time is computed by invoking the following method
+                        if len(lanes.vehlist.get(lane)) == 1:
+                            # vehicles is a lead connected vehicle
+                            # happens when a connected vehicle is the first in the lane
+                            t_earliest = earliest_arrival_connected(veh, max_speed)
+                        else:
+                            # vehicles is a follower connected vehicle
+                            # happens when a connected vehicle is NOT the first in the lane
+                            t_earliest = earliest_arrival_connected(veh, max_speed, min_headway,
+                                                                    lanes.vehlist.get(lane)[-2].earliest_departure)
+                    elif veh.veh_type == 0:
+                        if len(lanes.vehlist.get(lane)) == 1:
+                            # vehicles is a lead conventional vehicle
+                            # happens when a conventional vehicle is the first in the lane
+                            t_earliest = earliest_arrival_conventional(veh, max_speed)
+                        else:
+                            # vehicles is a lead conventional vehicle
+                            # happens when a conventional vehicle is NOT the first in the lane
+                            t_earliest = earliest_arrival_conventional(veh, max_speed, min_headway,
+                                                                       lanes.vehlist.get(lane)[-2].earliest_departure)
+                    else:
+                        raise Exception("The detected vehicle could not be classified.")
+                    # now that we have a trajectory, we can set the earliest departure time
+                    veh.set_earliest_departure(t_earliest)
+
     def decrement_first_unsrvd_indx(self, lane, num_served):
         """
         When vehicles get served, the first index to the unservd vehicle in a lane should change.
@@ -197,7 +232,6 @@ class Vehicle:
         self.ID = det_id
         self.veh_type = det_type
         self.init_time = det_time
-        self.distance = dist
         self.length = length
         self.max_decel_rate = amin
         self.max_accel_rate = amax
@@ -529,40 +563,6 @@ class Traffic(metaclass=Singleton):
             # append it to its lane
             lanes.vehlist[lane] += [veh]  # recall it is an array
             lanes.increment_last_veh_indx(lane)
-
-            # compute trajectory to get the earliest departure time
-            min_headway = intersection._general_params.get('min_headway')
-            if det_type == 1:
-                max_speed = intersection._general_params.get('max_speed')
-                # For CAVs, the earliest travel time is computed by invoking the following method
-                if len(lanes.vehlist.get(lane)) == 1:
-                    # vehicles is a lead connected vehicle
-                    # happens when a connected vehicle is the first in the lane
-                    t_earliest = earliest_arrival_connected(det_time, speed, dist,
-                                                            amin, amax, max_speed)
-                else:
-                    # vehicles is a follower connected vehicle
-                    # happens when a connected vehicle is NOT the first in the lane
-                    t_earliest = earliest_arrival_connected(det_time, speed, dist,
-                                                            amin, amax, max_speed,
-                                                            min_headway, lanes.vehlist.get(lane)[-2].earliest_departure)
-            elif det_type == 0:
-                if len(lanes.vehlist.get(lane)) == 1:
-                    # vehicles is a lead conventional vehicle
-                    # happens when a conventional vehicle is the first in the lane
-                    t_earliest = earliest_arrival_conventional(det_time, speed, dist)
-                else:
-                    # vehicles is a lead conventional vehicle
-                    # happens when a conventional vehicle is NOT the first in the lane
-                    t_earliest = earliest_arrival_conventional(det_time, speed, dist,
-                                                               min_headway,
-                                                               lanes.vehlist.get(lane)[-2].earliest_departure)
-            else:
-                raise Exception("The detected vehicle could not be classified.")
-
-            # now that we have a trajectory, we can set the earliest departure time
-            veh.set_earliest_departure(t_earliest)
-
             indx += 1
 
         # to keep track of how much of CSV is processed
@@ -638,7 +638,7 @@ class Traffic(metaclass=Singleton):
                     lanes.purge_served_vehs(lane, last_veh_indx_to_remove)
 
 
-def earliest_arrival_connected(det_time, speed, dist, amin, amax, max_speed, min_headway=0, t_earliest=0):
+def earliest_arrival_connected(veh, max_speed, min_headway=0, t_earliest=0):
     """
     Uses the maximum of the followings to compute the earliest time vehicle can reach to the stop bar:
         - Accelerate/Decelerate to the maximum allowable speed and maintain the speed till departure
@@ -660,6 +660,9 @@ def earliest_arrival_connected(det_time, speed, dist, amin, amax, max_speed, min
     :Date:
         April-2018
     """
+    det_time, dist, speed = veh.get_arrival_schedule()
+    amin, amax = veh.max_decel_rate, veh.max_accel_rate
+
     a = amax if speed <= max_speed else amin
     dist_to_max_speed = (max_speed ** 2 - speed ** 2) / (2 * a)
 
@@ -676,7 +679,7 @@ def earliest_arrival_connected(det_time, speed, dist, amin, amax, max_speed, min
         )
 
 
-def earliest_arrival_conventional(det_time, speed, dist, min_headway=0, t_earliest=0):
+def earliest_arrival_conventional(veh, max_speed, min_headway=0, t_earliest=0):
     """
     Uses the maximum of the followings to compute the earliest time vehicle can reach to the stop bar:
         - Maintains the detected speed till departure
@@ -697,6 +700,7 @@ def earliest_arrival_conventional(det_time, speed, dist, min_headway=0, t_earlie
     :Date:
         April-2018
     """
+    det_time, dist, speed = veh.get_arrival_schedule()
     return max(
         det_time + dist / speed
         , t_earliest + min_headway
