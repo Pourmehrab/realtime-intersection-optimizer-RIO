@@ -19,8 +19,11 @@ def get_general_params(inter_name):
     .. note::
         - The distance to stop bar will be input from either CSV file or fusion. However, the number provided here is used for generic computations.
         - odd degree of polynomial is recommended: k to be even and **at least** 5
+        - ``LARGE_NUM`` is a large number to initialize badness of alternatives in GA. Make sure cannot be beaten by worst alternative.
+        - Make sure the ``MAX_NUM_TRAJECTORY_POINTS`` to preallocate the trajectories is enough for a given problem
 
-    .. warning:: Is required for trajectory optimization
+
+    .. warning:: All the parameters defined here are required for running the program.
 
     :param LAG: the lag time from start of green when a vehicle can depart
 
@@ -101,7 +104,7 @@ def get_pretimed_parameters(inter_name):
 
     .. note::
         - The sequence field includes the phases and is zero-based.
-        - You need to compute green splits and yellows, all-reds based on traffic flow theory.
+        - You need to compute green splits, yellows, and all-reds based on traffic flow theory.
 
     .. warning::
             Must choose ``NUM_CYCLES`` at least 2.
@@ -163,9 +166,18 @@ def get_GA_parameters(inter_name):
 
 def get_conflict_dict(inter_name):
     """
-    Returns a **dictionary** of sets where the **keys** are lane numbers and must be coded in one-based and the **value** for each key is a set of lane numbers that are in conflict with the key lane (again must be one based).
+    Returns a dictionary of sets where the keys are lane numbers and must be one-based. The value for each key is a set
+    of lane numbers that are in conflict with the key lane (again, must be one-based).
 
-    An intersection configuration can be specified by its lanes and movements (left, through, right) that are allowed in each lane. The lane-lane incidence matrix of an intersection is a squared matrix that holds 1 (shown by solid circles in the figures), if two lanes are in conflict. The standard types of conflicts that may wanted to be avoided are cross, merge, and diverge conflicts. Depending on the design, the definition of conflicts points can be broader or more limited. For instance, if volume of a lane is too low and extensive gaps can be found, some of conflict points can be relaxed as non-conflicting points. In the following figures, only cross and merge conflict points are indicated.
+    An intersection configuration can be specified by its lanes and movements (left, through, right) that are allowed in
+    each lane. The lane-lane incidence matrix of an intersection is a squared matrix that holds 1 (shown by solid
+    circles in the figures), if two lanes are in conflict. The standard types of conflicts that may want to be avoided
+    are cross, merge, and diverge conflicts.
+
+    Depending on the design, the definition of conflicts points can be broader or more limited. For instance, if volume
+    of a lane is too low and extensive gaps can be found, some of conflict points can be considered as non-conflicting
+    points. In the following figures, only cross and merge conflict
+    points are indicated.
 
     .. figure:: images/TERL.JPG
        :width: 4cm
@@ -246,13 +258,8 @@ def get_conflict_dict(inter_name):
 
 def get_phases(inter_name):
     """
-    Returns a dictionary of sets
-
-    The key is the phase number is one-based
-    The value to a key is set of lanes included in that phase (lanes are one-based too)
-    Use the phase enumerator for new intersections of refine manually
-    The rule is each set must include non-conflicting lanes
-    # todo add the phase enumarator to the project
+    :returns: A dictionary of sets. The key is the phase number and is one-based. The value to a key is a set of lanes
+        included in that phase (lanes are also one-based).
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -302,8 +309,7 @@ def get_phases(inter_name):
 
 def get_signal_params(inter_name):
     """
-    Required for GA signal control
-    ALL yellow, all-red, min green, max green times are in seconds
+    Required for GA signal control. ALL yellow, all-red, min green, and max green times are in seconds.
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>

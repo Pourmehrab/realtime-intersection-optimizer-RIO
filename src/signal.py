@@ -31,13 +31,10 @@ class Signal(metaclass=Singleton):
         - Makes SPaT decisions through variety of control methods. For now it supports:
             - Pre-timed control
             - Genetic Algorithm
-            - Min Cost Flow model
 
-    Set the class variable ``LAG`` to the time (in seconds) that from start of green is not valid to schedule any departurs.
+    Set the class variable ``LAG`` to the time (in seconds) that from start of green is not valid to schedule any departure.
 
     .. note::
-        - ``LAG`` also is used in ``Trajectory()`` class. Set them consistent.
-        - ``LARGE_NUM`` is a large number to initialize badness of alternatives in GA. Make sure cannot be beaten by worst alternative.
         - The signal status is saved under ``\log\<intersection name>\`` directory.
 
     Use Case:
@@ -63,7 +60,6 @@ class Signal(metaclass=Singleton):
             - Sequence keeps the sequence of phases to be executed from 0
             - ``green_dur`` keeps the amount of green allocated to each phase
             - ``yellow`` and ``all-red`` is a fix amount at the end of all phases (look at class variables)
-            - start keeps the absolute time (in seconds) when each phase starts
 
         .. note:: SPaT starts executing from index 0 to the end of each list.
 
@@ -112,7 +108,6 @@ class Signal(metaclass=Singleton):
         .. todo:: automate phase enumerator
 
         :param num_lanes:
-        :return:
         """
         phase_lane_incidence_one_based = get_phases(self._inter_name)
         # if phase_lane_incidence_one_based is None:  # todo add this to the readme
@@ -151,11 +146,10 @@ class Signal(metaclass=Singleton):
         that is derived from time budget concept
 
         .. warning::
-            Do not call this on a signal method that does not take ``allowable_phases`` as input
+            Do not call this on a signal method that does not handle ``allowable_phases``.
 
         :param volumes:
-        :return:
-        """
+       """
         self._critical_phase_volumes = np.array(
             [max(volumes[self._pli.get(phase)]) for phase in self._allowable_phases])
 

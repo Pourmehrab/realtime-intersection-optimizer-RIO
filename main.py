@@ -39,36 +39,7 @@ def run_avian(inter_name, method, sc, start_time_stamp):
     """
     .. note::
         - Trajectories must end at the stop bar, i.e. the distance to stop bar converges to zero, even if they are temporarily assigned.
-        - OTHER ASSUMPTIONS
-
-    For logging and printing of information set boolean variables:
-        - ``log_at_trj_point_level`` saves a CSV under ``\log`` directory that contains all trajectory points for all vehicles
-        - ``log_at_vehicle_level`` saves a CSV file under ``\log`` directory that contains departure times and elapsed times and vehicle IDs
-
-    The work flow is as the following:
-        - Tests for python version
-        - Checks the input arguments to be valid
-        - Instantiate:
-            - :any:`Intersection`
-            - :any:`Lanes`
-            - :any:`Traffic`
-            - trajectory planners: all bellow
-                - :any:`LeadConventional`
-                - :any:`LeadConnected`
-                - :any:`FollowerConventional`
-                - :any:`FollowerConnected`
-            - signal: one of followings
-                - :any:`GA_SPaT`
-                - :any:`Pretimed`
-        - set simulation start time to when first vehicle shows up
-            - :any:`TimeKeeper`
-        - main loop stops only when all vehicles in the provided input traffic CSV file are assigned a departure time.
-            - remove vehicles that are served
-            - update SPaT
-            - update vehicle information (includes addition too)
-            - do signal
-            - plan trajectories
-            - update time and check of termination
+        - list all the other assumptions here...
 
     :param inter_name: intersection name
     :type inter_name: str

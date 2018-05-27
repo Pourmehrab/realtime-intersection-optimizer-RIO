@@ -49,13 +49,13 @@ class Intersection(metaclass=Singleton):
 
 class Lanes(metaclass=Singleton):
     """
-    Dictionary that the key is lane index and value is an arrays that keeps queue of vehicle in that lane.
+    Dictionary in which the key is lane index and value is an arrays that keeps a queue of vehicle in that lane.
 
     Objectives:
         - Keeps vehicles in order
-        - Keep track of index of last vehicle in each lane (useful for applications in ``Signal()``)
-        - Remove served vehicles, and update first unserved and last vehicle's indices accordingly
-        - Check if all lanes are empty
+        - Keeps track of index of last vehicle in each lane (useful for applications in ``Signal()``)
+        - Removes served vehicles, and update first unserved and last vehicle's indices accordingly
+        - Checks if all lanes are empty
 
 
 
@@ -116,10 +116,10 @@ class Lanes(metaclass=Singleton):
 
     def decrement_first_unsrvd_indx(self, lane, num_served):
         """
-        When vehicles get served, the first index to the unservd vehicle in a lane should change.
+        When vehicles get served, the first index to the unserved vehicle in a lane should change.
 
         :param n: number of served vehicle
-        :param lane: the lane at which the vehicles are served
+        :param lane: the lane in which the vehicles are served
         """
         self.first_unsrvd_indx[lane] = max(0, self.first_unsrvd_indx[lane] - num_served)
 
@@ -143,7 +143,7 @@ class Lanes(metaclass=Singleton):
 
         :param lane: the lane number
         :type lane: int
-        :param indx: from vehicle 0 to ``indx`` are intended to be removed by this method
+        :param indx:  The index in which all vehicles with indices less than or equal to this get removed
         """
         del self.vehlist.get(lane)[0:indx + 1]
         num_served = indx + 1
@@ -171,13 +171,11 @@ class Vehicle:
     """
     Objectives:
         - Defines the vehicle object that keeps all necessary information
-        - Update/record the trajectory points once they are expired
-        - Keep trajectory indexes updated
-        - Print useful info once a plan is scheduled
+        - Updates/records the trajectory points once they are expired
+        - Keeps trajectory indexes updated
+        - Prints useful info once a plan is scheduled
         - Decides if a trajectory re-computation is needed
         - Quality controls the assigned trajectory
-
-    .. note:: Make sure the ``MAX_NUM_TRAJECTORY_POINTS`` to preallocate the trajectories is enough for a given problem
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -191,19 +189,19 @@ class Vehicle:
         Initializes the vehicle object.
 
         .. attention::
-            - The last trajectory point index less than the first means no trajectory has been computed yet
-            - The last trajectory index is set to -1 and the first to 0 for initialization purpose
-            - The shape of trajectory matrix is :math:`3 \\times n` where :math:`n` is the maximum number of trajectory points to be held. The first, second, and third rows correspond to time, distance, and speed profile, respectively.
-            - The vehicle detection time shall be recorded in ``init_time``. GA depends on this field to compute travel time when computing *badness* if an individual.
+            - If the last trajectory point index is less than the first, no trajectory has been computed yet.
+            - The last trajectory index is set to -1 and the first to 0 for initialization purposes.
+            - The shape of trajectory matrix is :math:`3 \\times n`, where :math:`n` is the maximum number of trajectory points to be held. The first, second, and third rows correspond to time, distance, and speed profile, respectively.
+            - The vehicle detection time shall be recorded in ``init_time``. GA depends on this field to compute travel time when computing :term:`badness` of an alternative.
 
-        :param det_id:          the *ID* assigned to this vehicle by radio or a generator
+        :param det_id:          the *ID* assigned to vehicle by radio or a generator
         :type det_id:           str
         :param det_type:        0: :term:`CNV`, 1: :term:`CAV`
         :param det_time:        detection time in :math:`s` from reference time
         :param speed:           detection speed in :math:`m/s`
         :param dist:            detection distance to stop bar in :math:`m`
         :param des_speed:       desired speed in :math:`m/s`
-        :param dest:            destination 0: right turn, 1: through, 2: left
+        :param dest:            destination 0: right turn; 1: through; 2: left
         :param length:          length of vehicle in :math:`m`
         :param amin:            desirable deceleration rate in :math:`m/s^2`
         :param amax:            desired acceleration rate in :math:`m/s^2`
@@ -211,23 +209,24 @@ class Vehicle:
         :param intersection:
         :type intersection:
 
-        :param self.trajectory: keeps the trajectory points as columns of a 3 by N array that N is ``MAX_NUM_TRAJECTORY_POINTS``
+        :param self.trajectory: keeps the trajectory points as columns of a :math:`3 \\times n` array that :math:`n` is ``MAX_NUM_TRAJECTORY_POINTS``
         :param self.first_trj_point_indx: points to the column of the ``trajectory`` array where the current point is stored. This gets updated as the time goes by.
-        :param self.last_trj_point_indx: similarly, points to the column of the ``trajectory`` where last trajectory point is stored.
+        :param self.last_trj_point_indx: similarly, points to the column of the ``trajectory`` where the last trajectory point is stored.
         :param self.poly: keeps the reference time and the coefficients to reproduce trajectory of an AV
         :type self.poly: dict
         :param self.earliest_departure: the earliest arrival time at the stop bar
         :param self.scheduled_departure: the scheduled arrival time at the stop bar
         :param self.reschedule_departure: True if a vehicle is open to receive a new departure time, False if want to keep previous trajectory
         :type self.reschedule_departure: bool
-        :param self.freshly_scheduled: True if a vehicle is just scheduled a **different** departure and ready for being assigned a trajectory
+        :param self.freshly_scheduled: True if a vehicle is just scheduled a **different** departure and is ready to be assigned a trajectory
         :type self.freshly_scheduled: bool
         :param self._times_sent_to_traj_planner: number of times this vehicle is sent to trajectory planner
+
         .. note::
             - By definition ``scheduled_departure`` is always greater than or equal to ``earliest_arrival``.
-            - Prior to run, make sure teh specified size for trajectory array by ``MAX_NUM_TRAJECTORY_POINTS`` is enough to store all under the worst case.
-            - A vehicle may be open to be rescheduled but gets the same departure time and therefore ``freshly_scheduled`` should hold ``False`` under that case.
-            -
+            - Prior to run, make sure the specified size for trajectory array by ``MAX_NUM_TRAJECTORY_POINTS`` is enough to store all the trajectory points under the worst case.
+            - A vehicle may be open to being rescheduled but gets the same departure time; in that case, ``freshly_scheduled``  should hold False.
+
         """
         self.ID = det_id
         self.veh_type = det_type
@@ -254,15 +253,15 @@ class Vehicle:
 
     def reset_trj_points(self, sc, lane, time_threshold, file):
         """
-        Writes the trajectory points in the CSV file if their time stamp is before the ``time_threshold`` and then removes them by updating the first trajectory point.
+        Writes the trajectory points in the CSV file if the time stamp is before the ``time_threshold`` and then removes those points by updating the pointer to the first trajectory point.
 
         .. warning::
-            Before calling this make sure at least the first trajectory point's time stamp is less than provided time threshold or such a call would be pointless.
+            Before calling this make sure at least the first trajectory point's time stamp is less than provided time threshold or such a call would be meaningless.
 
         :param sc: scenario number being simulated
         :param lane: lane number that is zero-based  (it records it one-based)
         :param time_threshold: any trajectory point before this is considered expired (normally its simulation time)
-        :param file: initialized in :any:`Traffic.__init__()` method, if ``None``, this does not record points in CSV.
+        :param file: The CSV file to be written. It is initialized in :any:`Traffic.__init__()` method, if ``None``, this does not record points in CSV.
         """
         trj_indx, max_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx
         time, distance, speed = self.trajectory[:, trj_indx]
@@ -304,7 +303,7 @@ class Vehicle:
         :param d_scheduled: scheduled departure distance (:math:`m`)
         :param s_scheduled: scheduled departure speed (:math:`m/s`)
         :param lane: the lane this vehicle is in (*for printing purpose only*)
-        :param veh_indx: The index of this vehicle in ots lane (*for printing purpose only*)
+        :param veh_indx: The index of this vehicle in its lane (*for printing purpose only*)
         :param print_signal_detail: ``True`` if we want to print schedule
         """
         min_dist_to_stop_bar = intersection._general_params.get('min_dist_to_stop_bar')
@@ -371,7 +370,7 @@ class Vehicle:
 
     def print_trj_points(self, lane, veh_indx, identifier):
         """
-        Print the first and last trajectory points information. This may be used either when a plan is scheduled or a trajectory is computed.
+        Print the first and last trajectory point information. This may be used either when a plan is scheduled or a trajectory is computed.
 
         :param lane: zero-based lane number
         :param veh_indx: index to find the vehicle in its lane array
@@ -398,14 +397,14 @@ class Traffic(metaclass=Singleton):
     """
     Objectives:
         - Adds new vehicles from the CSV file to the ``lanes.vehlist`` structure
-        - Appends travel time, ID, and elapsed time columns and save CSV
+        - Appends travel time, ID, and elapsed time columns; saves CSV
         - Manages scenario indexing, resetting, and more
         - Computes volumes in lanes
         - removes/records served vehicles
 
     .. note::
-        - The CSV should be located under the ``data/`` directory with the valid name consistent to what inputted as an
-            argument and what exists in the ``data.py`` file.
+        - The CSV should be located under the ``/data/`` directory with the valid name consistent to what was inputted
+            as an argument and what exists in the ``data.py`` file.
         - The scenario number should be appended to the name of intersection followed by an underscore.
 
     :Author:
@@ -640,7 +639,7 @@ class Traffic(metaclass=Singleton):
 
 def earliest_arrival_connected(veh, max_speed, min_headway=0, t_earliest=0):
     """
-    Uses the maximum of the followings to compute the earliest time vehicle can reach to the stop bar:
+    Uses the latest departure time under the following cases to compute the earliest time the connected vehicle can reach the stop bar:
         - Accelerate/Decelerate to the maximum allowable speed and maintain the speed till departure
         - Distance is short, it accelerates/decelerated to the best speed and departs
         - Departs at the minimum headway with its lead vehicle (only for followers close enough to their lead)
@@ -653,7 +652,7 @@ def earliest_arrival_connected(veh, max_speed, min_headway=0, t_earliest=0):
     :param max_speed:
     :param min_headway:
     :param t_earliest: earliest timemap_veh_type2str of lead vehicle that is only needed if the vehicle is a follower vehicle
-    :return:
+    :return: The earliest departure time of the subject connected vehicle
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -681,7 +680,7 @@ def earliest_arrival_connected(veh, max_speed, min_headway=0, t_earliest=0):
 
 def earliest_arrival_conventional(veh, max_speed, min_headway=0, t_earliest=0):
     """
-    Uses the maximum of the followings to compute the earliest time vehicle can reach to the stop bar:
+    Uses the latest departure time under the following cases to compute the earliest time the conventional vehicle can reach the stop bar:
         - Maintains the detected speed till departure
         - Departs at the minimum headway with the vehicle in front
 
@@ -690,7 +689,7 @@ def earliest_arrival_conventional(veh, max_speed, min_headway=0, t_earliest=0):
     :param dist:
     :param min_headway:
     :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
-    :return:
+    :return: The earliest departure time of the subject conventional vehicle
 
     .. note::
         Enter ``min_headway`` and ``t_earliest`` as zeros (default values), if a vehicle is the first in its lane.
