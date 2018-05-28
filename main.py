@@ -22,7 +22,7 @@ class Singleton(type):
 
 
 def check_py_ver():
-    """ checks the python version to meet the requirement"""
+    """ checks the python version to meet the requirement """
     expect_major, expect_minor, expect_rev = 3, 6, 0
     if sys.version_info[0] >= expect_major and sys.version_info[1] >= expect_minor and sys.version_info[
         2] >= expect_rev:
@@ -169,9 +169,9 @@ if __name__ == "__main__":
             print(
                 "\n################################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
             start_time_stamp = datetime.now().strftime('%m-%d-%Y_%H:%M:%S')  # only for naming the CSV files
-            target_sc = 42
-            for sc in range(target_sc, target_sc + 1):
+            for sc in range(1, 45 + 1):
                 run_avian(inter_name, method, sc, start_time_stamp)
+                print('scenario {:>4d} finished.'.format(sc))
         elif run_mode == 'realtime':
             raise Exception('real-time mode is not available yet.')
 

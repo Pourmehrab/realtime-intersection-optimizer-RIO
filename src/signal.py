@@ -71,7 +71,7 @@ class Signal(metaclass=Singleton):
         self._inter_name = intersection._general_params.get('inter_name')
         num_lanes = intersection._general_params.get('num_lanes')
         self._set_lane_lane_incidence(num_lanes)
-        self._set_phase_lane_incidence(num_lanes)
+        self._set_phase_lane_incidence()
 
         if intersection._general_params.get('log_csv'):
             filepath_sig = os.path.join(
@@ -101,13 +101,12 @@ class Signal(metaclass=Singleton):
             for j in conf:
                 self._lane_lane_incidence[l - 1].add(j - 1)  # these are conflicting lanes
 
-    def _set_phase_lane_incidence(self, num_lanes):
+    def _set_phase_lane_incidence(self):
         """
         Sets the phase-phase incidence matrix of the intersection
 
         .. todo:: automate phase enumerator
 
-        :param num_lanes:
         """
         phase_lane_incidence_one_based = get_phases(self._inter_name)
         # if phase_lane_incidence_one_based is None:  # todo add this to the readme
@@ -498,8 +497,8 @@ class GA_SPaT(Signal):
 
         :param lanes:
         :type lanes: Lanes
-        :param num_lanes:
-        :param max_speed:
+        :param intersection:
+        :type intersection: Intersection
         :param critical_volume_ratio:
         :param trajectory_planner:
         :type trajectory_planner: TrajectoryPlanner
@@ -556,13 +555,13 @@ class GA_SPaT(Signal):
                             population[badness] = {'phase_seq': phase_seq, 'time_split': time_split}
 
             if self.__best_GA_alt.get('SPaT').get('badness_measure') == large_positive_num:
-                raise Exception("GA failed to find any serving SPaT")
-            else:
-                for indx, phase in enumerate(self.__best_GA_alt.get('SPaT').get('phase_seq')):
-                    self._append_extend_phase(int(phase), self.__best_GA_alt.get('SPaT').get('time_split')[
-                        indx] - self._y - self._ar, intersection)
-                self._set_non_base_scheduled_departures(lanes, self.__best_GA_alt.get('scheduled_departures'),
-                                                        trajectory_planner, intersection)
+                print("GA failed to find any serving SPaT.")
+
+            for indx, phase in enumerate(self.__best_GA_alt.get('SPaT').get('phase_seq')):
+                self._append_extend_phase(int(phase), self.__best_GA_alt.get('SPaT').get('time_split')[
+                    indx] - self._y - self._ar, intersection)
+            self._set_non_base_scheduled_departures(lanes, self.__best_GA_alt.get('scheduled_departures'),
+                                                    trajectory_planner, intersection)
 
     def _evaluate_badness(self, phase_seq, time_split, lanes, intersection):
         """
