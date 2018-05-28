@@ -263,7 +263,7 @@ class Vehicle:
         :param file: The CSV file to be written. It is initialized in :any:`Traffic.__init__()` method, if ``None``, this does not record points in CSV.
         """
         trj_indx, max_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx
-        time, distance, speed = self.trajectory[:, trj_indx]
+        time, distance, speed = self.get_arrival_schedule()
 
         if file is None:  # don't have to write CSV
             while time < time_threshold and trj_indx <= max_trj_indx:
@@ -297,6 +297,7 @@ class Vehicle:
             - When a new vehicle is scheduled, it has two trajectory points: one for the current state and the other for the final state.
             - If the vehicle is closer than ``MIN_DIST_TO_STOP_BAR``, avoids appending the schedule.
             - Set the ``freshly_scheduled`` to True only if vehicle is getting a new schedule and trajectory planning might become relevant.
+            - Moves back the first trajectory point to make best use of limited size to store trajectory points
 
         :param t_scheduled: scheduled departure time (:math:`s`)
         :param d_scheduled: scheduled departure distance (:math:`m`)
@@ -308,15 +309,18 @@ class Vehicle:
         min_dist_to_stop_bar = intersection._general_params.get('min_dist_to_stop_bar')
         small_positive_num = intersection._general_params.get('small_positive_num')
 
-        first_trj_indx = self.first_trj_point_indx
-        current_dist_to_stop_bar = self.trajectory[1, first_trj_indx]
-        if current_dist_to_stop_bar >= min_dist_to_stop_bar and abs(
+        det_time, det_dist, det_speed = self.get_arrival_schedule()
+        if det_dist >= min_dist_to_stop_bar and abs(
                 t_scheduled - self.trajectory[0, self.last_trj_point_indx]) > small_positive_num:
             self.freshly_scheduled = True
 
+            self.set_first_trj_point_indx(0)
+            self.trajectory[:, 0] = [det_time, det_dist, det_speed]
+
             self.scheduled_departure = t_scheduled
-            self.set_last_trj_point_indx(self.first_trj_point_indx + 1)
-            self.trajectory[:, self.last_trj_point_indx] = [t_scheduled, d_scheduled, s_scheduled]
+
+            self.set_last_trj_point_indx(1)
+            self.trajectory[:, 1] = [t_scheduled, d_scheduled, s_scheduled]
 
             if intersection._general_params.get('print_commandline'):
                 self.print_trj_points(lane, veh_indx, '@')
@@ -615,8 +619,8 @@ class Traffic(metaclass=Singleton):
                 last_veh_indx_to_remove = -1
                 for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
 
-                    det_time = veh.trajectory[0, veh.first_trj_point_indx]
-                    dep_time = veh.trajectory[0, veh.last_trj_point_indx]
+                    det_time, _, _ = veh.get_arrival_schedule()
+                    dep_time, _, _ = veh.get_departure_schedule()
                     if dep_time < simulation_time:  # served! remove it.
 
                         last_veh_indx_to_remove += 1

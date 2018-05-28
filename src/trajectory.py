@@ -225,7 +225,7 @@ Use Case:
             follower_trj_indx += 1
             lead_trj_indx += 1
 
-        # This part adds the end part of follower trajectory that might left out of the domain
+        # This adds the end part of follower trajectory that might left out of the domain
         t_follower_end, d_follower_end = follower_trajectory[:2, follower_trj_indx]
 
         t_departure_relative = veh.scheduled_departure - t_follower_end
