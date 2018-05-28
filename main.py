@@ -21,20 +21,6 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-def check_py_ver():
-    """ checks the python version to meet the requirement """
-    expect_major, expect_minor, expect_rev = 3, 6, 0
-    if sys.version_info[0] >= expect_major and sys.version_info[1] >= expect_minor and sys.version_info[
-        2] >= expect_rev:
-        print("Python version requirement is met.\n")
-    else:
-        print(
-            "INFO: Script developed and tested with Python " + str(expect_major) + "." + str(expect_minor) + "." + str(
-                expect_rev))
-        print("Please update python interpreter.")
-        sys.exit(-1)
-
-
 def run_avian(inter_name, method, sc, start_time_stamp, tester):
     """
     .. note::
@@ -107,8 +93,8 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
         # DO SIGNAL OPTIMIZATION
         signal.solve(lanes, intersection, critical_volume_ratio, trajectory_planner, tester)
 
+        num_lanes = intersection._general_params.get('num_lanes')
         if tester is not None:
-            num_lanes = intersection._general_params.get('num_lanes')
             tester.test_departure_of_trj(lanes, intersection, [0] * num_lanes, lanes.last_vehicle_indx)
 
         # MOVE SIMULATION FORWARD
@@ -123,7 +109,7 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
                 traffic.save_veh_level_csv(inter_name, start_time_stamp)
 
             if intersection._general_params.get('log_csv'):
-                traffic.close_trj_csv()  # cus this is written line y line
+                traffic.close_trj_csv()  # cus this is written line by line
                 signal.close_sig_csv()
             return  # this halts the program
 
@@ -133,7 +119,7 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
 
 if __name__ == "__main__":
     # IMPORT NECESSARY PACKAGES
-    import sys, os
+    import sys, os, operator
     from datetime import datetime
     from time import perf_counter
 
@@ -147,18 +133,14 @@ if __name__ == "__main__":
         from src.optional.test.unit_tests import SimTest
 
         tester = SimTest()
+        tester.py_version_test()
+        tester.arguments_check()
     except ModuleNotFoundError:
         tester = None
 
     print("Interpreter Information")
     print("Python Path: ", sys.executable)
     print("Python Version: ", sys.version)
-
-    check_py_ver()  # Check the interpreter to make sure using right python version
-    assert len(sys.argv) == 4 and \
-            sys.argv[1] in {"13th16th", "TERL", "reserv", } and \
-            sys.argv[2] in {"GA", "MCF", "pretimed", "actuated"} and \
-            sys.argv[3] in {"simulation", "realtime"},"Check the input arguments and try again."
 
     inter_name, method, run_mode = sys.argv[1], sys.argv[2], sys.argv[3]
     if not os.path.isdir('./log/' + inter_name):
