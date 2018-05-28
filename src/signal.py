@@ -269,7 +269,8 @@ class Signal(metaclass=Singleton):
         return any_unserved_vehicle
 
     # @jit()
-    def _do_non_base_SPaT(self, lanes, num_lanes, first_unsrvd_indx, served_vehicle_time, any_unserved_vehicle):
+    def _do_non_base_SPaT(self, lanes, num_lanes, first_unsrvd_indx, served_vehicle_time, any_unserved_vehicle,
+                          intersection):
         """
         Most of times the base SPaT prior to running a ``solve()`` method does not serve all vehicles. However, vehicles
         require trajectory to be provided. One way to address this is to assign them the best temporal trajectory which
@@ -286,6 +287,8 @@ class Signal(metaclass=Singleton):
             - Since the departure times are definitely temporal, DO NOT set ``reschedule_departure`` to ``False``.
             - The ``lanes.first_unsrvd_indx`` cannot be used since it does not keep GA newly served vehicles. However, it would work for pretimed since the method is static.
 
+        :param intersection:
+        :type intersection: Intersection
         :param lanes:
         :type lanes: Lanes
         :param num_lanes:
@@ -294,17 +297,18 @@ class Signal(metaclass=Singleton):
         :param any_unserved_vehicle: `Has `False`` for the lane that has all vehicles scheduled through base SPaT and the ``solve()``, ``True`` otherwise.
         :return: ``served_vehicle_time`` that now includes the schedules of all vehicle except those served through base SPaT
         """
+        min_headway = intersection._general_params.get('min_headway')
         max_departure_time = self.SPaT_end[-1]
         for lane in range(num_lanes):
             if any_unserved_vehicle[lane]:
                 for veh_indx in range(first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
                     veh = lanes.vehlist.get(lane)[veh_indx]
                     if veh_indx == 0:
-                        max_departure_time = max(max_departure_time, veh.earliest_departure) + self._min_headway
+                        max_departure_time = max(max_departure_time, veh.earliest_departure) + min_headway
                     else:
                         lead_veh_scheduled_departure = lanes.vehlist.get(lane)[veh_indx - 1].scheduled_departure
                         max_departure_time = max(max_departure_time, veh.earliest_departure,
-                                                 lead_veh_scheduled_departure) + self._min_headway
+                                                 lead_veh_scheduled_departure) + min_headway
                     served_vehicle_time[lane][veh_indx] = max_departure_time
                     veh.reschedule_departure = True
         return served_vehicle_time
@@ -418,7 +422,7 @@ class Pretimed(Signal):
             scheduled_departures = {lane: np.zeros(len(lanes.vehlist.get(lane)), dtype=float) for lane in
                                     range(num_lanes)}
             scheduled_departures = self._do_non_base_SPaT(lanes, num_lanes, lanes.first_unsrvd_indx,
-                                                          scheduled_departures, any_unserved_vehicle)
+                                                          scheduled_departures, any_unserved_vehicle, intersection)
             self._set_non_base_scheduled_departures(lanes, scheduled_departures, trajectory_planner, intersection,
                                                     tester)
 
