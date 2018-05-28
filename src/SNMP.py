@@ -10,7 +10,7 @@
 # @author: aschkan
 
 from pysnmp.hlapi import *
-#from data.data import get_sig_ctrl_interface_params  # grab intersection parameters from data directory
+from data.data import get_sig_ctrl_interface_params  # grab intersection parameters from data directory
 
 def snmpSet(OID, Value):
     """
