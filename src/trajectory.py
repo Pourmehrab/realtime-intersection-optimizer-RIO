@@ -234,14 +234,12 @@ Use Case:
 
             t_augment = self.discretize_time_interval(self._trj_time_resolution, t_departure_relative)
             d_augment = [d_follower_end - t * v_departure_relative for t in t_augment]
-            v_augment = [v_departure_relative for t in t_augment]
+            v_augment = [v_departure_relative] * len(t_augment)
         else:
             t_augment, d_augment, v_augment = [], [], []
 
         last_index = follower_trj_indx + len(t_augment) + 1
-        follower_trajectory[0, follower_trj_indx + 1:last_index] = t_augment + t_follower_end
-        follower_trajectory[1, follower_trj_indx + 1:last_index] = d_augment
-        follower_trajectory[2, follower_trj_indx + 1:last_index] = v_augment
+        follower_trajectory[:, follower_trj_indx + 1:last_index] = t_augment + t_follower_end, d_augment, v_augment
         veh.set_last_trj_point_indx(last_index - 1)
 
 
@@ -255,9 +253,9 @@ import cplex
 class LeadConnected(Trajectory):
     """
     .. note::
-        - Trajectory function: :math:`f(t)   = \sum_{n=0}^{k-1} b_n \\times t^n`
-        - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n \\times b_n \\times t^{n-1}`
-        - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n \\times (n-1) \\times  b_n \\times t^{n-2}`
+        - Trajectory function: :math:`f(t)   = \sum_{n=0}^{k-1} b_n \\times (t/t_0)^n`
+        - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n \\times b_n \\times (t/t_0)^{n-1}`
+        - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n \\times (n-1) \\times  b_n \\times (t/t_0)^{n-2}`
 
     :param NUM_DIGS: The accuracy to keep decimals
     :param SPEED_DECREMENT_SIZE: The final speed decrements from maximum to 0 by step-size defined by maximum speed divided by this
@@ -277,8 +275,6 @@ class LeadConnected(Trajectory):
     :Date:
         April-2018
     """
-    NUM_DIGS = 3
-    SPEED_DECREMENT_SIZE = 10
 
     def __init__(self, intersection):
         """

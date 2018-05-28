@@ -35,7 +35,7 @@ def check_py_ver():
         sys.exit(-1)
 
 
-def run_avian(inter_name, method, sc, start_time_stamp):
+def run_avian(inter_name, method, sc, start_time_stamp, tester):
     """
     .. note::
         - Trajectories must end at the stop bar, i.e. the distance to stop bar converges to zero, even if they are temporarily assigned.
@@ -105,11 +105,11 @@ def run_avian(inter_name, method, sc, start_time_stamp):
         critical_volume_ratio = 3_600 * volumes.max() / intersection._general_params.get('min_headway')
 
         # DO SIGNAL OPTIMIZATION
-        signal.solve(lanes, intersection, critical_volume_ratio, trajectory_planner)
+        signal.solve(lanes, intersection, critical_volume_ratio, trajectory_planner, tester)
 
-        if intersection._general_params.get('test_mode'):  # todo remove after testing
+        if tester is not None:
             num_lanes = intersection._general_params.get('num_lanes')
-            test_departure_of_trj(lanes, intersection, [0] * num_lanes, lanes.last_vehicle_indx)
+            tester.test_departure_of_trj(lanes, intersection, [0] * num_lanes, lanes.last_vehicle_indx)
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_arrived() and lanes.all_served(num_lanes):
@@ -144,35 +144,34 @@ if __name__ == "__main__":
 
     # testing
     try:
-        from src.optional.test.unit_tests import test_departure_of_trj
+        from src.optional.test.unit_tests import SimTest
+
+        tester = SimTest()
     except ModuleNotFoundError:
-        pass
+        tester = None
 
     print("Interpreter Information")
     print("Python Path: ", sys.executable)
     print("Python Version: ", sys.version)
 
     check_py_ver()  # Check the interpreter to make sure using right python version
+    assert len(sys.argv) == 4 and \
+            sys.argv[1] in {"13th16th", "TERL", "reserv", } and \
+            sys.argv[2] in {"GA", "MCF", "pretimed", "actuated"} and \
+            sys.argv[3] in {"simulation", "realtime"},"Check the input arguments and try again."
 
-    if len(sys.argv) != 4 or \
-            sys.argv[1] not in {"13th16th", "TERL", "reserv", } or \
-            sys.argv[2] not in {"GA", "MCF", "pretimed", "actuated"} or \
-            sys.argv[3] not in {"simulation", "realtime"}:
+    inter_name, method, run_mode = sys.argv[1], sys.argv[2], sys.argv[3]
+    if not os.path.isdir('./log/' + inter_name):
+        os.mkdir('./log/' + inter_name)
 
-        raise Exception("Check the input arguments and try again.")
-    else:  # input arguments are good, run the rest
-        inter_name, method, run_mode = sys.argv[1], sys.argv[2], sys.argv[3]
-        if not os.path.isdir('./log/' + inter_name):
-            os.mkdir('./log/' + inter_name)
-
-        if run_mode == 'simulation':
-            print(
-                "\n################################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
-            start_time_stamp = datetime.now().strftime('%m-%d-%Y_%H:%M:%S')  # only for naming the CSV files
-            for sc in range(1, 45 + 1):
-                run_avian(inter_name, method, sc, start_time_stamp)
-                print('scenario {:>4d} finished.'.format(sc))
-        elif run_mode == 'realtime':
-            raise Exception('real-time mode is not available yet.')
+    if run_mode == 'simulation':
+        print(
+            "\n################################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
+        start_time_stamp = datetime.now().strftime('%m-%d-%Y_%H:%M:%S')  # only for naming the CSV files
+        for sc in range(1, 45 + 1):
+            run_avian(inter_name, method, sc, start_time_stamp, tester)
+            print('scenario {:>4d} finished.'.format(sc))
+    elif run_mode == 'realtime':
+        raise Exception('real-time mode is not available yet.')
 
     print("\nProgram Terminated.")

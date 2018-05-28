@@ -14,10 +14,9 @@ from scipy import stats
 
 from data.data import *
 from main import Singleton
-from src.optional.test.unit_tests import test_trj_points
 from src.trajectory import LeadConventional, LeadConnected, FollowerConventional, FollowerConnected
 
-# testing
+# vis
 try:
     from src.optional.vis.vistrj import VisualizeSpaceTime
 
@@ -724,15 +723,16 @@ class TrajectoryPlanner(metaclass=Singleton):
         self.follower_conventional_trj_estimator = FollowerConventional(intersection)
         self.follower_connected_trj_optimizer = FollowerConnected(intersection)
 
-        self._max_speed = inter_name = intersection._general_params.get('max_speed')
+        self._max_speed = intersection._general_params.get('max_speed')
 
         if optional_packages_found:  # todo remove after testing
             self._visualizer = VisualizeSpaceTime(6)
         else:
             self._visualizer = None
 
-    def plan_trajectory(self, lanes, veh, lane, veh_indx, intersection, identifier):
+    def plan_trajectory(self, lanes, veh, lane, veh_indx, intersection, tester, identifier):
         """
+        :param tester:
         :param lanes:
         :type lanes: Lanes
         :param veh:
@@ -766,8 +766,8 @@ class TrajectoryPlanner(metaclass=Singleton):
         if abs(veh.trajectory[0, veh.last_trj_point_indx] - veh.scheduled_departure) > 0.1:
             raise Exception('The planned trj does not match the scheduled time.')
 
-        if optional_packages_found:
-            test_trj_points(veh)
+        if tester is not None:
+            tester.test_trj_points(veh)
 
         if intersection._general_params.get('print_commandline'):
             veh.print_trj_points(lane, veh_indx, identifier)

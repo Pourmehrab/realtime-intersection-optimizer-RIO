@@ -25,7 +25,6 @@ def get_general_params(inter_name):
         - trj_time_resolution: time difference between two consecutive trajectory points in seconds used in :any:`discretize_time_interval()` (be careful not to exceed max size of trajectory)
         - log_csv:
         - print_commandline:
-        - test_mode:
 
 
     .. note::
@@ -61,7 +60,6 @@ def get_general_params(inter_name):
                 'trj_time_resolution': 1.0,
                 'log_csv': True,
                 'print_commandline': True,
-                'test_mode': True,
                 }
     elif inter_name == 'TERL':
         return {'inter_name': 'TERL',
@@ -81,7 +79,6 @@ def get_general_params(inter_name):
                 'trj_time_resolution': 1.0,
                 'log_csv': True,
                 'print_commandline': True,
-                'test_mode': True,
                 }
     elif inter_name == 'reserv':
         return {'inter_name': 'reserv',
@@ -101,7 +98,6 @@ def get_general_params(inter_name):
                 'trj_time_resolution': 1.0,
                 'log_csv': True,
                 'print_commandline': True,
-                'test_mode': True,
                 }
     else:
         raise Exception('Simulation parameters are not known for this intersection.')
