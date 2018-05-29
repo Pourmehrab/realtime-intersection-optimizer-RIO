@@ -125,6 +125,7 @@ if __name__ == "__main__":
 
     from src.time_keeper import TimeKeeper
     from src.intersection import Intersection, Lanes, Traffic, TrajectoryPlanner
+    from src.sig_ctrl_interface import snmp_phase_ctrl
     # Signal Optimizers
     from src.signal import GA_SPaT, Pretimed
 

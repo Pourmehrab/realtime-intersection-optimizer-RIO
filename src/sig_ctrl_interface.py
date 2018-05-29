@@ -10,7 +10,7 @@
 # @author: aschkan
 
 from pysnmp.hlapi import *
-from data.data import get_sig_ctrl_interface_params  # grab intersection parameters from data directory
+#from data.data import get_sig_ctrl_interface_params
 
 def snmpSet(OID, Value):
     """
@@ -168,7 +168,7 @@ def snmpTerminate():
     snmpSet('1.3.6.1.4.1.1206.4.2.1.1.5.1.5.1',0) 
     snmpSet('1.3.6.1.4.1.1206.4.2.1.1.5.1.6.1',0)
 
-def snmpPhaseCtrl(Phase):
+def snmp_phase_ctrl(Phase):
     """
     :Author:
         Aschkan Omidvar <aschkan@ufl.edu>
@@ -177,14 +177,19 @@ def snmpPhaseCtrl(Phase):
     .. note:
         Send command to ASC 
     """
+    #num_phase, al, non, non_conflict = get_sig_ctrl_interface_params(inter_name)
+    num_phase=8              # Total Number of phases at the TERL
+    al=range(1,num_phase+1)
+    non=[0]
+    non_conflict=[[2], [3,8], [4,7], [6]]
     snmpHold(list(al))
     snmpHold(list(non))
 
  
-    for p in range(len(nonConflict)):
-        if Phase in nonConflict[p]:
-            snmpVehCall(nonConflict[p])
-            snmpOmit([i for i in al if i not in nonConflict[p]])
+    for p in range(len(non_conflict)):
+        if Phase in non_conflict[p]:
+            snmpVehCall(non_conflict[p])
+            snmpOmit([i for i in al if i not in non_conflict[p]])
 
 #Quickstart Test
-#snmpPhaseCtrl(4)
+#snmp_phase_ctrl(4)
