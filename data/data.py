@@ -1,5 +1,4 @@
-
-# File name: data.py               
+# File name: data.py
 # Authors: Mahmoud Pourmehrab / Aschkan Omidvar    
 # Emails: pourmehrab@gmail.com / aschkan@ufl.edu      
 # Updated (Pourmehrab): Apr/22/2018
@@ -350,11 +349,11 @@ def get_signal_params(inter_name):
 
 def get_sig_ctrl_interface_params(inter_name):
     """
-    :return:
-        - Proper phases to be called 
-
     .. note::
         - Account for SNMP lag time. Depending on the processor capability: [0.1s-0.9s]
+
+    :return:
+        - Proper phases to be called 
 
     :Author:
         Ash Omidvar <aschkan@ufl.edu>
@@ -362,12 +361,12 @@ def get_sig_ctrl_interface_params(inter_name):
         May-2018
     """
     if inter_name == 'TERL':
-        NoPhase=8              #insert the maximum phase number
-        al=range(1,NoPhase+1)
-        non=[0]
-        nonConflict=[[2], [3,8], [4,7], [6]]
-        
-    else:
-        raise Exception('Simulation parameters are not known for this intersection.')
+        num_phase = 8  # todo: what is this?
+        al = range(1, num_phase + 1)  # todo: what is this?
+        non = [0]  # todo: what is this?
+        non_conflict = [[2], [3, 8], [4, 7], [6]]  # todo: what is this?
 
-    return NoPhase, al, non, nonConflict
+    else:
+        raise Exception('Signal controller parameters are not known for this intersection.')
+
+    return num_phase, al, non, non_conflict

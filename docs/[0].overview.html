@@ -169,7 +169,7 @@
 <div><div class="admonition note">
 <p class="first admonition-title">Note</p>
 <ul class="last">
-<li><p class="first">The interpreter version requirement is set to <code class="docutils literal notranslate"><span class="pre">3.6.4</span></code>. If using conda, do:</p>
+<li><p class="first">The interpreter version requirement is set to <code class="docutils literal notranslate"><span class="pre">3.6.0</span></code>. If using conda, do:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conda</span> <span class="n">update</span> <span class="n">conda</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">conda</span> <span class="n">install</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.6</span><span class="o">.</span><span class="mi">4</span>
 </pre></div>
@@ -204,9 +204,10 @@
 <li><dl class="first docutils">
 <dt>Outputs are stored under <code class="docutils literal notranslate"><span class="pre">/log/&lt;intersection</span> <span class="pre">name&gt;/</span></code> (create the directories if they do not exist):</dt>
 <dd><ul class="first last simple">
-<li>The outputs are stored in CSV format and named by the format of <code class="docutils literal notranslate"><span class="pre">&lt;UTC</span> <span class="pre">timestamp&gt;_&lt;sc&gt;_&lt;content</span> <span class="pre">identifier&gt;.csv</span></code>. For example <code class="docutils literal notranslate"><span class="pre">13May2018_14-15-20_5_trj_vehicle_level.csv</span></code> includes the result at the vehicle level for simulation of the fifth scenario.</li>
-<li><code class="docutils literal notranslate"><span class="pre">&lt;intersection</span> <span class="pre">name&gt;_vehicle_level.csv</span></code> includes input CSV plus the <code class="docutils literal notranslate"><span class="pre">departure</span> <span class="pre">time,</span> <span class="pre">vehicle</span> <span class="pre">ID</span></code> and <code class="docutils literal notranslate"><span class="pre">elapsed</span> <span class="pre">time</span></code> columns</li>
-<li><code class="docutils literal notranslate"><span class="pre">&lt;intersection</span> <span class="pre">name&gt;_trj_point_level.csv</span></code> includes the trajectory points</li>
+<li>The outputs are stored in CSV format and named by the format of <code class="docutils literal notranslate"><span class="pre">&lt;local</span> <span class="pre">timestamp&gt;_&lt;sc&gt;_&lt;content</span> <span class="pre">identifier&gt;.csv</span></code> (time is in <code class="docutils literal notranslate"><span class="pre">mm-dd-yyyy_hh:mm:ss</span></code> format).</li>
+<li><code class="docutils literal notranslate"><span class="pre">&lt;local</span> <span class="pre">timestamp&gt;_&lt;sc&gt;_vehicle_level.csv</span></code> includes input CSV plus the <code class="docutils literal notranslate"><span class="pre">departure</span> <span class="pre">time,</span> <span class="pre">vehicle</span> <span class="pre">ID</span></code> and <code class="docutils literal notranslate"><span class="pre">elapsed</span> <span class="pre">time</span></code> columns</li>
+<li><code class="docutils literal notranslate"><span class="pre">&lt;local</span> <span class="pre">timestamp&gt;_&lt;sc&gt;_trj_point_level.csv</span></code> includes the trajectory points</li>
+<li><code class="docutils literal notranslate"><span class="pre">&lt;local</span> <span class="pre">timestamp&gt;_&lt;sc&gt;_sig_phase_level.csv</span></code> includes signalization details</li>
 </ul>
 </dd>
 </dl>
@@ -220,7 +221,7 @@
 <ul class="last">
 <li><p class="first">As of now, no traffic generator module is developed as part of the main workflow. The traffic is input in CSV format under <code class="docutils literal notranslate"><span class="pre">/data/&lt;intersection</span> <span class="pre">name&gt;/</span></code> directory.</p>
 </li>
-<li><p class="first">For simulation, the directory <code class="docutils literal notranslate"><span class="pre">/data/&lt;intersection</span> <span class="pre">name&gt;/</span></code> shall include <code class="docutils literal notranslate"><span class="pre">&lt;UTC</span> <span class="pre">timestamp&gt;_sc_sig_phase_level,</span> <span class="pre">_trj_vehicle_level,</span> <span class="pre">_trj_point_level.csv</span></code> which has the scenarios to be tested. Note the filename should match the intersection name.</p>
+<li><p class="first">For simulation, the directory <code class="docutils literal notranslate"><span class="pre">/data/&lt;intersection</span> <span class="pre">name&gt;/</span></code> shall include <code class="docutils literal notranslate"><span class="pre">&lt;local</span> <span class="pre">timestamp&gt;_sc_sig_phase_level,</span> <span class="pre">_trj_vehicle_level,</span> <span class="pre">_trj_point_level.csv</span></code> which has the scenarios to be tested. Note the filename should match the intersection name.</p>
 </li>
 <li><dl class="first docutils">
 <dt>The CSV file must include columns with the following heading:</dt>
@@ -314,10 +315,10 @@
 </div>
 </div></blockquote>
 <dl class="docutils">
-<dt>You can add any intersection in the <code class="docutils literal notranslate"><span class="pre">src/intersection/data.py</span></code>. The list of all available intersections is:</dt>
+<dt>Any arbitrary intersection can be added in the <code class="docutils literal notranslate"><span class="pre">src/intersection/data.py</span></code>. The list of all available intersections is:</dt>
 <dd><ul class="first last simple">
-<li><code class="docutils literal notranslate"><span class="pre">13th16th</span></code>: A physical one, google map it in Gainesville for the image and lane assignment detail</li>
-<li><code class="docutils literal notranslate"><span class="pre">TERL</span></code>: Located at <a class="reference external" href="https://goo.gl/maps/qiwW7TJe4co">2612 Springhill Road, Tallahassee, FL 32305</a>. Note the lane numbering in the code is 1: Southbound (all movements), 2: Westbound (through and right turn), 3: Westbound (left turn), 4: Northbound (all movements), 5: Eastbound (through and right turn), 6: Eastbound (left turn).</li>
+<li><code class="docutils literal notranslate"><span class="pre">13th16th</span></code>: A physical intersection in Gainesville; google map it for the image and lane assignment detail.</li>
+<li><code class="docutils literal notranslate"><span class="pre">TERL</span></code>: A physical intersection located at <a class="reference external" href="https://goo.gl/maps/qiwW7TJe4co">2612 Springhill Road, Tallahassee, FL 32305</a>; google map it for the image and lane assignment detail. Note the lane numbering in the code is 1: Southbound (all movements), 2: Westbound (through and right turn), 3: Westbound (left turn), 4: Northbound (all movements), 5: Eastbound (through and right turn), 6: Eastbound (left turn).</li>
 <li><code class="docutils literal notranslate"><span class="pre">reserv</span></code>:  for the reservation based model intersection that has 12 incoming lanes: 3 per approach and all lanes are exclusive (for more detail check <a class="reference external" href="http://www.cs.utexas.edu/~aim/">UT Texas AIM</a>).</li>
 <li>Some possible intersections to add are <code class="docutils literal notranslate"><span class="pre">RTS,</span> <span class="pre">42nd40th,</span> <span class="pre">SolarPark</span></code></li>
 </ul>
@@ -349,7 +350,7 @@
 <dt id="term-avian">AVIAN</dt>
 <dd>Autonomous Vehicles at Intelligent intersections and Advanced Networks. Read more <a class="reference external" href="http://avian.essie.ufl.edu">here</a>.</dd>
 <dt id="term-spat">SPaT</dt>
-<dd>Signal Phase and Timing</dd>
+<dd>Signal Phase and Timing. SPaT decision can be represented by the sequence and green duration of phases.</dd>
 <dt id="term-cav">CAV</dt>
 <dd>Connected and Automated Vehicle</dd>
 <dt id="term-cnv">CNV</dt>
@@ -367,7 +368,7 @@
 <dt id="term-ga">GA</dt>
 <dd>Genetic Algorithm used to optimize SPaTs decision. Read more <a class="reference external" href="https://en.wikipedia.org/wiki/Genetic_algorithm">here</a>.</dd>
 <dt id="term-badness">badness</dt>
-<dd>In the context of GA, badness defines as the negative of fitness of an individual where less is preferred.</dd>
+<dd>In the context of GA, badness is defined as the negative of the fitness of an individual. In other words, GA searches for an alternative with the least badness (equivalently, with the highest fitness) value.</dd>
 <dt id="term-mcf">MCF</dt>
 <dd>Minimum Cost Flow model used to optimize SPaTs decision. Read more <a class="reference external" href="https://en.wikipedia.org/wiki/Minimum-cost_flow_problem">here</a>.</dd>
 </dl>
@@ -375,87 +376,23 @@
 <div class="section" id="main-script">
 <h2>1.3. Main Script<a class="headerlink" href="#main-script" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">main.py</span></code> file implements the following work flow:</p>
-<span class="target" id="module-main"></span><dl class="function">
-<dt id="main.check_py_ver">
-<code class="descclassname">main.</code><code class="descname">check_py_ver</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#main.check_py_ver" title="Permalink to this definition">¶</a></dt>
-<dd><p>checks the python version to meet the requirement (<code class="docutils literal notranslate"><span class="pre">ver</span> <span class="pre">3.6.4</span></code>)</p>
+<span class="target" id="module-main"></span><dl class="class">
+<dt id="main.Singleton">
+<em class="property">class </em><code class="descclassname">main.</code><code class="descname">Singleton</code><a class="headerlink" href="#main.Singleton" title="Permalink to this definition">¶</a></dt>
+<dd><p>Only to make singleton classes.</p>
+<p>The credit for this goes to <a class="reference external" href="https://stackoverflow.com/q/6760685">this</a> stackoverflow  post.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="main.run_avian">
-<code class="descclassname">main.</code><code class="descname">run_avian</code><span class="sig-paren">(</span><em>inter_name</em>, <em>method</em>, <em>sc</em>, <em>start_time_stamp</em>, <em>do_traj_computation</em>, <em>log_csv</em>, <em>print_commandline</em>, <em>optional_packages_found</em><span class="sig-paren">)</span><a class="headerlink" href="#main.run_avian" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">main.</code><code class="descname">run_avian</code><span class="sig-paren">(</span><em>inter_name</em>, <em>method</em>, <em>sc</em>, <em>start_time_stamp</em>, <em>tester</em><span class="sig-paren">)</span><a class="headerlink" href="#main.run_avian" title="Permalink to this definition">¶</a></dt>
 <dd><div class="admonition note">
 <p class="first admonition-title">Note</p>
 <ul class="last simple">
 <li>Trajectories must end at the stop bar, i.e. the distance to stop bar converges to zero, even if they are temporarily assigned.</li>
-<li>OTHER ASSUMPTIONS</li>
+<li>list all the other assumptions here…</li>
 </ul>
 </div>
-<dl class="docutils">
-<dt>For logging and printing of information set boolean variables:</dt>
-<dd><ul class="first last simple">
-<li><code class="docutils literal notranslate"><span class="pre">log_at_trj_point_level</span></code> saves a CSV under <code class="docutils literal notranslate"><span class="pre">\log</span></code> directory that contains all trajectory points for all vehicles</li>
-<li><code class="docutils literal notranslate"><span class="pre">log_at_vehicle_level</span></code> saves a CSV file under <code class="docutils literal notranslate"><span class="pre">\log</span></code> directory that contains departure times and elapsed times and vehicle IDs</li>
-</ul>
-</dd>
-<dt>The work flow is as the following:</dt>
-<dd><ul class="first last simple">
-<li>Tests for python version</li>
-<li>Checks the input arguments to be valid</li>
-<li><dl class="first docutils">
-<dt>Instantiate:</dt>
-<dd><ul class="first last">
-<li><a class="reference internal" href="[2].intersection.html#src.intersection.Intersection" title="src.intersection.Intersection"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Intersection</span></code></a></li>
-<li><a class="reference internal" href="[2].intersection.html#src.intersection.Lanes" title="src.intersection.Lanes"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Lanes</span></code></a></li>
-<li><a class="reference internal" href="[2].intersection.html#src.intersection.Traffic" title="src.intersection.Traffic"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Traffic</span></code></a></li>
-<li><dl class="first docutils">
-<dt>trajectory planners: all bellow</dt>
-<dd><ul class="first last">
-<li><a class="reference internal" href="[4].trajectory.html#src.trajectory.LeadConventional" title="src.trajectory.LeadConventional"><code class="xref any py py-class docutils literal notranslate"><span class="pre">LeadConventional</span></code></a></li>
-<li><a class="reference internal" href="[4].trajectory.html#src.trajectory.LeadConnected" title="src.trajectory.LeadConnected"><code class="xref any py py-class docutils literal notranslate"><span class="pre">LeadConnected</span></code></a></li>
-<li><a class="reference internal" href="[4].trajectory.html#src.trajectory.FollowerConventional" title="src.trajectory.FollowerConventional"><code class="xref any py py-class docutils literal notranslate"><span class="pre">FollowerConventional</span></code></a></li>
-<li><a class="reference internal" href="[4].trajectory.html#src.trajectory.FollowerConnected" title="src.trajectory.FollowerConnected"><code class="xref any py py-class docutils literal notranslate"><span class="pre">FollowerConnected</span></code></a></li>
-</ul>
-</dd>
-</dl>
-</li>
-<li><dl class="first docutils">
-<dt>signal: one of followings</dt>
-<dd><ul class="first last">
-<li><a class="reference internal" href="[3].signal.html#src.signal.GA_SPaT" title="src.signal.GA_SPaT"><code class="xref any py py-class docutils literal notranslate"><span class="pre">GA_SPaT</span></code></a></li>
-<li><a class="reference internal" href="#term-pretimed"><code class="xref any std std-term docutils literal notranslate"><span class="pre">Pretimed</span></code></a></li>
-</ul>
-</dd>
-</dl>
-</li>
-</ul>
-</dd>
-</dl>
-</li>
-<li><dl class="first docutils">
-<dt>set simulation start time to when first vehicle shows up</dt>
-<dd><ul class="first last">
-<li><a class="reference internal" href="[1].simulator.html#src.time_keeper.TimeKeeper" title="src.time_keeper.TimeKeeper"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TimeKeeper</span></code></a></li>
-</ul>
-</dd>
-</dl>
-</li>
-<li><dl class="first docutils">
-<dt>main loop stops only when all vehicles in the provided input traffic CSV file are assigned a departure time.</dt>
-<dd><ul class="first last">
-<li>remove vehicles that are served</li>
-<li>update SPaT</li>
-<li>update vehicle information (includes addition too)</li>
-<li>do signal</li>
-<li>plan trajectories</li>
-<li>update time and check of termination</li>
-</ul>
-</dd>
-</dl>
-</li>
-</ul>
-</dd>
-</dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -465,9 +402,6 @@
 <li><strong>method</strong> (<em>str</em>) – pretimed, GA, …</li>
 <li><strong>sc</strong> (<em>int</em>) – scenario number (<em>should match the appendix of the input CSV filename</em>)</li>
 <li><strong>start_time_stamp</strong> – The UTC time stamp to name the CSV files</li>
-<li><strong>log_csv</strong> – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the results get stored in the CSV files.</li>
-<li><strong>print_commandline</strong> – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, details will be shown on real-time in the command line</li>
-<li><strong>optional_packages_found</strong> – optional packages for testing</li>
 </ul>
 </td>
 </tr>
@@ -570,9 +504,7 @@
 
   <script type="text/javascript">
       jQuery(function () {
-          
-          SphinxRtdTheme.Navigation.enableSticky();
-          
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script> 
 
