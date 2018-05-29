@@ -10,7 +10,7 @@
 # @author: aschkan
 
 from pysnmp.hlapi import *
-#from data.data import get_sig_ctrl_interface_params
+from data.data import get_sig_ctrl_interface_params
 
 def snmpSet(OID, Value):
     """
@@ -179,9 +179,7 @@ def snmp_phase_ctrl(Phase):
     """
     #num_phase, al, non, non_conflict = get_sig_ctrl_interface_params(inter_name)
     num_phase=8              # Total Number of phases at the TERL
-    al=range(1,num_phase+1)
-    non=[0]
-    non_conflict=[[2], [3,8], [4,7], [6]]
+
     snmpHold(list(al))
     snmpHold(list(non))
 
