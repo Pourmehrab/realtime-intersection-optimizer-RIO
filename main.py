@@ -119,7 +119,7 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
 
 if __name__ == "__main__":
     # IMPORT NECESSARY PACKAGES
-    import sys, os, operator
+    import sys, os
     from datetime import datetime
     from time import perf_counter
 
@@ -130,7 +130,7 @@ if __name__ == "__main__":
 
     # testing
     try:
-        from src.optional.test.unit_tests import SimTest
+        from src.unit_tests import SimTest
 
         tester = SimTest()
         tester.py_version_test()

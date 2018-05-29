@@ -56,10 +56,10 @@ class Signal(metaclass=Singleton):
 
         .. note:: SPaT starts executing from index 0 to the end of each list.
 
-    :Author:
-        Mahmoud Pourmehrab <pourmehrab@gmail.com>
-    :Date:
-        April-2018
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
        """
         self._inter_name = intersection._general_params.get('inter_name')
         num_lanes = intersection._general_params.get('num_lanes')
@@ -82,6 +82,10 @@ class Signal(metaclass=Singleton):
         key is a lane and value is *set* of lanes that are in conflict with key (note numbering starts from 1 not 0) to ``lane_lane_incidence`` which includes the conflict matrix :math:`|L|\\times |L|` where element :math:`ij` is 1 if :math:`i` and :math:`j` are conflicting movements
 
         :param num_lanes:
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         # gets the conflict dictionary for this intersection
         conf_dict = get_conflict_dict(self._inter_name)
@@ -100,6 +104,10 @@ class Signal(metaclass=Singleton):
 
         .. todo:: automate phase enumerator
 
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         phase_lane_incidence_one_based = get_phases(self._inter_name)
         # if phase_lane_incidence_one_based is None:  # todo add this to the readme
@@ -118,6 +126,10 @@ class Signal(metaclass=Singleton):
 
         :param phase: phase to be added
         :param actual_green: green duration of that phase
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         if self.SPaT_sequence[-1] == phase:  # extend this phase
             self.SPaT_end[-1] = self.SPaT_start[-1] + actual_green + self._y + self._ar
@@ -143,6 +155,10 @@ class Signal(metaclass=Singleton):
 
         :param time_threshold: Normally the current clock of simulation or real-time in :math:`s`
         :param sc: scenario number to be recorded in CSV
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         assert self.SPaT_end[-1] >= time_threshold, "If all phases get purged, SPaT becomes empty"
 
@@ -177,6 +193,10 @@ class Signal(metaclass=Singleton):
     def _flush_upcoming_SPaTs(self, intersection):
         """
         Just leaves the first SPaT and flushes the rest. One more severe variant to this is to even reduce the the green time of first phase.
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         if len(self.SPaT_sequence) > 1:
             if intersection._general_params.get('print_commandline'):
@@ -225,6 +245,10 @@ class Signal(metaclass=Singleton):
         :param trajectory_planner:
         :type trajectory_planner: src.intersection.TrajectoryPlanner
         :return: The ``lanes.first_unsrvd_indx`` array that keeps index off the first unserved vehicle in each lane, is initialized to zero before calling this method and gets updated by the end of this call. It also returns ``served_vehicle_time`` that shows the schedule
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         num_lanes, max_speed, min_headway, do_traj_computation = map(intersection._general_params.get,
                                                                      ['num_lanes', 'max_speed', 'min_headway',
@@ -296,6 +320,10 @@ class Signal(metaclass=Singleton):
         :param served_vehicle_time: includes schedule of departures for those served by base SPaT
         :param any_unserved_vehicle: `Has `False`` for the lane that has all vehicles scheduled through base SPaT and the ``solve()``, ``True`` otherwise.
         :return: ``served_vehicle_time`` that now includes the schedules of all vehicle except those served through base SPaT
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         min_headway = intersection._general_params.get('min_headway')
         max_departure_time = self.SPaT_end[-1]
@@ -327,6 +355,10 @@ class Signal(metaclass=Singleton):
         :param scheduled_departure:
         :param trajectory_planner:
         :type trajectory_planner: TrajectoryPlanner
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         max_speed, phase_cover_set, lag_on_green, min_headway, do_traj_computation = map(
             intersection._general_params.get,
@@ -411,6 +443,10 @@ class Pretimed(Signal):
         :type lanes: Lanes
         :param intersection:
         :type intersection: Intersection
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         num_lanes = intersection._general_params.get('num_lanes')
         any_unserved_vehicle = self._do_base_SPaT(lanes, intersection, trajectory_planner, tester)
@@ -456,6 +492,10 @@ class GA_SPaT(Signal):
         :type intersection: Intersection
         :param sc:
         :param start_time_stamp:
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
 
         super().__init__(intersection, sc, start_time_stamp)
@@ -501,6 +541,10 @@ class GA_SPaT(Signal):
         :param critical_volume_ratio:
         :param trajectory_planner:
         :type trajectory_planner: TrajectoryPlanner
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         num_lanes, large_positive_num = map(intersection._general_params.get, ['num_lanes', 'large_positive_num'])
         self._flush_upcoming_SPaTs(intersection)
@@ -586,6 +630,10 @@ class GA_SPaT(Signal):
         :param intersection:
         :type intersection: Intersection
         :return: The corresponding :term:`badness` for given SPaT defined by ``phase_seq`` and ``time_split`` to be added to the population. It also sets, if qualified, this individual as the best known so far.
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         num_lanes, large_positive_num, lag_on_green, min_headway = map(intersection._general_params.get,
                                                                        ['num_lanes', 'large_positive_num',
@@ -650,6 +698,10 @@ class GA_SPaT(Signal):
         :param critical_volume_ratio:
         :param phase_length:
         :return:
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         cycle_length = (phase_length * self._ar) / (1 - critical_volume_ratio)
         if cycle_length < 60:
@@ -667,6 +719,10 @@ class GA_SPaT(Signal):
 
         :param phase_length:
         :return: seq
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         seq = tuple(np.random.choice(self.__GA_params.get('allowable_phases'), phase_length, replace=False))
         return seq
@@ -680,6 +736,10 @@ class GA_SPaT(Signal):
         :param cycle_length:
         :param phase_length:
         :return: time_split
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         if phase_length == 1:
             return np.array([cycle_length])
@@ -712,6 +772,10 @@ class GA_SPaT(Signal):
         :param phase_length:
         :param half_max_indx:
         :return: child with valid SPaT inherited from provided parents.
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         phase_seq = tuple([left_parent['phase_seq'][i] if i < half_max_indx else right_parent['phase_seq'][i]
                            for i in range(phase_length)])

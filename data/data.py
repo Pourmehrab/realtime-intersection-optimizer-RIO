@@ -50,7 +50,7 @@ def get_general_params(inter_name):
                 'k': int(10),
                 'm': int(20),
                 'num_lanes': int(16),
-                'phase_cover_set': None,  # todo: add this
+                'phase_cover_set': (17, 9, 8, 15,),
                 'small_positive_num': 0.01,
                 'large_positive_num': 999_999_999,
                 'lag_on_green': 1.0,
@@ -232,7 +232,6 @@ def get_conflict_dict(inter_name):
                14: {2, 3, 12, 9, 11, 4, 10, 5},
                15: {2, 3, 12, 4, 5, 8, 7, 11, 6},
                16: {12, 2, 3, 8, 4, 7, 5, 11}}
-        # note (17, 9, 8, 15,) covers all lanes
 
     elif inter_name == 'TERL':
         lli = {1: {2, 3, 4, 5, 6, },
@@ -241,7 +240,6 @@ def get_conflict_dict(inter_name):
                4: {1, 2, 3, 5, 6},
                5: {1, 3, 4, },
                6: {1, 2, 4, }, }
-        # note (1, 2, 3, 4, ) covers all lanes
 
     elif inter_name == 'reserv':
         lli = {1: {4, 5, 6, 7, 8, 9, 10, 11, 12},

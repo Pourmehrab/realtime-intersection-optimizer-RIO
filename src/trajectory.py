@@ -49,6 +49,10 @@ class Trajectory(metaclass=Singleton):
 
         .. warning:: It is inclusion-wise of the beginning and end of the interval.
 
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         if end_time <= start_time - self._small_positive_num:
             raise Exception('cannot go backward in time')
@@ -72,6 +76,10 @@ class Trajectory(metaclass=Singleton):
         :param t: time stamps (seconds from the reference time)
         :param d: distances at each time stamp (in meters from the stop bar)
         :param s: speed at each time stamp (in :math:`m/s`)
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         n = len(t)
         veh.trajectory[:, 0:n] = [t, d, s]
@@ -84,9 +92,9 @@ class Trajectory(metaclass=Singleton):
 # -------------------------------------------------------
 class LeadConventional(Trajectory):
     """
-Computes the trajectory for a lead conventional vehicle assuming the vehicle tends to maintain its arrival speed.
+    Computes the trajectory for a lead conventional vehicle assuming the vehicle tends to maintain its arrival speed.
 
-Use Case:
+    Use Case:
 
     Instantiate like::
 
@@ -97,10 +105,10 @@ Use Case:
         >>> lead_conventional_trj_estimator.solve(veh)
 
 
-:Author:
-    Mahmoud Pourmehrab <pourmehrab@gmail.com>
-:Date:
-    April-2018
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
 
     def __init__(self, intersection):
@@ -112,6 +120,10 @@ Use Case:
 
         :param veh: the lead conventional vehicle
         :type veh: Vehicle
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         det_time, det_dist, _ = veh.get_arrival_schedule()
         v = det_dist / (veh.scheduled_departure - det_time)
@@ -131,7 +143,7 @@ class FollowerConventional(Trajectory):
     """
     Estimates the trajectory for a follower conventional vehicle assuming a car following model. In the current implementation, Gipps car-following model [#]_ is used.
 
-Use Case:
+    Use Case:
 
     Instantiate like::
 
@@ -146,7 +158,7 @@ Use Case:
     :Date:
         April-2018
 
-.. [#] Gipps, Peter G. *A behavioural car-following model for computer simulation*. Transportation Research Part B: Methodological 15.2 (1981): 105-111 (`link <https://www.sciencedirect.com/science/article/pii/0191261581900370>`_).
+    .. [#] Gipps, Peter G. *A behavioural car-following model for computer simulation*. Transportation Research Part B: Methodological 15.2 (1981): 105-111 (`link <https://www.sciencedirect.com/science/article/pii/0191261581900370>`_).
     """
 
     def __init__(self, intersection):
@@ -177,6 +189,11 @@ Use Case:
         :param cc8: Standstill Acceleration in :math:`m/s^2`
         :param cc9: Acceleration at 80 :math:`km/h` in :math:`m/s^2`
         :return: follower next acceleration rate
+
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            May-2018
         """
         dx = foll_d - lead_d - lead_l
         dv = lead_s - foll_s
@@ -223,6 +240,10 @@ Use Case:
             Gipps car following formula.
 
         :return: follower next acceleration rate
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         gap = foll_d - lead_d
         if lead_s <= self._small_positive_num:  # Gipps doesn't work well for near zero speed
@@ -254,6 +275,10 @@ Use Case:
         :type veh: Vehicle
         :param lead_veh: The vehicle in front of subject conventional vehicle
         :type lead_veh: Vehicle
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         start_lead_trj_indx = lead_veh.first_trj_point_indx + 1  # skip the first point to compute acceleration rate
         max_lead_traj_indx = lead_veh.last_trj_point_indx + 1
@@ -299,6 +324,10 @@ Use Case:
         :param a:
         :param t:
         :return: distance to stop bar and speed
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         dt = t - t0
         d = d0 - (a * (t ** 2 - t0 ** 2) / 2 + (v0 - a * t0) * dt)
@@ -331,8 +360,6 @@ class LeadConnected(Trajectory):
         - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n \\times b_n \\times (t/t_0)^{n-1}`
         - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n \\times (n-1) \\times  b_n \\times (t/t_0)^{n-2}`
 
-    :param NUM_DIGS: The accuracy to keep decimals
-    :param SPEED_DECREMENT_SIZE: The final speed decrements from maximum to 0 by step-size defined by maximum speed divided by this
 
     Use Case:
 
@@ -365,6 +392,10 @@ class LeadConnected(Trajectory):
         :param k: int
         :param m: number of points (exclusive of boundaries) to control speed/acceleration
         :param m: int
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         super().__init__(intersection)
 
@@ -410,6 +441,10 @@ class LeadConnected(Trajectory):
         :param veh: vehicle object that its trajectory is meant to be computed
         :type veh: Vehicle
         :return: CPLEX LP model. Should return the model since the follower optimizer adds constraints to this model
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
 
         amin, amax = veh.max_decel_rate, veh.max_accel_rate
@@ -456,6 +491,10 @@ class LeadConnected(Trajectory):
         :param model:
         :type model: CPLEX
         :return: coefficients of the polynomial for the ``veh`` object and trajectory points to the trajectory attribute of it
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         det_time, det_dist, det_speed = veh.get_arrival_schedule()
         dep_time, dep_dist, dep_speed = veh.get_departure_schedule()
@@ -488,6 +527,10 @@ class LeadConnected(Trajectory):
         :param f_prime:
         :param departure_time_relative: span of the trajectory
         :return: t, d, s
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         t = self.discretize_time_interval(0, departure_time_relative)
         d = np.polyval(f, t)
@@ -502,6 +545,10 @@ class LeadConnected(Trajectory):
         :param veh: subject vehicle
         :type veh: Vehicle
         :return: trajectory of subject lead CAV
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         det_time, det_dist, _ = veh.get_arrival_schedule()
         v = det_dist / (veh.scheduled_departure - det_time)
@@ -553,6 +600,10 @@ class FollowerConnected(LeadConnected):
         :param k:
         :param m:
 
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         super().__init__(intersection)
 
@@ -575,6 +626,10 @@ class FollowerConnected(LeadConnected):
         :param lead_veh: the vehicle in front
         :type lead_veh: Vehicle
         :return: the CPLEX LP model to be solved by solve() method
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
 
         self._lp_model = super().set_model(veh)
@@ -619,6 +674,10 @@ class FollowerConnected(LeadConnected):
         :param lead_veh: the vehicle in front of the subject
         :type lead_veh: Vehicle
         :param model: the follower's CPLEX model
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         super().solve(veh, lead_veh, model)
 
@@ -631,6 +690,10 @@ class FollowerConnected(LeadConnected):
         :param lead_veh: lead vehicle which could be `None` if no vehicle is in front.
         :type lead_veh: Vehicle
         :return: trajectory of the subject follower AV in case the LP has no solution.
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         lead_dep_time, _, _ = lead_veh.get_departure_schedule()
         foll_det_time, foll_det_dist, _ = veh.get_arrival_schedule()
