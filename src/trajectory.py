@@ -153,39 +153,41 @@ Use Case:
         super().__init__(intersection)
 
     @staticmethod
-    def wiedemann99(lead_d, lead_s, lead_a, lead_l, foll_d, foll_s, foll_s_des):
+    def wiedemann99(lead_d, lead_s, lead_a, lead_l, foll_d, foll_s, foll_s_des, cc0=1.50 * 0.9,
+                    cc1=1.30 * 0.9,
+                    cc2=4.00 * 2, cc3=-12.00, cc4=-0.25 * 6, cc5=0.35 * 6, cc6=6.00 / 10 ** 4, cc7=0.25, cc8=2.00,
+                    cc9=1.50):
         """
 
         :param lead_d: lead vehicle distance to stop bar
-        :param foll_d: follower vehicle distance to stop bar
-        :param lead_l: length of lead vehicle
         :param lead_s: lead vehicle speed
+        :param lead_a:
+        :param lead_l: length of lead vehicle
+        :param foll_d: follower vehicle distance to stop bar
         :param foll_s: follower vehicle speed
-
-        :return:
+        :param foll_s_des:
+        :param cc0: Standstill Distance in :math:`m`
+        :param cc1: Spacing Time in :math:`s`
+        :param cc2: Following Variation (*max drift*) in :math:`m`
+        :param cc3: Threshold for Entering 'Following' in :math:`s`
+        :param cc4: Negative *Following* Threshold in :math:`m/s`
+        :param cc5: Positive *Following* Threshold in :math:`m/s`
+        :param cc6: Speed Dependency of Oscillation in :math:`10^-4 rad/s`
+        :param cc7: Oscillation Acceleration in :math:`m/s^2`
+        :param cc8: Standstill Acceleration in :math:`m/s^2`
+        :param cc9: Acceleration at 80 :math:`km/h` in :math:`m/s^2`
+        :return: follower next acceleration rate
         """
-        cc0 = 1.50 * 0.9  # Standstill Distance - m
-        cc1 = 1.30 * 0.9  # Spacing Time - second
-        cc2 = 4.00 * 2  # Following Variation ("max drift") - m
-        cc3 = -12.00  # Threshold for Entering 'Following' - s
-        cc4 = -0.25 * 6  # Negative 'Following' Threshold - m/s
-        cc5 = 0.35 * 6  # Positive 'Following' Threshold - m/s
-        cc6 = 6.00 / 10 ** 4  # Speed Dependency of Oscillation - 10^-4 rad/s
-        cc7 = 0.25  # Oscillation Acceleration - m/s^2
-        cc8 = 2.00  # Standstill Acceleration - m/s^2
-        cc9 = 1.50  # Acceleration at 80km/h - m/s^2
-
         dx = foll_d - lead_d - lead_l
         dv = lead_s - foll_s
         if lead_s <= 0:
             sdxc = cc0
         else:
-            v_slower = foll_s if ((dv >= 0) or (lead_a < -1)) else lead_s + dv * np.random.uniform(-0.5, 0.5)
+            v_slower = foll_s if ((dv >= 0) or (lead_a < -1.0)) else lead_s + dv * np.random.uniform(-0.5, 0.5)
             sdxc = cc0 + cc1 * v_slower
         sdxo = sdxc + cc2
-        sdxv = sdxo + cc3 * (dv - cc4)
-        sdv = cc6 * dx ** 2
-        sdvc = cc4 - sdv if (lead_s > 0) else 0.0
+        sdxv, sdv = sdxo + cc3 * (dv - cc4), cc6 * dx ** 2
+        sdvc = cc4 - sdv if lead_s > 0 else 0.0
         sdvo = sdv + cc5 if foll_s > cc5 else sdv
         a = 0.0
         flag = False
@@ -193,22 +195,12 @@ Use Case:
             a = 0.0
             if foll_s > 0:
                 if dv < 0:
-                    if dx > cc0:
-                        a = min(lead_a + dv * dv / (cc0 - dx), a)
-                    else:
-                        min(lead_a + 0.5 * (dv - sdvo), a)
-                if a > -cc7:
-                    a = -cc7
-                else:
-                    a = max(a, -10 + 0.5 * np.sqrt(foll_s))
+                    a = min(lead_a + dv * dv / (cc0 - dx), a) if dx > cc0 else min(lead_a + 0.5 * (dv - sdvo), a)
+                a = -cc7 if a > -cc7 else max(a, -10.0 + 0.5 * np.sqrt(foll_s))
         elif (dv < sdvc) and (dx < sdxv):
-            a = max(0.5 * dv * dv / (-dx + sdxc - 0.1), -10.0)
+            a = max(0.5 * dv ** 2 / (-dx + sdxc - 0.1), -10.0)
         elif (dv < sdvo) and (dx < sdxo):
-            if a <= 0:
-                a = min(a, -cc7)
-            else:
-                a = max(a, cc7)
-                a = min(a, foll_s_des - foll_s)
+            a = min(a, -cc7) if a <= 0 else min(max(a, cc7), foll_s_des - foll_s)
         else:
             flag = True
             if dx > sdxc:
@@ -216,11 +208,8 @@ Use Case:
                     a = cc7
                 else:
                     a_max = cc8 + cc9 * min(foll_s, 80 * 1000 / 3600) + np.random.uniform(0, 1)
-                    if dx < sdxo:
-                        a = min(dv * dv / (sdxo - dx), a_max)
-                    else:
-                        a = a_max
-                    a = min(a, foll_s_des - foll_s)
+                    a = min(dv * dv / (sdxo - dx), a_max) if dx < sdxo else a_max
+                a = min(a, foll_s_des - foll_s)
         return a
 
     def gipps(self, lead_d, lead_s, lead_a, lead_l, foll_d, foll_s, foll_s_des, foll_a_min, foll_a_max, lead_a_min, dt):
@@ -233,6 +222,28 @@ Use Case:
 
             Gipps car following formula.
 
+        :return: follower next acceleration rate
+        """
+        gap = foll_d - lead_d
+        if lead_s <= self._small_positive_num:  # Gipps doesn't work well for near zero speed
+            s_get_behind = (gap - lead_l) / dt
+            next_foll_s = min(s_get_behind, foll_s_des) if s_get_behind >= 0 else 0.0
+        else:
+            s_gipps_1 = foll_s + 2.5 * foll_a_max * dt * (1 - foll_s / foll_s_des) * np.sqrt(
+                1 / 40 + foll_s / foll_s_des)
+            under_sqrt = (foll_a_min * (
+                    lead_a_min * (2 * (lead_l - gap) + dt * (foll_a_min * dt + foll_s)) + lead_s ** 2)) / lead_a_min
+            if under_sqrt >= 0:
+                s_gipps_2 = foll_a_min * dt + np.sqrt(under_sqrt)  # might get negative
+                next_foll_s = min(s_gipps_1, s_gipps_2) if s_gipps_2 >= 0 else s_gipps_1
+            else:
+                next_foll_s = s_gipps_1
+
+        return (next_foll_s - foll_s) / dt
+
+    def solve(self, veh, lead_veh):
+        """
+
         .. note::
             - The only trajectory point index that changes is follower's last one.
             - This method relies on the fact that lead vehicle's first trajectory point is current.
@@ -244,43 +255,22 @@ Use Case:
         :param lead_veh: The vehicle in front of subject conventional vehicle
         :type lead_veh: Vehicle
         """
-        gap = foll_d - lead_d
-        if lead_s <= self._small_positive_num:  # Gipps doesn't work well for near zero speed
-            v_get_behind = (gap - lead_l) / dt
-            v = min(v_get_behind, foll_s_des) if v_get_behind >= 0 else 0.0
-        else:
-            v1 = foll_s + 2.5 * foll_a_max * dt * (
-                    1 - foll_s / foll_s_des) * np.sqrt(
-                1 / 40 + foll_s / foll_s_des)
-
-            s2 = (foll_a_min * (lead_a_min * (2 * (lead_l - gap) + dt * (
-                    foll_a_min * dt + foll_s)) + lead_s ** 2)) / lead_a_min
-
-            if s2 >= 0:  # determines followers next speed
-                v2 = foll_a_min * dt + np.sqrt(s2)  # might get negative
-                v = min(v1, v2) if v2 >= 0 else v1
-            else:
-                v = v1
-
-        return (v - foll_s) / dt
-
-    def solve(self, veh, lead_veh):
-        lead_trj_indx = lead_veh.first_trj_point_indx + 1  # skip the first point to compute acceleration rate
-        lead_traj_len = lead_veh.last_trj_point_indx + 1
+        start_lead_trj_indx = lead_veh.first_trj_point_indx + 1  # skip the first point to compute acceleration rate
+        max_lead_traj_indx = lead_veh.last_trj_point_indx + 1
         foll_trj_indx = veh.first_trj_point_indx + 1
         lead_l, foll_s_des = lead_veh.length, veh.desired_speed
         curr_lead_t, curr_lead_d, curr_lead_s = lead_veh.get_arrival_schedule()
         curr_foll_t, curr_foll_d, curr_foll_s = veh.get_arrival_schedule()
-        for lead_trj_indx in range(lead_trj_indx, lead_traj_len):
+        for lead_trj_indx in range(start_lead_trj_indx, max_lead_traj_indx):
             next_lead_t, next_lead_d, next_lead_s = lead_veh.trajectory[:, lead_trj_indx]
-            lead_a = (curr_lead_d - next_lead_d) / (next_lead_t - curr_lead_t)
-            # foll_a = self.wiedemann99(next_lead_d, next_lead_s, lead_a, lead_l, curr_foll_d, curr_foll_s, foll_s_des)
-            foll_a = self.gipps(next_lead_d, next_lead_s, lead_a, lead_l, curr_foll_d, curr_foll_s, foll_s_des,
-                                veh.max_decel_rate, veh.max_accel_rate, lead_veh.max_decel_rate,
-                                next_lead_t - curr_foll_t)
+            lead_a = (next_lead_s - curr_lead_s) / (next_lead_t - curr_lead_t)
+            foll_a = self.wiedemann99(next_lead_d, next_lead_s, lead_a, lead_l, curr_foll_d, curr_foll_s, foll_s_des)
+            # foll_a = self.gipps(next_lead_d, next_lead_s, lead_a, lead_l, curr_foll_d, curr_foll_s, foll_s_des,
+            #                     veh.max_decel_rate, veh.max_accel_rate, lead_veh.max_decel_rate,
+            #                     next_lead_t - curr_foll_t)
             next_foll_t = next_lead_t
             next_foll_d, next_foll_s = self.comp_speed_distance(curr_foll_t, curr_foll_d, curr_foll_s, foll_a,
-                                                                next_foll_t)
+                                                                next_foll_t, veh.max_decel_rate, veh.max_accel_rate)
             veh.trajectory[:, foll_trj_indx] = [next_foll_t, next_foll_d, next_foll_s]
             curr_foll_t, curr_foll_d, curr_foll_s, curr_lead_t, curr_lead_d, curr_lead_s = next_foll_t, next_foll_d, next_foll_s, next_lead_t, next_lead_d, next_lead_s
             foll_trj_indx += 1
@@ -295,8 +285,13 @@ Use Case:
         veh.set_last_trj_point_indx(last_index - 1)
 
     @staticmethod
-    def comp_speed_distance(t0, d0, v0, a, t):
+    def comp_speed_distance(t0, d0, v0, a, t, foll_a_min, foll_a_max):
         """
+        If car-following models yielded unreasonable acceleration, fixes it.
+
+        .. note::
+            - Speed should be positive
+            - Acceleration/deceleration constraints should be met.
 
         :param t0:
         :param d0:
@@ -306,7 +301,20 @@ Use Case:
         :return: distance to stop bar and speed
         """
         dt = t - t0
-        return d0 - (a * (t ** 2 - t0 ** 2) / 2 + (v0 - a * t0) * dt), a * dt + v0
+        d = d0 - (a * (t ** 2 - t0 ** 2) / 2 + (v0 - a * t0) * dt)
+        s = a * dt + v0
+        if s < 0:
+            s, a_star = 0, -v0 / dt
+            d = d0 - (a_star * (t ** 2 - t0 ** 2) / 2 + (v0 - a_star * t0) * dt)
+            # assert foll_a_min <= a_star <= foll_a_max, "infeasible acc/dec rate"
+            if foll_a_min > a_star:
+                a_star = foll_a_min
+                s, d = a_star * dt + v0, d0 - (a_star * (t ** 2 - t0 ** 2) / 2 + (v0 - a_star * t0) * dt)
+            elif a_star > foll_a_max:
+                a_star = foll_a_max
+                s, d = a_star * dt + v0, d0 - (a_star * (t ** 2 - t0 ** 2) / 2 + (v0 - a_star * t0) * dt)
+
+        return d, s
 
 
 import cplex

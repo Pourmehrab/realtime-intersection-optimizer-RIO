@@ -7,7 +7,7 @@
 
 import csv
 import os
-
+import operator
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -92,26 +92,24 @@ class Lanes(metaclass=Singleton):
                         if len(lanes.vehlist.get(lane)) == 1:
                             # vehicles is a lead connected vehicle
                             # happens when a connected vehicle is the first in the lane
-                            t_earliest = earliest_arrival_connected(veh, max_speed)
+                            veh.earliest_arrival_connected(veh, max_speed)
                         else:
                             # vehicles is a follower connected vehicle
                             # happens when a connected vehicle is NOT the first in the lane
-                            t_earliest = earliest_arrival_connected(veh, max_speed, min_headway,
-                                                                    lanes.vehlist.get(lane)[-2].earliest_departure)
+                            veh.earliest_arrival_connected(veh, max_speed, min_headway,
+                                                           lanes.vehlist.get(lane)[-2].earliest_departure)
                     elif veh.veh_type == 0:
                         if len(lanes.vehlist.get(lane)) == 1:
                             # vehicles is a lead conventional vehicle
                             # happens when a conventional vehicle is the first in the lane
-                            t_earliest = earliest_arrival_conventional(veh, max_speed)
+                            veh.earliest_arrival_conventional(veh, max_speed)
                         else:
                             # vehicles is a lead conventional vehicle
                             # happens when a conventional vehicle is NOT the first in the lane
-                            t_earliest = earliest_arrival_conventional(veh, max_speed, min_headway,
-                                                                       lanes.vehlist.get(lane)[-2].earliest_departure)
+                            veh.earliest_arrival_conventional(veh, max_speed, min_headway,
+                                                              lanes.vehlist.get(lane)[-2].earliest_departure)
                     else:
                         raise Exception("The detected vehicle could not be classified.")
-                    # now that we have a trajectory, we can set the earliest departure time
-                    veh.set_earliest_departure(t_earliest)
 
     def decrement_first_unsrvd_indx(self, lane, num_served):
         """
@@ -250,6 +248,69 @@ class Vehicle:
         self.reschedule_departure, self.freshly_scheduled = True, False
         self._times_sent_to_traj_planner = 0
 
+    def earliest_arrival_connected(self, veh, max_speed, min_headway=0, t_earliest=0):
+        """
+        Uses the latest departure time under the following cases to compute the earliest time the connected vehicle can reach the stop bar:
+            - Accelerate/Decelerate to the maximum allowable speed and maintain the speed till departure
+            - Distance is short, it accelerates/decelerated to the best speed and departs
+            - Departs at the minimum headway with its lead vehicle (only for followers close enough to their lead)
+
+        :param veh:
+        :type veh: Vehicle
+        :param max_speed:
+        :param min_headway:
+        :param t_earliest: earliest timemap_veh_type2str of lead vehicle that is only needed if the vehicle is a follower vehicle
+        :return: The earliest departure time of the subject connected vehicle
+
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
+        """
+        det_time, dist, speed = veh.get_arrival_schedule()
+
+        a = veh.max_accel_rate if speed <= max_speed else veh.max_decel_rate
+        dist_to_max_speed = (max_speed ** 2 - speed ** 2) / (2 * a)
+
+        if dist_to_max_speed <= dist:
+            t = max(
+                det_time + (max_speed - speed) / a + (dist - dist_to_max_speed) / max_speed
+                # min time to get to stop bar
+                , t_earliest + min_headway)
+        else:  # not enough time and distance to accelerate/decelerate to max speed
+            v_dest = np.sqrt(speed ** 2 + 2 * a * dist)
+            t = max(
+                det_time + (max_speed - v_dest) / a  # min time to get to stop bar
+                , t_earliest + min_headway
+            )
+        assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
+        self.earliest_departure = t
+
+    def earliest_arrival_conventional(self, veh, max_speed, min_headway=0, t_earliest=0):
+        """
+        Uses the latest departure time under the following cases to compute the earliest time the conventional vehicle can reach the stop bar:
+            - Maintains the detected speed till departure
+            - Departs at the minimum headway with the vehicle in front
+
+        :param veh:
+        :type veh: Vehicle
+        :param min_headway:
+        :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
+        :return: The earliest departure time of the subject conventional vehicle
+
+        .. note::
+            Enter ``min_headway`` and ``t_earliest`` as zeros (default values), if a vehicle is the first in its lane.
+
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
+        """
+        det_time, dist, speed = veh.get_arrival_schedule()
+        t = max(det_time + dist / max_speed, t_earliest + min_headway)
+        assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
+        self.earliest_departure = t
+
     def reset_trj_points(self, sc, lane, time_threshold, file):
         """
         Writes the trajectory points in the CSV file if the time stamp is before the ``time_threshold`` and then removes those points by updating the pointer to the first trajectory point.
@@ -283,12 +344,6 @@ class Vehicle:
         else:
             raise Exception("The vehicle should've been removed instead of getting updated for trajectory points.")
 
-    def set_earliest_departure(self, t_earliest):
-        """
-        Sets the earliest arrival time at the stop bar. Called under :any:`Traffic.update_vehicles_info()` method
-        """
-        self.earliest_departure = t_earliest  # this is the absolute earliest time
-
     def set_scheduled_departure(self, t_scheduled, d_scheduled, s_scheduled, lane, veh_indx, intersection):
         """
         It only schedules if the new departure time is different and vehicle is far enough for trajectory assignment
@@ -306,6 +361,9 @@ class Vehicle:
         :param veh_indx: The index of this vehicle in its lane (*for printing purpose only*)
         :param print_signal_detail: ``True`` if we want to print schedule
         """
+        assert all(map(operator.not_, np.isinf(
+            [t_scheduled, d_scheduled, s_scheduled]))), 'infinity found in the schedule'  # todo remove
+
         min_dist_to_stop_bar = intersection._general_params.get('min_dist_to_stop_bar')
         small_positive_num = intersection._general_params.get('small_positive_num')
 
@@ -638,75 +696,6 @@ class Traffic(metaclass=Singleton):
 
                 if last_veh_indx_to_remove > -1:  # removes vehicles 0, 1, ..., veh_indx
                     lanes.purge_served_vehs(lane, last_veh_indx_to_remove)
-
-
-def earliest_arrival_connected(veh, max_speed, min_headway=0, t_earliest=0):
-    """
-    Uses the latest departure time under the following cases to compute the earliest time the connected vehicle can reach the stop bar:
-        - Accelerate/Decelerate to the maximum allowable speed and maintain the speed till departure
-        - Distance is short, it accelerates/decelerated to the best speed and departs
-        - Departs at the minimum headway with its lead vehicle (only for followers close enough to their lead)
-
-    :param det_time:
-    :param speed:
-    :param dist:
-    :param amin:
-    :param amax:
-    :param max_speed:
-    :param min_headway:
-    :param t_earliest: earliest timemap_veh_type2str of lead vehicle that is only needed if the vehicle is a follower vehicle
-    :return: The earliest departure time of the subject connected vehicle
-
-    :Author:
-        Mahmoud Pourmehrab <pourmehrab@gmail.com>
-    :Date:
-        April-2018
-    """
-    det_time, dist, speed = veh.get_arrival_schedule()
-    amin, amax = veh.max_decel_rate, veh.max_accel_rate
-
-    a = amax if speed <= max_speed else amin
-    dist_to_max_speed = (max_speed ** 2 - speed ** 2) / (2 * a)
-
-    if dist_to_max_speed <= dist:
-        return max(
-            det_time + (max_speed - speed) / a + (dist - dist_to_max_speed) / max_speed  # min time to get to stop bar
-            , t_earliest + min_headway)
-
-    else:  # not enough time and distance to accelerate/decelerate to max speed
-        v_dest = np.sqrt(speed ** 2 + 2 * a * dist)
-        return max(
-            det_time + (max_speed - v_dest) / a  # min time to get to stop bar
-            , t_earliest + min_headway
-        )
-
-
-def earliest_arrival_conventional(veh, max_speed, min_headway=0, t_earliest=0):
-    """
-    Uses the latest departure time under the following cases to compute the earliest time the conventional vehicle can reach the stop bar:
-        - Maintains the detected speed till departure
-        - Departs at the minimum headway with the vehicle in front
-
-    :param det_time:
-    :param speed:
-    :param dist:
-    :param min_headway:
-    :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
-    :return: The earliest departure time of the subject conventional vehicle
-
-    .. note::
-        Enter ``min_headway`` and ``t_earliest`` as zeros (default values), if a vehicle is the first in its lane.
-
-    :Author:
-        Mahmoud Pourmehrab <pourmehrab@gmail.com>
-    :Date:
-        April-2018
-    """
-    det_time, dist, speed = veh.get_arrival_schedule()
-    return max(
-        det_time + dist / speed
-        , t_earliest + min_headway
-    )
 
 
 class TrajectoryPlanner(metaclass=Singleton):
