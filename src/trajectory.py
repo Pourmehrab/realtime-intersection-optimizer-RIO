@@ -152,7 +152,67 @@ Use Case:
     def __init__(self, intersection):
         super().__init__(intersection)
 
-    def solve(self, veh, lead_veh):
+    @staticmethod
+    def wiedemann99(lead_d, lead_s, lead_a, lead_l, foll_d, foll_s, foll_s_des, cc0=1.50 * 0.9,
+                    cc1=1.30 * 0.9,
+                    cc2=4.00 * 2, cc3=-12.00, cc4=-0.25 * 6, cc5=0.35 * 6, cc6=6.00 / 10 ** 4, cc7=0.25, cc8=2.00,
+                    cc9=1.50):
+        """
+
+        :param lead_d: lead vehicle distance to stop bar
+        :param lead_s: lead vehicle speed
+        :param lead_a:
+        :param lead_l: length of lead vehicle
+        :param foll_d: follower vehicle distance to stop bar
+        :param foll_s: follower vehicle speed
+        :param foll_s_des:
+        :param cc0: Standstill Distance in :math:`m`
+        :param cc1: Spacing Time in :math:`s`
+        :param cc2: Following Variation (*max drift*) in :math:`m`
+        :param cc3: Threshold for Entering 'Following' in :math:`s`
+        :param cc4: Negative *Following* Threshold in :math:`m/s`
+        :param cc5: Positive *Following* Threshold in :math:`m/s`
+        :param cc6: Speed Dependency of Oscillation in :math:`10^-4 rad/s`
+        :param cc7: Oscillation Acceleration in :math:`m/s^2`
+        :param cc8: Standstill Acceleration in :math:`m/s^2`
+        :param cc9: Acceleration at 80 :math:`km/h` in :math:`m/s^2`
+        :return: follower next acceleration rate
+        """
+        dx = foll_d - lead_d - lead_l
+        dv = lead_s - foll_s
+        if lead_s <= 0:
+            sdxc = cc0
+        else:
+            v_slower = foll_s if ((dv >= 0) or (lead_a < -1.0)) else lead_s + dv * np.random.uniform(-0.5, 0.5)
+            sdxc = cc0 + cc1 * v_slower
+        sdxo = sdxc + cc2
+        sdxv, sdv = sdxo + cc3 * (dv - cc4), cc6 * dx ** 2
+        sdvc = cc4 - sdv if lead_s > 0 else 0.0
+        sdvo = sdv + cc5 if foll_s > cc5 else sdv
+        a = 0.0
+        flag = False
+        if (dv < sdvo) and (dx <= sdxc):
+            a = 0.0
+            if foll_s > 0:
+                if dv < 0:
+                    a = min(lead_a + dv * dv / (cc0 - dx), a) if dx > cc0 else min(lead_a + 0.5 * (dv - sdvo), a)
+                a = -cc7 if a > -cc7 else max(a, -10.0 + 0.5 * np.sqrt(foll_s))
+        elif (dv < sdvc) and (dx < sdxv):
+            a = max(0.5 * dv ** 2 / (-dx + sdxc - 0.1), -10.0)
+        elif (dv < sdvo) and (dx < sdxo):
+            a = min(a, -cc7) if a <= 0 else min(max(a, cc7), foll_s_des - foll_s)
+        else:
+            flag = True
+            if dx > sdxc:
+                if flag:
+                    a = cc7
+                else:
+                    a_max = cc8 + cc9 * min(foll_s, 80 * 1000 / 3600) + np.random.uniform(0, 1)
+                    a = min(dv * dv / (sdxo - dx), a_max) if dx < sdxo else a_max
+                a = min(a, foll_s_des - foll_s)
+        return a
+
+    def gipps(self, lead_d, lead_s, lead_a, lead_l, foll_d, foll_s, foll_s_des, foll_a_min, foll_a_max, lead_a_min, dt):
         """
         Gipps car following model is implemented. It is written in-place (does not call :any:`set_trajectory`)
 
@@ -162,88 +222,99 @@ Use Case:
 
             Gipps car following formula.
 
+        :return: follower next acceleration rate
+        """
+        gap = foll_d - lead_d
+        if lead_s <= self._small_positive_num:  # Gipps doesn't work well for near zero speed
+            s_get_behind = (gap - lead_l) / dt
+            next_foll_s = min(s_get_behind, foll_s_des) if s_get_behind >= 0 else 0.0
+        else:
+            s_gipps_1 = foll_s + 2.5 * foll_a_max * dt * (1 - foll_s / foll_s_des) * np.sqrt(
+                1 / 40 + foll_s / foll_s_des)
+            under_sqrt = (foll_a_min * (
+                    lead_a_min * (2 * (lead_l - gap) + dt * (foll_a_min * dt + foll_s)) + lead_s ** 2)) / lead_a_min
+            if under_sqrt >= 0:
+                s_gipps_2 = foll_a_min * dt + np.sqrt(under_sqrt)  # might get negative
+                next_foll_s = min(s_gipps_1, s_gipps_2) if s_gipps_2 >= 0 else s_gipps_1
+            else:
+                next_foll_s = s_gipps_1
+
+        return (next_foll_s - foll_s) / dt
+
+    def solve(self, veh, lead_veh):
+        """
+
         .. note::
             - The only trajectory point index that changes is follower's last one.
             - This method relies on the fact that lead vehicle's first trajectory point is current.
             - Assumed the gap to lead vehicle cannot get lower than half length of the lead vehicle.
+            - Compared to W99 requires acc/dec on follower, dec on lead, dt, and does not need lead acc.
 
         :param veh: The follower conventional vehicle
         :type veh: Vehicle
         :param lead_veh: The vehicle in front of subject conventional vehicle
         :type lead_veh: Vehicle
         """
-        follower_trajectory = veh.trajectory
-        follower_desired_speed = veh.desired_speed
-        follower_max_acc, follower_max_dec = veh.max_accel_rate, veh.max_decel_rate
-        follower_trj_indx = veh.first_trj_point_indx
+        start_lead_trj_indx = lead_veh.first_trj_point_indx + 1  # skip the first point to compute acceleration rate
+        max_lead_traj_indx = lead_veh.last_trj_point_indx + 1
+        foll_trj_indx = veh.first_trj_point_indx + 1
+        lead_l, foll_s_des = lead_veh.length, veh.desired_speed
+        curr_lead_t, curr_lead_d, curr_lead_s = lead_veh.get_arrival_schedule()
+        curr_foll_t, curr_foll_d, curr_foll_s = veh.get_arrival_schedule()
+        for lead_trj_indx in range(start_lead_trj_indx, max_lead_traj_indx):
+            next_lead_t, next_lead_d, next_lead_s = lead_veh.trajectory[:, lead_trj_indx]
+            lead_a = (next_lead_s - curr_lead_s) / (next_lead_t - curr_lead_t)
+            foll_a = self.wiedemann99(next_lead_d, next_lead_s, lead_a, lead_l, curr_foll_d, curr_foll_s, foll_s_des)
+            # foll_a = self.gipps(next_lead_d, next_lead_s, lead_a, lead_l, curr_foll_d, curr_foll_s, foll_s_des,
+            #                     veh.max_decel_rate, veh.max_accel_rate, lead_veh.max_decel_rate,
+            #                     next_lead_t - curr_foll_t)
+            next_foll_t = next_lead_t
+            next_foll_d, next_foll_s = self.comp_speed_distance(curr_foll_t, curr_foll_d, curr_foll_s, foll_a,
+                                                                next_foll_t, veh.max_decel_rate, veh.max_accel_rate)
+            veh.trajectory[:, foll_trj_indx] = [next_foll_t, next_foll_d, next_foll_s]
+            curr_foll_t, curr_foll_d, curr_foll_s, curr_lead_t, curr_lead_d, curr_lead_s = next_foll_t, next_foll_d, next_foll_s, next_lead_t, next_lead_d, next_lead_s
+            foll_trj_indx += 1
 
-        lead_trajectory = lead_veh.trajectory
-        lead_max_dec, lead_length = lead_veh.max_decel_rate, lead_veh.length
-        lead_trj_indx = lead_veh.first_trj_point_indx
-        lead_last_trj_point_indx = lead_veh.last_trj_point_indx
-
-        if lead_trajectory[0, lead_trj_indx] - follower_trajectory[0, follower_trj_indx] <= self._small_positive_num:
-            lead_trj_indx += 1  # this shifts appropriately the trajectory computation
-
-        while lead_trj_indx <= lead_last_trj_point_indx:
-            next_trj_indx = follower_trj_indx + 1
-            lead_speed = lead_trajectory[2, lead_trj_indx]
-            follower_speed = follower_trajectory[2, follower_trj_indx]
-            gap = follower_trajectory[1, follower_trj_indx] - lead_trajectory[1, lead_trj_indx]
-            dt = lead_trajectory[0, lead_trj_indx] - follower_trajectory[0, follower_trj_indx]
-            if lead_speed <= self._small_positive_num:  # Gipps doesn't work well for near zero speed
-                v_get_behind = (gap - lead_length) / dt
-                v = min(v_get_behind, follower_desired_speed) if v_get_behind >= 0 else 0.0
-                follower_trajectory[0, next_trj_indx] = lead_trajectory[0, lead_trj_indx]
-                follower_trajectory[1, next_trj_indx] = follower_trajectory[1, follower_trj_indx] - v * dt
-                follower_trajectory[2, next_trj_indx] = 0.0
-
-            else:
-                v1 = follower_speed + 2.5 * follower_max_acc * dt * (
-                        1 - follower_speed / follower_desired_speed) * np.sqrt(
-                    1 / 40 + follower_speed / follower_desired_speed)
-
-                s2 = (follower_max_dec * (lead_max_dec * (2 * (lead_length - gap) + dt * (
-                        follower_max_dec * dt + follower_speed)) + lead_speed ** 2)) / lead_max_dec
-
-                if s2 >= 0:  # determines followers next speed
-                    v2 = follower_max_dec * dt + np.sqrt(s2)  # might get negative
-                    v = min(v1, v2) if v2 >= 0 else v1
-                else:
-                    v = v1
-
-            follower_trajectory[0, next_trj_indx] = lead_trajectory[0, lead_trj_indx]
-            follower_trajectory[2, next_trj_indx] = v
-            a = (v - follower_speed) / dt
-            follower_dist_to_stopbar = follower_trajectory[1, follower_trj_indx] - (
-                    a * (follower_trajectory[0, next_trj_indx] ** 2 - follower_trajectory[
-                0, follower_trj_indx] ** 2) / 2 + (follower_trajectory[2, follower_trj_indx] -
-                                                   a * follower_trajectory[0, follower_trj_indx]) * dt)
-            follower_trajectory[1, next_trj_indx] = max(follower_dist_to_stopbar, lead_trajectory[1, lead_trj_indx] +
-                                                        lead_length / 2)
-
-            follower_trj_indx += 1
-            lead_trj_indx += 1
-
-        # This part adds the end part of follower trajectory that might left out of the domain
-        d_follower_end = follower_trajectory[1, follower_trj_indx]
-        t_follower_end = follower_trajectory[0, follower_trj_indx]
-
-        t_departure_relative = veh.scheduled_departure - t_follower_end
-        if t_departure_relative > self._small_positive_num:
-            v_departure_relative = d_follower_end / t_departure_relative
-
-            t_augment = self.discretize_time_interval(self._trj_time_resolution, t_departure_relative)
-            d_augment = [d_follower_end - t * v_departure_relative for t in t_augment]
-            v_augment = [v_departure_relative for t in t_augment]
-        else:
-            t_augment, d_augment, v_augment = [], [], []
-
-        last_index = follower_trj_indx + len(t_augment) + 1
-        follower_trajectory[0, follower_trj_indx + 1:last_index] = t_augment + t_follower_end
-        follower_trajectory[1, follower_trj_indx + 1:last_index] = d_augment
-        follower_trajectory[2, follower_trj_indx + 1:last_index] = v_augment
+        t_departure_relative = veh.scheduled_departure - curr_foll_t
+        v_departure_relative = curr_foll_d / t_departure_relative
+        t_augment = self.discretize_time_interval(self._trj_time_resolution, t_departure_relative)
+        d_augment = [curr_foll_d - t * v_departure_relative for t in t_augment]
+        v_augment = [v_departure_relative] * len(t_augment)
+        last_index = foll_trj_indx + len(t_augment)
+        veh.trajectory[:, foll_trj_indx:last_index] = t_augment + curr_foll_t, d_augment, v_augment
         veh.set_last_trj_point_indx(last_index - 1)
+
+    @staticmethod
+    def comp_speed_distance(t0, d0, v0, a, t, foll_a_min, foll_a_max):
+        """
+        If car-following models yielded unreasonable acceleration, fixes it.
+
+        .. note::
+            - Speed should be positive
+            - Acceleration/deceleration constraints should be met.
+
+        :param t0:
+        :param d0:
+        :param v0:
+        :param a:
+        :param t:
+        :return: distance to stop bar and speed
+        """
+        dt = t - t0
+        d = d0 - (a * (t ** 2 - t0 ** 2) / 2 + (v0 - a * t0) * dt)
+        s = a * dt + v0
+        if s < 0:
+            s, a_star = 0, -v0 / dt
+            d = d0 - (a_star * (t ** 2 - t0 ** 2) / 2 + (v0 - a_star * t0) * dt)
+            # assert foll_a_min <= a_star <= foll_a_max, "infeasible acc/dec rate"
+            if foll_a_min > a_star:
+                a_star = foll_a_min
+                s, d = a_star * dt + v0, d0 - (a_star * (t ** 2 - t0 ** 2) / 2 + (v0 - a_star * t0) * dt)
+            elif a_star > foll_a_max:
+                a_star = foll_a_max
+                s, d = a_star * dt + v0, d0 - (a_star * (t ** 2 - t0 ** 2) / 2 + (v0 - a_star * t0) * dt)
+
+        return d, s
 
 
 import cplex
@@ -256,9 +327,9 @@ import cplex
 class LeadConnected(Trajectory):
     """
     .. note::
-        - Trajectory function: :math:`f(t)   = \sum_{n=0}^{k-1} b_n \\times t^n`
-        - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n \\times b_n \\times t^{n-1}`
-        - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n \\times (n-1) \\times  b_n \\times t^{n-2}`
+        - Trajectory function: :math:`f(t)   = \sum_{n=0}^{k-1} b_n \\times (t/t_0)^n`
+        - Negative of speed profile: :math:`f'(t)  = \sum_{n=1}^{k-1} n \\times b_n \\times (t/t_0)^{n-1}`
+        - Negative of acceleration profile: :math:`f''(t) = \sum_{n=2}^{k-1} n \\times (n-1) \\times  b_n \\times (t/t_0)^{n-2}`
 
     :param NUM_DIGS: The accuracy to keep decimals
     :param SPEED_DECREMENT_SIZE: The final speed decrements from maximum to 0 by step-size defined by maximum speed divided by this
@@ -278,8 +349,6 @@ class LeadConnected(Trajectory):
     :Date:
         April-2018
     """
-    NUM_DIGS = 3
-    SPEED_DECREMENT_SIZE = 10
 
     def __init__(self, intersection):
         """

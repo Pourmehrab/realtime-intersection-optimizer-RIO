@@ -10,12 +10,23 @@
 def get_general_params(inter_name):
     """
     :return:
-        - max speed (:math:`m/s`)
-        - min_headway (:math:`s`)
-        - detection range (:math:`m`)
-        - :math:`k, m` (check :any:`LeadConnected` for the definitions)
-        - total number of incoming lanes
-        - a subset of mutually exclusive phases that cover all lanes for use in :any:`_set_non_base_scheduled_departures`
+        - inter_name: intersection name
+        - max_speed: maximum speed in :math:`m/s`
+        - min_headway: (:math:`s`)
+        - det_range: detection range in :math:`m`
+        - k, m:
+        - num_lanes: total number of incoming lanes
+        - phase_cover_set: a subset of mutually exclusive phases that cover all lanes for use in :any:`_set_non_base_scheduled_departures`
+        - small_positive_num: small number that lower than that is approximated by zero
+        - large_positive_num: large number
+        - lag_on_green: The lag time from start of green when a vehicle can depart to allow vehicle cross after green (in seconds).
+        - max_num_traj_points: check if it's enough to preallocate the trajectory
+        - min_dist_to_stop_bar: lower than this (in m) do not update schedule
+        - do_traj_computation:
+        - trj_time_resolution: time difference between two consecutive trajectory points in seconds used in :any:`discretize_time_interval()` (be careful not to exceed max size of trajectory)
+        - log_csv:
+        - print_commandline:
+
 
     .. note::
         - The distance to stop bar will be input from either CSV file or fusion. However, the number provided here is used for generic computations.
@@ -26,7 +37,6 @@ def get_general_params(inter_name):
 
     .. warning:: All the parameters defined here are required for running the program.
 
-    :param LAG: the lag time from start of green when a vehicle can depart
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -42,17 +52,15 @@ def get_general_params(inter_name):
                 'm': int(20),
                 'num_lanes': int(16),
                 'phase_cover_set': None,  # todo: add this
-                'small_positive_num': 0.01,  # small number that lower than that is approximated by zero
-                'large_positive_num': 999_999_999,  # small number that lower than that is approximated by zero
-                'lag_on_green': 1.0,  # to allow vehicle cross after green (in seconds)
-                'max_num_traj_points': int(300),  # check if it's enough to preallocate the trajectory
-                'min_dist_to_stop_bar': 50,  # lower than this (in m) do not update schedule todo where else used?
+                'small_positive_num': 0.01,
+                'large_positive_num': 999_999_999,
+                'lag_on_green': 1.0,
+                'max_num_traj_points': int(300),
+                'min_dist_to_stop_bar': 50,
                 'do_traj_computation': True,
                 'trj_time_resolution': 1.0,
-                # time difference between two consecutive trajectory points in seconds used in :any:`discretize_time_interval()` (be careful not to exceed max size of trajectory)
                 'log_csv': True,
                 'print_commandline': True,
-                'test_mode': True,
                 }
     elif inter_name == 'TERL':
         return {'inter_name': 'TERL',
@@ -63,16 +71,15 @@ def get_general_params(inter_name):
                 'm': int(15),
                 'num_lanes': int(6),
                 'phase_cover_set': (0, 1, 2, 3,),
-                'small_positive_num': 0.01,  # small number that lower than that is approximated by zero
-                'large_positive_num': 999_999_999,  # small number that lower than that is approximated by zero
-                'lag_on_green': 1.0,  # to allow vehicle cross after green (in seconds)
-                'max_num_traj_points': int(300),  # check if it's enough to preallocate the trajectory
-                'min_dist_to_stop_bar': 50,  # lower than this (in m) do not update schedule todo where else used?
+                'small_positive_num': 0.01,
+                'large_positive_num': 999_999_999,
+                'lag_on_green': 1.0,
+                'max_num_traj_points': int(300),
+                'min_dist_to_stop_bar': 50,
                 'do_traj_computation': True,
                 'trj_time_resolution': 1.0,
                 'log_csv': True,
                 'print_commandline': True,
-                'test_mode': True,
                 }
     elif inter_name == 'reserv':
         return {'inter_name': 'reserv',
@@ -82,17 +89,16 @@ def get_general_params(inter_name):
                 'k': int(11),
                 'm': int(15),
                 'num_lanes': int(12),
-                'phase_cover_set': None,  # todo: add this
-                'small_positive_num': 0.01,  # small number that lower than that is approximated by zero
-                'large_positive_num': 999_999_999,  # small number that lower than that is approximated by zero
-                'lag_on_green': 1.0,  # to allow vehicle cross after green (in seconds)
-                'max_num_traj_points': int(300),  # check if it's enough to preallocate the trajectory
-                'min_dist_to_stop_bar': 50,  # lower than this (in m) do not update schedule todo where else used?
+                'phase_cover_set': None,
+                'small_positive_num': 0.01,
+                'large_positive_num': 999_999_999,
+                'lag_on_green': 1.0,
+                'max_num_traj_points': int(300),
+                'min_dist_to_stop_bar': 50,
                 'do_traj_computation': True,
                 'trj_time_resolution': 1.0,
                 'log_csv': True,
                 'print_commandline': True,
-                'test_mode': True,
                 }
     else:
         raise Exception('Simulation parameters are not known for this intersection.')
