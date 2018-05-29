@@ -38,25 +38,24 @@ class Trajectory(metaclass=Singleton):
         :param max_speed: Trajectories are designed to respect the this speed limit (in :math:`m/s`).
         :param min_headway: This is the minimum headway that vehicles in a lane can be served (in :math:`sec/veh`)
         """
-        self._max_speed = intersection._general_params.get('max_speed')
-        self._min_headway = intersection._general_params.get('min_headway')
-        self._small_positive_num = intersection._general_params.get('small_positive_num')
-        self._trj_time_resolution = intersection._general_params.get('trj_time_resolution')
+        self._max_speed, self._min_headway, self._small_positive_num, self._trj_time_resolution = map(
+            intersection._general_params, ['max_speed', 'min_headway', 'small_positive_num', 'trj_time_resolution'])
 
     def discretize_time_interval(self, start_time, end_time):
         """
-        Discretize the given time interval to an array of time stamps
+        Discretizes the given time interval to an array of time stamps
 
         .. warning:: It is inclusion-wise of the beginning and end of the interval.
+
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
             April-2018
         """
-        if end_time <= start_time - self._small_positive_num:
-            raise Exception('cannot go backward in time')
-        elif (end_time - start_time) % self._trj_time_resolution > self._small_positive_num:
+        assert end_time > start_time - self._small_positive_num, "Cannot Go Backward in Time"
+
+        if (end_time - start_time) % self._trj_time_resolution > self._small_positive_num:
             trj_time_stamps = np.append(np.arange(start_time, end_time, self._trj_time_resolution, dtype=float),
                                         end_time)
         else:
@@ -71,11 +70,14 @@ class Trajectory(metaclass=Singleton):
 
         .. note:: An assigned trajectory always is indexed from zero as the ``veh.set_first_trj_point_indx``.
 
+
         :param veh: the vehicle object that is owns the trajectory
         :type veh: Vehicle
         :param t: time stamps (seconds from the reference time)
         :param d: distances at each time stamp (in meters from the stop bar)
         :param s: speed at each time stamp (in :math:`m/s`)
+        
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -399,7 +401,7 @@ class LeadConnected(Trajectory):
         """
         super().__init__(intersection)
 
-        self.k, self.m = intersection._general_params.get('k'), intersection._general_params.get('m')
+        self.k, self.m = map(intersection._general_params.get, ['k', 'm'])
 
         self._lp_model = cplex.Cplex()
         self._lp_model.objective.set_sense(self._lp_model.objective.sense.minimize)

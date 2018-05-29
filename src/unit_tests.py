@@ -14,6 +14,8 @@ import numpy.testing as npt
 
 class SimTest(unittest.TestCase):
     """
+    A series of test methods.
+
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
@@ -23,8 +25,8 @@ class SimTest(unittest.TestCase):
     def py_version_test(self, req=(3, 6, 0)):
         """
 
-        :param req:
-        :return:
+        :param req: python version to be checked against
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -33,12 +35,12 @@ class SimTest(unittest.TestCase):
         assert all(sys.version_info[i] >= req[i] for i in range(len(req))), "Please update python interpreter."
 
     def arguments_check(self, req=({"13th16th", "TERL", "reserv", },
-                                   {"GA", "MCF", "pretimed", "actuated"},
+                                   {"GA", "pretimed"},
                                    {"simulation", "realtime"},)):
         """
 
-        :param req:
-        :return:
+        :param req: set of available intersections, signal opt methods, and run modes to choose
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -54,7 +56,7 @@ class SimTest(unittest.TestCase):
         :param intersection:
         :param start_indx:
         :param end_indx:
-        :return:
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -86,6 +88,13 @@ class SimTest(unittest.TestCase):
                               min_headway):
         """
         Checks for min headway to be respected in the schedules
+
+        :param scheduled_departures:
+        :param start_unsrvd_indx:
+        :param end_vehicle_indx:
+        :param last_vehicle_indx:
+        :param min_headway:
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -99,10 +108,11 @@ class SimTest(unittest.TestCase):
 
     def test_trj_points(self, veh):
         """
-        Verifies the trajectory points for following cases:
-            - Non-negative speed (threshold is set to -3 m/s)
-            - Non-negative distance (threshold is set to -3 m)
-            - Expired trajectory point is not removed
+        Checks all the planned trajectory points.
+
+        :param veh:
+        :type veh: Vehicle
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:

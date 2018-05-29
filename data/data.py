@@ -350,6 +350,15 @@ def get_sig_ctrl_interface_params(inter_name):
     .. note::
         - Account for SNMP lag time. Depending on the processor capability: [0.1s-0.9s]
 
+    .. figure:: images/TERL_config.png
+       :width: 20cm
+       :height: 13cm
+       :align: center
+       :alt: map to buried treasure
+
+       The TERL intersection configuration.
+
+
     :return:
         - Proper phases to be called 
 
