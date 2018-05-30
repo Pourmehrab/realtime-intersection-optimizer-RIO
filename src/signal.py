@@ -67,7 +67,7 @@ class Signal:
 
         if intersection._general_params.get('log_csv'):
             filepath_sig = os.path.join(
-                'log/' + self._inter_name + '/' + start_time_stamp + '_' + str(sc) + '_sig_phase_level.csv')
+                'log/' + self._inter_name + '/' + start_time_stamp + '_' + str(sc) + '_sig_level.csv')
             self.sig_csv_file = open(filepath_sig, 'w', newline='')
             writer = csv.writer(self.sig_csv_file, delimiter=',')
             writer.writerow(['sc', 'phase', 'start', 'end'])

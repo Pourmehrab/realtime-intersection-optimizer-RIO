@@ -77,7 +77,7 @@ def get_general_params(inter_name):
                 'do_traj_computation': True,
                 'trj_time_resolution': 1.0,
                 'log_csv': True,
-                'print_commandline': True,
+                'print_commandline': False,
                 }
     elif inter_name == 'reserv':
         return {'inter_name': 'reserv',

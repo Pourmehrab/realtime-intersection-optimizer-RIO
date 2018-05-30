@@ -562,7 +562,7 @@ class Traffic:
     """
     Objectives:
         - Adds new vehicles from the CSV file to the ``lanes.vehlist`` structure
-        - Appends travel time, ID, and elapsed time columns; saves CSV
+        - Appends travel time and ID columns; saves CSV
         - Manages scenario indexing, resetting, and more
         - Computes volumes in lanes
         - removes/records served vehicles
@@ -589,10 +589,8 @@ class Traffic:
         # get the path to the CSV file and load up the traffic
         filepath = os.path.join(
             'data/' + inter_name + '/' + inter_name + '_' + str(sc) + '.csv')
-        if os.path.exists(filepath):
-            self.__all_vehicles = pd.read_csv(filepath)
-        else:
-            raise Exception(filepath + ' was not found.')
+        assert os.path.exists(filepath), filepath + ' was not found.'
+        self.__all_vehicles = pd.read_csv(filepath)
 
         self.__all_vehicles = self.__all_vehicles.sort_values(by=['arrival time'])
         self.__all_vehicles = self.__all_vehicles.reset_index(drop=True)
@@ -610,7 +608,6 @@ class Traffic:
         if self._log_csv:
             df_size = len(self.__all_vehicles)
             self._auxilary_departure_times = np.zeros(df_size, dtype=np.float)
-            self._axilary_elapsed_time = np.zeros(df_size, dtype=np.float)
             self._auxilary_ID = ['' for i in range(df_size)]
             self._auxilary_num_sent_to_trj_planner = np.zeros(df_size, dtype=np.int8)
 
@@ -641,21 +638,10 @@ class Traffic:
         self._auxilary_ID[indx] = veh.ID
         self._auxilary_num_sent_to_trj_planner[indx] = veh._times_sent_to_traj_planner
 
-    def set_elapsed_sim_time(self, elapsed_t):
-        """
-        Sets the elapsed time for one simulation of scenario.
-
-        :param elapsed_t: elapsed time in seconds
-        :Author:
-            Mahmoud Pourmehrab <pourmehrab@gmail.com>
-        :Date:
-            April-2018
-        """
-        self._axilary_elapsed_time[self._current_row_indx] = elapsed_t
-
     def save_veh_level_csv(self, inter_name, start_time_stamp):
         """
         Set the recorded values and save the  CSV at vehicle level.
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -663,13 +649,10 @@ class Traffic:
         """
         self.__all_vehicles['departure time'] = self._auxilary_departure_times
         self.__all_vehicles['ID'] = self._auxilary_ID
-        # the column to store simulation time per scenario
-        self.__all_vehicles['elapsed time'] = self._axilary_elapsed_time
-        self.__all_vehicles['num_sent_to_trj_planner'] = self._auxilary_num_sent_to_trj_planner
+        self.__all_vehicles['times_sent_to_trj_planner'] = self._auxilary_num_sent_to_trj_planner
 
         filepath = os.path.join(
-            'log/' + inter_name + '/' + start_time_stamp + '_' + str(
-                self.scenario_num) + '_trj_vehicle_level.csv')
+            'log/' + inter_name + '/' + start_time_stamp + '_' + str(self.scenario_num) + '_trj_veh_level.csv')
         self.__all_vehicles.to_csv(filepath, index=False)
 
     def close_trj_csv(self):
