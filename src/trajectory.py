@@ -2,7 +2,7 @@
 # File name: trajectory.py         #
 # Author: Mahmoud Pourmehrab       #
 # Email: pourmehrab@gmail.com      #
-# Last Modified: Apr/23/2018       #
+# Last Modified: May/30/2018       #
 ####################################
 
 import numpy as np

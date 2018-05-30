@@ -2,7 +2,7 @@
 # File name: intersection.py       #
 # Author: Mahmoud Pourmehrab       #
 # Email: pourmehrab@gmail.com      #
-# Last Modified: Apr/22/2018       #
+# Last Modified: May/30/2018       #
 ####################################
 
 import csv
@@ -329,7 +329,7 @@ class Vehicle:
         """
         det_time, dist, speed = self.get_arrival_schedule()
 
-        a = self.max_accel_rate if speed <= max_speed else veh.max_decel_rate
+        a = self.max_accel_rate if speed <= max_speed else self.max_decel_rate
         dist_to_max_speed = (max_speed ** 2 - speed ** 2) / (2 * a)
 
         if dist_to_max_speed <= dist:

@@ -1,7 +1,7 @@
 # File name: data.py
 # Authors: Mahmoud Pourmehrab / Aschkan Omidvar    
 # Emails: pourmehrab@gmail.com / aschkan@ufl.edu      
-# Updated (Pourmehrab): Apr/22/2018
+# Updated (Pourmehrab): May/30/2018
 # Updated (Omidvar): May/28/2018     
 ####################################
 
@@ -11,27 +11,26 @@ def get_general_params(inter_name):
     :return:
         - inter_name: intersection name
         - max_speed: maximum speed in :math:`m/s`
-        - min_headway: (:math:`s`)
+        - min_headway: the lowest headway at the stop bar in :math:`s` (corresponds to the highest flow)
         - det_range: detection range in :math:`m`
-        - k, m:
+        - k, m: refer to :any:`LeadConnected` for the definitions
         - num_lanes: total number of incoming lanes
         - phase_cover_set: a subset of mutually exclusive phases that cover all lanes for use in :any:`_set_non_base_scheduled_departures`
         - small_positive_num: small number that lower than that is approximated by zero
-        - large_positive_num: large number
+        - large_positive_num: large number: is a large number to initialize badness of alternatives in GA. Make sure cannot be beaten by worst alternative.
         - lag_on_green: The lag time from start of green when a vehicle can depart to allow vehicle cross after green (in seconds).
         - max_num_traj_points: check if it's enough to preallocate the trajectory
         - min_dist_to_stop_bar: lower than this (in m) do not update schedule
         - do_traj_computation:
         - trj_time_resolution: time difference between two consecutive trajectory points in seconds used in :any:`discretize_time_interval()` (be careful not to exceed max size of trajectory)
-        - log_csv:
+        - log_csv: if set `True`, makes CSV files of the outputs
         - print_commandline:
 
 
     .. note::
         - The distance to stop bar will be input from either CSV file or fusion. However, the number provided here is used for generic computations.
         - odd degree of polynomial is recommended: k to be even and **at least** 5
-        - ``LARGE_NUM`` is a large number to initialize badness of alternatives in GA. Make sure cannot be beaten by worst alternative.
-        - Make sure the ``MAX_NUM_TRAJECTORY_POINTS`` to preallocate the trajectories is enough for a given problem
+        - Make sure the ``max_num_traj_points`` to preallocate the trajectories is enough for a given problem
 
 
     .. warning:: All the parameters defined here are required for running the program.
@@ -66,8 +65,8 @@ def get_general_params(inter_name):
                 'max_speed': 17.8816,  # 40 mph
                 'min_headway': 1.5,
                 'det_range': 500.0,
-                'k': int(11),
-                'm': int(15),
+                'k': int(20),
+                'm': int(40),
                 'num_lanes': int(6),
                 'phase_cover_set': (0, 1, 2, 3,),
                 'small_positive_num': 0.01,

@@ -4,7 +4,7 @@
 # File name: main.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: pourmehrab@gmail.com      #
-# Last Modified: Apr/24/2018       #
+# Last Modified: May/30/2018       #
 ####################################
 
 
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         print(
             "\n################################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
         start_time_stamp = datetime.now().strftime('%m-%d-%Y_%H:%M:%S')  # only for naming the CSV files
-        for sc in range(1, 45 + 1):
+        for sc in range(2, 45 + 1):
             run_avian(inter_name, method, sc, start_time_stamp, tester)
             print('scenario {:>4d} finished.'.format(sc))
     elif run_mode == 'realtime':

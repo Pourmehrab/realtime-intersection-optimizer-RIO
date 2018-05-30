@@ -2,7 +2,7 @@
 # File name: unit_tests.py         #
 # Author: Mahmoud Pourmehrab       #
 # Email: pourmehrab@gmail.com      #
-# Last Modified: Apr/08/2018       #
+# Last Modified: May/30/2018       #
 ####################################
 
 import sys
@@ -35,8 +35,8 @@ class SimTest(unittest.TestCase):
         assert all(sys.version_info[i] >= req[i] for i in range(len(req))), "Please update python interpreter."
 
     def arguments_check(self, req=({"13th16th", "TERL", "reserv", },
-                                   {"GA", "pretimed"},
-                                   {"simulation", "realtime"},)):
+                                   {"GA", "pretimed", },
+                                   {"simulation", "realtime", },)):
         """
 
         :param req: set of available intersections, signal opt methods, and run modes to choose
@@ -50,7 +50,11 @@ class SimTest(unittest.TestCase):
 
     def test_departure_of_trj(self, lanes, intersection, start_indx, end_indx):
         """
-        Checks for no early scheduled arrivals
+        Checks scheduled arrivals for:
+            - being processed by planner
+            - relative departure to be after arrival
+            - range of average speed to be feasible
+            - min headway with the lead vehicle (if exists)
 
         :param lanes:
         :param intersection:
@@ -87,7 +91,7 @@ class SimTest(unittest.TestCase):
     def test_SPaT_alternative(self, scheduled_departures, start_unsrvd_indx, end_vehicle_indx, last_vehicle_indx,
                               min_headway):
         """
-        Checks for min headway to be respected in the schedules
+        Checks for min headway to be respected in the schedule.
 
         :param scheduled_departures:
         :param start_unsrvd_indx:
@@ -108,7 +112,11 @@ class SimTest(unittest.TestCase):
 
     def test_trj_points(self, veh):
         """
-        Checks all the planned trajectory points.
+        Checks all trajectory assigned to a vehicle for:
+            - time difference.
+            - distance difference.
+            - speed & distance non-negativity.
+            - any null & nan values.
 
         :param veh:
         :type veh: Vehicle
@@ -119,19 +127,17 @@ class SimTest(unittest.TestCase):
             April-2018
         """
 
-        trj_point_indx = veh.first_trj_point_indx
-        first_trj_point_indx, last_trj_point_indx = veh.first_trj_point_indx, veh.last_trj_point_indx
-        trajectory = veh.trajectory
+        first_trj_point_indx, last_trj_point_indx, trajectory = veh.first_trj_point_indx, veh.last_trj_point_indx, veh.trajectory
         time_diff = np.diff(trajectory[0, first_trj_point_indx:last_trj_point_indx + 1], n=1)
         npt.assert_array_less([0.0] * len(time_diff), time_diff, err_msg="time is not strictly monotonic")
         dist_diff = np.diff(trajectory[1, first_trj_point_indx:last_trj_point_indx + 1], n=1)
-        npt.assert_array_less(dist_diff, [1.0] * len(dist_diff), err_msg="trj distance is not monotonic")
-        if last_trj_point_indx - trj_point_indx > 0:  # if there are at least two points, check them
-            while trj_point_indx <= last_trj_point_indx:
-                time, dist, speed = trajectory[:, trj_point_indx]
-                assert all(map(operator.not_, np.isnan([time, dist, speed]))), 'nan found in trajectory'
-                assert all(map(operator.not_, np.isinf([time, dist, speed]))), 'infinity found in the schedule'
+        npt.assert_array_less(dist_diff, [2.0] * len(dist_diff), err_msg="trj distance is not monotonic")
+        trj_point_indx = veh.first_trj_point_indx
+        while trj_point_indx <= last_trj_point_indx:
+            time, dist, speed = trajectory[:, trj_point_indx]
+            assert all(map(operator.not_, np.isnan([time, dist, speed]))), 'nan found in trajectory'
+            assert all(map(operator.not_, np.isinf([time, dist, speed]))), 'infinity found in the schedule'
 
-                self.assertGreater(speed, -3, msg="Negative speed")
-                self.assertGreater(dist, -3, msg="Traj point after the stop bar")
-                trj_point_indx += 1
+            self.assertGreater(speed, -3, msg="Negative speed")
+            self.assertGreater(dist, -3, msg="Traj point after the stop bar")
+            trj_point_indx += 1
