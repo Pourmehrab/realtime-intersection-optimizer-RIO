@@ -357,12 +357,12 @@ def get_sig_ctrl_interface_params(inter_name):
         May-2018
     """
     if inter_name == 'TERL':
-        NoPhase = 8  # insert the maximum phase number
-        al = range(1, NoPhase + 1)
+        num_phase = 8  # Total Number of phases at the TERL
+        al = range(1, num_phase + 1)
         non = [0]
-        nonConflict = [[2], [3, 8], [4, 7], [6]]
+        non_conflict = [[2], [3, 8], [4, 7], [6]]  # Conflict monitor phases
 
     else:
-        raise Exception('Simulation parameters are not known for this intersection.')
+        raise Exception('Controller parameters are not known for this intersection.')
 
-    return NoPhase, al, non, nonConflict
+    return num_phase, al, non, non_conflict
