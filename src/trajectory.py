@@ -39,7 +39,7 @@ class Trajectory(metaclass=Singleton):
         :param min_headway: This is the minimum headway that vehicles in a lane can be served (in :math:`sec/veh`)
         """
         self._max_speed, self._min_headway, self._small_positive_num, self._trj_time_resolution = map(
-            intersection._general_params, ['max_speed', 'min_headway', 'small_positive_num', 'trj_time_resolution'])
+            intersection._general_params.get, ['max_speed', 'min_headway', 'small_positive_num', 'trj_time_resolution'])
 
     def discretize_time_interval(self, start_time, end_time):
         """

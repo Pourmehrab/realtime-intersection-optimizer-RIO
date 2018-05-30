@@ -125,14 +125,13 @@ if __name__ == "__main__":
 
     from src.time_keeper import TimeKeeper
     from src.intersection import Intersection, Lanes, Traffic, TrajectoryPlanner
-    from src.SNMP import snmpPhaseCtrl
 
     # Signal Optimizers
     from src.signal import GA_SPaT, Pretimed
 
     # testing
     try:
-        from src.unit_tests import SimTest
+        from test.unit_tests import SimTest
 
         tester = SimTest()
         tester.py_version_test()
