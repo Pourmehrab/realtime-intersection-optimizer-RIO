@@ -303,7 +303,7 @@ class FollowerConventional(Trajectory):
             foll_trj_indx += 1
 
         t_departure_relative = veh.scheduled_departure - curr_foll_t
-        v_departure_relative = curr_foll_d / t_departure_relative
+        v_departure_relative = t_departure_relative / t_departure_relative
         t_augment = self.discretize_time_interval(self._trj_time_resolution, t_departure_relative)
         d_augment = [curr_foll_d - t * v_departure_relative for t in t_augment]
         v_augment = [v_departure_relative] * len(t_augment)
@@ -337,7 +337,6 @@ class FollowerConventional(Trajectory):
         if s < 0:
             s, a_star = 0, -v0 / dt
             d = d0 - (a_star * (t ** 2 - t0 ** 2) / 2 + (v0 - a_star * t0) * dt)
-            # assert foll_a_min <= a_star <= foll_a_max, "infeasible acc/dec rate"
             if foll_a_min > a_star:
                 a_star = foll_a_min
                 s, d = a_star * dt + v0, d0 - (a_star * (t ** 2 - t0 ** 2) / 2 + (v0 - a_star * t0) * dt)
