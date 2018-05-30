@@ -7,18 +7,6 @@
 # Last Modified: Apr/24/2018       #
 ####################################
 
-class Singleton(type):
-    """
-    Only to make singleton classes.
-
-    The credit for this goes to `this <https://stackoverflow.com/q/6760685>`_ stackoverflow  post.
-    """
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
 
 
 def run_avian(inter_name, method, sc, start_time_stamp, tester):

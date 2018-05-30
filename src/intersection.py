@@ -13,7 +13,6 @@ import pandas as pd
 from scipy import stats
 
 from data.data import *
-from main import Singleton
 from src.trajectory import LeadConventional, LeadConnected, FollowerConventional, FollowerConnected
 
 # vis
@@ -25,7 +24,7 @@ except ModuleNotFoundError:
     optional_packages_found = False
 
 
-class Intersection(metaclass=Singleton):
+class Intersection:
     """
     Objectives:
         - Keeps intersection parameters
@@ -46,7 +45,7 @@ class Intersection(metaclass=Singleton):
         self._general_params = get_general_params(int_name)
 
 
-class Lanes(metaclass=Singleton):
+class Lanes:
     """
     Dictionary in which the key is lane index and value is an arrays that keeps a queue of vehicle in that lane.
 
@@ -559,7 +558,7 @@ class Vehicle:
             ))
 
 
-class Traffic(metaclass=Singleton):
+class Traffic:
     """
     Objectives:
         - Adds new vehicles from the CSV file to the ``lanes.vehlist`` structure
@@ -835,7 +834,7 @@ class Traffic(metaclass=Singleton):
                     lanes.purge_served_vehs(lane, last_veh_indx_to_remove)
 
 
-class TrajectoryPlanner(metaclass=Singleton):
+class TrajectoryPlanner:
     """
     Plans trajectories of all type. This makes calls to trajectory classes' methods.
 

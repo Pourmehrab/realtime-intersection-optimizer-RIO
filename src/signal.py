@@ -10,14 +10,13 @@ import os
 from copy import deepcopy
 import numpy as np
 # from numba import jit
-from main import Singleton
 from sortedcontainers import SortedDict
 from data.data import get_signal_params, get_conflict_dict, get_phases, get_pretimed_parameters, get_GA_parameters
 
 np.random.seed(2018)
 
 
-class Signal(metaclass=Singleton):
+class Signal:
     """
     The class serves the following goals:
         - Keeps the SPaT decision updated
