@@ -5,10 +5,8 @@
 # Last Modified: Apr/22/2018       #
 ####################################
 
-from main import Singleton
 
-
-class TimeKeeper(metaclass=Singleton):
+class TimeKeeper:
     """
     Objectives:
         - Keeps the time

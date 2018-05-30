@@ -10,21 +10,13 @@ import os
 from copy import deepcopy
 import numpy as np
 # from numba import jit
-from main import Singleton
 from sortedcontainers import SortedDict
 from data.data import get_signal_params, get_conflict_dict, get_phases, get_pretimed_parameters, get_GA_parameters
 
-# testing
-try:
-    from src.optional.test.unit_tests import test_departure_of_trj, test_SPaT_alternative
-
-    optional_packages_found = True
-except ModuleNotFoundError:
-    optional_packages_found = False
 np.random.seed(2018)
 
 
-class Signal(metaclass=Singleton):
+class Signal:
     """
     The class serves the following goals:
         - Keeps the SPaT decision updated
@@ -63,15 +55,15 @@ class Signal(metaclass=Singleton):
 
         .. note:: SPaT starts executing from index 0 to the end of each list.
 
-    :Author:
-        Mahmoud Pourmehrab <pourmehrab@gmail.com>
-    :Date:
-        April-2018
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
        """
         self._inter_name = intersection._general_params.get('inter_name')
         num_lanes = intersection._general_params.get('num_lanes')
         self._set_lane_lane_incidence(num_lanes)
-        self._set_phase_lane_incidence(num_lanes)
+        self._set_phase_lane_incidence()
 
         if intersection._general_params.get('log_csv'):
             filepath_sig = os.path.join(
@@ -89,6 +81,10 @@ class Signal(metaclass=Singleton):
         key is a lane and value is *set* of lanes that are in conflict with key (note numbering starts from 1 not 0) to ``lane_lane_incidence`` which includes the conflict matrix :math:`|L|\\times |L|` where element :math:`ij` is 1 if :math:`i` and :math:`j` are conflicting movements
 
         :param num_lanes:
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         # gets the conflict dictionary for this intersection
         conf_dict = get_conflict_dict(self._inter_name)
@@ -101,13 +97,16 @@ class Signal(metaclass=Singleton):
             for j in conf:
                 self._lane_lane_incidence[l - 1].add(j - 1)  # these are conflicting lanes
 
-    def _set_phase_lane_incidence(self, num_lanes):
+    def _set_phase_lane_incidence(self):
         """
         Sets the phase-phase incidence matrix of the intersection
 
         .. todo:: automate phase enumerator
 
-        :param num_lanes:
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         phase_lane_incidence_one_based = get_phases(self._inter_name)
         # if phase_lane_incidence_one_based is None:  # todo add this to the readme
@@ -126,6 +125,10 @@ class Signal(metaclass=Singleton):
 
         :param phase: phase to be added
         :param actual_green: green duration of that phase
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         if self.SPaT_sequence[-1] == phase:  # extend this phase
             self.SPaT_end[-1] = self.SPaT_start[-1] + actual_green + self._y + self._ar
@@ -140,33 +143,23 @@ class Signal(metaclass=Singleton):
             if intersection._general_params.get('print_commandline'):
                 print('>>> Phase {:d} appended (ends @ {:>5.1f} sec)'.format(phase, self.SPaT_end[-1]))
 
-    def set_critical_phase_volumes(self, volumes):
-        """
-        Not used in GA since the phasing configuration is unknown prior to cycle length formula
-        that is derived from time budget concept
-
-        .. warning::
-            Do not call this on a signal method that does not handle ``allowable_phases``.
-
-        :param volumes:
-       """
-        self._critical_phase_volumes = np.array(
-            [max(volumes[self._pli.get(phase)]) for phase in self._allowable_phases])
-
     def update_SPaT(self, intersection, time_threshold, sc):
         """
         Performs two tasks to update SPaT based on the given clock:
             - Removes terminated phase (happens when the all-red is passed)
-            - Checks for  SPaT to not get empty after being updated
+            - Checks for SPaT to not get empty after being updated
 
         .. attention::
             - If all phases are getting purged, either make longer SPaT decisions or reduce the simulation steps.
 
         :param time_threshold: Normally the current clock of simulation or real-time in :math:`s`
         :param sc: scenario number to be recorded in CSV
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
-        if self.SPaT_end[-1] < time_threshold:
-            raise Exception('If all phases get purged, SPaT becomes empty!')
+        assert self.SPaT_end[-1] >= time_threshold, "If all phases get purged, SPaT becomes empty"
 
         phase_indx, any_to_be_purged = 0, False
         file = self.sig_csv_file
@@ -199,6 +192,10 @@ class Signal(metaclass=Singleton):
     def _flush_upcoming_SPaTs(self, intersection):
         """
         Just leaves the first SPaT and flushes the rest. One more severe variant to this is to even reduce the the green time of first phase.
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         if len(self.SPaT_sequence) > 1:
             if intersection._general_params.get('print_commandline'):
@@ -210,7 +207,7 @@ class Signal(metaclass=Singleton):
             self.SPaT_end = [self.SPaT_end[0]]
 
     # @jit()
-    def _do_base_SPaT(self, lanes, intersection, trajectory_planner):
+    def _do_base_SPaT(self, lanes, intersection, trajectory_planner, tester):
         """
         This method aims to serve as many vehicles as possible given the available SPaT. Depending on the signal method, the set of current SPaT could be different. For example:
 
@@ -247,6 +244,10 @@ class Signal(metaclass=Singleton):
         :param trajectory_planner:
         :type trajectory_planner: src.intersection.TrajectoryPlanner
         :return: The ``lanes.first_unsrvd_indx`` array that keeps index off the first unserved vehicle in each lane, is initialized to zero before calling this method and gets updated by the end of this call. It also returns ``served_vehicle_time`` that shows the schedule
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         num_lanes, max_speed, min_headway, do_traj_computation = map(intersection._general_params.get,
                                                                      ['num_lanes', 'max_speed', 'min_headway',
@@ -275,7 +276,8 @@ class Signal(metaclass=Singleton):
                                 veh.set_scheduled_departure(t, d, s, lane, veh_indx, intersection)
 
                                 if do_traj_computation and veh.freshly_scheduled:
-                                    trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, '*', )
+                                    trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, tester,
+                                                                       '*')
                                     veh.reschedule_departure, veh.freshly_scheduled = False, False
                                 else:
                                     break  # no more room in this phase (no point to continue)
@@ -284,13 +286,14 @@ class Signal(metaclass=Singleton):
 
                     if lanes.first_unsrvd_indx[lane] > lanes.last_vehicle_indx[lane]:
                         any_unserved_vehicle[lane] = False
-        if optional_packages_found:  # todo remove after testing
-            test_departure_of_trj(lanes, intersection, [0] * num_lanes,
-                                  lanes.first_unsrvd_indx)
+        if tester is not None:
+            tester.test_departure_of_trj(lanes, intersection, [0] * num_lanes,
+                                         lanes.first_unsrvd_indx)
         return any_unserved_vehicle
 
     # @jit()
-    def _do_non_base_SPaT(self, lanes, num_lanes, first_unsrvd_indx, served_vehicle_time, any_unserved_vehicle):
+    def _do_non_base_SPaT(self, lanes, num_lanes, first_unsrvd_indx, served_vehicle_time, any_unserved_vehicle,
+                          intersection):
         """
         Most of times the base SPaT prior to running a ``solve()`` method does not serve all vehicles. However, vehicles
         require trajectory to be provided. One way to address this is to assign them the best temporal trajectory which
@@ -307,6 +310,8 @@ class Signal(metaclass=Singleton):
             - Since the departure times are definitely temporal, DO NOT set ``reschedule_departure`` to ``False``.
             - The ``lanes.first_unsrvd_indx`` cannot be used since it does not keep GA newly served vehicles. However, it would work for pretimed since the method is static.
 
+        :param intersection:
+        :type intersection: Intersection
         :param lanes:
         :type lanes: Lanes
         :param num_lanes:
@@ -314,23 +319,28 @@ class Signal(metaclass=Singleton):
         :param served_vehicle_time: includes schedule of departures for those served by base SPaT
         :param any_unserved_vehicle: `Has `False`` for the lane that has all vehicles scheduled through base SPaT and the ``solve()``, ``True`` otherwise.
         :return: ``served_vehicle_time`` that now includes the schedules of all vehicle except those served through base SPaT
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
+        min_headway = intersection._general_params.get('min_headway')
         max_departure_time = self.SPaT_end[-1]
         for lane in range(num_lanes):
             if any_unserved_vehicle[lane]:
                 for veh_indx in range(first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
                     veh = lanes.vehlist.get(lane)[veh_indx]
                     if veh_indx == 0:
-                        max_departure_time = max(max_departure_time, veh.earliest_departure) + self._min_headway
+                        max_departure_time = max(max_departure_time, veh.earliest_departure) + min_headway
                     else:
                         lead_veh_scheduled_departure = lanes.vehlist.get(lane)[veh_indx - 1].scheduled_departure
                         max_departure_time = max(max_departure_time, veh.earliest_departure,
-                                                 lead_veh_scheduled_departure) + self._min_headway
+                                                 lead_veh_scheduled_departure) + min_headway
                     served_vehicle_time[lane][veh_indx] = max_departure_time
                     veh.reschedule_departure = True
         return served_vehicle_time
 
-    def _set_non_base_scheduled_departures(self, lanes, scheduled_departure, trajectory_planner, intersection):
+    def _set_non_base_scheduled_departures(self, lanes, scheduled_departure, trajectory_planner, intersection, tester):
         """
         Sets the scheduled departure in the trajectory of the vehicle and plans trajectory of vehicle.
 
@@ -338,11 +348,16 @@ class Signal(metaclass=Singleton):
             - Departure schedule of those which were served by base SPaT is set in ``base_badness()`` and not here.
             - A cover phase set for all lanes is needed here.
 
+        :param tester:
         :param lanes:
         :type lanes: Lanes
         :param scheduled_departure:
         :param trajectory_planner:
         :type trajectory_planner: TrajectoryPlanner
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         max_speed, phase_cover_set, lag_on_green, min_headway, do_traj_computation = map(
             intersection._general_params.get,
@@ -364,7 +379,7 @@ class Signal(metaclass=Singleton):
                     t, d, s = t_scheduled, 0, max_speed
                     veh.set_scheduled_departure(t, d, s, lane, veh_indx, intersection)
                     if do_traj_computation and veh.freshly_scheduled:
-                        trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, '#')
+                        trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, tester, '#')
                         veh.freshly_scheduled = False
                     else:
                         continue
@@ -412,7 +427,7 @@ class Pretimed(Signal):
             for indx, phase in enumerate(self._phase_seq):
                 self._append_extend_phase(int(phase), self._green_dur[indx], intersection)
 
-    def solve(self, lanes, intersection, critical_volume_ratio, trajectory_planner):
+    def solve(self, lanes, intersection, critical_volume_ratio, trajectory_planner, tester):
         """
         The phases sequence is exactly as the provided in ``data.py``. The flow is:
             #. First serves using the available SPaT
@@ -427,9 +442,13 @@ class Pretimed(Signal):
         :type lanes: Lanes
         :param intersection:
         :type intersection: Intersection
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         num_lanes = intersection._general_params.get('num_lanes')
-        any_unserved_vehicle = self._do_base_SPaT(lanes, intersection, trajectory_planner)
+        any_unserved_vehicle = self._do_base_SPaT(lanes, intersection, trajectory_planner, tester)
 
         if len(self.SPaT_sequence) // len(self._phase_seq) < self._num_cycles - 1:
             for indx, phase in enumerate(self._phase_seq):
@@ -438,8 +457,9 @@ class Pretimed(Signal):
             scheduled_departures = {lane: np.zeros(len(lanes.vehlist.get(lane)), dtype=float) for lane in
                                     range(num_lanes)}
             scheduled_departures = self._do_non_base_SPaT(lanes, num_lanes, lanes.first_unsrvd_indx,
-                                                          scheduled_departures, any_unserved_vehicle)
-            self._set_non_base_scheduled_departures(lanes, scheduled_departures, trajectory_planner, intersection)
+                                                          scheduled_departures, any_unserved_vehicle, intersection)
+            self._set_non_base_scheduled_departures(lanes, scheduled_departures, trajectory_planner, intersection,
+                                                    tester)
 
 
 # -------------------------------------------------------
@@ -471,6 +491,10 @@ class GA_SPaT(Signal):
         :type intersection: Intersection
         :param sc:
         :param start_time_stamp:
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
 
         super().__init__(intersection, sc, start_time_stamp)
@@ -490,7 +514,7 @@ class GA_SPaT(Signal):
         if print_commandline:
             print('>>> Phase {:d} appended (ends @ {:2.1f} sec)'.format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
 
-    def solve(self, lanes, intersection, critical_volume_ratio, trajectory_planner):
+    def solve(self, lanes, intersection, critical_volume_ratio, trajectory_planner, tester):
         """
         This method implements Genetic Algorithm to determine :term:`SPaT`. The high-level work flow is as the following:
             #. From the available :term:`SPaT`, only keep the ongoing one due to safety and practical reasons (*Here we do not change the timing of the first phase, however a variant is to reduce the timing to the minimum green time*).
@@ -511,15 +535,19 @@ class GA_SPaT(Signal):
 
         :param lanes:
         :type lanes: Lanes
-        :param num_lanes:
-        :param max_speed:
+        :param intersection:
+        :type intersection: Intersection
         :param critical_volume_ratio:
         :param trajectory_planner:
         :type trajectory_planner: TrajectoryPlanner
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         num_lanes, large_positive_num = map(intersection._general_params.get, ['num_lanes', 'large_positive_num'])
         self._flush_upcoming_SPaTs(intersection)
-        any_unserved_vehicle = self._do_base_SPaT(lanes, intersection, trajectory_planner)
+        any_unserved_vehicle = self._do_base_SPaT(lanes, intersection, trajectory_planner, tester)
         if any(any_unserved_vehicle):
             # if the base SPaT serves, don't bother doing GA # correct max phase length in case goes above the range
             max_phase_length = min(len(self.__GA_params.get('allowable_phases')),
@@ -538,7 +566,7 @@ class GA_SPaT(Signal):
             for individual in range(self.__GA_params.get('population_size')):
                 phase_seq = self._mutate_seq(1)
                 time_split = self._mutate_timing(cycle_length, 1)
-                badness = self._evaluate_badness(phase_seq, time_split, lanes, intersection)
+                badness = self._evaluate_badness(phase_seq, time_split, lanes, intersection, tester)
                 population[badness] = {'phase_seq': phase_seq, 'time_split': time_split}
 
             for phase_length in range(2, max_phase_length + 1):
@@ -549,7 +577,7 @@ class GA_SPaT(Signal):
                 for individual in range(self.__GA_params.get('population_size')):
                     phase_seq = self._mutate_seq(phase_length)
                     time_split = self._mutate_timing(cycle_length, phase_length)
-                    badness = self._evaluate_badness(phase_seq, time_split, lanes, intersection)
+                    badness = self._evaluate_badness(phase_seq, time_split, lanes, intersection, tester)
                     population[badness] = {'phase_seq': phase_seq, 'time_split': time_split}
 
                 # perform GA operations in-place
@@ -565,19 +593,19 @@ class GA_SPaT(Signal):
                                                                      population[parents_indx[1]],
                                                                      phase_length, half_max_indx)
                             # evaluate badness function
-                            badness = self._evaluate_badness(phase_seq, time_split, lanes, intersection)
+                            badness = self._evaluate_badness(phase_seq, time_split, lanes, intersection, tester)
                             population[badness] = {'phase_seq': phase_seq, 'time_split': time_split}
 
             if self.__best_GA_alt.get('SPaT').get('badness_measure') == large_positive_num:
-                raise Exception("GA failed to find any serving SPaT")
-            else:
-                for indx, phase in enumerate(self.__best_GA_alt.get('SPaT').get('phase_seq')):
-                    self._append_extend_phase(int(phase), self.__best_GA_alt.get('SPaT').get('time_split')[
-                        indx] - self._y - self._ar, intersection)
-                self._set_non_base_scheduled_departures(lanes, self.__best_GA_alt.get('scheduled_departures'),
-                                                        trajectory_planner, intersection)
+                print("GA failed to find any serving SPaT.")
 
-    def _evaluate_badness(self, phase_seq, time_split, lanes, intersection):
+            for indx, phase in enumerate(self.__best_GA_alt.get('SPaT').get('phase_seq')):
+                self._append_extend_phase(int(phase), self.__best_GA_alt.get('SPaT').get('time_split')[
+                    indx] - self._y - self._ar, intersection)
+            self._set_non_base_scheduled_departures(lanes, self.__best_GA_alt.get('scheduled_departures'),
+                                                    trajectory_planner, intersection, tester)
+
+    def _evaluate_badness(self, phase_seq, time_split, lanes, intersection, tester):
         """
          This method computes the badness (opposite if fitness) of an alternative using the equation :math:`\lambda \\times t-c`, where:
             - :math:`c` is the count of served vehicles in :math:`veh`
@@ -593,6 +621,7 @@ class GA_SPaT(Signal):
             - Please note base on the provided definition :term:`badness` can acquire negative values.
             - Recursively computes the average travel time
 
+        :param tester:
         :param phase_seq:
         :param time_split:
         :param lanes: holds the traffic intended to be served
@@ -600,6 +629,10 @@ class GA_SPaT(Signal):
         :param intersection:
         :type intersection: Intersection
         :return: The corresponding :term:`badness` for given SPaT defined by ``phase_seq`` and ``time_split`` to be added to the population. It also sets, if qualified, this individual as the best known so far.
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         num_lanes, large_positive_num, lag_on_green, min_headway = map(intersection._general_params.get,
                                                                        ['num_lanes', 'large_positive_num',
@@ -638,9 +671,9 @@ class GA_SPaT(Signal):
                             break
             green_starts = yellow_ends + self._ar
 
-        if optional_packages_found:  # todo remove after testing
-            test_SPaT_alternative(temporary_scheduled_departures, lanes.first_unsrvd_indx, first_unsrvd_indx,
-                                  lanes.last_vehicle_indx, min_headway)
+        if tester is not None:  # todo remove after testing
+            tester.test_SPaT_alternative(temporary_scheduled_departures, lanes.first_unsrvd_indx, first_unsrvd_indx,
+                                         lanes.last_vehicle_indx, min_headway)
 
         badness = int(
             (self.__GA_params.get('lambda') * mean_travel_time - throughput) * self.__GA_params.get(
@@ -664,6 +697,10 @@ class GA_SPaT(Signal):
         :param critical_volume_ratio:
         :param phase_length:
         :return:
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         cycle_length = (phase_length * self._ar) / (1 - critical_volume_ratio)
         if cycle_length < 60:
@@ -681,6 +718,10 @@ class GA_SPaT(Signal):
 
         :param phase_length:
         :return: seq
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         seq = tuple(np.random.choice(self.__GA_params.get('allowable_phases'), phase_length, replace=False))
         return seq
@@ -694,6 +735,10 @@ class GA_SPaT(Signal):
         :param cycle_length:
         :param phase_length:
         :return: time_split
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         if phase_length == 1:
             return np.array([cycle_length])
@@ -726,6 +771,10 @@ class GA_SPaT(Signal):
         :param phase_length:
         :param half_max_indx:
         :return: child with valid SPaT inherited from provided parents.
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         phase_seq = tuple([left_parent['phase_seq'][i] if i < half_max_indx else right_parent['phase_seq'][i]
                            for i in range(phase_length)])
