@@ -98,21 +98,21 @@ class Lanes:
                         if len(lanes.vehlist.get(lane)) == 1:
                             # vehicles is a lead connected vehicle
                             # happens when a connected vehicle is the first in the lane
-                            veh.earliest_arrival_connected(veh, max_speed)
+                            veh.earliest_arrival_connected(max_speed)
                         else:
                             # vehicles is a follower connected vehicle
                             # happens when a connected vehicle is NOT the first in the lane
-                            veh.earliest_arrival_connected(veh, max_speed, min_headway,
+                            veh.earliest_arrival_connected(max_speed, min_headway,
                                                            lanes.vehlist.get(lane)[-2].earliest_departure)
                     elif veh.veh_type == 0:
                         if len(lanes.vehlist.get(lane)) == 1:
                             # vehicles is a lead conventional vehicle
                             # happens when a conventional vehicle is the first in the lane
-                            veh.earliest_arrival_conventional(veh, max_speed)
+                            veh.earliest_arrival_conventional(max_speed)
                         else:
                             # vehicles is a lead conventional vehicle
                             # happens when a conventional vehicle is NOT the first in the lane
-                            veh.earliest_arrival_conventional(veh, max_speed, min_headway,
+                            veh.earliest_arrival_conventional(max_speed, min_headway,
                                                               lanes.vehlist.get(lane)[-2].earliest_departure)
                     else:
                         raise Exception("The detected vehicle could not be classified.")
@@ -308,7 +308,7 @@ class Vehicle:
         self.reschedule_departure, self.freshly_scheduled = True, False
         self._times_sent_to_traj_planner = 0
 
-    def earliest_arrival_connected(self, veh, max_speed, min_headway=0, t_earliest=0):
+    def earliest_arrival_connected(self, max_speed, min_headway=0, t_earliest=0):
         """
         Uses the latest departure time under the following cases to compute the earliest time the connected vehicle can reach the stop bar:
             - Accelerate/Decelerate to the maximum allowable speed and maintain the speed till departure
@@ -327,9 +327,9 @@ class Vehicle:
         :Date:
             April-2018
         """
-        det_time, dist, speed = veh.get_arrival_schedule()
+        det_time, dist, speed = self.get_arrival_schedule()
 
-        a = veh.max_accel_rate if speed <= max_speed else veh.max_decel_rate
+        a = self.max_accel_rate if speed <= max_speed else veh.max_decel_rate
         dist_to_max_speed = (max_speed ** 2 - speed ** 2) / (2 * a)
 
         if dist_to_max_speed <= dist:
@@ -346,7 +346,7 @@ class Vehicle:
         assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
         self.earliest_departure = t
 
-    def earliest_arrival_conventional(self, veh, max_speed, min_headway=0, t_earliest=0):
+    def earliest_arrival_conventional(self, max_speed, min_headway=0, t_earliest=0):
         """
         Uses the latest departure time under the following cases to compute the earliest time the conventional vehicle can reach the stop bar:
             - Maintains the detected speed till departure
@@ -366,7 +366,7 @@ class Vehicle:
         :Date:
             April-2018
         """
-        det_time, dist, speed = veh.get_arrival_schedule()
+        det_time, dist, speed = self.get_arrival_schedule()
         t = max(det_time + dist / max_speed, t_earliest + min_headway)
         assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
         self.earliest_departure = t
