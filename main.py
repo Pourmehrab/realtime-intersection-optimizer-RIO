@@ -8,7 +8,6 @@
 ####################################
 
 
-
 def run_avian(inter_name, method, sc, start_time_stamp, tester):
     """
     .. note::
@@ -111,6 +110,7 @@ if __name__ == "__main__":
     from datetime import datetime
     from time import perf_counter
 
+    from src.sig_ctrl_interface import snmp_phase_ctrl
     from src.time_keeper import TimeKeeper
     from src.intersection import Intersection, Lanes, Traffic, TrajectoryPlanner
 
