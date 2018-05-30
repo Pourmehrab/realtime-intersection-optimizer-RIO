@@ -106,7 +106,7 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
 
 if __name__ == "__main__":
     # IMPORT NECESSARY PACKAGES
-    import sys, os
+    import sys, os, multiprocessing
     from datetime import datetime
     from time import perf_counter
 
@@ -139,9 +139,11 @@ if __name__ == "__main__":
         print(
             "\n################################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
         start_time_stamp = datetime.now().strftime('%m-%d-%Y_%H:%M:%S')  # only for naming the CSV files
-        for sc in range(2, 45 + 1):
-            run_avian(inter_name, method, sc, start_time_stamp, tester)
-            print('scenario {:>4d} finished.'.format(sc))
+        for sc in range(1, 45 + 1):
+            job = multiprocessing.Process(target=run_avian, args=(inter_name, method, sc, start_time_stamp, tester,))
+            job.start()
+            # run_avian(inter_name, method, sc, start_time_stamp, tester)
+            # print('scenario {:>4d} finished.'.format(sc))
     elif run_mode == 'realtime':
         raise Exception('real-time mode is not available yet.')
 
