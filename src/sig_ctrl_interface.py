@@ -100,6 +100,7 @@ def snmpHold(List):
         Aschkan Omidvar <aschkan@ufl.edu>
     :Date:
         Jan-2017
+
     .. note::
         This module transforms the bit matrix values for OID
         enterprise::1206.4.2.1.1.5.1.4.1 to the corresponding phase number and
@@ -119,6 +120,7 @@ def snmpForceOff(List):
         Aschkan Omidvar <aschkan@ufl.edu>
     :Date:
         Jan-2017
+  
     .. note::
         This module transforms the bit matrix values for OID
         enterprise::1206.4.2.1.1.5.1.5.1 to the corresponding phase number and
@@ -145,6 +147,7 @@ def snmpVehCall(List):
         Aschkan Omidvar <aschkan@ufl.edu>
     :Date:
         Jan-2017
+
     .. note::
         This module transforms the bit matrix values for OID
         enterprise::1206.4.2.1.1.5.1.6.1 to the corresponding phase number and
@@ -164,6 +167,7 @@ def snmpTerminate():
         Aschkan Omidvar <aschkan@ufl.edu>
     :Date:
         Jan-2017
+
     .. note::
         This module terminates all the commands and resets the signal controller to
         the default mode (actauted)
@@ -180,11 +184,12 @@ def snmp_phase_ctrl(Phase, inter_name):
         Aschkan Omidvar <aschkan@ufl.edu>
     :Date:
         Jan-2017
+
     .. note::
         Send command to ASC
     """
     num_phase, al, non, non_conflict = get_sig_ctrl_interface_params(inter_name)
-    
+
     snmpHold(list(al))
     snmpHold(list(non))
 

@@ -108,7 +108,6 @@ if __name__ == "__main__":
     from src.sig_ctrl_interface import snmp_phase_ctrl
     from src.simulator import Simulator
     from src.intersection import Intersection, Lanes, Traffic, TrajectoryPlanner
-
     # Signal Optimizers
     from src.signal import GA_SPaT, Pretimed
 
