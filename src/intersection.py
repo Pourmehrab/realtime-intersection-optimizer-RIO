@@ -15,14 +15,7 @@ from scipy import stats
 from data.data import *
 from src.trajectory import LeadConventional, LeadConnected, FollowerConventional, FollowerConnected
 
-
-# vis
-# try:
-#     from src.optional.vis.vistrj import VisualizeSpaceTime
-#
-#     optional_packages_found = False  # True
-# except ModuleNotFoundError:
-#     optional_packages_found = False
+from src.optional.vis.vistrj import VisualizeSpaceTime  # todo: remove this
 
 
 class Intersection:
@@ -397,6 +390,7 @@ class Vehicle:
         :param lane: lane number that is zero-based  (it records it one-based)
         :param time_threshold: any trajectory point before this is considered expired (normally its simulation time)
         :param file: The CSV file to be written. It is initialized in :any:`Traffic.__init__()` method, if ``None``, this does not record points in CSV.
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -418,10 +412,8 @@ class Vehicle:
                 trj_indx += 1
                 time, distance, speed = self.trajectory[:, trj_indx]
 
-        if trj_indx <= max_trj_indx:
-            self.set_first_trj_point_indx(trj_indx)
-        else:
-            raise Exception("The vehicle should've been removed instead of getting updated for trajectory points.")
+        assert trj_indx <= max_trj_indx, "The vehicle should've been removed instead of getting updated for trajectory points"
+        self.set_first_trj_point_indx(trj_indx)
 
     def set_scheduled_departure(self, t_scheduled, d_scheduled, s_scheduled, lane, veh_indx, intersection):
         """
@@ -429,8 +421,8 @@ class Vehicle:
         
         .. note::
             - When a new vehicle is scheduled, it has two trajectory points: one for the current state and the other for the final state.
-            - If the vehicle is closer than ``MIN_DIST_TO_STOP_BAR``, avoids appending the schedule.
-            - Set the ``freshly_scheduled`` to True only if vehicle is getting a new schedule and trajectory planning might become relevant.
+            - If the vehicle is closer than ``min_dist_to_stop_bar``, avoids appending the schedule.
+            - Set the ``freshly_scheduled`` to ``True`` only if vehicle is getting a new schedule and trajectory planning might become relevant.
             - Moves back the first trajectory point to make best use of limited size to store trajectory points
 
         :param t_scheduled: scheduled departure time (:math:`s`)
@@ -457,11 +449,9 @@ class Vehicle:
 
             self.set_first_trj_point_indx(0)
             self.trajectory[:, 0] = [det_time, det_dist, det_speed]
-
-            self.scheduled_departure = t_scheduled
-
             self.set_last_trj_point_indx(1)
             self.trajectory[:, 1] = [t_scheduled, d_scheduled, s_scheduled]
+            self.scheduled_departure = t_scheduled
 
             if intersection._general_params.get('print_commandline'):
                 self.print_trj_points(lane, veh_indx, '@')
@@ -636,11 +626,11 @@ class Traffic:
         else:
             self.full_traj_csv_file = None
 
-    def set_row_vehicle_level_csv(self, departure_time, veh):
+    def set_row_vehicle_level_csv(self, dep_time, veh):
         """
         Sets the departure time of an individual vehicle that is just served.
 
-        :param departure_time: departure time in seconds
+        :param dep_time: departure time in seconds
         :param veh: vehicle to be recorder
         :type veh: Vehicle
         :Author:
@@ -649,7 +639,7 @@ class Traffic:
             April-2018
         """
         indx = veh.csv_indx
-        self._auxilary_departure_times[indx] = departure_time
+        self._auxilary_departure_times[indx] = dep_time
         self._auxilary_ID[indx] = veh.ID
         self._auxilary_num_sent_to_trj_planner[indx] = veh._times_sent_to_traj_planner
 
@@ -799,7 +789,7 @@ class Traffic:
         """
         This looks for removing the served vehicles.
 
-        :param lanes: includes all vehicles
+        :param lanes: includes all the vehicles in all lanes
         :type lanes: Lanes
         :param simulation_time: current simulation clock
         :param intersection:
@@ -813,22 +803,18 @@ class Traffic:
         num_lanes = intersection._general_params.get('num_lanes')
         for lane in range(num_lanes):
             if bool(lanes.vehlist.get(lane)):  # not an empty lane
-
                 last_veh_indx_to_remove = -1
                 for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
-
                     det_time, _, _ = veh.get_arrival_schedule()
                     dep_time, _, _ = veh.get_departure_schedule()
-                    if dep_time < simulation_time:  # served! remove it.
-
+                    if dep_time < simulation_time:  # record/remove departure
                         last_veh_indx_to_remove += 1
                         if intersection._general_params.get('print_commandline'):
                             print('/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID +
                                   '@({:>4.1f} s)'.format(dep_time))
                         if self._log_csv:
                             self.set_row_vehicle_level_csv(dep_time, veh)
-
-                    elif det_time < simulation_time:  # RESET EXISTING VEHICLES TRAJECTORY
+                    elif det_time < simulation_time:  # record/remove expired points
                         veh.reset_trj_points(self.scenario_num, lane, simulation_time, self.full_traj_csv_file)
 
                     else:  # det_time of all behind this vehicle is larger, so we can stop.
@@ -858,10 +844,7 @@ class TrajectoryPlanner:
 
         self._max_speed = intersection._general_params.get('max_speed')
 
-        # if optional_packages_found:  # todo remove after testing
-        #     self._visualizer = VisualizeSpaceTime(6)
-        # else:
-        #     self._visualizer = None
+        self._visualizer = VisualizeSpaceTime(6)  # todo remove after testing
 
     def plan_trajectory(self, lanes, veh, lane, veh_indx, intersection, tester, identifier):
         """
@@ -896,15 +879,14 @@ class TrajectoryPlanner:
         else:
             raise Exception('One of lead/follower conventional/connected should have occurred.')
 
-        # if self._visualizer is not None: # todo remove after testing
-        #     self._visualizer.add_multi_trj_matplotlib(veh, lane)
-        #     self._visualizer.export_matplot(0, 550, 20, 200)
-
-        if abs(veh.trajectory[0, veh.last_trj_point_indx] - veh.scheduled_departure) > 0.1:
-            raise Exception('The planned trj does not match the scheduled time.')
+        self._visualizer.add_multi_trj_matplotlib(veh, lane)  # todo remove after testing
+        self._visualizer.export_matplot(0, 510, 20, 155)  # todo remove after testing
 
         if tester is not None:
+            tester.test_planned_departure(veh)
             tester.test_trj_points(veh)
+            if veh_indx > 0:
+                tester.check_for_collision(veh, lead_veh)
 
         if intersection._general_params.get('print_commandline'):
             veh.print_trj_points(lane, veh_indx, identifier)

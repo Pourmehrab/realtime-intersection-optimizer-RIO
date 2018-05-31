@@ -70,7 +70,9 @@ class Trajectory:
         Sets trajectory of the vehicle and updates the first and last trajectory point index.
 
 
-        .. note:: An assigned trajectory always is indexed from zero as the ``veh.set_first_trj_point_indx``.
+        .. note::
+            - t,d,s should keep the whole trajectory incusion-wise of the first and the last points because we areseting the first trajectory point index here.
+            - An assigned trajectory always is indexed from zero as the ``veh.set_first_trj_point_indx``.
 
 
         :param veh: the vehicle object that is owns the trajectory
