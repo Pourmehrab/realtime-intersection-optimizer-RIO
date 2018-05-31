@@ -290,10 +290,10 @@ class FollowerConventional(Trajectory):
         for lead_trj_indx in range(start_lead_trj_indx, max_lead_traj_indx):
             next_lead_t, next_lead_d, next_lead_s = lead_veh.trajectory[:, lead_trj_indx]
             lead_a = (next_lead_s - curr_lead_s) / (next_lead_t - curr_lead_t)
-            foll_a = self.wiedemann99(next_lead_d, next_lead_s, lead_a, lead_l, curr_foll_d, curr_foll_s, foll_s_des)
-            # foll_a = self.gipps(next_lead_d, next_lead_s, lead_a, lead_l, curr_foll_d, curr_foll_s, foll_s_des,
-            #                     veh.max_decel_rate, veh.max_accel_rate, lead_veh.max_decel_rate,
-            #                     next_lead_t - curr_foll_t)
+            # foll_a = self.wiedemann99(next_lead_d, next_lead_s, lead_a, lead_l, curr_foll_d, curr_foll_s, foll_s_des)
+            foll_a = self.gipps(next_lead_d, next_lead_s, lead_a, lead_l, curr_foll_d, curr_foll_s, foll_s_des,
+                                veh.max_decel_rate, veh.max_accel_rate, lead_veh.max_decel_rate,
+                                next_lead_t - curr_foll_t)
             next_foll_t = next_lead_t
             next_foll_d, next_foll_s = self.comp_speed_distance(curr_foll_t, curr_foll_d, curr_foll_s, foll_a,
                                                                 next_foll_t, veh.max_decel_rate, veh.max_accel_rate)
@@ -302,7 +302,8 @@ class FollowerConventional(Trajectory):
             foll_trj_indx += 1
 
         t_departure_relative = veh.scheduled_departure - curr_foll_t
-        v_departure_relative = t_departure_relative / t_departure_relative
+        v_departure_relative = curr_foll_d / t_departure_relative
+        assert 0 <= v_departure_relative <= veh.desired_speed, "conventional car following model yielded infeasible speed"
         t_augment = self.discretize_time_interval(self._trj_time_resolution, t_departure_relative)
         d_augment = [curr_foll_d - t * v_departure_relative for t in t_augment]
         v_augment = [v_departure_relative] * len(t_augment)

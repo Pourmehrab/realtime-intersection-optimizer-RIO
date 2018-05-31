@@ -10,9 +10,10 @@
 
 def run_avian(inter_name, method, sc, start_time_stamp, tester):
     """
-    .. note::
+    .. note:: The following assumptions are important to notice:
         - Trajectories must end at the stop bar, i.e. the distance to stop bar converges to zero, even if they are temporarily assigned.
-        - list all the other assumptions here...
+        - The desired speed of vehicles shall not exceed the speed limit or they will be advised speeding
+        - Use default values for pieces of information that are impossible to obtain, i.e. accel/decel rates and destination of conventional vehicles.
 
     :param inter_name: intersection name
     :type inter_name: str
@@ -41,21 +42,17 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
 
     # Set the signal control method
     if method == "GA":
-        # define what subset of phase-lane incidence matrix should be used
-        # minimal set of phase indices to cover all movements (17, 9, 8, 15) for 13th16th intersection
-        # NOTE TEH SET OF ALLOWABLE PHASE ARRAY IS ZERO-BASED (not like what inputted in data.py)
         signal = GA_SPaT(first_detection_time, intersection, sc, start_time_stamp)
     elif method == "pretimed":
         signal = Pretimed(first_detection_time, intersection, sc, start_time_stamp)
 
     trajectory_planner = TrajectoryPlanner(intersection)
 
-    # set the start time to it
+    # set the start time
     simulator = Simulator(first_detection_time)
 
-    # here we start doing optimization for all scenarios included in the CSV file
     if intersection._general_params.get('log_csv'):
-        t_start = perf_counter()  # to measure total run time (IS NOT THE SIMULATION TIME)
+        t_start = perf_counter()  # to measure the total run time (IS NOT THE SIMULATION TIME)
 
     while True:  # stops when all rows of CSV are processed (a break statement controls this)
         simulation_time = simulator.clock  # gets current simulation clock
@@ -63,7 +60,6 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
             print("\n################################# CLOCK: {:>5.1f} SEC #################################".format(
                 simulation_time))
 
-        # UPDATE VEHICLES
         # remove/record served vehicles and phases
         traffic.serve_update_at_stop_bar(lanes, simulation_time, intersection)
         # add/update vehicles
@@ -137,9 +133,9 @@ if __name__ == "__main__":
         print(
             "\n################################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
         start_time_stamp = datetime.now().strftime('%m-%d-%Y_%H:%M:%S')  # only for naming the CSV files
-        for sc in range(1, 45 + 1):
-            # run_avian(inter_name, method, sc, start_time_stamp, tester)
-            multiprocessing.Process(target=run_avian, args=(inter_name, method, sc, start_time_stamp, tester,)).start()
+        for sc in range(5, 45 + 1):
+            run_avian(inter_name, method, sc, start_time_stamp, tester)
+            # multiprocessing.Process(target=run_avian, args=(inter_name, method, sc, start_time_stamp, tester,)).start()
     elif run_mode == 'realtime':
         raise Exception('real-time mode is not available yet.')
 
