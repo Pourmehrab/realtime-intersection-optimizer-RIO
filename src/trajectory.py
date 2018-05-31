@@ -42,7 +42,8 @@ class Trajectory:
 
     def discretize_time_interval(self, start_time, end_time):
         """
-        Discretizes the given time interval to an array of time stamps
+        Discretizes the given time interval at the granularity level of `trj_time_resolution` to an array of time stamps.
+
 
         .. warning:: It is inclusion-wise of the beginning and end of the interval.
 
@@ -66,6 +67,7 @@ class Trajectory:
     def set_trajectory(veh, t, d, s):
         """
         Sets trajectory of the vehicle and updates the first and last trajectory point index.
+
 
         .. note:: An assigned trajectory always is indexed from zero as the ``veh.set_first_trj_point_indx``.
 
@@ -99,7 +101,7 @@ class LeadConventional(Trajectory):
 
     Instantiate like::
 
-        >>> lead_conventional_trj_estimator = LeadConventional(.)
+        >>> lead_conventional_trj_estimator = LeadConventional(intersection)
 
     Perform trajectory computation by::
 
@@ -148,11 +150,11 @@ class FollowerConventional(Trajectory):
 
     Instantiate like::
 
-        >>> follower_conventional_trj_estimator = FollowerConventional(.)
+        >>> follower_conventional_trj_estimator = FollowerConventional(intersection)
 
     Perform trajectory computation by::
 
-        >>> follower_conventional_trj_estimator.solve(veh, .)
+        >>> follower_conventional_trj_estimator.solve(veh, lead_veh)
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -166,19 +168,18 @@ class FollowerConventional(Trajectory):
         super().__init__(intersection)
 
     @staticmethod
-    def wiedemann99(lead_d, lead_s, lead_a, lead_l, foll_d, foll_s, foll_s_des, cc0=1.50 * 0.9,
-                    cc1=1.30 * 0.9,
+    def wiedemann99(lead_d, lead_s, lead_a, lead_l, foll_d, foll_s, foll_s_des, cc0=1.50 * 0.9, cc1=1.30 * 0.9,
                     cc2=4.00 * 2, cc3=-12.00, cc4=-0.25 * 6, cc5=0.35 * 6, cc6=6.00 / 10 ** 4, cc7=0.25, cc8=2.00,
                     cc9=1.50):
         """
 
         :param lead_d: lead vehicle distance to stop bar
         :param lead_s: lead vehicle speed
-        :param lead_a:
+        :param lead_a: lead vehicle acceleration rate
         :param lead_l: length of lead vehicle
         :param foll_d: follower vehicle distance to stop bar
         :param foll_s: follower vehicle speed
-        :param foll_s_des:
+        :param foll_s_des: follower vehicle desired speed
         :param cc0: Standstill Distance in :math:`m`
         :param cc1: Spacing Time in :math:`s`
         :param cc2: Following Variation (*max drift*) in :math:`m`
@@ -240,7 +241,23 @@ class FollowerConventional(Trajectory):
 
             Gipps car following formula.
 
+        .. warning ::
+            Theoretically, caution needed to address the cases where either the term under the square root or one of the
+             speed values in the model becomes negative.
+
+        :param lead_d: lead vehicle distance to stop bar
+        :param lead_s: lead vehicle speed
+        :param lead_a: lead vehicle acceleration
+        :param lead_l: lead vehicle length
+        :param foll_d: follower vehicle distance to stop bar
+        :param foll_s: follower vehicle speed
+        :param foll_s_des: follower desired speed
+        :param foll_a_min: follower maximum deceleration rate
+        :param foll_a_max: follower maximum acceleration rate
+        :param lead_a_min: lead maximum deceleration rare
+        :param dt: length of time interval the acceleration shall be calculated
         :return: follower next acceleration rate
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -276,6 +293,7 @@ class FollowerConventional(Trajectory):
         :type veh: Vehicle
         :param lead_veh: The vehicle in front of subject conventional vehicle
         :type lead_veh: Vehicle
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -320,12 +338,13 @@ class FollowerConventional(Trajectory):
             - Speed should be positive
             - Acceleration/deceleration constraints should be met.
 
-        :param t0:
-        :param d0:
-        :param v0:
-        :param a:
-        :param t:
+        :param t0: the time at the beginning of the small interval that acceleration is constant
+        :param d0: the distance at the beginning of the interval
+        :param v0: the dpeed at the beginning of the interval
+        :param a: the constant acceleration rate within the interval
+        :param t: the end time of the interval
         :return: distance to stop bar and speed
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -393,6 +412,7 @@ class LeadConnected(Trajectory):
         :param k: int
         :param m: number of points (exclusive of boundaries) to control speed/acceleration
         :param m: int
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -492,6 +512,7 @@ class LeadConnected(Trajectory):
         :param model:
         :type model: CPLEX
         :return: coefficients of the polynomial for the ``veh`` object and trajectory points to the trajectory attribute of it
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -517,17 +538,19 @@ class LeadConnected(Trajectory):
         elif lead_veh is None:
             t, d, s = self.optimize_lead_connected_trj(veh)
         else:
-            t, d, s = self.optimize_follower_connected_trj(veh, lead_veh)  # is defined in the child class
+            t, d, s = self.optimize_follower_connected_trj(veh, lead_veh)  # is defined/used in the child class
 
         self.set_trajectory(veh, t, d, s)
 
     def compute_trj_points(self, f, f_prime, departure_time_relative):
         """
-        Converts the polynomial trajectory to the trajectory points
-        :param f:
-        :param f_prime:
+        Converts the polynomial trajectory to the trajectory points.
+
+        :param f: the coefficients to define trajectory polynomial
+        :param f_prime: the coeeficients to define the speed polynomial
         :param departure_time_relative: span of the trajectory
         :return: t, d, s
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -546,6 +569,7 @@ class LeadConnected(Trajectory):
         :param veh: subject vehicle
         :type veh: Vehicle
         :return: trajectory of subject lead CAV
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -574,12 +598,12 @@ class FollowerConnected(LeadConnected):
 
         Instantiate like::
 
-            >>> follower_connected_trj_optimizer = FollowerConnected(.)
+            >>> follower_connected_trj_optimizer = FollowerConnected(intersection)
 
         Perform trajectory computation by::
 
-            >>> model = follower_connected_trj_optimizer.set_model(.)
-            >>> follower_connected_trj_optimizer.solve(veh, .)
+            >>> model = follower_connected_trj_optimizer.set_model(veh, lead_veh)
+            >>> follower_connected_trj_optimizer.solve(veh, lead_veh)
 
     :param GAP_CTRL_STARTS: This is the relative time when gap control constraints get added
     :param SAFE_MIN_GAP: The minimum safe distance to keep from lead vehicles (in :math:`m`) [*can be speed dependent*]
@@ -668,13 +692,14 @@ class FollowerConnected(LeadConnected):
 
     def solve(self, veh, lead_veh, model):
         """
-        The only reason this class method exist is to access :any:`optimize_follower_connected_trj` method.
+        The only reason this class method exists is to access :any:`optimize_follower_connected_trj` method.
 
         :param veh: subject vehicle
         :type veh: Vehicle
         :param lead_veh: the vehicle in front of the subject
         :type lead_veh: Vehicle
-        :param model: the follower's CPLEX model
+        :param model: the follower CPLEX model
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -691,6 +716,7 @@ class FollowerConnected(LeadConnected):
         :param lead_veh: lead vehicle which could be `None` if no vehicle is in front.
         :type lead_veh: Vehicle
         :return: trajectory of the subject follower AV in case the LP has no solution.
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:

@@ -16,18 +16,19 @@ from data.data import *
 from src.trajectory import LeadConventional, LeadConnected, FollowerConventional, FollowerConnected
 
 # vis
-try:
-    from src.optional.vis.vistrj import VisualizeSpaceTime
-
-    optional_packages_found = False  # True
-except ModuleNotFoundError:
-    optional_packages_found = False
+# try:
+#     from src.optional.vis.vistrj import VisualizeSpaceTime
+#
+#     optional_packages_found = False  # True
+# except ModuleNotFoundError:
+#     optional_packages_found = False
 
 
 class Intersection:
     """
     Objectives:
         - Keeps intersection parameters
+
 
     .. todo:: make this a dataclass
 
@@ -277,7 +278,7 @@ class Vehicle:
 
         .. note::
             - By definition ``scheduled_departure`` is always greater than or equal to ``earliest_arrival``.
-            - Prior to run, make sure the specified size for trajectory array by ``MAX_NUM_TRAJECTORY_POINTS`` is enough to store all the trajectory points under the worst case.
+            - Prior to run, make sure the specified size for trajectory array by ``max_num_traj_points`` is enough to store all the trajectory points under the worst case.
             - A vehicle may be open to being rescheduled but gets the same departure time; in that case, ``freshly_scheduled``  should hold False.
 
         :Author:
@@ -310,16 +311,26 @@ class Vehicle:
 
     def earliest_arrival_connected(self, max_speed, min_headway=0, t_earliest=0):
         """
-        Uses the latest departure time under the following cases to compute the earliest time the connected vehicle can reach the stop bar:
+        Uses the latest departure time under the following cases to compute the earliest time the connected vehicle can
+         reach the stop bar:
             - Accelerate/Decelerate to the maximum allowable speed and maintain the speed till departure
             - Distance is short, it accelerates/decelerated to the best speed and departs
             - Departs at the minimum headway with its lead vehicle (only for followers close enough to their lead)
+
+        .. warning::
+            There are two consequences if this method:
+                - underestimates the earliest departure time: in this case, either the LP for the connected vehicles
+                    becomes infeasible sue to speed control constraints or the conventional car following model yields
+                    speed values higher than speed limit or even desired speed of the vehicle.
+                - overestimates the earliest departure time: This case costs efficiency since the vehicle may be
+                    scheduled for a time that earlier than that might have been possible.
 
         :param veh:
         :type veh: Vehicle
         :param max_speed:
         :param min_headway:
-        :param t_earliest: earliest timemap_veh_type2str of lead vehicle that is only needed if the vehicle is a follower vehicle
+        :param t_earliest: earliest timemap_veh_type2str of lead vehicle that is only needed if the vehicle is a
+                            follower vehicle
         :return: The earliest departure time of the subject connected vehicle
 
         :Author:
@@ -367,7 +378,7 @@ class Vehicle:
             April-2018
         """
         det_time, dist, speed = self.get_arrival_schedule()
-        t = max(det_time + dist / max_speed, t_earliest + min_headway)
+        t = max(det_time + dist / speed, t_earliest + min_headway)
         assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
         self.earliest_departure = t
 
@@ -565,7 +576,7 @@ class Traffic:
         - Appends travel time and ID columns; saves CSV
         - Manages scenario indexing, resetting, and more
         - Computes volumes in lanes
-        - removes/records served vehicles
+        - Removes/records served vehicles
 
     .. note::
         - The CSV should be located under the ``/data/`` directory with the valid name consistent to what was inputted
@@ -664,7 +675,9 @@ class Traffic:
         :return: True if all vehicles from the input CSV have been added at some point, False otherwise.
 
         .. note::
-            The fact that all vehicles are *added* does not equal to all *served*. Thus, we check if any vehicle is in any of the incoming lanes before halting the program.
+            The fact that all vehicles are *added* does not equal to all *served*. Thus, we check if any vehicle is in
+             any of the incoming lanes before halting the program.
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -678,6 +691,7 @@ class Traffic:
     def get_first_detection_time(self):
         """
         :return: The time when the first vehicle in current scenario shows up.
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -696,6 +710,7 @@ class Traffic:
         :param simulation_time: current simulation clock in seconds measured from zero
         :param intersection: intersection
         :type intersection: Intersection
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -750,6 +765,7 @@ class Traffic:
         :param intersection:
         :type intersection:
         :return volumes: array of volume level per lanes
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -777,13 +793,14 @@ class Traffic:
 
     def serve_update_at_stop_bar(self, lanes, simulation_time, intersection):
         """
-        This looks for/removes the served vehicles.
+        This looks for removing the served vehicles.
 
         :param lanes: includes all vehicles
         :type lanes: Lanes
         :param simulation_time: current simulation clock
         :param intersection:
         :type intersection: Intersection
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -819,7 +836,7 @@ class Traffic:
 
 class TrajectoryPlanner:
     """
-    Plans trajectories of all type. This makes calls to trajectory classes' methods.
+    Plans trajectories of all type. This makes calls to `trajectory classes` methods.
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -837,10 +854,10 @@ class TrajectoryPlanner:
 
         self._max_speed = intersection._general_params.get('max_speed')
 
-        if optional_packages_found:  # todo remove after testing
-            self._visualizer = VisualizeSpaceTime(6)
-        else:
-            self._visualizer = None
+        # if optional_packages_found:  # todo remove after testing
+        #     self._visualizer = VisualizeSpaceTime(6)
+        # else:
+        #     self._visualizer = None
 
     def plan_trajectory(self, lanes, veh, lane, veh_indx, intersection, tester, identifier):
         """
@@ -875,9 +892,9 @@ class TrajectoryPlanner:
         else:
             raise Exception('One of lead/follower conventional/connected should have occurred.')
 
-        if self._visualizer is not None:
-            self._visualizer.add_multi_trj_matplotlib(veh, lane)
-            self._visualizer.export_matplot(0, 550, 20, 200)
+        # if self._visualizer is not None: # todo remove after testing
+        #     self._visualizer.add_multi_trj_matplotlib(veh, lane)
+        #     self._visualizer.export_matplot(0, 550, 20, 200)
 
         if abs(veh.trajectory[0, veh.last_trj_point_indx] - veh.scheduled_departure) > 0.1:
             raise Exception('The planned trj does not match the scheduled time.')
