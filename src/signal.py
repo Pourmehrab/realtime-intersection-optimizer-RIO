@@ -2,7 +2,7 @@
 # File name: signal.py             #
 # Author: Mahmoud Pourmehrab       #
 # Email: pourmehrab@gmail.com      #
-# Last Modified: Apr/24/2018       #
+# Last Modified: May/30/2018       #
 ####################################
 
 import csv
@@ -67,7 +67,7 @@ class Signal:
 
         if intersection._general_params.get('log_csv'):
             filepath_sig = os.path.join(
-                'log/' + self._inter_name + '/' + start_time_stamp + '_' + str(sc) + '_sig_phase_level.csv')
+                'log/' + self._inter_name + '/' + start_time_stamp + '_' + str(sc) + '_sig_level.csv')
             self.sig_csv_file = open(filepath_sig, 'w', newline='')
             writer = csv.writer(self.sig_csv_file, delimiter=',')
             writer.writerow(['sc', 'phase', 'start', 'end'])
@@ -361,8 +361,7 @@ class Signal:
         """
         max_speed, phase_cover_set, lag_on_green, min_headway, do_traj_computation = map(
             intersection._general_params.get,
-            ['max_speed', 'phase_cover_set', 'lag_on_green',
-             'min_headway', 'do_traj_computation'])
+            ['max_speed', 'phase_cover_set', 'lag_on_green', 'min_headway', 'do_traj_computation'])
         time_phase_ends = self.SPaT_end[-1] - self._ar
         for phase in phase_cover_set:
             time_phase_ends += self._ar

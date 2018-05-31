@@ -2,9 +2,10 @@
 # File name: trajectory.py         #
 # Author: Mahmoud Pourmehrab       #
 # Email: pourmehrab@gmail.com      #
-# Last Modified: Apr/23/2018       #
+# Last Modified: May/30/2018       #
 ####################################
 
+import operator
 import numpy as np
 
 
@@ -42,7 +43,8 @@ class Trajectory:
 
     def discretize_time_interval(self, start_time, end_time):
         """
-        Discretizes the given time interval to an array of time stamps
+        Discretizes the given time interval at the granularity level of `trj_time_resolution` to an array of time stamps.
+
 
         .. warning:: It is inclusion-wise of the beginning and end of the interval.
 
@@ -66,6 +68,7 @@ class Trajectory:
     def set_trajectory(veh, t, d, s):
         """
         Sets trajectory of the vehicle and updates the first and last trajectory point index.
+
 
         .. note:: An assigned trajectory always is indexed from zero as the ``veh.set_first_trj_point_indx``.
 
@@ -95,11 +98,12 @@ class LeadConventional(Trajectory):
     """
     Computes the trajectory for a lead conventional vehicle assuming the vehicle tends to maintain its arrival speed.
 
+
     Use Case:
 
     Instantiate like::
 
-        >>> lead_conventional_trj_estimator = LeadConventional(.)
+        >>> lead_conventional_trj_estimator = LeadConventional(intersection)
 
     Perform trajectory computation by::
 
@@ -121,6 +125,10 @@ class LeadConventional(Trajectory):
 
         :param veh: the lead conventional vehicle
         :type veh: Vehicle
+
+        .. warning::
+            Make sure the assumptions here are compatible with those in :any:`earliest_arrival_conventional`
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -135,11 +143,10 @@ class LeadConventional(Trajectory):
 
         self.set_trajectory(veh, t, d, s)
 
-        # -------------------------------------------------------
-        # FOLLOWER CONVENTIONAL TRAJECTORY ESTIMATOR
-        # -------------------------------------------------------
 
-
+# -------------------------------------------------------
+# FOLLOWER CONVENTIONAL TRAJECTORY ESTIMATOR
+# -------------------------------------------------------
 class FollowerConventional(Trajectory):
     """
     Estimates the trajectory for a follower conventional vehicle assuming a car following model. In the current implementation, Gipps car-following model [#]_ is used.
@@ -148,11 +155,11 @@ class FollowerConventional(Trajectory):
 
     Instantiate like::
 
-        >>> follower_conventional_trj_estimator = FollowerConventional(.)
+        >>> follower_conventional_trj_estimator = FollowerConventional(intersection)
 
     Perform trajectory computation by::
 
-        >>> follower_conventional_trj_estimator.solve(veh, .)
+        >>> follower_conventional_trj_estimator.solve(veh, lead_veh)
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -166,19 +173,18 @@ class FollowerConventional(Trajectory):
         super().__init__(intersection)
 
     @staticmethod
-    def wiedemann99(lead_d, lead_s, lead_a, lead_l, foll_d, foll_s, foll_s_des, cc0=1.50 * 0.9,
-                    cc1=1.30 * 0.9,
+    def wiedemann99(lead_d, lead_s, lead_a, lead_l, foll_d, foll_s, foll_s_des, cc0=1.50 * 0.9, cc1=1.30 * 0.9,
                     cc2=4.00 * 2, cc3=-12.00, cc4=-0.25 * 6, cc5=0.35 * 6, cc6=6.00 / 10 ** 4, cc7=0.25, cc8=2.00,
                     cc9=1.50):
         """
 
         :param lead_d: lead vehicle distance to stop bar
         :param lead_s: lead vehicle speed
-        :param lead_a:
+        :param lead_a: lead vehicle acceleration rate
         :param lead_l: length of lead vehicle
         :param foll_d: follower vehicle distance to stop bar
         :param foll_s: follower vehicle speed
-        :param foll_s_des:
+        :param foll_s_des: follower vehicle desired speed
         :param cc0: Standstill Distance in :math:`m`
         :param cc1: Spacing Time in :math:`s`
         :param cc2: Following Variation (*max drift*) in :math:`m`
@@ -240,7 +246,23 @@ class FollowerConventional(Trajectory):
 
             Gipps car following formula.
 
+        .. warning ::
+            Theoretically, caution needed to address the cases where either the term under the square root or one of the
+             speed values in the model becomes negative.
+
+        :param lead_d: lead vehicle distance to stop bar
+        :param lead_s: lead vehicle speed
+        :param lead_a: lead vehicle acceleration
+        :param lead_l: lead vehicle length
+        :param foll_d: follower vehicle distance to stop bar
+        :param foll_s: follower vehicle speed
+        :param foll_s_des: follower desired speed
+        :param foll_a_min: follower maximum deceleration rate
+        :param foll_a_max: follower maximum acceleration rate
+        :param lead_a_min: lead maximum deceleration rare
+        :param dt: length of time interval the acceleration shall be calculated
         :return: follower next acceleration rate
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -252,7 +274,7 @@ class FollowerConventional(Trajectory):
             next_foll_s = min(s_get_behind, foll_s_des) if s_get_behind >= 0 else 0.0
         else:
             s_gipps_1 = foll_s + 2.5 * foll_a_max * dt * (1 - foll_s / foll_s_des) * np.sqrt(
-                1 / 40 + foll_s / foll_s_des)
+                1 / 40 + max(foll_s, 0) / foll_s_des)
             under_sqrt = (foll_a_min * (
                     lead_a_min * (2 * (lead_l - gap) + dt * (foll_a_min * dt + foll_s)) + lead_s ** 2)) / lead_a_min
             if under_sqrt >= 0:
@@ -261,7 +283,9 @@ class FollowerConventional(Trajectory):
             else:
                 next_foll_s = s_gipps_1
 
-        return (next_foll_s - foll_s) / dt
+        foll_a = (next_foll_s - foll_s) / dt
+        assert not (np.isnan([foll_a]) or np.isinf([foll_a])), "acceleration is not a finite number"
+        return foll_a
 
     def solve(self, veh, lead_veh):
         """
@@ -276,6 +300,7 @@ class FollowerConventional(Trajectory):
         :type veh: Vehicle
         :param lead_veh: The vehicle in front of subject conventional vehicle
         :type lead_veh: Vehicle
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -290,19 +315,23 @@ class FollowerConventional(Trajectory):
         for lead_trj_indx in range(start_lead_trj_indx, max_lead_traj_indx):
             next_lead_t, next_lead_d, next_lead_s = lead_veh.trajectory[:, lead_trj_indx]
             lead_a = (next_lead_s - curr_lead_s) / (next_lead_t - curr_lead_t)
-            foll_a = self.wiedemann99(next_lead_d, next_lead_s, lead_a, lead_l, curr_foll_d, curr_foll_s, foll_s_des)
-            # foll_a = self.gipps(next_lead_d, next_lead_s, lead_a, lead_l, curr_foll_d, curr_foll_s, foll_s_des,
-            #                     veh.max_decel_rate, veh.max_accel_rate, lead_veh.max_decel_rate,
-            #                     next_lead_t - curr_foll_t)
+            dt = next_lead_t - curr_foll_t
+            assert dt > 0, "non-monotonic time assigned"
+            # foll_a = self.wiedemann99(next_lead_d, next_lead_s, lead_a, lead_l, curr_foll_d, curr_foll_s, foll_s_des)
+            foll_a = self.gipps(next_lead_d, next_lead_s, lead_a, lead_l, curr_foll_d, curr_foll_s, foll_s_des,
+                                veh.max_decel_rate, veh.max_accel_rate, lead_veh.max_decel_rate, dt)
             next_foll_t = next_lead_t
             next_foll_d, next_foll_s = self.comp_speed_distance(curr_foll_t, curr_foll_d, curr_foll_s, foll_a,
-                                                                next_foll_t, veh.max_decel_rate, veh.max_accel_rate)
+                                                                next_foll_t, veh.max_decel_rate, veh.max_accel_rate,
+                                                                next_lead_d, lead_l)
+            assert next_foll_d > next_lead_d, "lead vehicle is made of solid; follower cannot pass through it"
             veh.trajectory[:, foll_trj_indx] = [next_foll_t, next_foll_d, next_foll_s]
             curr_foll_t, curr_foll_d, curr_foll_s, curr_lead_t, curr_lead_d, curr_lead_s = next_foll_t, next_foll_d, next_foll_s, next_lead_t, next_lead_d, next_lead_s
             foll_trj_indx += 1
 
         t_departure_relative = veh.scheduled_departure - curr_foll_t
-        v_departure_relative = t_departure_relative / t_departure_relative
+        v_departure_relative = curr_foll_d / t_departure_relative
+        assert 0 <= v_departure_relative <= veh.desired_speed, "the scheduled departure was too early or car following yielded slow speeds"
         t_augment = self.discretize_time_interval(self._trj_time_resolution, t_departure_relative)
         d_augment = [curr_foll_d - t * v_departure_relative for t in t_augment]
         v_augment = [v_departure_relative] * len(t_augment)
@@ -311,20 +340,23 @@ class FollowerConventional(Trajectory):
         veh.set_last_trj_point_indx(last_index - 1)
 
     @staticmethod
-    def comp_speed_distance(t0, d0, v0, a, t, foll_a_min, foll_a_max):
+    def comp_speed_distance(t0, d0, v0, a, t, foll_a_min, foll_a_max, next_lead_d, lead_l):
         """
         If car-following models yielded unreasonable acceleration, fixes it.
 
-        .. note::
+
+        .. note:: Checks for:
             - Speed should be positive
             - Acceleration/deceleration constraints should be met.
+            - Enforce a gap of equal to length of lead to the lead vehicle
 
-        :param t0:
-        :param d0:
-        :param v0:
-        :param a:
-        :param t:
+        :param t0: the time at the beginning of the small interval that acceleration is constant
+        :param d0: the distance at the beginning of the interval
+        :param v0: the speed at the beginning of the interval
+        :param a: the constant acceleration rate within the interval
+        :param t: the end time of the interval
         :return: distance to stop bar and speed
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -333,6 +365,7 @@ class FollowerConventional(Trajectory):
         dt = t - t0
         d = d0 - (a * (t ** 2 - t0 ** 2) / 2 + (v0 - a * t0) * dt)
         s = a * dt + v0
+        gap = d - next_lead_d
         if s < 0:
             s, a_star = 0, -v0 / dt
             d = d0 - (a_star * (t ** 2 - t0 ** 2) / 2 + (v0 - a_star * t0) * dt)
@@ -342,7 +375,12 @@ class FollowerConventional(Trajectory):
             elif a_star > foll_a_max:
                 a_star = foll_a_max
                 s, d = a_star * dt + v0, d0 - (a_star * (t ** 2 - t0 ** 2) / 2 + (v0 - a_star * t0) * dt)
-
+        elif gap < lead_l:
+            d = next_lead_d + lead_l
+            s = (d0 - d) / dt
+            assert s >= -1.0, "negative speed was derived to meet the min gap "
+        assert all(map(operator.not_, np.isnan([d, s]))), 'nan found in trajectory'
+        assert all(map(operator.not_, np.isinf([d, s]))), 'infinity found in the schedule'
         return d, s
 
 
@@ -392,6 +430,7 @@ class LeadConnected(Trajectory):
         :param k: int
         :param m: number of points (exclusive of boundaries) to control speed/acceleration
         :param m: int
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -491,6 +530,7 @@ class LeadConnected(Trajectory):
         :param model:
         :type model: CPLEX
         :return: coefficients of the polynomial for the ``veh`` object and trajectory points to the trajectory attribute of it
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -516,17 +556,19 @@ class LeadConnected(Trajectory):
         elif lead_veh is None:
             t, d, s = self.optimize_lead_connected_trj(veh)
         else:
-            t, d, s = self.optimize_follower_connected_trj(veh, lead_veh)  # is defined in the child class
+            t, d, s = self.optimize_follower_connected_trj(veh, lead_veh)  # is defined/used in the child class
 
         self.set_trajectory(veh, t, d, s)
 
     def compute_trj_points(self, f, f_prime, departure_time_relative):
         """
-        Converts the polynomial trajectory to the trajectory points
-        :param f:
-        :param f_prime:
+        Converts the polynomial trajectory to the trajectory points.
+
+        :param f: the coefficients to define trajectory polynomial
+        :param f_prime: the coeeficients to define the speed polynomial
         :param departure_time_relative: span of the trajectory
         :return: t, d, s
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -545,6 +587,7 @@ class LeadConnected(Trajectory):
         :param veh: subject vehicle
         :type veh: Vehicle
         :return: trajectory of subject lead CAV
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -573,12 +616,12 @@ class FollowerConnected(LeadConnected):
 
         Instantiate like::
 
-            >>> follower_connected_trj_optimizer = FollowerConnected(.)
+            >>> follower_connected_trj_optimizer = FollowerConnected(intersection)
 
         Perform trajectory computation by::
 
-            >>> model = follower_connected_trj_optimizer.set_model(.)
-            >>> follower_connected_trj_optimizer.solve(veh, .)
+            >>> model = follower_connected_trj_optimizer.set_model(veh, lead_veh)
+            >>> follower_connected_trj_optimizer.solve(veh, lead_veh)
 
     :param GAP_CTRL_STARTS: This is the relative time when gap control constraints get added
     :param SAFE_MIN_GAP: The minimum safe distance to keep from lead vehicles (in :math:`m`) [*can be speed dependent*]
@@ -667,13 +710,14 @@ class FollowerConnected(LeadConnected):
 
     def solve(self, veh, lead_veh, model):
         """
-        The only reason this class method exist is to access :any:`optimize_follower_connected_trj` method.
+        The only reason this class method exists is to access :any:`optimize_follower_connected_trj` method.
 
         :param veh: subject vehicle
         :type veh: Vehicle
         :param lead_veh: the vehicle in front of the subject
         :type lead_veh: Vehicle
-        :param model: the follower's CPLEX model
+        :param model: the follower CPLEX model
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -690,6 +734,7 @@ class FollowerConnected(LeadConnected):
         :param lead_veh: lead vehicle which could be `None` if no vehicle is in front.
         :type lead_veh: Vehicle
         :return: trajectory of the subject follower AV in case the LP has no solution.
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -704,6 +749,7 @@ class FollowerConnected(LeadConnected):
 
         dt = t[0] - foll_det_time
         v = (foll_det_dist - d[0]) / dt
+        assert v >= 0, "negative speed for AV"
         t_augment = self.discretize_time_interval(0, dt)
         d_augment = [foll_det_dist - v * t_i for t_i in t_augment]
         s_augment = [v] * len(t_augment)

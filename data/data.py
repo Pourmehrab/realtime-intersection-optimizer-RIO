@@ -1,7 +1,7 @@
 # File name: data.py
 # Authors: Mahmoud Pourmehrab / Aschkan Omidvar    
 # Emails: pourmehrab@gmail.com / aschkan@ufl.edu      
-# Updated (Pourmehrab): Apr/22/2018
+# Updated (Pourmehrab): May/30/2018
 # Updated (Omidvar): May/28/2018     
 ####################################
 
@@ -11,27 +11,26 @@ def get_general_params(inter_name):
     :return:
         - inter_name: intersection name
         - max_speed: maximum speed in :math:`m/s`
-        - min_headway: (:math:`s`)
+        - min_headway: the lowest headway at the stop bar in :math:`s` (corresponds to the highest flow)
         - det_range: detection range in :math:`m`
-        - k, m:
+        - k, m: refer to :any:`LeadConnected` for the definitions
         - num_lanes: total number of incoming lanes
         - phase_cover_set: a subset of mutually exclusive phases that cover all lanes for use in :any:`_set_non_base_scheduled_departures`
         - small_positive_num: small number that lower than that is approximated by zero
-        - large_positive_num: large number
+        - large_positive_num: large number: is a large number to initialize badness of alternatives in GA. Make sure cannot be beaten by worst alternative.
         - lag_on_green: The lag time from start of green when a vehicle can depart to allow vehicle cross after green (in seconds).
         - max_num_traj_points: check if it's enough to preallocate the trajectory
         - min_dist_to_stop_bar: lower than this (in m) do not update schedule
         - do_traj_computation:
         - trj_time_resolution: time difference between two consecutive trajectory points in seconds used in :any:`discretize_time_interval()` (be careful not to exceed max size of trajectory)
-        - log_csv:
+        - log_csv: if set `True`, makes CSV files of the outputs
         - print_commandline:
 
 
     .. note::
         - The distance to stop bar will be input from either CSV file or fusion. However, the number provided here is used for generic computations.
         - odd degree of polynomial is recommended: k to be even and **at least** 5
-        - ``LARGE_NUM`` is a large number to initialize badness of alternatives in GA. Make sure cannot be beaten by worst alternative.
-        - Make sure the ``MAX_NUM_TRAJECTORY_POINTS`` to preallocate the trajectories is enough for a given problem
+        - Make sure the ``max_num_traj_points`` to preallocate the trajectories is enough for a given problem
 
 
     .. warning:: All the parameters defined here are required for running the program.
@@ -66,8 +65,8 @@ def get_general_params(inter_name):
                 'max_speed': 17.8816,  # 40 mph
                 'min_headway': 1.5,
                 'det_range': 500.0,
-                'k': int(11),
-                'm': int(15),
+                'k': int(20),
+                'm': int(40),
                 'num_lanes': int(6),
                 'phase_cover_set': (0, 1, 2, 3,),
                 'small_positive_num': 0.01,
@@ -113,7 +112,7 @@ def get_pretimed_parameters(inter_name):
         - You need to compute green splits, yellows, and all-reds based on traffic flow theory.
 
     .. warning::
-            Must choose ``NUM_CYCLES`` at least 2.
+            Must choose ``num_cycles`` at least 2.
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -140,10 +139,10 @@ def get_pretimed_parameters(inter_name):
 def get_GA_parameters(inter_name):
     """
 
-    - max_phase_length: do not include more than this in a phase sequence (is exclusive of the last: 1,2, ..., ``MAX_PHASE_LENGTH``-1)
+    - max_phase_length: do not include more than this in a phase sequence (is exclusive of the last: 1,2, ..., ``max_phase_length``-1)
     - population_size: this is the maximum size of individuals per iteration of :term:`GA`
     - max_iteration_per_phase:
-    - crossover_size: this specifies how many of the individuals from ``POPULATION_SIZE`` to be computed using crossover..
+    - crossover_size: this specifies how many of the individuals from ``population_size`` to be computed using crossover..
     - lambda: The weight factor to convert average travel time to throughput and give the :term:`badness` of an individual.
     - badness_accuracy: 10 raised to the number of digits we want to keep when hashing the :term:`badness` of an individual
     - allowable_phases: subset of all possible phases to be used.
@@ -349,8 +348,10 @@ def get_sig_ctrl_interface_params(inter_name):
     """
     :return:
         - Proper phases to be called
+
     .. note::
-        - Account for SNMP lag time. Depending on the processor capability: [0.1s-0.9s]
+        - Account for SNMP lag time. Depending on the processor capability: [0.1 s - 0.9 s]
+
     :Author:
         Ash Omidvar <aschkan@ufl.edu>
     :Date:

@@ -2,7 +2,7 @@
 # File name: intersection.py       #
 # Author: Mahmoud Pourmehrab       #
 # Email: pourmehrab@gmail.com      #
-# Last Modified: Apr/22/2018       #
+# Last Modified: May/30/2018       #
 ####################################
 
 import csv
@@ -15,19 +15,21 @@ from scipy import stats
 from data.data import *
 from src.trajectory import LeadConventional, LeadConnected, FollowerConventional, FollowerConnected
 
-# vis
-try:
-    from src.optional.vis.vistrj import VisualizeSpaceTime
 
-    optional_packages_found = False  # True
-except ModuleNotFoundError:
-    optional_packages_found = False
+# vis
+# try:
+#     from src.optional.vis.vistrj import VisualizeSpaceTime
+#
+#     optional_packages_found = False  # True
+# except ModuleNotFoundError:
+#     optional_packages_found = False
 
 
 class Intersection:
     """
     Objectives:
         - Keeps intersection parameters
+
 
     .. todo:: make this a dataclass
 
@@ -98,21 +100,21 @@ class Lanes:
                         if len(lanes.vehlist.get(lane)) == 1:
                             # vehicles is a lead connected vehicle
                             # happens when a connected vehicle is the first in the lane
-                            veh.earliest_arrival_connected(veh, max_speed)
+                            veh.earliest_arrival_connected(max_speed)
                         else:
                             # vehicles is a follower connected vehicle
                             # happens when a connected vehicle is NOT the first in the lane
-                            veh.earliest_arrival_connected(veh, max_speed, min_headway,
+                            veh.earliest_arrival_connected(max_speed, min_headway,
                                                            lanes.vehlist.get(lane)[-2].earliest_departure)
                     elif veh.veh_type == 0:
                         if len(lanes.vehlist.get(lane)) == 1:
                             # vehicles is a lead conventional vehicle
                             # happens when a conventional vehicle is the first in the lane
-                            veh.earliest_arrival_conventional(veh, max_speed)
+                            veh.earliest_arrival_conventional(max_speed)
                         else:
                             # vehicles is a lead conventional vehicle
                             # happens when a conventional vehicle is NOT the first in the lane
-                            veh.earliest_arrival_conventional(veh, max_speed, min_headway,
+                            veh.earliest_arrival_conventional(max_speed, min_headway,
                                                               lanes.vehlist.get(lane)[-2].earliest_departure)
                     else:
                         raise Exception("The detected vehicle could not be classified.")
@@ -277,7 +279,7 @@ class Vehicle:
 
         .. note::
             - By definition ``scheduled_departure`` is always greater than or equal to ``earliest_arrival``.
-            - Prior to run, make sure the specified size for trajectory array by ``MAX_NUM_TRAJECTORY_POINTS`` is enough to store all the trajectory points under the worst case.
+            - Prior to run, make sure the specified size for trajectory array by ``max_num_traj_points`` is enough to store all the trajectory points under the worst case.
             - A vehicle may be open to being rescheduled but gets the same departure time; in that case, ``freshly_scheduled``  should hold False.
 
         :Author:
@@ -308,18 +310,28 @@ class Vehicle:
         self.reschedule_departure, self.freshly_scheduled = True, False
         self._times_sent_to_traj_planner = 0
 
-    def earliest_arrival_connected(self, veh, max_speed, min_headway=0, t_earliest=0):
+    def earliest_arrival_connected(self, max_speed, min_headway=0, t_earliest=0):
         """
-        Uses the latest departure time under the following cases to compute the earliest time the connected vehicle can reach the stop bar:
+        Uses the latest departure time under the following cases to compute the earliest time the connected vehicle can
+         reach the stop bar:
             - Accelerate/Decelerate to the maximum allowable speed and maintain the speed till departure
             - Distance is short, it accelerates/decelerated to the best speed and departs
             - Departs at the minimum headway with its lead vehicle (only for followers close enough to their lead)
+
+        .. warning::
+            There are two consequences if this method:
+                - underestimates the earliest departure time: in this case, either the LP for the connected vehicles
+                    becomes infeasible sue to speed control constraints or the conventional car following model yields
+                    speed values higher than speed limit or even desired speed of the vehicle.
+                - overestimates the earliest departure time: This case costs efficiency since the vehicle may be
+                    scheduled for a time that earlier than that might have been possible.
 
         :param veh:
         :type veh: Vehicle
         :param max_speed:
         :param min_headway:
-        :param t_earliest: earliest timemap_veh_type2str of lead vehicle that is only needed if the vehicle is a follower vehicle
+        :param t_earliest: earliest timemap_veh_type2str of lead vehicle that is only needed if the vehicle is a
+                            follower vehicle
         :return: The earliest departure time of the subject connected vehicle
 
         :Author:
@@ -327,9 +339,9 @@ class Vehicle:
         :Date:
             April-2018
         """
-        det_time, dist, speed = veh.get_arrival_schedule()
+        det_time, dist, speed = self.get_arrival_schedule()
 
-        a = veh.max_accel_rate if speed <= max_speed else veh.max_decel_rate
+        a = self.max_accel_rate if speed <= max_speed else self.max_decel_rate
         dist_to_max_speed = (max_speed ** 2 - speed ** 2) / (2 * a)
 
         if dist_to_max_speed <= dist:
@@ -346,29 +358,32 @@ class Vehicle:
         assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
         self.earliest_departure = t
 
-    def earliest_arrival_conventional(self, veh, max_speed, min_headway=0, t_earliest=0):
+    def earliest_arrival_conventional(self, max_speed, min_headway=0, t_earliest=0):
         """
         Uses the latest departure time under the following cases to compute the earliest time the conventional vehicle can reach the stop bar:
-            - Maintains the detected speed till departure
+            - Maintains the *estimated mean speed* till departure
             - Departs at the minimum headway with the vehicle in front
 
-        :param veh:
+        :param veh: subject vehicle
         :type veh: Vehicle
-        :param min_headway:
+        :param min_headway: when 0, the vehicle is a lead and this constraint relaxes
         :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
         :return: The earliest departure time of the subject conventional vehicle
 
         .. note::
-            Enter ``min_headway`` and ``t_earliest`` as zeros (default values), if a vehicle is the first in its lane.
+            - Enter ``min_headway`` and ``t_earliest`` as zeros (default values), if a vehicle is the first in its lane.
+            - Make sure this is compatible with what implemented under :any:`FollowerConventional`
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
             April-2018
         """
-        det_time, dist, speed = veh.get_arrival_schedule()
-        t = max(det_time + dist / max_speed, t_earliest + min_headway)
+        det_time, dist, speed = self.get_arrival_schedule()
+        mean_speed_est = 0.5 * (speed + max_speed)
+        t = max(det_time + dist / mean_speed_est, t_earliest + min_headway)
         assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
+
         self.earliest_departure = t
 
     def reset_trj_points(self, sc, lane, time_threshold, file):
@@ -562,10 +577,10 @@ class Traffic:
     """
     Objectives:
         - Adds new vehicles from the CSV file to the ``lanes.vehlist`` structure
-        - Appends travel time, ID, and elapsed time columns; saves CSV
+        - Appends travel time and ID columns; saves CSV
         - Manages scenario indexing, resetting, and more
         - Computes volumes in lanes
-        - removes/records served vehicles
+        - Removes/records served vehicles
 
     .. note::
         - The CSV should be located under the ``/data/`` directory with the valid name consistent to what was inputted
@@ -589,10 +604,8 @@ class Traffic:
         # get the path to the CSV file and load up the traffic
         filepath = os.path.join(
             'data/' + inter_name + '/' + inter_name + '_' + str(sc) + '.csv')
-        if os.path.exists(filepath):
-            self.__all_vehicles = pd.read_csv(filepath)
-        else:
-            raise Exception(filepath + ' was not found.')
+        assert os.path.exists(filepath), filepath + ' was not found.'
+        self.__all_vehicles = pd.read_csv(filepath)
 
         self.__all_vehicles = self.__all_vehicles.sort_values(by=['arrival time'])
         self.__all_vehicles = self.__all_vehicles.reset_index(drop=True)
@@ -610,7 +623,6 @@ class Traffic:
         if self._log_csv:
             df_size = len(self.__all_vehicles)
             self._auxilary_departure_times = np.zeros(df_size, dtype=np.float)
-            self._axilary_elapsed_time = np.zeros(df_size, dtype=np.float)
             self._auxilary_ID = ['' for i in range(df_size)]
             self._auxilary_num_sent_to_trj_planner = np.zeros(df_size, dtype=np.int8)
 
@@ -641,21 +653,10 @@ class Traffic:
         self._auxilary_ID[indx] = veh.ID
         self._auxilary_num_sent_to_trj_planner[indx] = veh._times_sent_to_traj_planner
 
-    def set_elapsed_sim_time(self, elapsed_t):
-        """
-        Sets the elapsed time for one simulation of scenario.
-
-        :param elapsed_t: elapsed time in seconds
-        :Author:
-            Mahmoud Pourmehrab <pourmehrab@gmail.com>
-        :Date:
-            April-2018
-        """
-        self._axilary_elapsed_time[self._current_row_indx] = elapsed_t
-
     def save_veh_level_csv(self, inter_name, start_time_stamp):
         """
         Set the recorded values and save the  CSV at vehicle level.
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -663,13 +664,10 @@ class Traffic:
         """
         self.__all_vehicles['departure time'] = self._auxilary_departure_times
         self.__all_vehicles['ID'] = self._auxilary_ID
-        # the column to store simulation time per scenario
-        self.__all_vehicles['elapsed time'] = self._axilary_elapsed_time
-        self.__all_vehicles['num_sent_to_trj_planner'] = self._auxilary_num_sent_to_trj_planner
+        self.__all_vehicles['times_sent_to_trj_planner'] = self._auxilary_num_sent_to_trj_planner
 
         filepath = os.path.join(
-            'log/' + inter_name + '/' + start_time_stamp + '_' + str(
-                self.scenario_num) + '_trj_vehicle_level.csv')
+            'log/' + inter_name + '/' + start_time_stamp + '_' + str(self.scenario_num) + '_trj_veh_level.csv')
         self.__all_vehicles.to_csv(filepath, index=False)
 
     def close_trj_csv(self):
@@ -681,7 +679,9 @@ class Traffic:
         :return: True if all vehicles from the input CSV have been added at some point, False otherwise.
 
         .. note::
-            The fact that all vehicles are *added* does not equal to all *served*. Thus, we check if any vehicle is in any of the incoming lanes before halting the program.
+            The fact that all vehicles are *added* does not equal to all *served*. Thus, we check if any vehicle is in
+             any of the incoming lanes before halting the program.
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -695,6 +695,7 @@ class Traffic:
     def get_first_detection_time(self):
         """
         :return: The time when the first vehicle in current scenario shows up.
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -713,6 +714,7 @@ class Traffic:
         :param simulation_time: current simulation clock in seconds measured from zero
         :param intersection: intersection
         :type intersection: Intersection
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -767,6 +769,7 @@ class Traffic:
         :param intersection:
         :type intersection:
         :return volumes: array of volume level per lanes
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -794,13 +797,14 @@ class Traffic:
 
     def serve_update_at_stop_bar(self, lanes, simulation_time, intersection):
         """
-        This looks for/removes the served vehicles.
+        This looks for removing the served vehicles.
 
         :param lanes: includes all vehicles
         :type lanes: Lanes
         :param simulation_time: current simulation clock
         :param intersection:
         :type intersection: Intersection
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -836,7 +840,7 @@ class Traffic:
 
 class TrajectoryPlanner:
     """
-    Plans trajectories of all type. This makes calls to trajectory classes' methods.
+    Plans trajectories of all type. This makes calls to `trajectory classes` methods.
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -854,10 +858,10 @@ class TrajectoryPlanner:
 
         self._max_speed = intersection._general_params.get('max_speed')
 
-        if optional_packages_found:  # todo remove after testing
-            self._visualizer = VisualizeSpaceTime(6)
-        else:
-            self._visualizer = None
+        # if optional_packages_found:  # todo remove after testing
+        #     self._visualizer = VisualizeSpaceTime(6)
+        # else:
+        #     self._visualizer = None
 
     def plan_trajectory(self, lanes, veh, lane, veh_indx, intersection, tester, identifier):
         """
@@ -892,9 +896,9 @@ class TrajectoryPlanner:
         else:
             raise Exception('One of lead/follower conventional/connected should have occurred.')
 
-        if self._visualizer is not None:
-            self._visualizer.add_multi_trj_matplotlib(veh, lane)
-            self._visualizer.export_matplot(0, 550, 20, 200)
+        # if self._visualizer is not None: # todo remove after testing
+        #     self._visualizer.add_multi_trj_matplotlib(veh, lane)
+        #     self._visualizer.export_matplot(0, 550, 20, 200)
 
         if abs(veh.trajectory[0, veh.last_trj_point_indx] - veh.scheduled_departure) > 0.1:
             raise Exception('The planned trj does not match the scheduled time.')

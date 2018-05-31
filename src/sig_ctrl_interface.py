@@ -42,20 +42,21 @@ def snmpTranslate(List):
     """
     Example: 2^^3 phase translation breakdown:
 
-    Bit 7 = Ring number = (ringControlGroupNumber * 8)
-    Bit 6 = Ring number = (ringControlGroupNumber * 8) - 1
-    Bit 5 = Ring number = (ringControlGroupNumber * 8) - 2
-    Bit 4 = Ring number = (ringControlGroupNumber * 8) - 3
-    Bit 3 = Ring number = (ringControlGroupNumber * 8) - 4
-    Bit 2 = Ring number = (ringControlGroupNumber * 8) - 5
-    Bit 1 = Ring number = (ringControlGroupNumber * 8) - 6
-    Bit 0 = Ring number = (ringControlGroupNumber * 8) - 7
+    - Bit 7 = Ring number = (ringControlGroupNumber * 8)
+    - Bit 6 = Ring number = (ringControlGroupNumber * 8) - 1
+    - Bit 5 = Ring number = (ringControlGroupNumber * 8) - 2
+    - Bit 4 = Ring number = (ringControlGroupNumber * 8) - 3
+    - Bit 3 = Ring number = (ringControlGroupNumber * 8) - 4
+    - Bit 2 = Ring number = (ringControlGroupNumber * 8) - 5
+    - Bit 1 = Ring number = (ringControlGroupNumber * 8) - 6
+    - Bit 0 = Ring number = (ringControlGroupNumber * 8) - 7
 
     :Author:
         Aschkan Omidvar <aschkan@ufl.edu>
     :Date:
         Jan-2017
-    .. note:
+
+    .. note::
         This module translates the phase numbers in a given list into snmp legible
         integers according to NTCIP 1202. The code encripts the list of the phases
         into a binary string and then parses it to an snmp int value.
@@ -80,7 +81,7 @@ def snmpOmit(List):
         Aschkan Omidvar <aschkan@ufl.edu>
     :Date:
         Jan-2017
-    .. note:
+    .. note::
         This module transforms the bit matrix values for OID
         enterprise::1206.4.2.1.1.5.1.2.1 to the corresponding phase number and
         omit it. Hold is a command that causes omission of a selected phase.
@@ -99,7 +100,8 @@ def snmpHold(List):
         Aschkan Omidvar <aschkan@ufl.edu>
     :Date:
         Jan-2017
-    .. note:
+
+    .. note::
         This module transforms the bit matrix values for OID
         enterprise::1206.4.2.1.1.5.1.4.1 to the corresponding phase number and
         hold it. Hold is a command that retains the existing Green interval.
@@ -118,7 +120,8 @@ def snmpForceOff(List):
         Aschkan Omidvar <aschkan@ufl.edu>
     :Date:
         Jan-2017
-    .. note:
+  
+    .. note::
         This module transforms the bit matrix values for OID
         enterprise::1206.4.2.1.1.5.1.5.1 to the corresponding phase number and
         Force Off it. Force off is A command to force the termination of the green
@@ -144,7 +147,8 @@ def snmpVehCall(List):
         Aschkan Omidvar <aschkan@ufl.edu>
     :Date:
         Jan-2017
-    .. note:
+
+    .. note::
         This module transforms the bit matrix values for OID
         enterprise::1206.4.2.1.1.5.1.6.1 to the corresponding phase number and
         call a vehicle on it.
@@ -163,7 +167,8 @@ def snmpTerminate():
         Aschkan Omidvar <aschkan@ufl.edu>
     :Date:
         Jan-2017
-    .. note:
+
+    .. note::
         This module terminates all the commands and resets the signal controller to
         the default mode (actauted)
     """
@@ -173,17 +178,17 @@ def snmpTerminate():
     snmpSet('1.3.6.1.4.1.1206.4.2.1.1.5.1.6.1', 0)
 
 
-def snmp_phase_ctrl(Phase):
+def snmp_phase_ctrl(Phase, inter_name):
     """
     :Author:
         Aschkan Omidvar <aschkan@ufl.edu>
     :Date:
         Jan-2017
-    .. note:
+
+    .. note::
         Send command to ASC
     """
-    # num_phase, al, non, non_conflict = get_sig_ctrl_interface_params(inter_name)
-    num_phase = 8  # Total Number of phases at the TERL
+    num_phase, al, non, non_conflict = get_sig_ctrl_interface_params(inter_name)
 
     snmpHold(list(al))
     snmpHold(list(non))

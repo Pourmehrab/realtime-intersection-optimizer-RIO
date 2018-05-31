@@ -4,16 +4,16 @@
 # File name: main.py               #
 # Author: Mahmoud Pourmehrab       #
 # Email: pourmehrab@gmail.com      #
-# Last Modified: Apr/24/2018       #
+# Last Modified: May/30/2018       #
 ####################################
-
 
 
 def run_avian(inter_name, method, sc, start_time_stamp, tester):
     """
-    .. note::
+    .. note:: The following assumptions are important to notice:
         - Trajectories must end at the stop bar, i.e. the distance to stop bar converges to zero, even if they are temporarily assigned.
-        - list all the other assumptions here...
+        - The desired speed of vehicles shall not exceed the speed limit or they will be advised speeding
+        - Use default values for pieces of information that are impossible to obtain, i.e. accel/decel rates and destination of conventional vehicles.
 
     :param inter_name: intersection name
     :type inter_name: str
@@ -42,31 +42,28 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
 
     # Set the signal control method
     if method == "GA":
-        # define what subset of phase-lane incidence matrix should be used
-        # minimal set of phase indices to cover all movements (17, 9, 8, 15) for 13th16th intersection
-        # NOTE TEH SET OF ALLOWABLE PHASE ARRAY IS ZERO-BASED (not like what inputted in data.py)
         signal = GA_SPaT(first_detection_time, intersection, sc, start_time_stamp)
     elif method == "pretimed":
         signal = Pretimed(first_detection_time, intersection, sc, start_time_stamp)
 
     trajectory_planner = TrajectoryPlanner(intersection)
 
-    # set the start time to it
-    time_keeper = TimeKeeper(first_detection_time)
+    # set the start time
+    simulator = Simulator(first_detection_time)
 
-    # here we start doing optimization for all scenarios included in the CSV file
     if intersection._general_params.get('log_csv'):
-        t_start = perf_counter()  # to measure total run time (IS NOT THE SIMULATION TIME)
+        t_start = perf_counter()  # to measure the total run time (IS NOT THE SIMULATION TIME)
 
     while True:  # stops when all rows of CSV are processed (a break statement controls this)
-        simulation_time = time_keeper.clock  # gets current simulation clock
+        simulation_time = simulator.clock  # gets current simulation clock
         if intersection._general_params.get('print_commandline'):
             print("\n################################# CLOCK: {:>5.1f} SEC #################################".format(
                 simulation_time))
 
-        # UPDATE VEHICLES
         # remove/record served vehicles and phases
         traffic.serve_update_at_stop_bar(lanes, simulation_time, intersection)
+        if tester is not None:
+            tester.check_order_in_lanes(lanes)
         # add/update vehicles
         traffic.update_vehicles_info(lanes, simulation_time, intersection)
         # update earliest departure schedule
@@ -89,29 +86,27 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
         if traffic.last_veh_arrived() and lanes.all_served(num_lanes):
             if intersection._general_params.get('log_csv'):
                 elapsed_time = perf_counter() - t_start  # THIS IS NOT SIMULATION TIME! IT'S JUST FOR TIMING THE ALGORITHM
-                traffic.set_elapsed_sim_time(elapsed_time)
-                if intersection._general_params.get('print_commandline'):
-                    print("\n### ELAPSED TIME: {:>5d} ms ###".format(int(1000 * elapsed_time)))
-
+                simulator.record_sim_stats(sc, inter_name, start_time_stamp, elapsed_time)
                 # save the csv which has travel time column appended
                 traffic.save_veh_level_csv(inter_name, start_time_stamp)
-
-            if intersection._general_params.get('log_csv'):
                 traffic.close_trj_csv()  # cus this is written line by line
                 signal.close_sig_csv()
+                if intersection._general_params.get('print_commandline'):
+                    print("\n### ELAPSED TIME: {:>5d} ms ###".format(int(1000 * elapsed_time)))
             return  # this halts the program
 
         else:  # this is the last scenario but still some vehicles have not been served
-            time_keeper.next_sim_step()
+            simulator.next_sim_step()
 
 
 if __name__ == "__main__":
     # IMPORT NECESSARY PACKAGES
-    import sys, os
+    import sys, os, multiprocessing
     from datetime import datetime
     from time import perf_counter
 
-    from src.time_keeper import TimeKeeper
+    from src.sig_ctrl_interface import snmp_phase_ctrl
+    from src.simulator import Simulator
     from src.intersection import Intersection, Lanes, Traffic, TrajectoryPlanner
     # Signal Optimizers
     from src.signal import GA_SPaT, Pretimed
@@ -123,6 +118,7 @@ if __name__ == "__main__":
         tester = SimTest()
         tester.py_version_test()
         tester.arguments_check()
+        # tester = None
     except ModuleNotFoundError:
         tester = None
 
@@ -138,9 +134,9 @@ if __name__ == "__main__":
         print(
             "\n################################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
         start_time_stamp = datetime.now().strftime('%m-%d-%Y_%H:%M:%S')  # only for naming the CSV files
-        for sc in range(1, 45 + 1):
+        for sc in range(5, 45 + 1):
             run_avian(inter_name, method, sc, start_time_stamp, tester)
-            print('scenario {:>4d} finished.'.format(sc))
+            # multiprocessing.Process(target=run_avian, args=(inter_name, method, sc, start_time_stamp, tester,)).start()
     elif run_mode == 'realtime':
         raise Exception('real-time mode is not available yet.')
 
