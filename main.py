@@ -62,6 +62,8 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
 
         # remove/record served vehicles and phases
         traffic.serve_update_at_stop_bar(lanes, simulation_time, intersection)
+        if tester is not None:
+            tester.check_order_in_lanes(lanes)
         # add/update vehicles
         traffic.update_vehicles_info(lanes, simulation_time, intersection)
         # update earliest departure schedule

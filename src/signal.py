@@ -361,8 +361,7 @@ class Signal:
         """
         max_speed, phase_cover_set, lag_on_green, min_headway, do_traj_computation = map(
             intersection._general_params.get,
-            ['max_speed', 'phase_cover_set', 'lag_on_green',
-             'min_headway', 'do_traj_computation'])
+            ['max_speed', 'phase_cover_set', 'lag_on_green', 'min_headway', 'do_traj_computation'])
         time_phase_ends = self.SPaT_end[-1] - self._ar
         for phase in phase_cover_set:
             time_phase_ends += self._ar

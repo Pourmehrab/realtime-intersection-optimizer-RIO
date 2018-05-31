@@ -112,7 +112,7 @@ def get_pretimed_parameters(inter_name):
         - You need to compute green splits, yellows, and all-reds based on traffic flow theory.
 
     .. warning::
-            Must choose ``NUM_CYCLES`` at least 2.
+            Must choose ``num_cycles`` at least 2.
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -139,10 +139,10 @@ def get_pretimed_parameters(inter_name):
 def get_GA_parameters(inter_name):
     """
 
-    - max_phase_length: do not include more than this in a phase sequence (is exclusive of the last: 1,2, ..., ``MAX_PHASE_LENGTH``-1)
+    - max_phase_length: do not include more than this in a phase sequence (is exclusive of the last: 1,2, ..., ``max_phase_length``-1)
     - population_size: this is the maximum size of individuals per iteration of :term:`GA`
     - max_iteration_per_phase:
-    - crossover_size: this specifies how many of the individuals from ``POPULATION_SIZE`` to be computed using crossover..
+    - crossover_size: this specifies how many of the individuals from ``population_size`` to be computed using crossover..
     - lambda: The weight factor to convert average travel time to throughput and give the :term:`badness` of an individual.
     - badness_accuracy: 10 raised to the number of digits we want to keep when hashing the :term:`badness` of an individual
     - allowable_phases: subset of all possible phases to be used.
@@ -350,7 +350,7 @@ def get_sig_ctrl_interface_params(inter_name):
         - Proper phases to be called
 
     .. note::
-        - Account for SNMP lag time. Depending on the processor capability: [0.1s-0.9s]
+        - Account for SNMP lag time. Depending on the processor capability: [0.1 s - 0.9 s]
 
     :Author:
         Ash Omidvar <aschkan@ufl.edu>

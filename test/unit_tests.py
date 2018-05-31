@@ -14,7 +14,7 @@ import numpy.testing as npt
 
 class SimTest(unittest.TestCase):
     """
-    A series of test methods.
+    A series of test methods for the optimization and part of the planner that was implemented for the simulation purpose.
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -141,3 +141,23 @@ class SimTest(unittest.TestCase):
             self.assertGreater(speed, -3, msg="Negative speed")
             self.assertGreater(dist, -3, msg="Traj point after the stop bar")
             trj_point_indx += 1
+
+    def check_order_in_lanes(self, lanes):
+        """
+        Tests, after updating the trajectories, if the order in each lane is right.
+
+        :param lanes:
+
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
+        """
+        for lane in range(len(lanes.vehlist)):
+            if len(lanes.vehlist[lane]) > 0:  # at least two vehicles
+                for veh_indx in range(1, len(lanes.vehlist[lane])):
+                    veh = lanes.vehlist.get(lane)[veh_indx]
+                    lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
+                    _, foll_det_dist, _ = veh.get_arrival_schedule()
+                    _, lead_det_dist, _ = lead_veh.get_arrival_schedule()
+                    self.assertLess(lead_det_dist, foll_det_dist, msg="follower is closer to stop bar than the lead")
