@@ -15,6 +15,7 @@ from scipy import stats
 from data.data import *
 from src.trajectory import LeadConventional, LeadConnected, FollowerConventional, FollowerConnected
 
+
 # vis
 # try:
 #     from src.optional.vis.vistrj import VisualizeSpaceTime
@@ -360,17 +361,18 @@ class Vehicle:
     def earliest_arrival_conventional(self, max_speed, min_headway=0, t_earliest=0):
         """
         Uses the latest departure time under the following cases to compute the earliest time the conventional vehicle can reach the stop bar:
-            - Maintains the detected speed till departure
+            - Maintains the *estimated mean speed* till departure
             - Departs at the minimum headway with the vehicle in front
 
-        :param veh:
+        :param veh: subject vehicle
         :type veh: Vehicle
-        :param min_headway:
+        :param min_headway: when 0, the vehicle is a lead and this constraint relaxes
         :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
         :return: The earliest departure time of the subject conventional vehicle
 
         .. note::
-            Enter ``min_headway`` and ``t_earliest`` as zeros (default values), if a vehicle is the first in its lane.
+            - Enter ``min_headway`` and ``t_earliest`` as zeros (default values), if a vehicle is the first in its lane.
+            - Make sure this is compatible with what implemented under :any:`FollowerConventional`
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -378,8 +380,10 @@ class Vehicle:
             April-2018
         """
         det_time, dist, speed = self.get_arrival_schedule()
-        t = max(det_time + dist / speed, t_earliest + min_headway)
+        mean_speed_est = 0.5 * (speed + max_speed)
+        t = max(det_time + dist / mean_speed_est, t_earliest + min_headway)
         assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
+
         self.earliest_departure = t
 
     def reset_trj_points(self, sc, lane, time_threshold, file):

@@ -97,6 +97,7 @@ class LeadConventional(Trajectory):
     """
     Computes the trajectory for a lead conventional vehicle assuming the vehicle tends to maintain its arrival speed.
 
+
     Use Case:
 
     Instantiate like::
@@ -123,6 +124,10 @@ class LeadConventional(Trajectory):
 
         :param veh: the lead conventional vehicle
         :type veh: Vehicle
+
+        .. warning::
+            Make sure the assumptions here are compatible with those in :any:`earliest_arrival_conventional`
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -137,11 +142,10 @@ class LeadConventional(Trajectory):
 
         self.set_trajectory(veh, t, d, s)
 
-        # -------------------------------------------------------
-        # FOLLOWER CONVENTIONAL TRAJECTORY ESTIMATOR
-        # -------------------------------------------------------
 
-
+# -------------------------------------------------------
+# FOLLOWER CONVENTIONAL TRAJECTORY ESTIMATOR
+# -------------------------------------------------------
 class FollowerConventional(Trajectory):
     """
     Estimates the trajectory for a follower conventional vehicle assuming a car following model. In the current implementation, Gipps car-following model [#]_ is used.
@@ -315,13 +319,14 @@ class FollowerConventional(Trajectory):
             next_foll_t = next_lead_t
             next_foll_d, next_foll_s = self.comp_speed_distance(curr_foll_t, curr_foll_d, curr_foll_s, foll_a,
                                                                 next_foll_t, veh.max_decel_rate, veh.max_accel_rate)
+            assert next_foll_d > next_lead_d, "lead vehicle is made of solid; follower cannot pass through it"
             veh.trajectory[:, foll_trj_indx] = [next_foll_t, next_foll_d, next_foll_s]
             curr_foll_t, curr_foll_d, curr_foll_s, curr_lead_t, curr_lead_d, curr_lead_s = next_foll_t, next_foll_d, next_foll_s, next_lead_t, next_lead_d, next_lead_s
             foll_trj_indx += 1
 
         t_departure_relative = veh.scheduled_departure - curr_foll_t
         v_departure_relative = curr_foll_d / t_departure_relative
-        assert 0 <= v_departure_relative <= veh.desired_speed, "conventional car following model yielded infeasible speed"
+        assert 0 <= v_departure_relative <= veh.desired_speed, "the scheduled departure was too early or car following yielded slow speeds"
         t_augment = self.discretize_time_interval(self._trj_time_resolution, t_departure_relative)
         d_augment = [curr_foll_d - t * v_departure_relative for t in t_augment]
         v_augment = [v_departure_relative] * len(t_augment)
@@ -340,7 +345,7 @@ class FollowerConventional(Trajectory):
 
         :param t0: the time at the beginning of the small interval that acceleration is constant
         :param d0: the distance at the beginning of the interval
-        :param v0: the dpeed at the beginning of the interval
+        :param v0: the speed at the beginning of the interval
         :param a: the constant acceleration rate within the interval
         :param t: the end time of the interval
         :return: distance to stop bar and speed
