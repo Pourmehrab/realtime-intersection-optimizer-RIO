@@ -857,6 +857,7 @@ class TrajectoryPlanner:
         :param veh_indx:
         :param intersection:
         :param identifier: Shows type of assigned trajectory
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
