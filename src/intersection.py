@@ -15,7 +15,6 @@ from scipy import stats
 from data.data import *
 from src.trajectory import LeadConventional, LeadConnected, FollowerConventional, FollowerConnected
 
-from src.optional.vis.vistrj import VisualizeSpaceTime  # todo: remove this
 
 
 class Intersection:
@@ -844,7 +843,7 @@ class TrajectoryPlanner:
 
         self._max_speed = intersection._general_params.get('max_speed')
 
-        self._visualizer = VisualizeSpaceTime(6)  # todo remove after testing
+        # self._visualizer = VisualizeSpaceTime(6)  # todo remove after testing
 
     def plan_trajectory(self, lanes, veh, lane, veh_indx, intersection, tester, identifier):
         """
@@ -880,8 +879,8 @@ class TrajectoryPlanner:
         else:
             raise Exception('One of lead/follower conventional/connected should have occurred.')
 
-        self._visualizer.add_multi_trj_matplotlib(veh, lane)  # todo remove after testing
-        self._visualizer.export_matplot(0, 510, 20, 155)  # todo remove after testing
+        # self._visualizer.add_multi_trj_matplotlib(veh, lane)  # todo remove after testing
+        # self._visualizer.export_matplot(0, 510, 20, 155)  # todo remove after testing
 
         if tester is not None:
             tester.test_planned_departure(veh)
