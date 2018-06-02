@@ -110,6 +110,21 @@ class SimTest(unittest.TestCase):
                     headway = scheduled_departures.get(lane)[veh_indx] - scheduled_departures.get(lane)[veh_indx - 1]
                     self.assertGreaterEqual(headway, min_headway - 0.01, msg="The min headway constraint is violated.")
 
+    def test_planned_departure(self, veh):
+        """
+        Tests if actually the departure from trajectory matches the planned departure.
+
+        :param veh:
+        :type veh: Vehicle
+
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
+        """
+        self.assertAlmostEqual(veh.trajectory[0, veh.last_trj_point_indx], veh.scheduled_departure, places=1,
+                               msg="The planned trj does not match the scheduled time")
+
     def test_trj_points(self, veh):
         """
         Checks all trajectory assigned to a vehicle for:
@@ -147,11 +162,12 @@ class SimTest(unittest.TestCase):
         Tests, after updating the trajectories, if the order in each lane is right.
 
         :param lanes:
+        :type lanes: Lanes
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
-            April-2018
+            May-2018
         """
         for lane in range(len(lanes.vehlist)):
             if len(lanes.vehlist[lane]) > 0:  # at least two vehicles
@@ -161,3 +177,21 @@ class SimTest(unittest.TestCase):
                     _, foll_det_dist, _ = veh.get_arrival_schedule()
                     _, lead_det_dist, _ = lead_veh.get_arrival_schedule()
                     self.assertLess(lead_det_dist, foll_det_dist, msg="follower is closer to stop bar than the lead")
+
+    def check_for_collision(self, veh, lead_veh):
+        """
+        Tests every pair of trajectory points to respect zero gap.
+
+        :param veh:
+        :param lead_veh:
+        :return:
+
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            May-2018
+        """
+        lead_d_vec, foll_d_vec = map(
+            lambda veh_obj: veh_obj.trajectory[1, veh_obj.first_trj_point_indx:veh_obj.last_trj_point_indx + 1],
+            [lead_veh, veh])
+        npt.assert_array_less(lead_d_vec, foll_d_vec[0:len(lead_d_vec)], err_msg="collision detected")

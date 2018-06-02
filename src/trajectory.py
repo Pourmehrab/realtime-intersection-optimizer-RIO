@@ -70,7 +70,9 @@ class Trajectory:
         Sets trajectory of the vehicle and updates the first and last trajectory point index.
 
 
-        .. note:: An assigned trajectory always is indexed from zero as the ``veh.set_first_trj_point_indx``.
+        .. note::
+            - t,d,s should keep the whole trajectory incusion-wise of the first and the last points because we areseting the first trajectory point index here.
+            - An assigned trajectory always is indexed from zero as the ``veh.set_first_trj_point_indx``.
 
 
         :param veh: the vehicle object that is owns the trajectory
@@ -293,7 +295,7 @@ class FollowerConventional(Trajectory):
         .. note::
             - The only trajectory point index that changes is follower's last one.
             - This method relies on the fact that lead vehicle's first trajectory point is current.
-            - Assumed the gap to lead vehicle cannot get lower than half length of the lead vehicle.
+            - Assumed the gap to lead vehicle cannot get lower than a full length of the lead vehicle.
             - Compared to W99 requires acc/dec on follower, dec on lead, dt, and does not need lead acc.
 
         :param veh: The follower conventional vehicle
@@ -624,7 +626,8 @@ class FollowerConnected(LeadConnected):
             >>> follower_connected_trj_optimizer.solve(veh, lead_veh)
 
     :param GAP_CTRL_STARTS: This is the relative time when gap control constraints get added
-    :param SAFE_MIN_GAP: The minimum safe distance to keep from lead vehicles (in :math:`m`) [*can be speed dependent*]
+
+    .. note: the minimum gap is set to half of the length of the lead vehicle.
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -632,7 +635,6 @@ class FollowerConnected(LeadConnected):
         April-2018
     """
     GAP_CTRL_STARTS = 2.0
-    SAFE_MIN_GAP = 4.8
 
     def __init__(self, intersection):
         """
@@ -677,32 +679,30 @@ class FollowerConnected(LeadConnected):
 
         self._lp_model = super().set_model(veh)
 
-        follower_det_time, _, _ = veh.get_arrival_schedule()
-        follower_dep_time, _, _ = veh.get_departure_schedule()
+        foll_det_time, _, _ = veh.get_arrival_schedule()
         lead_dep_time, _, _ = lead_veh.get_departure_schedule()
-        start_relative_ctrl_time, end_relative_ctrl_time = self.GAP_CTRL_STARTS, lead_dep_time - follower_det_time
-        departure_time_relative = follower_dep_time - follower_det_time
+        # start_rel_ctrl_time, end_rel_ctrl_time = self.GAP_CTRL_STARTS, lead_dep_time - foll_det_time
 
-        if end_relative_ctrl_time > start_relative_ctrl_time + self.m * self._small_positive_num:
-            n_traj_lead = lead_veh.last_trj_point_indx - lead_veh.first_trj_point_indx + 1
-            if n_traj_lead > self.m:
-                step = -int((n_traj_lead - 1) / self.m)
-                ctrl_lead_relative_time = lead_veh.trajectory[0,
-                                          lead_veh.last_trj_point_indx:lead_veh.last_trj_point_indx + step * self.m:step] - \
-                                          follower_det_time
-                rhs = lead_veh.trajectory[1,
-                      lead_veh.last_trj_point_indx:lead_veh.last_trj_point_indx + step * self.m:step] + self.SAFE_MIN_GAP
-            else:
-                ctrl_lead_relative_time = np.zeros(self.m)
-                rhs = np.zeros(self.m) - 1
+        foll_dep_time, _, _ = veh.get_departure_schedule()
+        dep_time_rel = foll_dep_time - foll_det_time
+
+        lead_num_traj_points = lead_veh.last_trj_point_indx - lead_veh.first_trj_point_indx + 1
+
+        if lead_num_traj_points > self.m:  # and end_rel_ctrl_time > start_rel_ctrl_time + self._small_positive_num
+            index_identifier = np.random.choice(
+                np.arange(lead_veh.first_trj_point_indx, lead_veh.last_trj_point_indx + 1), self.m, replace=False)
+            vec = lambda i: np.array([lead_veh.trajectory[i, trj_indx] for trj_indx in index_identifier])
+
+            lead_ctrl_time = vec(0) - foll_det_time
+            rhs = vec(1) + lead_veh.length
         else:
-            ctrl_lead_relative_time = np.zeros(self.m)
+            lead_ctrl_time = np.zeros(self.m)
             rhs = np.zeros(self.m) - 1
 
         self._lp_model.linear_constraints.set_rhs(zip(["min_gap_" + str(j) for j in range(self.m)], rhs))
         var_name = ["b_" + str(n) for n in range(self.k)]
-        for j, time in enumerate(ctrl_lead_relative_time):
-            dist_coeff = np.array([(time / departure_time_relative) ** n for n in range(self.k)], dtype=float)
+        for j, time in enumerate(lead_ctrl_time):
+            dist_coeff = np.array([(time / dep_time_rel) ** n for n in range(self.k)], dtype=float)
             self._lp_model.linear_constraints.set_coefficients(
                 zip(["min_gap_" + str(j)] * self.k, var_name, dist_coeff))
 
