@@ -117,7 +117,7 @@ if __name__ == "__main__":
         tester = SimTest()
         tester.py_version_test()
         tester.arguments_check()
-        tester = None
+        # tester = None
     except ModuleNotFoundError:
         tester = None
 
@@ -132,7 +132,6 @@ if __name__ == "__main__":
         print(
             "\nProgram Started ################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
         start_time_stamp = datetime.now().strftime('%m-%d-%Y_%H:%M:%S')  # only for naming the CSV files
-        tester = None
         run_avian(inter_name, method, 1, start_time_stamp, tester)
     elif run_mode == 'realtime':
         raise Exception('real-time mode is not available yet.')

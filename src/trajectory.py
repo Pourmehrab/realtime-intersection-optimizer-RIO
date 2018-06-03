@@ -272,13 +272,8 @@ class FollowerConventional(Trajectory):
         gap = foll_d - lead_d
         s_gipps_1 = foll_s + 2.5 * foll_a_max * dt * (1 - foll_s / foll_s_des) * np.sqrt(
             1 / 40 + max(foll_s, foll_s_des / 40) / foll_s_des)  # max() to make sure under sqrt is non-negative
-        under_sqrt_bef = (foll_a_min * (
+        under_sqrt = (foll_a_min * (
                 lead_a_min * (2 * (lead_l - gap) + dt * (foll_a_min * dt + foll_s)) + lead_s ** 2)) / lead_a_min
-        under_sqrt = foll_a_min * (
-                -2 * foll_d + 2 * (lead_d + lead_l) +
-                dt * (dt * foll_a_min + foll_s) +
-                lead_s ** 2 / lead_a_min)
-        assert abs(under_sqrt_bef - under_sqrt) < 0.01
         if under_sqrt >= 0:
             s_gipps_2 = foll_a_min * dt + np.sqrt(under_sqrt)  # might get negative
             next_foll_s = min(s_gipps_1, s_gipps_2) if s_gipps_2 >= 0 else s_gipps_1
@@ -286,7 +281,6 @@ class FollowerConventional(Trajectory):
             next_foll_s = s_gipps_1
 
         foll_a = (next_foll_s - foll_s) / dt
-        assert not (np.isnan([foll_a]) or np.isinf([foll_a])), "acceleration is not a finite number"
         return foll_a
 
     def solve(self, veh, lead_veh):
@@ -310,16 +304,17 @@ class FollowerConventional(Trajectory):
             April-2018
         """
         lead_l, foll_s_des = lead_veh.length, veh.desired_speed
-        lead_trj_indx, foll_trj_indx, max_lead_traj_indx = lead_veh.first_trj_point_indx + 1, veh.first_trj_point_indx, lead_veh.last_trj_point_indx
+        lead_trj_indx, foll_trj_indx, max_lead_traj_indx = lead_veh.first_trj_point_indx + 1, veh.first_trj_point_indx + 1, lead_veh.last_trj_point_indx
         curr_foll_t, curr_foll_d, curr_foll_s = veh.get_arrival_schedule()
         curr_lead_t, curr_lead_d, curr_lead_s = lead_veh.get_arrival_schedule()
         next_lead_t, next_lead_d, next_lead_s = lead_veh.trajectory[:, lead_trj_indx]
 
         if curr_lead_t > curr_foll_t:
             t_augment = self.discretize_time_interval(0, curr_lead_t - curr_foll_t)
-            d_augment = [curr_foll_d - t * curr_foll_s for t in t_augment]
-            v_augment = [curr_foll_s] * len(t_augment)
-            foll_trj_indx += len(t_augment)
+            v_entrance = min(curr_foll_s, (curr_foll_d - curr_lead_d - lead_l) / (curr_lead_t - curr_foll_t))
+            d_augment = [curr_foll_d - t * v_entrance for t in t_augment]
+            v_augment = [v_entrance] * len(t_augment)
+            foll_trj_indx += len(t_augment) - 1
             veh.trajectory[:, veh.first_trj_point_indx:foll_trj_indx] = t_augment + curr_foll_t, d_augment, v_augment
             curr_foll_t, curr_foll_d, curr_foll_s = t_augment[-1] + curr_foll_t, d_augment[-1], v_augment[-1]
         elif next_lead_t < curr_foll_t:
@@ -331,14 +326,20 @@ class FollowerConventional(Trajectory):
             lead_a = (next_lead_s - curr_lead_s) / (next_lead_t - curr_lead_t)
             next_foll_t = next_lead_t
             dt = next_foll_t - curr_foll_t
-            assert dt > 0, "non-monotonic time assigned"
+            # assert dt > 0, "non-monotonic time assigned"
             # foll_a = self.wiedemann99(next_lead_d, next_lead_s, lead_a, lead_l, curr_foll_d, curr_foll_s, foll_s_des)
             foll_a = self.gipps(next_lead_d, next_lead_s, lead_l, curr_foll_d, curr_foll_s, foll_s_des,
                                 veh.max_decel_rate, veh.max_accel_rate, lead_veh.max_decel_rate, dt)
+            assert not (np.isnan([foll_a]) or np.isinf([foll_a])), "acceleration is not a finite number"
             next_foll_d, next_foll_s = self.comp_speed_distance(curr_foll_t, curr_foll_d, curr_foll_s, foll_a,
                                                                 next_foll_t, veh.max_decel_rate, veh.max_accel_rate,
                                                                 next_lead_d, lead_l)
-            assert next_foll_d > next_lead_d, "lead vehicle is made of solid; follower cannot pass through it"
+            # assert next_foll_s >= 0.0, "negative speed was derived to meet the min gap "
+            # assert all(map(operator.not_, np.isnan([next_foll_d, next_foll_s]))), 'nan found in trajectory'
+            # assert all(map(operator.not_, np.isinf([next_foll_d, next_foll_s]))), 'infinity found in the schedule'
+            # assert next_foll_d > next_lead_d, "lead vehicle is made of solid; follower cannot pass through it"
+            # assert next_foll_d - curr_foll_d < 1, "vehicle got farther to the stop bar"
+
             veh.trajectory[:, foll_trj_indx] = [next_foll_t, next_foll_d, next_foll_s]
             curr_lead_t, curr_lead_d, curr_lead_s = next_lead_t, next_lead_d, next_lead_s
             curr_foll_t, curr_foll_d, curr_foll_s = next_foll_t, next_foll_d, next_foll_s
@@ -348,13 +349,13 @@ class FollowerConventional(Trajectory):
 
         t_departure_relative = veh.scheduled_departure - curr_foll_t
         v_departure_relative = curr_foll_d / t_departure_relative
-        assert 0 <= v_departure_relative <= veh.desired_speed, "the scheduled departure was too early or car following yielded slow speeds"
+        # assert 0 <= v_departure_relative <= veh.desired_speed, "the scheduled departure was too early or car following yielded slow speeds"
         t_augment = self.discretize_time_interval(self._trj_time_resolution, t_departure_relative)
         d_augment = [curr_foll_d - t * v_departure_relative for t in t_augment]
         v_augment = [v_departure_relative] * len(t_augment)
         last_index = foll_trj_indx + len(t_augment)
         veh.trajectory[:, foll_trj_indx:last_index] = t_augment + curr_foll_t, d_augment, v_augment
-        veh.set_last_trj_point_indx(last_index-1)
+        veh.set_last_trj_point_indx(last_index - 1)
 
     @staticmethod
     def comp_speed_distance(t0, d0, v0, a, t, foll_a_min, foll_a_max, next_lead_d, lead_l):
@@ -380,11 +381,10 @@ class FollowerConventional(Trajectory):
         """
         dt = t - t0
         a_final = min(foll_a_max, a) if a > 0 else max(foll_a_min, a)
-        d = max(d0 - (a_final * (t ** 2 - t0 ** 2) / 2 + (v0 - a_final * t0) * dt), next_lead_d + lead_l)
-        s = a * dt + v0
-        assert s >= -1.0, "negative speed was derived to meet the min gap "
-        assert all(map(operator.not_, np.isnan([d, s]))), 'nan found in trajectory'
-        assert all(map(operator.not_, np.isinf([d, s]))), 'infinity found in the schedule'
+        d = d0 - (a_final * (t ** 2 - t0 ** 2) / 2 + (v0 - a_final * t0) * dt)
+        d_min = next_lead_d + lead_l
+        s = a * dt + v0 if d >= d_min else (d0 - d_min) / dt
+        d = d if d >= d_min else d_min
         return d, s
 
 
