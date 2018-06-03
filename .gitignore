@@ -106,7 +106,6 @@ ENV/
 *.csv
 *.lp
 *.xlsx
-
 log/
 sphinx/
-src/optional/
+optional/

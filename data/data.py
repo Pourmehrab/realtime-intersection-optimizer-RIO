@@ -5,7 +5,9 @@
 # Updated (Omidvar): May/28/2018     
 ####################################
 
+# -------------------------------------------------------
 # GENERAL PARAMETERS
+# -------------------------------------------------------
 def get_general_params(inter_name):
     """
     :return:
@@ -41,68 +43,70 @@ def get_general_params(inter_name):
     :Date:
         April-2018
     """
-    if inter_name == '13th16th':
-        return {'inter_name': '13th16th',
-                'max_speed': 15.0,
-                'min_headway': 2.0,
-                'det_range': 500.0,
-                'k': int(10),
-                'm': int(20),
-                'num_lanes': int(16),
-                'phase_cover_set': (17, 9, 8, 15,),
-                'small_positive_num': 0.01,
-                'large_positive_num': 999_999_999,
-                'lag_on_green': 1.0,
-                'max_num_traj_points': int(300),
-                'min_dist_to_stop_bar': 50,
-                'do_traj_computation': True,
-                'trj_time_resolution': 1.0,
-                'log_csv': True,
-                'print_commandline': True,
+    if inter_name == "13th16th":
+        return {"inter_name": "13th16th",
+                "max_speed": 15.0,
+                "min_headway": 2.0,
+                "det_range": 500.0,
+                "k": int(10),
+                "m": int(20),
+                "num_lanes": int(16),
+                "phase_cover_set": (17, 9, 8, 15,),
+                "small_positive_num": 0.01,
+                "large_positive_num": 999_999_999,
+                "lag_on_green": 1.0,
+                "max_num_traj_points": int(300),
+                "min_dist_to_stop_bar": 50,
+                "do_traj_computation": True,
+                "trj_time_resolution": 1.0,
+                "log_csv": True,
+                "print_commandline": True,
                 }
-    elif inter_name == 'TERL':
-        return {'inter_name': 'TERL',
-                'max_speed': 17.8816,  # 40 mph
-                'min_headway': 1.5,
-                'det_range': 500.0,
-                'k': int(20),
-                'm': int(40),
-                'num_lanes': int(6),
-                'phase_cover_set': (0, 1, 2, 3,),
-                'small_positive_num': 0.01,
-                'large_positive_num': 999_999_999,
-                'lag_on_green': 1.0,
-                'max_num_traj_points': int(300),
-                'min_dist_to_stop_bar': 50,
-                'do_traj_computation': True,
-                'trj_time_resolution': 1.0,
-                'log_csv': True,
-                'print_commandline': True,
+    elif inter_name == "TERL":
+        return {"inter_name": "TERL",
+                "max_speed": 17.8816,  # 40 mph
+                "min_headway": 1.5,
+                "det_range": 500.0,
+                "k": int(20),
+                "m": int(40),
+                "num_lanes": int(6),
+                "phase_cover_set": (0, 1, 2, 3,),
+                "small_positive_num": 0.01,
+                "large_positive_num": 999_999_999,
+                "lag_on_green": 1.0,
+                "max_num_traj_points": int(300),
+                "min_dist_to_stop_bar": 50,
+                "do_traj_computation": True,
+                "trj_time_resolution": 1.0,
+                "log_csv": True,
+                "print_commandline": True,
                 }
-    elif inter_name == 'reserv':
-        return {'inter_name': 'reserv',
-                'max_speed': 15.0,
-                'min_headway': 2.0,
-                'det_range': 500.0,
-                'k': int(11),
-                'm': int(15),
-                'num_lanes': int(12),
-                'phase_cover_set': None,
-                'small_positive_num': 0.01,
-                'large_positive_num': 999_999_999,
-                'lag_on_green': 1.0,
-                'max_num_traj_points': int(300),
-                'min_dist_to_stop_bar': 50,
-                'do_traj_computation': True,
-                'trj_time_resolution': 1.0,
-                'log_csv': True,
-                'print_commandline': True,
+    elif inter_name == "reserv":
+        return {"inter_name": "reserv",
+                "max_speed": 15.0,
+                "min_headway": 2.0,
+                "det_range": 500.0,
+                "k": int(20),
+                "m": int(40),
+                "num_lanes": int(12),
+                "phase_cover_set": (0, 1, 2, 3,),
+                "small_positive_num": 0.01,
+                "large_positive_num": 999_999_999,
+                "lag_on_green": 1.0,
+                "max_num_traj_points": int(300),
+                "min_dist_to_stop_bar": 50,
+                "do_traj_computation": True,
+                "trj_time_resolution": 1.0,
+                "log_csv": True,
+                "print_commandline": True,
                 }
     else:
-        raise Exception('Simulation parameters are not known for this intersection.')
+        raise Exception("Simulation parameters are not known for this intersection.")
 
 
+# -------------------------------------------------------
 # PRETIMED CONTROL PARAMETERS
+# -------------------------------------------------------
 def get_pretimed_parameters(inter_name):
     """
     This returns the parameters needed for pre-timed control.
@@ -120,53 +124,65 @@ def get_pretimed_parameters(inter_name):
         April-2018
     """
 
-    if inter_name == '13th16th':
+    if inter_name == "13th16th":
         return None  # todo compute these
 
-    elif inter_name == 'TERL':
-        return {'green_dur': (12.0, 12.0, 12.0, 12.0), 'phase_seq': (0, 1, 2, 3,), 'yellow': 1.5, 'all-red': 1.5,
-                'num_cycles': 5}
+    elif inter_name == "TERL":
+        return {"green_dur": (12.0, 12.0, 12.0, 12.0), "phase_seq": (0, 1, 2, 3,), "yellow": 1.5, "all-red": 1.5,
+                "num_cycles": 5}
 
-    elif inter_name == 'reserv':
-        return {'green_dur': (25.0, 25.0, 25.0, 25.0), 'phase_seq': (0, 1, 2, 3,), 'yellow': 3.0, 'all-red': 1.5,
-                'num_cycles': 5}
+    elif inter_name == "reserv":
+        return {"green_dur": (25.0, 25.0, 25.0, 25.0), "phase_seq": (0, 1, 2, 3,), "yellow": 3.0, "all-red": 1.5,
+                "num_cycles": 5}
 
     else:
-        raise Exception('Pretimed parameters are not known for this intersection.')
+        raise Exception("Pretimed parameters are not known for this intersection.")
 
 
+# -------------------------------------------------------
 # GA CONTROL PARAMETERS
+# -------------------------------------------------------
 def get_GA_parameters(inter_name):
     """
 
-    - max_phase_length: do not include more than this in a phase sequence (is exclusive of the last: 1,2, ..., ``max_phase_length``-1)
-    - population_size: this is the maximum size of individuals per iteration of :term:`GA`
-    - max_iteration_per_phase:
-    - crossover_size: this specifies how many of the individuals from ``population_size`` to be computed using crossover..
-    - lambda: The weight factor to convert average travel time to throughput and give the :term:`badness` of an individual.
-    - badness_accuracy: 10 raised to the number of digits we want to keep when hashing the :term:`badness` of an individual
-    - allowable_phases: subset of all possible phases to be used.
-
     :return:
+        - max_phase_length: do not include more than this in a phase sequence (is exclusive of the last: 1,2, ..., ``max_phase_length``-1)
+        - population_size: this is the maximum size of individuals per iteration of :term:`GA`
+        - max_iteration_per_phase:
+        - crossover_size: this specifies how many of the individuals from ``population_size`` to be computed using crossover.
+        - lambda: The weight factor to convert average travel time to throughput and give the :term:`badness` of an individual.
+        - badness_accuracy: 10 raised to the number of digits we want to keep when hashing the :term:`badness` of an individual
+        - allowable_phases: subset of all possible phases to be used. These are different than the phase_cover_set
+
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+    :Date:
+        April-2018
     """
-    if inter_name == '13th16th':
+    if inter_name == "13th16th":
         return None  # todo add these
 
-    elif inter_name == 'TERL':
-        return {'max_phase_length': 4,
-                'population_size': 20,
-                'max_iteration_per_phase': 10,
-                'crossover_size': 10,
-                'lambda': 1 / 500,
-                'badness_accuracy': 10 ** 2,
-                'allowable_phases': (0, 1, 2, 3,),
+    elif inter_name == "TERL":
+        return {"max_phase_length": 4,
+                "population_size": 20,
+                "max_iteration_per_phase": 10,
+                "crossover_size": 10,
+                "lambda": 1 / 500,
+                "badness_accuracy": 10 ** 2,
+                "allowable_phases": (0, 1, 2, 3,),
+                }
+    elif inter_name == "reserv":
+        return {"max_phase_length": 4,
+                "population_size": 20,
+                "max_iteration_per_phase": 10,
+                "crossover_size": 10,
+                "lambda": 1 / 500,
+                "badness_accuracy": 10 ** 2,
+                "allowable_phases": (0, 1, 2, 3,),
                 }
 
-    elif inter_name == 'reserv':
-        return None  # todo add these
-
     else:
-        raise Exception('GA parameters are not known for this intersection.')
+        raise Exception("GA parameters are not known for this intersection.")
 
 
 def get_conflict_dict(inter_name):
@@ -214,7 +230,7 @@ def get_conflict_dict(inter_name):
         April-2018
     """
 
-    if inter_name == '13th16th':
+    if inter_name == "13th16th":
         lli = {1: {7},
                2: {7, 8, 12, 16, 15, 14, 13},
                3: {7, 8, 12, 16, 15, 14, 9},
@@ -232,7 +248,7 @@ def get_conflict_dict(inter_name):
                15: {2, 3, 12, 4, 5, 8, 7, 11, 6},
                16: {12, 2, 3, 8, 4, 7, 5, 11}}
 
-    elif inter_name == 'TERL':
+    elif inter_name == "TERL":
         lli = {1: {2, 3, 4, 5, 6, },
                2: {1, 4, 6, },
                3: {1, 4, 5, },
@@ -240,7 +256,7 @@ def get_conflict_dict(inter_name):
                5: {1, 3, 4, },
                6: {1, 2, 4, }, }
 
-    elif inter_name == 'reserv':
+    elif inter_name == "reserv":
         lli = {1: {4, 5, 6, 7, 8, 9, 10, 11, 12},
                2: {4, 5, 6, 7, 8, 9, 10, 11, 12},
                3: {4, 5, 6, 7, 8, 9, 10, 11, 12},
@@ -254,7 +270,7 @@ def get_conflict_dict(inter_name):
                11: {1, 2, 3, 4, 5, 6, 7, 8, 9},
                12: {1, 2, 3, 4, 5, 6, 7, 8, 9}}
     else:
-        raise Exception('Set of conflicting lanes is not known for this intersection.')
+        raise Exception("Set of conflicting lanes is not known for this intersection.")
 
     return lli
 
@@ -270,7 +286,7 @@ def get_phases(inter_name):
         April-2018
     """
 
-    if inter_name == '13th16th':
+    if inter_name == "13th16th":
         pli = {1: {1, 10, 16, },
                2: {6, 7, 12, },
                3: {1, 2, 6, 9, },
@@ -290,7 +306,7 @@ def get_phases(inter_name):
                17: {6, 7, 8, 13, 14, },
                18: {1, 2, 3, 4, 5, 6, }}
 
-    if inter_name == 'TERL':
+    if inter_name == "TERL":
         return {1: {1, },  # Southbound (signal controller: phase 2)
                 2: {5, 6, },  # Eastbound (signal controller: phase 3)
                 3: {2, 3, },  # Westbound (signal controller: phase 4)
@@ -299,13 +315,13 @@ def get_phases(inter_name):
                 6: {3, 6, },  # dual left turns
                 }
 
-    elif inter_name == 'reserv':
+    elif inter_name == "reserv":
         pli = {1: {1, 2, 3, },
                2: {4, 5, 6, },
                3: {7, 8, 9, },
                4: {10, 11, 12, }}
     else:
-        raise Exception('Set of phases is not known for this intersection.')
+        raise Exception("Set of phases is not known for this intersection.")
 
     return pli
 
@@ -320,30 +336,33 @@ def get_signal_params(inter_name):
         April-2018
     """
 
-    if inter_name == '13th16th':
+    if inter_name == "13th16th":
         yellow = 1.5
         allred = 1.0
         min_green = 5.0
         max_green = 25.0
 
-    elif inter_name == 'TERL':
+    elif inter_name == "TERL":
         yellow = 1.5
         allred = 1.5
         min_green = 4.6
         max_green = 25.0
 
-    elif inter_name == 'reserv':
+    elif inter_name == "reserv":
         yellow = 3.0
         allred = 1.5
         min_green = 5.0
         max_green = 40.0
 
     else:
-        raise Exception('Signal parameters are not known for this intersection.')
+        raise Exception("Signal parameters are not known for this intersection.")
 
     return yellow, allred, min_green, max_green
 
 
+# -------------------------------------------------------
+# SIGNAL CONTROLLER PARAMETERS
+# -------------------------------------------------------
 def get_sig_ctrl_interface_params(inter_name):
     """
     :return:
@@ -357,13 +376,13 @@ def get_sig_ctrl_interface_params(inter_name):
     :Date:
         May-2018
     """
-    if inter_name == 'TERL':
+    if inter_name == "TERL":
         num_phase = 8  # Total Number of phases at the TERL
         al = range(1, num_phase + 1)
         non = [0]
         non_conflict = [[2], [3, 8], [4, 7], [6]]  # Conflict monitor phases
 
     else:
-        raise Exception('Controller parameters are not known for this intersection.')
+        raise Exception("Controller parameters are not known for this intersection.")
 
     return num_phase, al, non, non_conflict

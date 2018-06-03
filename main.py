@@ -21,7 +21,7 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
     :type method: str
     :param sc: scenario number (*should match the appendix of the input CSV filename*)
     :type sc: int
-    :param start_time_stamp: The UTC time stamp to name the CSV files
+    :param start_time_stamp: The local time stamp to name the CSV files
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -62,8 +62,7 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
 
         # remove/record served vehicles and phases
         traffic.serve_update_at_stop_bar(lanes, simulation_time, intersection)
-        if tester is not None:
-            tester.check_order_in_lanes(lanes)
+        tester is not None and tester.check_order_in_lanes(lanes)
         # add/update vehicles
         traffic.update_vehicles_info(lanes, simulation_time, intersection)
         # update earliest departure schedule
@@ -79,8 +78,8 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
         signal.solve(lanes, intersection, critical_volume_ratio, trajectory_planner, tester)
 
         num_lanes = intersection._general_params.get('num_lanes')
-        if tester is not None:
-            tester.test_departure_of_trj(lanes, intersection, [0] * num_lanes, lanes.last_vehicle_indx)
+        tester is not None and tester.test_departure_of_trj(lanes, intersection, [0] * num_lanes,
+                                                            lanes.last_vehicle_indx)
 
         # MOVE SIMULATION FORWARD
         if traffic.last_veh_arrived() and lanes.all_served(num_lanes):
@@ -91,9 +90,9 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
                 traffic.save_veh_level_csv(inter_name, start_time_stamp)
                 traffic.close_trj_csv()  # cus this is written line by line
                 signal.close_sig_csv()
-                if intersection._general_params.get('print_commandline'):
-                    print("\n### ELAPSED TIME: {:>5d} ms ###".format(int(1000 * elapsed_time)))
-            return  # this halts the program
+                intersection._general_params.get('print_commandline') and print(
+                    "\n### ELAPSED TIME: {:>5d} ms ###".format(int(1000 * elapsed_time)))
+            return
 
         else:  # this is the last scenario but still some vehicles have not been served
             simulator.next_sim_step()
@@ -101,7 +100,7 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
 
 if __name__ == "__main__":
     # IMPORT NECESSARY PACKAGES
-    import sys, os, multiprocessing
+    import sys, os
     from datetime import datetime
     from time import perf_counter
 
@@ -118,7 +117,7 @@ if __name__ == "__main__":
         tester = SimTest()
         tester.py_version_test()
         tester.arguments_check()
-        tester = None
+        # tester = None
     except ModuleNotFoundError:
         tester = None
 
@@ -127,15 +126,13 @@ if __name__ == "__main__":
     print("Python Version: ", sys.version)
 
     inter_name, method, run_mode = sys.argv[1], sys.argv[2], sys.argv[3]
-    if not os.path.isdir('./log/' + inter_name):
-        os.mkdir('./log/' + inter_name)
+    not os.path.isdir('./log/' + inter_name) and os.mkdir('./log/' + inter_name)
 
     if run_mode == 'simulation':
         print(
-            "\n################################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
-        sc = 5
+            "\nProgram Started ################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
         start_time_stamp = datetime.now().strftime('%m-%d-%Y_%H:%M:%S')  # only for naming the CSV files
-        run_avian(inter_name, method, sc, start_time_stamp, tester)
+        run_avian(inter_name, method, 1, start_time_stamp, tester)
     elif run_mode == 'realtime':
         raise Exception('real-time mode is not available yet.')
 
