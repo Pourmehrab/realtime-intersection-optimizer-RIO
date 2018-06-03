@@ -5,16 +5,13 @@
 # Last Modified: May/30/2018       #
 ####################################
 
-import csv
-import os
-import operator
+import os, csv, operator
 import numpy as np
 import pandas as pd
 from scipy import stats
 
 from data.data import *
 from src.trajectory import LeadConventional, LeadConnected, FollowerConventional, FollowerConnected
-
 
 
 class Intersection:
@@ -843,7 +840,8 @@ class TrajectoryPlanner:
 
         self._max_speed = intersection._general_params.get('max_speed')
 
-        # self._visualizer = VisualizeSpaceTime(6)  # todo remove after testing
+        # from optional.vis.vistrj import VisualizeSpaceTime  # todo remove after testing
+        # self._visualizer = VisualizeSpaceTime(12)
 
     def plan_trajectory(self, lanes, veh, lane, veh_indx, intersection, tester, identifier):
         """
@@ -885,8 +883,6 @@ class TrajectoryPlanner:
         if tester is not None:
             tester.test_planned_departure(veh)
             tester.test_trj_points(veh)
-            if veh_indx > 0:
-                tester.check_for_collision(veh, lead_veh)
+            veh_indx > 0 and tester.check_for_collision(veh, lead_veh)
 
-        if intersection._general_params.get('print_commandline'):
-            veh.print_trj_points(lane, veh_indx, identifier)
+        intersection._general_params.get('print_commandline') and veh.print_trj_points(lane, veh_indx, identifier)

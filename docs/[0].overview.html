@@ -29,7 +29,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="2. Simulation" href="[1].simulator.html" />
+    <link rel="next" title="2. Simulation" href="[1.1].simulator.html" />
     <link rel="prev" title="Welcome to AVIAN’s documentation!" href="index.html" /> 
 
   
@@ -93,11 +93,13 @@
 <li class="toctree-l2"><a class="reference internal" href="#main-script">1.3. Main Script</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="[1].simulator.html">2. Simulation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="[1].simulator.html#module-data.data">3. Python Data</a></li>
-<li class="toctree-l1"><a class="reference internal" href="[2].intersection.html">4. Intersection</a></li>
-<li class="toctree-l1"><a class="reference internal" href="[3].signal.html">5. Signal Phase and Timing (SPaT)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="[4].trajectory.html">6. Trajectory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1.1].simulator.html">2. Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1.1].simulator.html#module-data.data">3. Python Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1.2].intersection.html">4. Intersection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1.3].signal.html">5. Signal Phase and Timing (SPaT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1.4].trajectory.html">6. Trajectory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1.5].opt.unit.tests.html">7. Optimizers/Simulator Unit Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[2].signal.ctrl.interface.html">8. Signal Controller Interface</a></li>
 </ul>
 
             
@@ -171,7 +173,7 @@
 <ul class="last">
 <li><p class="first">The interpreter version requirement is set to <code class="docutils literal notranslate"><span class="pre">3.6.0</span></code>. If using conda, do:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conda</span> <span class="n">update</span> <span class="n">conda</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">conda</span> <span class="n">install</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.6</span><span class="o">.</span><span class="mi">4</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conda</span> <span class="n">install</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.6</span><span class="o">.</span><span class="mi">5</span>
 </pre></div>
 </div>
 </li>
@@ -205,9 +207,10 @@
 <dt>Outputs are stored under <code class="docutils literal notranslate"><span class="pre">/log/&lt;intersection</span> <span class="pre">name&gt;/</span></code> (create the directories if they do not exist):</dt>
 <dd><ul class="first last simple">
 <li>The outputs are stored in CSV format and named by the format of <code class="docutils literal notranslate"><span class="pre">&lt;local</span> <span class="pre">timestamp&gt;_&lt;sc&gt;_&lt;content</span> <span class="pre">identifier&gt;.csv</span></code> (time is in <code class="docutils literal notranslate"><span class="pre">mm-dd-yyyy_hh:mm:ss</span></code> format).</li>
-<li><code class="docutils literal notranslate"><span class="pre">&lt;local</span> <span class="pre">timestamp&gt;_&lt;sc&gt;_vehicle_level.csv</span></code> includes input CSV plus the <code class="docutils literal notranslate"><span class="pre">departure</span> <span class="pre">time,</span> <span class="pre">vehicle</span> <span class="pre">ID</span></code> and <code class="docutils literal notranslate"><span class="pre">elapsed</span> <span class="pre">time</span></code> columns</li>
+<li><code class="docutils literal notranslate"><span class="pre">&lt;local</span> <span class="pre">timestamp&gt;_&lt;sc&gt;_veh_level.csv</span></code> includes input CSV plus the <code class="docutils literal notranslate"><span class="pre">departure</span> <span class="pre">time</span> <span class="pre">and</span> <span class="pre">vehicle</span> <span class="pre">ID</span></code> columns</li>
 <li><code class="docutils literal notranslate"><span class="pre">&lt;local</span> <span class="pre">timestamp&gt;_&lt;sc&gt;_trj_point_level.csv</span></code> includes the trajectory points</li>
-<li><code class="docutils literal notranslate"><span class="pre">&lt;local</span> <span class="pre">timestamp&gt;_&lt;sc&gt;_sig_phase_level.csv</span></code> includes signalization details</li>
+<li><code class="docutils literal notranslate"><span class="pre">&lt;local</span> <span class="pre">timestamp&gt;_&lt;sc&gt;_sig_level.csv</span></code> includes signalization details</li>
+<li><code class="docutils literal notranslate"><span class="pre">&lt;local</span> <span class="pre">timestamp&gt;_sim_level</span></code> simulation level statistics including <code class="docutils literal notranslate"><span class="pre">elapsed</span> <span class="pre">time</span></code></li>
 </ul>
 </dd>
 </dl>
@@ -376,22 +379,15 @@
 <div class="section" id="main-script">
 <h2>1.3. Main Script<a class="headerlink" href="#main-script" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">main.py</span></code> file implements the following work flow:</p>
-<span class="target" id="module-main"></span><dl class="class">
-<dt id="main.Singleton">
-<em class="property">class </em><code class="descclassname">main.</code><code class="descname">Singleton</code><a class="headerlink" href="#main.Singleton" title="Permalink to this definition">¶</a></dt>
-<dd><p>Only to make singleton classes.</p>
-<p>The credit for this goes to <a class="reference external" href="https://stackoverflow.com/q/6760685">this</a> stackoverflow  post.</p>
-</dd></dl>
-
-<dl class="function">
+<span class="target" id="module-main"></span><dl class="function">
 <dt id="main.run_avian">
 <code class="descclassname">main.</code><code class="descname">run_avian</code><span class="sig-paren">(</span><em>inter_name</em>, <em>method</em>, <em>sc</em>, <em>start_time_stamp</em>, <em>tester</em><span class="sig-paren">)</span><a class="headerlink" href="#main.run_avian" title="Permalink to this definition">¶</a></dt>
 <dd><div class="admonition note">
 <p class="first admonition-title">Note</p>
-<ul class="last simple">
-<li>Trajectories must end at the stop bar, i.e. the distance to stop bar converges to zero, even if they are temporarily assigned.</li>
-<li>list all the other assumptions here…</li>
-</ul>
+<p class="last">The following assumptions are important to notice:
+- Trajectories must end at the stop bar, i.e. the distance to stop bar converges to zero, even if they are temporarily assigned.
+- The desired speed of vehicles shall not exceed the speed limit or they will be advised speeding
+- Use default values for pieces of information that are impossible to obtain, i.e. accel/decel rates and destination of conventional vehicles.</p>
 </div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -401,7 +397,7 @@
 <li><strong>inter_name</strong> (<em>str</em>) – intersection name</li>
 <li><strong>method</strong> (<em>str</em>) – pretimed, GA, …</li>
 <li><strong>sc</strong> (<em>int</em>) – scenario number (<em>should match the appendix of the input CSV filename</em>)</li>
-<li><strong>start_time_stamp</strong> – The UTC time stamp to name the CSV files</li>
+<li><strong>start_time_stamp</strong> – The local time stamp to name the CSV files</li>
 </ul>
 </td>
 </tr>
@@ -447,7 +443,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="[1].simulator.html" class="btn btn-neutral float-right" title="2. Simulation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="[1.1].simulator.html" class="btn btn-neutral float-right" title="2. Simulation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="index.html" class="btn btn-neutral" title="Welcome to AVIAN’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
@@ -504,7 +500,9 @@
 
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
   </script> 
 
