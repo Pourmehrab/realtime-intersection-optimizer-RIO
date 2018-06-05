@@ -840,7 +840,7 @@ class Traffic:
                 for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
                     det_time, _, _ = veh.get_arrival_schedule()
                     dep_time, _, _ = veh.get_departure_schedule()
-                    assert dep_time > det_time, "cannot depart earlier than it arrived"
+                    assert dep_time > 0, "no departure is set"
                     if dep_time < simulation_time:  # record/remove departure
                         last_veh_indx_to_remove += 1
                         intersection._general_params.get('print_commandline') and print(

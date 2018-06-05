@@ -292,7 +292,7 @@ class Signal:
         return any_unserved_vehicle
 
     # @jit()
-    def _do_non_base_SPaT(self, lanes, scheduled_departures, intersection):
+    def _do_non_base_SPaT(self, lanes, scheduled_departures, first_unsrvd_indx, intersection):
         """
         Most of times the base SPaT prior to running a ``solve()`` method does not serve all vehicles. However, vehicles
         require trajectory to be provided. One way to address this is to assign them the best temporal trajectory which
@@ -328,16 +328,17 @@ class Signal:
             ["max_speed", "phase_cover_set", "lag_on_green", "min_headway", "do_traj_computation"])
         time_phase_ends = self.SPaT_end[-1] - self._ar
         for phase in phase_cover_set:
-            time_phase_ends += self._ar
+            time_phase_ends += self._ar + lag_on_green
             for lane in self._phase_lane_incidence.get(phase):
-                for veh_indx in range(lanes.first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
+                for veh_indx in range(first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
                     veh = lanes.vehlist.get(lane)[veh_indx]
                     t_earliest = veh.earliest_departure
                     if veh_indx == 0:
-                        t_scheduled = max(t_earliest, time_phase_ends + lag_on_green)
+                        t_scheduled = max(t_earliest, time_phase_ends)
                     else:
-                        lead_veh_dep_time = lanes.vehlist.get(lane)[veh_indx - 1].scheduled_departure
-                        t_scheduled = max(t_earliest, time_phase_ends + lag_on_green, lead_veh_dep_time + min_headway)
+                        lead_veh_dep_time = t_scheduled if veh_indx >= first_unsrvd_indx[lane] + 1 else \
+                            lanes.vehlist.get(lane)[veh_indx - 1].scheduled_departure
+                        t_scheduled = max(t_earliest, time_phase_ends, lead_veh_dep_time + min_headway)
                     time_phase_ends = t_scheduled
                     scheduled_departures[lane][veh_indx] = t_scheduled
 
@@ -451,7 +452,8 @@ class Pretimed(Signal):
         if any(any_unserved_vehicle):
             scheduled_departures = {lane: np.zeros(len(lanes.vehlist.get(lane)), dtype=float) for lane in
                                     range(num_lanes)}
-            scheduled_departures = self._do_non_base_SPaT(lanes, scheduled_departures, intersection)
+            scheduled_departures = self._do_non_base_SPaT(lanes, scheduled_departures, lanes.first_unsrvd_indx,
+                                                          intersection)
             self._set_non_base_scheduled_departures(lanes, scheduled_departures, any_unserved_vehicle,
                                                     trajectory_planner, intersection, tester)
 
@@ -598,7 +600,7 @@ class GA_SPaT(Signal):
                 self._append_extend_phase(int(phase), self.__best_GA_alt.get('SPaT').get('time_split')[
                     indx] - self._y - self._ar, intersection)
             scheduled_departures = self._do_non_base_SPaT(lanes, self.__best_GA_alt.get('scheduled_departures'),
-                                                          intersection)
+                                                          self.__best_GA_alt.get('first_unserved_indx'), intersection)
             self._set_non_base_scheduled_departures(lanes, scheduled_departures, any_unserved_vehicle,
                                                     trajectory_planner, intersection, tester)
 

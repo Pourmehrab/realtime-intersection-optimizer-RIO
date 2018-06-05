@@ -47,8 +47,8 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
 
     while True:  # stops when all rows of CSV are processed (a break statement controls this)
         simulation_time = simulator.clock  # gets current simulation clock
-        if intersection._general_params.get('print_commandline'):
-            print("\n################################# CLOCK: {:>5.1f} SEC #################################".format(
+        intersection._general_params.get('print_commandline') and print(
+            "\n################################# CLOCK: {:>5.1f} SEC #################################".format(
                 simulation_time))
 
         # update the assigned trajectories

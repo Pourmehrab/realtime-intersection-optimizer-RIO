@@ -84,7 +84,7 @@ class SimTest(unittest.TestCase):
                         self.assertGreaterEqual(avg_speed, 0.0, msg="negative avg speed")
                     if veh_indx > 0:
                         lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
-                        lead_dep_time = lead_veh.trajectory[0, lead_veh.last_trj_point_indx]
+                        lead_dep_time, _, _ = lead_veh.get_departure_schedule()
                         self.assertGreaterEqual(dep_time, lead_dep_time + min_headway - 0.1,
                                                 msg="the follower cannot depart earlier than the lead.")
 
