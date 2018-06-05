@@ -16,11 +16,7 @@ from src.trajectory import LeadConventional, LeadConnected, FollowerConventional
 
 class Intersection:
     """
-    Objectives:
-        - Keeps intersection parameters
-
-
-    .. todo:: make this a dataclass
+    Keeps intersection/simulation parameters
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -28,12 +24,11 @@ class Intersection:
         April-2018
     """
 
-    def __init__(self, int_name):
+    def __init__(self, inter_name):
         """
-        :param int_name: comes from what user input in the command line as the intersection name
+        :param inter_name: comes from what user input in the command line as the intersection name
         """
-        self.name = int_name
-        self._general_params = get_general_params(int_name)
+        self._general_params = get_general_params(inter_name)
 
 
 class Lanes:
@@ -57,21 +52,30 @@ class Lanes:
 
     def __init__(self, intersection):
         """
-        Data Structure for keeping vehicles in order in the lanes in the form of a dictionary of arrays
+        A dictionary of lists for keeping vehicles in the physical order they are in the lanes
+
+        .. note::
+            - Python list has a method `insert()` to be used for adding vehicles in the middle of the list
+            - Use `del lanes.vehlist[lane][vehicle_index]` to remove a vehicle (look at :any`purge_served_vehs` for example)
 
         :param intersection: keeps parameters related to the intersection
         :type intersection: Intersection
         """
         num_lanes = intersection._general_params.get('num_lanes')
-        self.vehlist = {l: [] for l in range(num_lanes)}
 
+        self.vehlist = {l: [] for l in range(num_lanes)}
         self.reset_first_unsrvd_indx(num_lanes)
         self.last_vehicle_indx = np.zeros(num_lanes, dtype=np.int) - 1
 
     @staticmethod
     def refresh_earliest_departure_times(lanes, intersection):
         """"
-        Computes the earliest departure time for all vehicles
+        Computes the earliest departure time for all vehicles.
+
+        :param lanes: includes all vehicles in all lanes
+        :type lanes: Lanes
+        :param intersection: inteserction parameters are kept here
+        :type intersection: Intersection
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -112,8 +116,8 @@ class Lanes:
         """
         When vehicles get served, the first index to the unserved vehicle in a lane should change.
 
-        :param n: number of served vehicle
         :param lane: the lane in which the vehicles are served
+        :param num_served: number of served vehicle
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -124,9 +128,10 @@ class Lanes:
 
     def increment_first_unsrvd_indx(self, lane):
         """
+        Adds the unserved vehicle index keeper by one.
 
-        :param lane:
-        :return:
+        :param lane: the lane index
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -136,9 +141,10 @@ class Lanes:
 
     def increment_last_veh_indx(self, lane):
         """
+        Adds the last vehicle index keeper by one.
 
-        :param lane:
-        :return:
+        :param lane: the lane index
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -148,22 +154,24 @@ class Lanes:
 
     def reset_first_unsrvd_indx(self, num_lanes):
         """
+        This is to reset the most important variable in this module which keeps track of the vehicle in which all ahead of it are served.
 
-        :param num_lanes:
-        :return:
+        :param num_lanes: the number of lanes
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
             April-2018
         """
-        self.first_unsrvd_indx = np.zeros(num_lanes, dtype=int)  # this is the most important variable in this module
+        self.first_unsrvd_indx = np.zeros(num_lanes, dtype=int)
 
     def decrement_last_veh_indx(self, lane, n):
         """
+        Mostly used when vehicles are served. However, other cases due to fusion inaccuracy are possible.
 
-        :param lane:
-        :param n:
-        :return:
+        :param lane: the lane index
+        :param n: the number of vehicles to be subtracted from index of this lane
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -177,9 +185,10 @@ class Lanes:
 
         .. note:: deletion also includes vehicle at ``indx``
 
-        :param lane: the lane number
+        :param lane: the lane index
         :type lane: int
         :param indx:  The index in which all vehicles with indices less than or equal to this get removed
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -192,18 +201,22 @@ class Lanes:
 
     def all_served(self, num_lanes):
         """
-        :return: True if all lanes are empty, False otherwise
+        Checks if all lanes are empty of vehicles.
+
+        :param num_lanes: number of lanes
+        :return: ``True`` if all lanes are empty, ``False`` otherwise
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
             April-2018
         """
 
-        indx = 0
-        while indx < num_lanes:
-            if not self.vehlist[indx]:
-                # list is empty
-                indx += 1
+        lane = 0
+        while lane < num_lanes:
+            if not self.vehlist[lane]:
+                # lane is not empty
+                lane += 1
             else:
                 # found a lane that has un-served vehicles in it
                 return False
@@ -250,8 +263,8 @@ class Vehicle:
         :param amin:            desirable deceleration rate in :math:`m/s^2`
         :param amax:            desired acceleration rate in :math:`m/s^2`
         :param indx:            the original row index in the input CSV file
-        :param intersection:
-        :type intersection:
+        :param intersection:    contains all the intersection parameters
+        :type intersection:     Intersection
 
         :param self.trajectory: keeps the trajectory points as columns of a :math:`3 \\times n` array that :math:`n` is ``MAX_NUM_TRAJECTORY_POINTS``
         :param self.first_trj_point_indx: points to the column of the ``trajectory`` array where the current point is stored. This gets updated as the time goes by.
@@ -284,12 +297,11 @@ class Vehicle:
         self.max_accel_rate = amax
         self.destination = dest
         self.desired_speed = des_speed
-        self.csv_indx = indx  # is used to find vehicle in the original CSV file
+        self.csv_indx = indx  # is used to find the vehicle in the original CSV file
 
         self.trajectory = np.zeros((3, intersection._general_params.get('max_num_traj_points')),
                                    dtype=np.float)  # the shape is important
-        self.first_trj_point_indx = 0
-        self.last_trj_point_indx = -1
+        self.first_trj_point_indx, self.last_trj_point_indx = 0, -1
         self.trajectory[:, self.first_trj_point_indx] = [det_time, dist, speed, ]
 
         if det_type == 1:
@@ -299,29 +311,24 @@ class Vehicle:
         self.reschedule_departure, self.freshly_scheduled = True, False
         self._times_sent_to_traj_planner = 0
 
-    def earliest_arrival_connected(self, max_speed, min_headway=0, t_earliest=0):
+    def earliest_arrival_connected(self, max_speed, min_headway=0.0, t_earliest=0.0):
         """
-        Uses the latest departure time under the following cases to compute the earliest time the connected vehicle can
-         reach the stop bar:
+        Uses the latest departure time under the following cases to compute the earliest time the connected vehicle can reach the stop bar:
             - Accelerate/Decelerate to the maximum allowable speed and maintain the speed till departure
             - Distance is short, it accelerates/decelerated to the best speed and departs
             - Departs at the minimum headway with its lead vehicle (only for followers close enough to their lead)
 
         .. warning::
             There are two consequences if this method:
-                - underestimates the earliest departure time: in this case, either the LP for the connected vehicles
-                    becomes infeasible sue to speed control constraints or the conventional car following model yields
-                    speed values higher than speed limit or even desired speed of the vehicle.
-                - overestimates the earliest departure time: This case costs efficiency since the vehicle may be
-                    scheduled for a time that earlier than that might have been possible.
+                - underestimates the earliest departure time: in this case, either the LP for the connected vehicles becomes infeasible sue to speed control constraints or the conventional car following model yields speed values higher than speed limit or even desired speed of the vehicle.
+                - overestimates the earliest departure time: This case costs efficiency since the vehicle may be scheduled for a time that earlier than that might have been possible.
 
-        :param veh:
+        :param veh: the subject vehicle
         :type veh: Vehicle
-        :param max_speed:
-        :param min_headway:
-        :param t_earliest: earliest timemap_veh_type2str of lead vehicle that is only needed if the vehicle is a
-                            follower vehicle
-        :return: The earliest departure time of the subject connected vehicle
+        :param max_speed: maximum speed limit
+        :param min_headway: minimum (saturation) headway at the stop bar
+        :param t_earliest: earliest timemap_veh_type2str of lead vehicle that is only needed if the vehicle is a follower vehicle
+        :return: The earliest departure time of the subject connected vehicle in seconds from the reference time
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -329,10 +336,8 @@ class Vehicle:
             April-2018
         """
         det_time, dist, speed = self.get_arrival_schedule()
-
         a = self.max_accel_rate if speed <= max_speed else self.max_decel_rate
         dist_to_max_speed = (max_speed ** 2 - speed ** 2) / (2 * a)
-
         if dist_to_max_speed <= dist:
             t = max(
                 det_time + (max_speed - speed) / a + (dist - dist_to_max_speed) / max_speed
@@ -347,7 +352,7 @@ class Vehicle:
         assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
         self.earliest_departure = t
 
-    def earliest_arrival_conventional(self, max_speed, min_headway=0, t_earliest=0):
+    def earliest_arrival_conventional(self, max_speed, min_headway=0.0, t_earliest=0.0):
         """
         Uses the latest departure time under the following cases to compute the earliest time the conventional vehicle can reach the stop bar:
             - Maintains the *estimated mean speed* till departure
@@ -357,7 +362,7 @@ class Vehicle:
         :type veh: Vehicle
         :param min_headway: when 0, the vehicle is a lead and this constraint relaxes
         :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
-        :return: The earliest departure time of the subject conventional vehicle
+        :return: The earliest departure time of the subject conventional vehicle in seconds from the reference time
 
         .. note::
             - Enter ``min_headway`` and ``t_earliest`` as zeros (default values), if a vehicle is the first in its lane.
@@ -372,7 +377,6 @@ class Vehicle:
         mean_speed_est = 0.5 * (speed + max_speed)
         t = max(det_time + dist / mean_speed_est, t_earliest + min_headway)
         assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
-
         self.earliest_departure = t
 
     def reset_trj_points(self, sc, lane, time_threshold, file):
@@ -427,16 +431,17 @@ class Vehicle:
         :param lane: the lane this vehicle is in (*for printing purpose only*)
         :param veh_indx: The index of this vehicle in its lane (*for printing purpose only*)
         :param print_signal_detail: ``True`` if we want to print schedule
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
             April-2018
         """
         assert all(map(operator.not_, np.isinf(
-            [t_scheduled, d_scheduled, s_scheduled]))), 'infinity found in the schedule'  # todo remove
+            [t_scheduled, d_scheduled, s_scheduled]))), "infinity found in the schedule"
 
-        min_dist_to_stop_bar = intersection._general_params.get('min_dist_to_stop_bar')
-        small_positive_num = intersection._general_params.get('small_positive_num')
+        min_dist_to_stop_bar = intersection._general_params.get("min_dist_to_stop_bar")
+        small_positive_num = intersection._general_params.get("small_positive_num")
 
         det_time, det_dist, det_speed = self.get_arrival_schedule()
         if det_dist >= min_dist_to_stop_bar and abs(
@@ -449,12 +454,15 @@ class Vehicle:
             self.trajectory[:, 1] = [t_scheduled, d_scheduled, s_scheduled]
             self.scheduled_departure = t_scheduled
 
-            if intersection._general_params.get('print_commandline'):
-                self.print_trj_points(lane, veh_indx, '@')
+            if intersection._general_params.get("print_commandline"):
+                self.print_trj_points(lane, veh_indx, "@")
 
     def set_poly(self, beta, t_ref):
         """
         Sets the coefficients that define the polynomial that defines trajectory of a connected vehicle
+
+        :param beta: coefficient vector of the assigned polynomial (after solving the LP with CPLEX)
+        :param t_ref: reference time in which the polynomial shall be evaluated from
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -467,6 +475,8 @@ class Vehicle:
     def set_first_trj_point_indx(self, indx):
         """Sets the fist column index that points to the trajectory start
 
+        :param indx: the index to the first trajectory point
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -476,6 +486,8 @@ class Vehicle:
 
     def set_last_trj_point_indx(self, indx):
         """Sets the last column index that points to the trajectory start
+
+        :param indx: the index to the last trajectory point
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -499,14 +511,15 @@ class Vehicle:
             April-2018
         """
         if code == 1:
-            return 'CAV'
+            return "CAV"
         elif code == 0:
-            return 'CNV'
+            return "CNV"
         else:
-            raise Exception('The numeric code of vehicle type is not known.')
+            raise Exception('The input numeric code of the vehicle type is not known.')
 
     def increment_times_sent_to_traj_planner(self):
         """Increments the count on how many times sent to trajectory planner
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -517,6 +530,7 @@ class Vehicle:
     def get_arrival_schedule(self):
         """
         :return: The triple :math:`(t,d,s)` corresponding to the arrival of subject vehicle
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -527,6 +541,11 @@ class Vehicle:
     def get_departure_schedule(self):
         """
         :return: The triple :math:`(t,d,s)` corresponding to the departure of subject vehicle
+
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
         """
         return self.trajectory[:, self.last_trj_point_indx]
 
@@ -536,27 +555,33 @@ class Vehicle:
 
         :param lane: zero-based lane number
         :param veh_indx: index to find the vehicle in its lane array
-        :param identifier: use ``*`` for optimized trajectory, and ``@`` for scheduled departure
+        :param identifier: is
+                            - ``*`` for optimized trajectory
+                            -``@`` for scheduled departure.
+
+        Example output to the commandline::
+
+            >@> CNV:xyz004:2nd in L04: (40.0 s, 499.9 m,  7.8 m/s) -> (157.1,  0.0, 17.9),   2 points,  0 attempts
+
+        which reads a conventional vehicle with ID of ``xyz004`` is the second vehicle in the fourth lane. It was detected at time 40 second, distance to stop bar of 499.9 meters, speed of 7.8 m/s and is scheduled to depart at time 157.1 second, at speed of 17.9 m/s before sent to the trajectory optimizer.
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
             April-2018
         """
         veh_type_str = self.map_veh_type2str(self.veh_type)
-        first_trj_indx, last_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx
         rank = '1st' if veh_indx == 0 else (
             '2nd' if veh_indx == 1 else ('3rd' if veh_indx == 2 else str(veh_indx + 1) + 'th'))
         lane_rank = rank + ' in L' + str(lane + 1).zfill(2)
+        det_t, det_d, det_s = self.get_arrival_schedule()
+        dep_t, dep_d, dep_s = self.get_departure_schedule()
+        first_trj_indx, last_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx
         print(
             '>' + identifier + '> ' + veh_type_str + ':' + str(self.ID) + ':' + lane_rank +
             ': ({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s) -> ({:>4.1f}, {:>4.1f}, {:>4.1f}), {:>3d} points, {:>2d} attempts'.format(
-                self.trajectory[0, first_trj_indx], self.trajectory[1, first_trj_indx],
-                self.trajectory[2, first_trj_indx],
-                self.trajectory[0, last_trj_indx], self.trajectory[1, last_trj_indx],
-                self.trajectory[2, last_trj_indx],
-                last_trj_indx - first_trj_indx + 1,
-                self._times_sent_to_traj_planner
-            ))
+                det_t, det_d, det_s, dep_t, dep_d, dep_s, last_trj_indx - first_trj_indx + 1,
+                self._times_sent_to_traj_planner))
 
 
 class Traffic:
@@ -585,6 +610,18 @@ class Traffic:
             - Sets the logging behaviour for outputting requested CSV files and auxiliary output vectors
             - Imports the CSV file that includes the traffic and sorts it
             - Initializes the first scenario number to run
+
+
+        :param intersection: containts intersection parameters
+        :type intersection: Intersection
+        :param sc: scenario number
+        :param start_time_stamp: local time stamp to include in the CSV filename
+
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
+
         """
         inter_name = intersection._general_params.get('inter_name')
         # get the path to the CSV file and load up the traffic
@@ -600,7 +637,6 @@ class Traffic:
         self.scenario_num = sc
 
         # _current_row_indx points to the row of last vehicle added (-1 if none has been yet)
-        # note this is cumulative and won't reset after a scenario is done
         self._current_row_indx = -1
 
         self._log_csv = intersection._general_params.get('log_csv')
@@ -627,8 +663,9 @@ class Traffic:
         Sets the departure time of an individual vehicle that is just served.
 
         :param dep_time: departure time in seconds
-        :param veh: vehicle to be recorder
+        :param veh: subject vehicle to be recorder
         :type veh: Vehicle
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -643,10 +680,14 @@ class Traffic:
         """
         Set the recorded values and save the  CSV at vehicle level.
 
+        :param inter_name: intersection name
+        :param start_time_stamp: local time stamp to include in the CSV filename
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
             April-2018
+
         """
         self.__all_vehicles['departure time'] = self._auxilary_departure_times
         self.__all_vehicles['ID'] = self._auxilary_ID
@@ -680,7 +721,7 @@ class Traffic:
 
     def get_first_detection_time(self):
         """
-        :return: The time when the first vehicle in current scenario shows up.
+        :return: The time when the first vehicle in current scenario shows up. Assumes the CSV file is not sorted in arrival time.
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -822,7 +863,7 @@ class Traffic:
 
 class TrajectoryPlanner:
     """
-    Plans trajectories of all type. This makes calls to `trajectory classes` methods.
+    Plans trajectories of all type. This makes calls to **trajectory** classes.
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>

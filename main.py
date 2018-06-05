@@ -31,24 +31,15 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
         University of Florida
     """
     intersection = Intersection(inter_name)
-
     lanes = Lanes(intersection)
-
-    # load entire traffic generated in CSV file
     traffic = Traffic(intersection, sc, start_time_stamp)
-
-    # get the time when first vehicle shows up
     first_detection_time = traffic.get_first_detection_time()
 
-    # Set the signal control method
     if method == "GA":
         signal = GA_SPaT(first_detection_time, intersection, sc, start_time_stamp)
     elif method == "pretimed":
         signal = Pretimed(first_detection_time, intersection, sc, start_time_stamp)
-
     trajectory_planner = TrajectoryPlanner(intersection)
-
-    # set the start time
     simulator = Simulator(first_detection_time)
 
     if intersection._general_params.get('log_csv'):
@@ -60,47 +51,47 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
             print("\n################################# CLOCK: {:>5.1f} SEC #################################".format(
                 simulation_time))
 
-        # remove/record served vehicles and phases
+        # update the assigned trajectories
         traffic.serve_update_at_stop_bar(lanes, simulation_time, intersection)
-        tester is not None and tester.check_order_in_lanes(lanes)
-        # add/update vehicles
+        tester is not None and intersection._general_params.get('do_traj_computation') and tester.check_order_in_lanes(
+            lanes)
+        # add/update the vehicles
         traffic.update_vehicles_info(lanes, simulation_time, intersection)
         # update earliest departure schedule
         lanes.refresh_earliest_departure_times(lanes, intersection)
-        # update SPaT
+        # update the SPaT
         signal.update_SPaT(intersection, simulation_time, sc)
 
-        # update space mean speed
+        # update the space mean speed
         volumes = traffic.get_volumes(lanes, intersection)
         critical_volume_ratio = 3_600 * volumes.max() / intersection._general_params.get('min_headway')
 
-        # DO SIGNAL OPTIMIZATION
+        # perform signal optimization
         signal.solve(lanes, intersection, critical_volume_ratio, trajectory_planner, tester)
 
         num_lanes = intersection._general_params.get('num_lanes')
         tester is not None and tester.test_departure_of_trj(lanes, intersection, [0] * num_lanes,
                                                             lanes.last_vehicle_indx)
 
-        # MOVE SIMULATION FORWARD
+        # move it forward
         if traffic.last_veh_arrived() and lanes.all_served(num_lanes):
             if intersection._general_params.get('log_csv'):
                 elapsed_time = perf_counter() - t_start  # THIS IS NOT SIMULATION TIME! IT'S JUST FOR TIMING THE ALGORITHM
                 simulator.record_sim_stats(sc, inter_name, start_time_stamp, elapsed_time)
-                # save the csv which has travel time column appended
                 traffic.save_veh_level_csv(inter_name, start_time_stamp)
-                traffic.close_trj_csv()  # cus this is written line by line
+                traffic.close_trj_csv()
                 signal.close_sig_csv()
                 intersection._general_params.get('print_commandline') and print(
                     "\n### ELAPSED TIME: {:>5d} ms ###".format(int(1000 * elapsed_time)))
             return
 
-        else:  # this is the last scenario but still some vehicles have not been served
+        else:
             simulator.next_sim_step()
 
 
 if __name__ == "__main__":
     # IMPORT NECESSARY PACKAGES
-    import sys, os
+    import sys, os, multiprocessing
     from datetime import datetime
     from time import perf_counter
 
@@ -132,6 +123,8 @@ if __name__ == "__main__":
         print(
             "\nProgram Started ################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
         start_time_stamp = datetime.now().strftime('%m-%d-%Y_%H:%M:%S')  # only for naming the CSV files
+        # for sc in range(1, 480 + 1):
+        #     multiprocessing.Process(target=run_avian, args=(inter_name, method, sc, start_time_stamp, tester,)).start()
         run_avian(inter_name, method, 1, start_time_stamp, tester)
     elif run_mode == 'realtime':
         raise Exception('real-time mode is not available yet.')

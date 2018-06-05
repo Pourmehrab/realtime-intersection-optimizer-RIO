@@ -132,16 +132,15 @@ class Signal:
         """
         if self.SPaT_sequence[-1] == phase:  # extend this phase
             self.SPaT_end[-1] = self.SPaT_start[-1] + actual_green + self._y + self._ar
-            if intersection._general_params.get('print_commandline'):
-                print('>-> Phase {:d} extended (ends @ {:>2.1f} sec)'.format(self.SPaT_sequence[-1],
-                                                                             self.SPaT_end[-1]))
+            intersection._general_params.get('print_commandline') and print(
+                '>-> Phase {:d} extended (ends @ {:>2.1f} sec)'.format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
         else:  # append a new phase
             self.SPaT_sequence += [phase]
             self.SPaT_green_dur += [actual_green]
             self.SPaT_start += [self.SPaT_end[-1]]
             self.SPaT_end += [self.SPaT_start[-1] + actual_green + self._y + self._ar]
-            if intersection._general_params.get('print_commandline'):
-                print('>>> Phase {:d} appended (ends @ {:>5.1f} sec)'.format(phase, self.SPaT_end[-1]))
+            intersection._general_params.get('print_commandline') and print(
+                '>>> Phase {:d} appended (ends @ {:>5.1f} sec)'.format(phase, self.SPaT_end[-1]))
 
     def update_SPaT(self, intersection, time_threshold, sc):
         """
@@ -340,7 +339,8 @@ class Signal:
                     veh.reschedule_departure = True
         return served_vehicle_time
 
-    def _set_non_base_scheduled_departures(self, lanes, scheduled_departure, trajectory_planner, intersection, tester):
+    def _set_non_base_scheduled_departures(self, lanes, first_unsrvd_indx, scheduled_departure, trajectory_planner,
+                                           intersection, tester):
         """
         Sets the scheduled departure in the trajectory of the vehicle and plans trajectory of vehicle.
 
@@ -350,10 +350,12 @@ class Signal:
 
         :param tester:
         :param lanes:
+        :param first_unsrvd_indx:
         :type lanes: Lanes
         :param scheduled_departure:
         :param trajectory_planner:
         :type trajectory_planner: TrajectoryPlanner
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -366,7 +368,7 @@ class Signal:
         for phase in phase_cover_set:
             time_phase_ends += self._ar
             for lane in self._pli.get(phase):
-                for veh_indx in range(lanes.first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
+                for veh_indx in range(first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
                     veh = lanes.vehlist.get(lane)[veh_indx]
                     t_earliest = veh.earliest_departure
                     if veh_indx == 0:
@@ -457,8 +459,8 @@ class Pretimed(Signal):
                                     range(num_lanes)}
             scheduled_departures = self._do_non_base_SPaT(lanes, num_lanes, lanes.first_unsrvd_indx,
                                                           scheduled_departures, any_unserved_vehicle, intersection)
-            self._set_non_base_scheduled_departures(lanes, scheduled_departures, trajectory_planner, intersection,
-                                                    tester)
+            self._set_non_base_scheduled_departures(lanes, self.first_unsrvd_indx, scheduled_departures,
+                                                    trajectory_planner, intersection, tester)
 
 
 # -------------------------------------------------------
@@ -595,14 +597,16 @@ class GA_SPaT(Signal):
                             badness = self._evaluate_badness(phase_seq, time_split, lanes, intersection, tester)
                             population[badness] = {'phase_seq': phase_seq, 'time_split': time_split}
 
-            if self.__best_GA_alt.get('SPaT').get('badness_measure') == large_positive_num:
-                print("GA failed to find any serving SPaT.")
+            assert self.__best_GA_alt.get('SPaT').get(
+                'badness_measure') < large_positive_num, "GA failed to find any serving SPaT"
 
             for indx, phase in enumerate(self.__best_GA_alt.get('SPaT').get('phase_seq')):
                 self._append_extend_phase(int(phase), self.__best_GA_alt.get('SPaT').get('time_split')[
                     indx] - self._y - self._ar, intersection)
-            self._set_non_base_scheduled_departures(lanes, self.__best_GA_alt.get('scheduled_departures'),
-                                                    trajectory_planner, intersection, tester)
+            if any(self.__best_GA_alt.get('any_unserved_vehicle')):
+                self._set_non_base_scheduled_departures(lanes, self.__best_GA_alt.get('first_unserved_indx'),
+                                                        self.__best_GA_alt.get('scheduled_departures'),
+                                                        trajectory_planner, intersection, tester)
 
     def _evaluate_badness(self, phase_seq, time_split, lanes, intersection, tester):
         """
