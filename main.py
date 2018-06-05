@@ -56,7 +56,7 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
         tester is not None and intersection._general_params.get('do_traj_computation') and tester.check_order_in_lanes(
             lanes)
         # add/update the vehicles
-        traffic.update_vehicles_info(lanes, simulation_time, intersection)
+        traffic.get_traffic_info(lanes, simulation_time, intersection)
         # update earliest departure schedule
         lanes.refresh_earliest_departure_times(lanes, intersection)
         # update the SPaT

@@ -730,7 +730,7 @@ class Traffic:
         """
         return np.nanmin(self.__all_vehicles['arrival time'].values)
 
-    def update_vehicles_info(self, lanes, simulation_time, intersection):
+    def get_traffic_info(self, lanes, simulation_time, intersection):
         """
         Objectives
             - Appends arrived vehicles from the CSV file to :any:`Lanes`
@@ -751,9 +751,7 @@ class Traffic:
         # SEE IF ANY NEW VEHICLES HAS ARRIVED
         indx = self._current_row_indx + 1
         max_indx = self.__all_vehicles.shape[0] - 1
-        t_earliest = 0.0  # keep this since in the loop it gets updated (necessary here)
         while indx <= max_indx and self.__all_vehicles['arrival time'][indx] <= simulation_time:
-
             # read the arrived vehicle's information
             lane = int(self.__all_vehicles['lane'][indx]) - 1  # CSV file has lanes coded in one-based
             det_id = 'xyz' + str(indx).zfill(3)  # pad zeros if necessary
@@ -771,11 +769,9 @@ class Traffic:
             veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed,
                           dest, length, amin, amax, indx, intersection)
 
-            if self._print_commandline:
-                print(
-                    r'\\\ ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane + 1).zfill(
-                        2) + ':' +
-                    '({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s)'.format(det_time, dist, speed))
+            self._print_commandline and print(
+                r'\\\ ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane + 1).zfill(
+                    2) + ':' + '({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s)'.format(det_time, dist, speed))
 
             # append it to its lane
             lanes.vehlist[lane] += [veh]  # recall it is an array
@@ -844,21 +840,20 @@ class Traffic:
                 for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
                     det_time, _, _ = veh.get_arrival_schedule()
                     dep_time, _, _ = veh.get_departure_schedule()
+                    assert dep_time > det_time, "cannot depart earlier than it arrived"
                     if dep_time < simulation_time:  # record/remove departure
                         last_veh_indx_to_remove += 1
-                        if intersection._general_params.get('print_commandline'):
-                            print('/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID +
-                                  '@({:>4.1f} s)'.format(dep_time))
-                        if self._log_csv:
-                            self.set_row_vehicle_level_csv(dep_time, veh)
+                        intersection._general_params.get('print_commandline') and print(
+                            '/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID + '@({:>4.1f} s)'.format(
+                                dep_time))
+                        self._log_csv and self.set_row_vehicle_level_csv(dep_time, veh)
                     elif det_time < simulation_time:  # record/remove expired points
                         veh.reset_trj_points(self.scenario_num, lane, simulation_time, self.full_traj_csv_file)
 
                     else:  # det_time of all behind this vehicle is larger, so we can stop.
                         break
 
-                if last_veh_indx_to_remove > -1:  # removes vehicles 0, 1, ..., veh_indx
-                    lanes.purge_served_vehs(lane, last_veh_indx_to_remove)
+                last_veh_indx_to_remove > -1 and lanes.purge_served_vehs(lane, last_veh_indx_to_remove)
 
 
 class TrajectoryPlanner:
