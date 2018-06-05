@@ -112,12 +112,12 @@ class Signal:
         # if phase_lane_incidence_one_based is None:  # todo add this to the readme
         #     phase_lane_incidence_one_based = phase_enumerator(num_lanes, self._lane_lane_incidence, self._inter_name)
 
-        self._pli = {p: [] for p in range(len(phase_lane_incidence_one_based))}
+        self._phase_lane_incidence = {p: set([]) for p in range(len(phase_lane_incidence_one_based))}
 
         # the whole following loop makes lanes and phases zero-based
-        for l, conf in phase_lane_incidence_one_based.items():
+        for lane_1, conf in phase_lane_incidence_one_based.items():
             for j in conf:
-                self._pli[l - 1].append(j - 1)  # these are lanes that belong to this phase
+                self._phase_lane_incidence[lane_1 - 1].add(j - 1)  # these are lanes that belong to this phase
 
     def _append_extend_phase(self, phase, actual_green, intersection):
         """
@@ -131,7 +131,7 @@ class Signal:
             April-2018
         """
         if self.SPaT_sequence[-1] == phase:  # extend this phase
-            self.SPaT_end[-1] = self.SPaT_start[-1] + actual_green + self._y + self._ar
+            self.SPaT_end[-1] = self.SPaT_end[-1] - self._y - self._ar + actual_green
             intersection._general_params.get('print_commandline') and print(
                 '>-> Phase {:d} extended (ends @ {:>2.1f} sec)'.format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
         else:  # append a new phase
@@ -153,6 +153,7 @@ class Signal:
 
         :param time_threshold: Normally the current clock of simulation or real-time in :math:`s`
         :param sc: scenario number to be recorded in CSV
+
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
@@ -255,7 +256,7 @@ class Signal:
                                 range(num_lanes)]
 
         for phase_indx, phase in enumerate(self.SPaT_sequence):
-            for lane in self._pli.get(phase):
+            for lane in self._phase_lane_incidence.get(phase):
                 if any_unserved_vehicle[lane]:
                     for veh_indx in range(lanes.first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
                         veh = lanes.vehlist.get(lane)[veh_indx]
@@ -367,7 +368,7 @@ class Signal:
         time_phase_ends = self.SPaT_end[-1] - self._ar
         for phase in phase_cover_set:
             time_phase_ends += self._ar
-            for lane in self._pli.get(phase):
+            for lane in self._phase_lane_incidence.get(phase):
                 for veh_indx in range(first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
                     veh = lanes.vehlist.get(lane)[veh_indx]
                     t_earliest = veh.earliest_departure
@@ -649,7 +650,7 @@ class GA_SPaT(Signal):
         green_starts = self.SPaT_end[-1] + lag_on_green
         for phase_indx, phase in enumerate(phase_seq):
             yellow_ends = green_starts - lag_on_green + time_split[phase_indx] - self._ar
-            for lane in self._pli.get(phase):
+            for lane in self._phase_lane_incidence.get(phase):
                 if any_unserved_vehicle[lane]:
                     for veh_indx in range(first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
                         veh = lanes.vehlist.get(lane)[veh_indx]
