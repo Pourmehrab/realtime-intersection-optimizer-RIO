@@ -350,7 +350,7 @@ class FollowerConventional(Trajectory):
         t_departure_relative = veh.scheduled_departure - curr_foll_t
         v_departure_relative = curr_foll_d / t_departure_relative
         # assert 0 <= v_departure_relative <= veh.desired_speed, "the scheduled departure was too early or car following yielded slow speeds"
-        assert 0 <= v_departure_relative, "C'mon! lead vehicle is made of solid! follower cannot get through it!"
+        assert 0 <= v_departure_relative, "C'mon! lead vehicle is made of solid, follower cannot get through it"
         t_augment = self.discretize_time_interval(self._trj_time_resolution, t_departure_relative)
         d_augment = [curr_foll_d - t * v_departure_relative for t in t_augment]
         v_augment = [v_departure_relative] * len(t_augment)
@@ -458,10 +458,9 @@ class LeadConnected(Trajectory):
         var_name = ["b_" + str(n) for n in range(self.k)]
         self._lp_model.variables.add(obj=[1.0] * self.k, names=var_name, lb=[-cplex.infinity] * self.k)
 
-        constraint = [var_name, [1.0] * self.k]  # default must be 1.0
+        constraint = [var_name, [1.0] * self.k]  # the default MUST be 1.0
         self._lp_model.linear_constraints.add(
-            lin_expr=
-            [[["b_0"], [1.0]], [["b_1"], [1.0]]] + [constraint] * (2 + 4 * self.m),
+            lin_expr=[[["b_0"], [1.0]], [["b_1"], [1.0]]] + [constraint] * (2 + 4 * self.m),
             senses=["E"] * 4 + ["G"] * self.m + ["L"] * self.m + ["G"] * self.m + ["L"] * self.m,
             rhs=[0.0] * 4 + [-intersection._general_params.get('max_speed')] * self.m + [0.0] * (3 * self.m),
             names=["det_dist", "det_speed", "dep_dist", "dep_speed"] + ["ub_speed_" + str(j) for j in range(self.m)] + [
@@ -628,7 +627,7 @@ class FollowerConnected(LeadConnected):
             >>> model = follower_connected_trj_optimizer.set_model(veh, lead_veh)
             >>> follower_connected_trj_optimizer.solve(veh, lead_veh)
 
-    :param GAP_CTRL_STARTS: This is the relative time when gap control constraints get added
+    :param GAP_CTRL_STARTS: This is the relative time (in seconds) when gap control constraints get added
 
     .. note: the minimum gap is set to half of the length of the lead vehicle.
 

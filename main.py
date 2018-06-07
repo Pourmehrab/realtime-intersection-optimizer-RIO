@@ -93,24 +93,21 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
 
 if __name__ == "__main__":
     # IMPORT NECESSARY PACKAGES
-    import sys, os, multiprocessing
+    import sys, os
     from datetime import datetime
     from time import perf_counter
-
-    from src.sig_ctrl_interface import snmp_phase_ctrl
     from src.simulator import Simulator
     from src.intersection import Intersection, Lanes, Traffic, TrajectoryPlanner
-    # Signal Optimizers
     from src.signal import GA_SPaT, Pretimed
+    from src.sig_ctrl_interface import snmp_phase_ctrl
 
-    # testing
     try:
         from test.unit_tests import SimTest
 
         tester = SimTest()
         tester.py_version_test()
         tester.arguments_check()
-        tester = None
+        # tester = None
     except ModuleNotFoundError:
         tester = None
 
@@ -119,14 +116,12 @@ if __name__ == "__main__":
     print("Python Version: ", sys.version)
 
     inter_name, method, run_mode = sys.argv[1], sys.argv[2], sys.argv[3]
-    not os.path.isdir('./log/' + inter_name) and os.mkdir('./log/' + inter_name)
+    not os.path.isdir('./log/' + inter_name) and os.makedirs('./log/' + inter_name)
 
     if run_mode == 'simulation':
         print(
             "\nProgram Started ################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
         start_time_stamp = datetime.now().strftime('%m-%d-%Y_%H:%M:%S')  # only for naming the CSV files
-        # for sc in range(1, 480 + 1):
-        #     multiprocessing.Process(target=run_avian, args=(inter_name, method, sc, start_time_stamp, tester,)).start()
         run_avian(inter_name, method, 1, start_time_stamp, tester)
     elif run_mode == 'realtime':
         raise Exception('real-time mode is not available yet.')
