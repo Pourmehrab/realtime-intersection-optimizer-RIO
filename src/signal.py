@@ -258,14 +258,14 @@ class Signal:
                 phase_indx] - self._ar
             for lane in self._phase_lane_incidence.get(phase):
                 if any_unserved_vehicle[lane]:
-                    for veh_indx, veh in enumerate(lanes.vehlist.get(lane), start=lanes.first_unsrvd_indx[lane]):
+                    for veh_indx, veh in enumerate(lanes.vehlist.get(lane)[lanes.first_unsrvd_indx[lane]:]):
                         if veh.reschedule_departure:
                             dep_after_lead_veh = lanes.vehlist.get(lane)[
                                                      veh_indx - 1].scheduled_departure + min_headway if veh_indx > 0 else -10.0
                             t_scheduled = max(veh.earliest_departure, green_starts, dep_after_lead_veh)
                             if t_scheduled <= yellow_ends:
                                 lanes.increment_first_unsrvd_indx(lane)
-                                t, d, s = t_scheduled, 0.0, min(max_speed, veh.des_speed)
+                                t, d, s = t_scheduled, 0.0, min(max_speed, veh.desired_speed)
                                 veh.set_scheduled_departure(t, d, s, lane, veh_indx, intersection)
 
                                 if do_traj_computation and veh.freshly_scheduled:  # freshly_scheduled is set within set_scheduled_departure method
@@ -318,7 +318,7 @@ class Signal:
         for phase in phase_cover_set:
             time_phase_ends += self._ar + lag_on_green
             for lane in self._phase_lane_incidence.get(phase):
-                for veh_indx, veh in enumerate(lanes.vehlist.get(lane), start=first_unsrvd_indx[lane]):
+                for veh_indx, veh in enumerate(lanes.vehlist.get(lane)[first_unsrvd_indx[lane]:]):
                     t_earliest = veh.earliest_departure
                     dep_after_lead_veh = lanes.vehlist.get(lane)[
                                              veh_indx - 1].scheduled_departure + min_headway if veh_indx > 0 else -10.0
@@ -355,8 +355,8 @@ class Signal:
 
         for lane in range(num_lanes):
             if any_unserved_vehicle[lane]:
-                for veh_indx, veh in enumerate(lanes.vehlist.get(lane), start=lanes.first_unsrvd_indx[lane]):
-                    t, d, s = scheduled_departures.get(lane)[veh_indx], 0.0, min(max_speed, veh.des_speed)
+                for veh_indx, veh in enumerate(lanes.vehlist.get(lane)[lanes.first_unsrvd_indx[lane]:]):
+                    t, d, s = scheduled_departures.get(lane)[veh_indx], 0.0, min(max_speed, veh.desired_speed)
                     veh.set_scheduled_departure(t, d, s, lane, veh_indx, intersection)
                     if do_traj_computation and veh.freshly_scheduled:
                         trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, tester, '#')

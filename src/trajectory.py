@@ -373,7 +373,7 @@ class FollowerConventional(Trajectory):
         :param v0: the speed at the beginning of the interval
         :param a: the constant acceleration rate within the interval
         :param t: the end time of the interval
-        :return: distance to stop bar and speed
+        :return: the distance to stop bar and speed at the end of the interval
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
