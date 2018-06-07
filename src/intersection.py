@@ -37,17 +37,14 @@ class Lanes:
 
     Objectives:
         - Keeps vehicles in order
-        - Keeps track of index of last vehicle in each lane (useful for applications in ``Signal()``)
+        - Keeps track of index of last vehicle in each lane (useful for applications in :any:`Signal`)
         - Removes served vehicles, and update first unserved and last vehicle's indices accordingly
         - Checks if all lanes are empty
-
-
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
         April-2018
-
     """
 
     def __init__(self, intersection):
@@ -430,7 +427,8 @@ class Vehicle:
         :param s_scheduled: scheduled departure speed (:math:`m/s`)
         :param lane: the lane this vehicle is in (*for printing purpose only*)
         :param veh_indx: The index of this vehicle in its lane (*for printing purpose only*)
-        :param print_signal_detail: ``True`` if we want to print schedule
+        :param intersection:
+        :type intersection: Intersection
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -880,7 +878,6 @@ class TrajectoryPlanner:
 
     def plan_trajectory(self, lanes, veh, lane, veh_indx, intersection, tester, identifier):
         """
-        :param tester:
         :param lanes:
         :type lanes: Lanes
         :param veh:
@@ -889,6 +886,8 @@ class TrajectoryPlanner:
         :param veh_indx:
         :param intersection:
         :param identifier: Shows type of assigned trajectory
+        :param tester: the test object
+        :type tester: test.unit_tests.SimTest
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>

@@ -22,6 +22,8 @@ def run_avian(inter_name, method, sc, start_time_stamp, tester):
     :param sc: scenario number (*should match the appendix of the input CSV filename*)
     :type sc: int
     :param start_time_stamp: The local time stamp to name the CSV files
+    :param tester: the test object
+    :type tester: test.unit_tests.SimTest
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
