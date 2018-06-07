@@ -2,7 +2,7 @@
 # File name: intersection.py       #
 # Author: Mahmoud Pourmehrab       #
 # Email: pourmehrab@gmail.com      #
-# Last Modified: May/30/2018       #
+# Last Modified: Jun/06/2018       #
 ####################################
 
 import os, csv, operator
@@ -374,7 +374,7 @@ class Vehicle:
             April-2018
         """
         det_time, dist, speed = self.get_arrival_schedule()
-        mean_speed_est = 0.5 * (speed + max_speed)
+        mean_speed_est = min(self.desired_speed, max_speed)  # assumption for lead conventional vehicle
         t = max(det_time + dist / mean_speed_est, t_earliest + min_headway)
         assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
         self.earliest_departure = t
@@ -454,8 +454,7 @@ class Vehicle:
             self.trajectory[:, 1] = [t_scheduled, d_scheduled, s_scheduled]
             self.scheduled_departure = t_scheduled
 
-            if intersection._general_params.get("print_commandline"):
-                self.print_trj_points(lane, veh_indx, "@")
+            intersection._general_params.get("print_commandline") and self.print_trj_points(lane, veh_indx, "@")
 
     def set_poly(self, beta, t_ref):
         """
@@ -917,6 +916,7 @@ class TrajectoryPlanner:
         # self._visualizer.export_matplot(0, 510, 20, 155)  # todo remove after testing
 
         if tester is not None:
+            assert veh.trajectory[1, veh.last_trj_point_indx] < 1, "vehicle did not get to stop bar"
             tester.test_planned_departure(veh)
             tester.test_trj_points(veh)
             veh_indx > 0 and tester.check_for_collision(veh, lead_veh)

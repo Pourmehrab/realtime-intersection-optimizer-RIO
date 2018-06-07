@@ -497,6 +497,9 @@ class GA_SPaT(Signal):
         inter_name, print_commandline = map(intersection._general_params.get, ['inter_name', 'print_commandline'])
         self.__GA_params = get_GA_parameters(inter_name)
 
+        self._max_phase_length = min(len(self.__GA_params.get('allowable_phases')),
+                               self.__GA_params.get('max_phase_length'))
+
         self._y, self._ar, self.min_green, self.max_green = get_signal_params(inter_name)
         self._ts_min, self._ts_max = self.min_green + self._y + self._ar, self.max_green + self._y + self._ar
         self._ts_diff = self.max_green - self.min_green
@@ -547,8 +550,6 @@ class GA_SPaT(Signal):
         any_unserved_vehicle = self._do_base_SPaT(lanes, intersection, trajectory_planner, tester)
         if any(any_unserved_vehicle):
             # if the base SPaT serves, don't bother doing GA # correct max phase length in case goes above the range
-            max_phase_length = min(len(self.__GA_params.get('allowable_phases')),
-                                   self.__GA_params.get('max_phase_length'))
             cycle_length = self._get_optimal_cycle_length(critical_volume_ratio, 1)
             self.__best_GA_alt = {
                 'SPaT': {'phase_seq': self._mutate_seq(1), 'time_split': self._mutate_timing(cycle_length, 1),
@@ -566,7 +567,7 @@ class GA_SPaT(Signal):
                 badness = self._evaluate_badness(phase_seq, time_split, lanes, intersection, tester)
                 population[badness] = {'phase_seq': phase_seq, 'time_split': time_split}
 
-            for phase_length in range(2, max_phase_length + 1):
+            for phase_length in range(2, self._max_phase_length + 1):
                 population = SortedDict({})  # keeps the individuals
                 cycle_length = self._get_optimal_cycle_length(critical_volume_ratio, phase_length)
                 half_max_indx = phase_length // 2  # need this for crossover
@@ -593,8 +594,8 @@ class GA_SPaT(Signal):
                             badness = self._evaluate_badness(phase_seq, time_split, lanes, intersection, tester)
                             population[badness] = {'phase_seq': phase_seq, 'time_split': time_split}
 
-            assert self.__best_GA_alt.get('SPaT').get(
-                'badness_measure') < large_positive_num, "GA failed to find any serving SPaT"
+            # assert self.__best_GA_alt.get('SPaT').get(
+            #     'badness_measure') < large_positive_num, "GA failed to find any serving SPaT"
 
             for indx, phase in enumerate(self.__best_GA_alt.get('SPaT').get('phase_seq')):
                 self._append_extend_phase(int(phase), self.__best_GA_alt.get('SPaT').get('time_split')[

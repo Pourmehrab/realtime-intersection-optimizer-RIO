@@ -326,7 +326,7 @@ class FollowerConventional(Trajectory):
             lead_a = (next_lead_s - curr_lead_s) / (next_lead_t - curr_lead_t)
             next_foll_t = next_lead_t
             dt = next_foll_t - curr_foll_t
-            # assert dt > 0, "non-monotonic time assigned"
+            assert dt > 0, "non-monotonic time assigned"
             # foll_a = self.wiedemann99(next_lead_d, next_lead_s, lead_a, lead_l, curr_foll_d, curr_foll_s, foll_s_des)
             foll_a = self.gipps(next_lead_d, next_lead_s, lead_l, curr_foll_d, curr_foll_s, foll_s_des,
                                 veh.max_decel_rate, veh.max_accel_rate, lead_veh.max_decel_rate, dt)
@@ -334,11 +334,11 @@ class FollowerConventional(Trajectory):
             next_foll_d, next_foll_s = self.comp_speed_distance(curr_foll_t, curr_foll_d, curr_foll_s, foll_a,
                                                                 next_foll_t, veh.max_decel_rate, veh.max_accel_rate,
                                                                 next_lead_d, lead_l)
-            # assert next_foll_s >= 0.0, "negative speed was derived to meet the min gap "
-            # assert all(map(operator.not_, np.isnan([next_foll_d, next_foll_s]))), 'nan found in trajectory'
-            # assert all(map(operator.not_, np.isinf([next_foll_d, next_foll_s]))), 'infinity found in the schedule'
-            # assert next_foll_d > next_lead_d, "lead vehicle is made of solid; follower cannot pass through it"
-            # assert next_foll_d - curr_foll_d < 1, "vehicle got farther to the stop bar"
+            assert next_foll_s >= 0.0, "negative speed was derived to meet the min gap "
+            assert all(map(operator.not_, np.isnan([next_foll_d, next_foll_s]))), 'nan found in trajectory'
+            assert all(map(operator.not_, np.isinf([next_foll_d, next_foll_s]))), 'infinity found in the schedule'
+            assert next_foll_d > next_lead_d, "lead vehicle is made of solid; follower cannot pass through it"
+            assert next_foll_d - curr_foll_d < 1, "vehicle got farther to the stop bar"
 
             veh.trajectory[:, foll_trj_indx] = [next_foll_t, next_foll_d, next_foll_s]
             curr_lead_t, curr_lead_d, curr_lead_s = next_lead_t, next_lead_d, next_lead_s
@@ -350,6 +350,7 @@ class FollowerConventional(Trajectory):
         t_departure_relative = veh.scheduled_departure - curr_foll_t
         v_departure_relative = curr_foll_d / t_departure_relative
         # assert 0 <= v_departure_relative <= veh.desired_speed, "the scheduled departure was too early or car following yielded slow speeds"
+        assert 0 <= v_departure_relative, "C'mon! lead vehicle is made of solid! follower cannot get through it!"
         t_augment = self.discretize_time_interval(self._trj_time_resolution, t_departure_relative)
         d_augment = [curr_foll_d - t * v_departure_relative for t in t_augment]
         v_augment = [v_departure_relative] * len(t_augment)

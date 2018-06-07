@@ -108,7 +108,7 @@ if __name__ == "__main__":
         tester = SimTest()
         tester.py_version_test()
         tester.arguments_check()
-        # tester = None
+        tester = None
     except ModuleNotFoundError:
         tester = None
 

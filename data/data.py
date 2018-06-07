@@ -76,7 +76,7 @@ def get_general_params(inter_name):
                 "lag_on_green": 1.0,
                 "max_num_traj_points": int(300),
                 "min_dist_to_stop_bar": 50,
-                "do_traj_computation": False,
+                "do_traj_computation": True,
                 "trj_time_resolution": 1.0,
                 "log_csv": True,
                 "print_commandline": True,
