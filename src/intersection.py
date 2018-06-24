@@ -344,8 +344,7 @@ class Vehicle:
             v_dest = np.sqrt(speed ** 2 + 2 * a * dist)
             t = max(
                 det_time + (max_speed - v_dest) / a  # min time to get to stop bar
-                , t_earliest + min_headway
-            )
+                , t_earliest + min_headway)
         assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
         self.earliest_departure = t
 
@@ -466,8 +465,8 @@ class Vehicle:
         :Date:
             April-2018
         """
-        self.poly['ref time'] = t_ref
-        self.poly['coeffs'] = beta
+        self.poly["ref time"] = t_ref
+        self.poly["coeffs"] = beta
 
     def set_first_trj_point_indx(self, indx):
         """Sets the fist column index that points to the trajectory start

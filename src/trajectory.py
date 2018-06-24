@@ -25,7 +25,7 @@ class Trajectory:
 
     .. note:: If want to limit the trajectory planning, there are two options:
             - If a particular vehicle is intended to be skipped, simply set ``vehicle.reschedule_departure`` to ``False``
-            - If the whole simulation is intended to be run without trajectory planer, set ``vehicle.reschedule_departure`` in ``main.py`` to False.
+            - If the whole simulation is intended to be run without trajectory planer, set ``vehicle.reschedule_departure`` in ``sim_main.py`` to False.
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -432,9 +432,9 @@ class LeadConnected(Trajectory):
         :param max_speed:
         :param min_headway:
         :param k: the size of array that keeps the polynomial (:math:`k-1` is the degree of polynomial)
-        :param k: int
+        :type k: int
         :param m: number of points (exclusive of boundaries) to control speed/acceleration
-        :param m: int
+        :type m: int
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
