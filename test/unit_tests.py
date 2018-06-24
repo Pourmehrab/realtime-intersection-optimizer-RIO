@@ -84,8 +84,8 @@ class SimTest(unittest.TestCase):
                         self.assertGreaterEqual(avg_speed, 0.0, msg="negative avg speed")
                     if veh_indx > 0:
                         lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
-                        lead_dep_time = lead_veh.trajectory[0, lead_veh.last_trj_point_indx]
-                        self.assertGreaterEqual(dep_time, lead_dep_time + min_headway - 0.1,
+                        lead_dep_time, _, _ = lead_veh.get_departure_schedule()
+                        self.assertGreaterEqual(dep_time, lead_dep_time + min_headway - 0.001,
                                                 msg="the follower cannot depart earlier than the lead.")
 
     def test_SPaT_alternative(self, scheduled_departures, start_unsrvd_indx, end_vehicle_indx, last_vehicle_indx,
@@ -178,12 +178,15 @@ class SimTest(unittest.TestCase):
                     _, lead_det_dist, _ = lead_veh.get_arrival_schedule()
                     self.assertLess(lead_det_dist, foll_det_dist, msg="follower is closer to stop bar than the lead")
 
-    def check_for_collision(self, veh, lead_veh):
+    @staticmethod
+    def check_for_collision(veh, lead_veh):
         """
         Tests every pair of trajectory points to respect zero gap.
 
-        :param veh:
-        :param lead_veh:
+        :param veh: follower
+        :type veh: Vehicle
+        :param lead_veh: leader
+        :type lead_veh: Vehicle
         :return:
 
         :Author:
@@ -194,4 +197,4 @@ class SimTest(unittest.TestCase):
         lead_d_vec, foll_d_vec = map(
             lambda veh_obj: veh_obj.trajectory[1, veh_obj.first_trj_point_indx:veh_obj.last_trj_point_indx + 1],
             [lead_veh, veh])
-        npt.assert_array_less(lead_d_vec, foll_d_vec[0:len(lead_d_vec)], err_msg="collision detected")
+        npt.assert_array_less(lead_d_vec, foll_d_vec[0:len(lead_d_vec)], err_msg="collision will happen")

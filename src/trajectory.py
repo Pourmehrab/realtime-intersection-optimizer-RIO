@@ -25,7 +25,7 @@ class Trajectory:
 
     .. note:: If want to limit the trajectory planning, there are two options:
             - If a particular vehicle is intended to be skipped, simply set ``vehicle.reschedule_departure`` to ``False``
-            - If the whole simulation is intended to be run without trajectory planer, set ``vehicle.reschedule_departure`` in ``main.py`` to False.
+            - If the whole simulation is intended to be run without trajectory planer, set ``vehicle.reschedule_departure`` in ``sim_main.py`` to False.
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -326,7 +326,7 @@ class FollowerConventional(Trajectory):
             lead_a = (next_lead_s - curr_lead_s) / (next_lead_t - curr_lead_t)
             next_foll_t = next_lead_t
             dt = next_foll_t - curr_foll_t
-            # assert dt > 0, "non-monotonic time assigned"
+            assert dt > 0, "non-monotonic time assigned"
             # foll_a = self.wiedemann99(next_lead_d, next_lead_s, lead_a, lead_l, curr_foll_d, curr_foll_s, foll_s_des)
             foll_a = self.gipps(next_lead_d, next_lead_s, lead_l, curr_foll_d, curr_foll_s, foll_s_des,
                                 veh.max_decel_rate, veh.max_accel_rate, lead_veh.max_decel_rate, dt)
@@ -334,11 +334,11 @@ class FollowerConventional(Trajectory):
             next_foll_d, next_foll_s = self.comp_speed_distance(curr_foll_t, curr_foll_d, curr_foll_s, foll_a,
                                                                 next_foll_t, veh.max_decel_rate, veh.max_accel_rate,
                                                                 next_lead_d, lead_l)
-            # assert next_foll_s >= 0.0, "negative speed was derived to meet the min gap "
-            # assert all(map(operator.not_, np.isnan([next_foll_d, next_foll_s]))), 'nan found in trajectory'
-            # assert all(map(operator.not_, np.isinf([next_foll_d, next_foll_s]))), 'infinity found in the schedule'
-            # assert next_foll_d > next_lead_d, "lead vehicle is made of solid; follower cannot pass through it"
-            # assert next_foll_d - curr_foll_d < 1, "vehicle got farther to the stop bar"
+            assert next_foll_s >= 0.0, "negative speed was derived to meet the min gap "
+            assert all(map(operator.not_, np.isnan([next_foll_d, next_foll_s]))), 'nan found in trajectory'
+            assert all(map(operator.not_, np.isinf([next_foll_d, next_foll_s]))), 'infinity found in the schedule'
+            assert next_foll_d > next_lead_d, "lead vehicle is made of solid; follower cannot pass through it"
+            assert next_foll_d - curr_foll_d < 1, "vehicle got farther to the stop bar"
 
             veh.trajectory[:, foll_trj_indx] = [next_foll_t, next_foll_d, next_foll_s]
             curr_lead_t, curr_lead_d, curr_lead_s = next_lead_t, next_lead_d, next_lead_s
@@ -350,6 +350,7 @@ class FollowerConventional(Trajectory):
         t_departure_relative = veh.scheduled_departure - curr_foll_t
         v_departure_relative = curr_foll_d / t_departure_relative
         # assert 0 <= v_departure_relative <= veh.desired_speed, "the scheduled departure was too early or car following yielded slow speeds"
+        assert 0 <= v_departure_relative, "C'mon! lead vehicle is made of solid, follower cannot get through it"
         t_augment = self.discretize_time_interval(self._trj_time_resolution, t_departure_relative)
         d_augment = [curr_foll_d - t * v_departure_relative for t in t_augment]
         v_augment = [v_departure_relative] * len(t_augment)
@@ -372,7 +373,7 @@ class FollowerConventional(Trajectory):
         :param v0: the speed at the beginning of the interval
         :param a: the constant acceleration rate within the interval
         :param t: the end time of the interval
-        :return: distance to stop bar and speed
+        :return: the distance to stop bar and speed at the end of the interval
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -431,9 +432,9 @@ class LeadConnected(Trajectory):
         :param max_speed:
         :param min_headway:
         :param k: the size of array that keeps the polynomial (:math:`k-1` is the degree of polynomial)
-        :param k: int
+        :type k: int
         :param m: number of points (exclusive of boundaries) to control speed/acceleration
-        :param m: int
+        :type m: int
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -457,10 +458,9 @@ class LeadConnected(Trajectory):
         var_name = ["b_" + str(n) for n in range(self.k)]
         self._lp_model.variables.add(obj=[1.0] * self.k, names=var_name, lb=[-cplex.infinity] * self.k)
 
-        constraint = [var_name, [1.0] * self.k]  # default must be 1.0
+        constraint = [var_name, [1.0] * self.k]  # the default MUST be 1.0
         self._lp_model.linear_constraints.add(
-            lin_expr=
-            [[["b_0"], [1.0]], [["b_1"], [1.0]]] + [constraint] * (2 + 4 * self.m),
+            lin_expr=[[["b_0"], [1.0]], [["b_1"], [1.0]]] + [constraint] * (2 + 4 * self.m),
             senses=["E"] * 4 + ["G"] * self.m + ["L"] * self.m + ["G"] * self.m + ["L"] * self.m,
             rhs=[0.0] * 4 + [-intersection._general_params.get('max_speed')] * self.m + [0.0] * (3 * self.m),
             names=["det_dist", "det_speed", "dep_dist", "dep_speed"] + ["ub_speed_" + str(j) for j in range(self.m)] + [
@@ -627,7 +627,7 @@ class FollowerConnected(LeadConnected):
             >>> model = follower_connected_trj_optimizer.set_model(veh, lead_veh)
             >>> follower_connected_trj_optimizer.solve(veh, lead_veh)
 
-    :param GAP_CTRL_STARTS: This is the relative time when gap control constraints get added
+    :param GAP_CTRL_STARTS: This is the relative time (in seconds) when gap control constraints get added
 
     .. note: the minimum gap is set to half of the length of the lead vehicle.
 
