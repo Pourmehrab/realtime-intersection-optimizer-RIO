@@ -121,7 +121,7 @@ if __name__ == "__main__":
     if run_mode == 'simulation':
         print(
             "\nProgram Started ################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
-        start_time_stamp = datetime.now().strftime('%m-%d-%Y_%H:%M:%S')  # only for naming the CSV files
+        start_time_stamp = datetime.now().strftime('%m-%d-%Y_%H-%M-%S')  # only for naming the CSV files
         run_avian(inter_name, method, 1, start_time_stamp, tester)
     elif run_mode == 'realtime':
         raise Exception('this script is just for optimization simulation.')
