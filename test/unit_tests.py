@@ -34,20 +34,6 @@ class SimTest(unittest.TestCase):
         """
         assert all(sys.version_info[i] >= req[i] for i in range(len(req))), "Please update python interpreter."
 
-    def arguments_check(self, req=({"13th16th", "TERL", "reserv", },
-                                   {"GA", "pretimed", },
-                                   {"simulation", "realtime", },)):
-        """
-
-        :param req: set of available intersections, signal opt methods, and run modes to choose
-
-        :Author:
-            Mahmoud Pourmehrab <pourmehrab@gmail.com>
-        :Date:
-            April-2018
-        """
-        assert all(sys.argv[i + 1] in req[i] for i in range(len(req))), "Check the input arguments and try again."
-
     def test_departure_of_trj(self, lanes, intersection, start_indx, end_indx):
         """
         Checks scheduled arrivals for:

@@ -106,8 +106,7 @@ if __name__ == "__main__":
 
         tester = SimTest()
         tester.py_version_test()
-        tester.arguments_check()
-        # tester = None
+        # tester = None # to bypass the testings in case speed matters
     except ModuleNotFoundError:
         tester = None
 
@@ -115,15 +114,11 @@ if __name__ == "__main__":
     print("Python Path: ", sys.executable)
     print("Python Version: ", sys.version)
 
-    inter_name, method, run_mode = sys.argv[1], sys.argv[2], sys.argv[3]
+    inter_name, method = "TERL", "GA"  # look into the documentation for more options
+    
     not os.path.isdir('./log/' + inter_name) and os.makedirs('./log/' + inter_name)
 
-    if run_mode == 'simulation':
-        print(
-            "\nProgram Started ################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
-        start_time_stamp = datetime.now().strftime('%m-%d-%Y_%H-%M-%S')  # only for naming the CSV files
-        run_avian(inter_name, method, 1, start_time_stamp, tester)
-    elif run_mode == 'realtime':
-        raise Exception('this script is just for optimization simulation.')
-
+    print("\nProgram Started ################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
+    start_time_stamp = datetime.now().strftime('%m-%d-%Y_%H-%M-%S')  # only for naming the CSV files
+    run_avian(inter_name, method, 1, start_time_stamp, tester)
     print("\nProgram Terminated.")
