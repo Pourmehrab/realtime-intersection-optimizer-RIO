@@ -5,7 +5,10 @@
 # Last Modified: Jun/06/2018       #
 ####################################
 
-import os, csv, operator
+import csv
+import operator
+import os
+
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -52,7 +55,7 @@ class Lanes:
         A dictionary of lists for keeping vehicles in the physical order they are in the lanes
 
         .. note::
-            - Python list has a method `insert()` to be used for adding vehicles in the middle of the list
+            - Python list has a method `insert(index)` can be used to add vehicles in the middle of the list
             - Use `del lanes.vehlist[lane][vehicle_index]` to remove a vehicle (look at :any`purge_served_vehs` for example)
 
         :param intersection: keeps parameters related to the intersection
@@ -71,7 +74,7 @@ class Lanes:
 
         :param lanes: includes all vehicles in all lanes
         :type lanes: Lanes
-        :param intersection: inteserction parameters are kept here
+        :param intersection: All the intersection parameters are kept here
         :type intersection: Intersection
 
         :Author:
@@ -315,13 +318,9 @@ class Vehicle:
             - Distance is short, it accelerates/decelerated to the best speed and departs
             - Departs at the minimum headway with its lead vehicle (only for followers close enough to their lead)
 
-        .. warning::
-            There are two consequences if this method:
-                - underestimates the earliest departure time: in this case, either the LP for the connected vehicles becomes infeasible sue to speed control constraints or the conventional car following model yields speed values higher than speed limit or even desired speed of the vehicle.
-                - overestimates the earliest departure time: This case costs efficiency since the vehicle may be scheduled for a time that earlier than that might have been possible.
+        .. note::
+            The main assumption is that the CAV *would* accelerate to the maximum speed and maintain the speed util departure.
 
-        :param veh: the subject vehicle
-        :type veh: Vehicle
         :param max_speed: maximum speed limit
         :param min_headway: minimum (saturation) headway at the stop bar
         :param t_earliest: earliest timemap_veh_type2str of lead vehicle that is only needed if the vehicle is a follower vehicle
@@ -354,15 +353,15 @@ class Vehicle:
             - Maintains the *estimated mean speed* till departure
             - Departs at the minimum headway with the vehicle in front
 
-        :param veh: subject vehicle
-        :type veh: Vehicle
         :param min_headway: when 0, the vehicle is a lead and this constraint relaxes
         :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
         :return: The earliest departure time of the subject conventional vehicle in seconds from the reference time
 
         .. note::
+            - Assumes the conventional vehicle would maintain its arrival speed if not restricted by other vehicles or the signal.
             - Enter ``min_headway`` and ``t_earliest`` as zeros (default values), if a vehicle is the first in its lane.
             - Make sure this is compatible with what implemented under :any:`FollowerConventional`
+            - There are consequences if this method underestimates/overestimates the earliest departure time.
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -370,7 +369,7 @@ class Vehicle:
             April-2018
         """
         det_time, dist, speed = self.get_arrival_schedule()
-        mean_speed_est = min(self.desired_speed, max_speed)  # assumption for lead conventional vehicle
+        mean_speed_est = speed  # min(self.desired_speed, max_speed)
         t = max(det_time + dist / mean_speed_est, t_earliest + min_headway)
         assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
         self.earliest_departure = t
@@ -544,6 +543,29 @@ class Vehicle:
             April-2018
         """
         return self.trajectory[:, self.last_trj_point_indx]
+
+    def scale_traj_points(self, final_indx, final_foll_t, dt_total):
+        """
+        Scales the trajectory of the vehicle according to scaling the trajectory along the time axes.
+
+        .. note::
+            Only should get called if points are delayed compared to the scheduled departure time
+
+        :return: ``self.trajectory`` will be scaled after this.
+
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            July-2018
+        """
+        trj = self.trajectory
+        curr_foll_t, curr_foll_d, _ = self.get_arrival_schedule()
+        t_f = self.scheduled_departure - dt_total
+
+        scale_factor = (t_f - curr_foll_t) / (final_foll_t - curr_foll_t)
+        for i in range(self.first_trj_point_indx, final_indx):
+            trj[0, i] = curr_foll_t + scale_factor * (trj[0, i] - curr_foll_t)
+            trj[2, i] /= scale_factor
 
     def print_trj_points(self, lane, veh_indx, identifier):
         """
@@ -762,8 +784,8 @@ class Traffic:
             amax = float(self.__all_vehicles['maxAcc'][indx])  # max acceleration
 
             # create the vehicle and get the earliest departure time
-            veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed,
-                          dest, length, amin, amax, indx, intersection)
+            veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx,
+                          intersection)
 
             self._print_commandline and print(
                 r'\\\ ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane + 1).zfill(

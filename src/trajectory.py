@@ -347,10 +347,17 @@ class FollowerConventional(Trajectory):
             lead_trj_indx += 1
             next_lead_t, next_lead_d, next_lead_s = lead_veh.trajectory[:, lead_trj_indx]
 
-        t_departure_relative = veh.scheduled_departure - curr_foll_t
+        assert curr_foll_d >= 0, "Passed the stop bar"
+        dt_total = curr_foll_t - veh.scheduled_departure + curr_foll_d / self._max_speed
+
+        if dt_total > 0:
+            veh.scale_traj_points(foll_trj_indx, curr_foll_t, dt_total)
+            curr_foll_t = veh.trajectory[0, foll_trj_indx - 1]
+            t_departure_relative = veh.scheduled_departure - curr_foll_t
+        else:
+            t_departure_relative = veh.scheduled_departure - curr_foll_t
         v_departure_relative = curr_foll_d / t_departure_relative
         # assert 0 <= v_departure_relative <= veh.desired_speed, "the scheduled departure was too early or car following yielded slow speeds"
-        assert 0 <= v_departure_relative, "C'mon! lead vehicle is made of solid, follower cannot get through it"
         t_augment = self.discretize_time_interval(self._trj_time_resolution, t_departure_relative)
         d_augment = [curr_foll_d - t * v_departure_relative for t in t_augment]
         v_augment = [v_departure_relative] * len(t_augment)
@@ -365,7 +372,7 @@ class FollowerConventional(Trajectory):
 
         .. note:: Checks for:
             - Speed should be positive
-            - Acceleration/deceleration constraints should be met.
+            - Acceleration/deceleration constraints should be met
             - Enforce a gap of equal to length of lead to the lead vehicle
 
         :param t0: the time at the beginning of the small interval that acceleration is constant
@@ -387,9 +394,6 @@ class FollowerConventional(Trajectory):
         s = a * dt + v0 if d >= d_min else (d0 - d_min) / dt
         d = d if d >= d_min else d_min
         return d, s
-
-
-import cplex
 
 
 # -------------------------------------------------------
@@ -421,6 +425,8 @@ class LeadConnected(Trajectory):
     """
 
     def __init__(self, intersection):
+        import cplex
+
         """
          Objectives:
             - Sets :math:`k, m` values
