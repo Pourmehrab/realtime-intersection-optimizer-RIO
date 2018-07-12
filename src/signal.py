@@ -8,9 +8,11 @@
 import csv
 import os
 from copy import deepcopy
+
 import numpy as np
 # from numba import jit
 from sortedcontainers import SortedDict
+
 from data.data import get_signal_params, get_conflict_dict, get_phases, get_pretimed_parameters, get_GA_parameters
 
 np.random.seed(2018)
@@ -284,7 +286,7 @@ class Signal:
         return any_unserved_vehicle  # it also set the lanes.first_unsrvd_indx but does not return it
 
     # @jit()
-    def _do_non_base_SPaT(self, lanes, scheduled_departures, first_unsrvd_indx, intersection):
+    def _do_non_base_SPaT(self, lanes, scheduled_departures, first_unsrvd_indx, intersection, tester):
         """
         Most of times the base SPaT prior to running a ``solve()`` method does not serve all vehicles. However, vehicles require trajectory to be provided. One way to address this is to assign them the best temporal trajectory which only has some of general qualities necessary for continuation of program. In this method we do the followings to compute the ``departure times`` of such trajectories:
 
@@ -318,14 +320,18 @@ class Signal:
         for phase in phase_cover_set:
             time_phase_ends += self._ar + lag_on_green
             for lane in self._phase_lane_incidence.get(phase):
-                for veh_indx, veh in enumerate(lanes.vehlist.get(lane)[first_unsrvd_indx[lane]:]):
+                start_indx = first_unsrvd_indx[lane]
+                for veh_indx, veh in enumerate(lanes.vehlist.get(lane)[start_indx:], start_indx):
                     t_earliest = veh.earliest_departure
-                    dep_after_lead_veh = lanes.vehlist.get(lane)[
-                                             veh_indx - 1].scheduled_departure + min_headway if veh_indx > 0 else -10.0
-                    t_scheduled = max(t_earliest, time_phase_ends, dep_after_lead_veh)
+                    dep_after_lead_veh = max(lanes.vehlist.get(lane)[
+                                                 veh_indx - 1].scheduled_departure, scheduled_departures[lane][
+                                                 veh_indx - 1]) if veh_indx > 0 else -10.0
+                    t_scheduled = max(t_earliest, time_phase_ends, dep_after_lead_veh + min_headway)
                     time_phase_ends = t_scheduled
                     scheduled_departures[lane][veh_indx] = t_scheduled
-
+        if tester is not None:
+            tester.test_SPaT_alternative(scheduled_departures, [0] * len(scheduled_departures), lanes.last_vehicle_indx,
+                                         lanes.last_vehicle_indx, min_headway)
         return scheduled_departures
 
     def _set_non_base_scheduled_departures(self, lanes, scheduled_departures, any_unserved_vehicle, trajectory_planner,
@@ -352,11 +358,13 @@ class Signal:
         """
         max_speed, num_lanes, min_headway, do_traj_computation = map(
             intersection._general_params.get, ["max_speed", "num_lanes", "min_headway", "do_traj_computation"])
-
         for lane in range(num_lanes):
             if any_unserved_vehicle[lane]:
                 for veh_indx, veh in enumerate(lanes.vehlist.get(lane)[lanes.first_unsrvd_indx[lane]:]):
                     t, d, s = scheduled_departures.get(lane)[veh_indx], 0.0, min(max_speed, veh.desired_speed)
+                    if veh_indx > 0:
+                        assert t + 0.01 >= min_headway + lanes.vehlist.get(lane)[
+                            veh_indx - 1].scheduled_departure, "violation in min headway"
                     veh.set_scheduled_departure(t, d, s, lane, veh_indx, intersection)
                     if do_traj_computation and veh.freshly_scheduled:
                         trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, tester, '#')
@@ -373,7 +381,7 @@ class Pretimed(Signal):
     .. note:: Assumptions:
         - The sequence and duration are pre-determined
         - Cycle length is pre-computed using the time budget concept in traffic flow theory
-            * min and max of 60 and 120 seconds bound the *cycle length*
+            *The min and max of 60 and 120 seconds bound the *cycle length*
 
 
 
@@ -585,7 +593,8 @@ class GA_SPaT(Signal):
                 self._append_extend_phase(int(phase), self.__best_GA_alt.get('SPaT').get('time_split')[
                     indx] - self._y - self._ar, intersection)
             scheduled_departures = self._do_non_base_SPaT(lanes, self.__best_GA_alt.get('scheduled_departures'),
-                                                          self.__best_GA_alt.get('first_unserved_indx'), intersection)
+                                                          self.__best_GA_alt.get('first_unserved_indx'), intersection,
+                                                          tester)
             self._set_non_base_scheduled_departures(lanes, scheduled_departures, any_unserved_vehicle,
                                                     trajectory_planner, intersection, tester)
 
@@ -635,16 +644,21 @@ class GA_SPaT(Signal):
             yellow_ends = green_starts - lag_on_green + time_split[phase_indx] - self._ar
             for lane in self._phase_lane_incidence.get(phase):
                 if any_unserved_vehicle[lane]:
-                    for veh_indx in range(first_unsrvd_indx[lane], lanes.last_vehicle_indx[lane] + 1):
-                        veh = lanes.vehlist.get(lane)[veh_indx]
+                    start_indx = first_unsrvd_indx[lane]
+                    for veh_indx, veh in enumerate(
+                            lanes.vehlist.get(lane)[start_indx:lanes.last_vehicle_indx[lane] + 1], start_indx):
                         t_earliest = veh.earliest_departure
                         if veh_indx == 0:
                             t_scheduled = max(t_earliest, green_starts)
                         else:
                             lead_veh_dep_time = lanes.vehlist.get(lane)[
-                                veh_indx - 1].scheduled_departure if veh_indx <= lanes.first_unsrvd_indx[lane] else \
+                                veh_indx - 1].scheduled_departure if veh_indx < lanes.first_unsrvd_indx[lane] else \
                                 temporary_scheduled_departures.get(lane)[veh_indx - 1]
                             t_scheduled = max(t_earliest, green_starts, lead_veh_dep_time + min_headway)
+                            if temporary_scheduled_departures.get(lane)[veh_indx - 1] > 0:
+                                assert t_scheduled > temporary_scheduled_departures.get(lane)[
+                                    veh_indx - 1], "min headway violated"
+
                         if t_scheduled <= yellow_ends:
                             first_unsrvd_indx[lane] += 1
                             travel_time = t_scheduled - veh.init_time
@@ -666,12 +680,14 @@ class GA_SPaT(Signal):
             (self.__GA_params.get('lambda') * mean_travel_time - throughput) * self.__GA_params.get(
                 'badness_accuracy')) if throughput > 0 else large_positive_num
         if self.__best_GA_alt.get('SPaT').get('badness_measure') > badness:
-            self.__best_GA_alt = {
-                'SPaT': {'phase_seq': tuple(phase_seq), 'time_split': tuple(time_split), 'badness_measure': badness},
-                'scheduled_departures': deepcopy(temporary_scheduled_departures),
-                'any_unserved_vehicle': any_unserved_vehicle,
-                'first_unserved_indx': first_unsrvd_indx,
-            }
+            self.__best_GA_alt = \
+                {
+                    'SPaT': {'phase_seq': tuple(phase_seq), 'time_split': tuple(time_split),
+                             'badness_measure': badness},
+                    'scheduled_departures': deepcopy(temporary_scheduled_departures),
+                    'any_unserved_vehicle': deepcopy(any_unserved_vehicle),
+                    'first_unserved_indx': deepcopy(first_unsrvd_indx),
+                }
         return badness
 
     def _get_optimal_cycle_length(self, critical_volume_ratio, phase_length):
@@ -692,8 +708,8 @@ class GA_SPaT(Signal):
         cycle_length = (phase_length * self._ar) / (1 - critical_volume_ratio)
         if cycle_length < 60:
             return 60
-        elif cycle_length > 150:
-            return 150
+        elif cycle_length > 240:
+            return 240
         else:
             return cycle_length
 

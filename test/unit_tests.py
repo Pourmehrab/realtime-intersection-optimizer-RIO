@@ -5,9 +5,10 @@
 # Last Modified: May/30/2018       #
 ####################################
 
+import operator
 import sys
 import unittest
-import operator
+
 import numpy as np
 import numpy.testing as npt
 
@@ -92,6 +93,7 @@ class SimTest(unittest.TestCase):
         """
         for lane in range(len(scheduled_departures)):
             for veh_indx in range(start_unsrvd_indx[lane], min(end_vehicle_indx[lane], last_vehicle_indx[lane] + 1)):
+                self.assertGreater(scheduled_departures.get(lane)[veh_indx], 0.0, msg="no departure time is scheduled")
                 if veh_indx > start_unsrvd_indx[lane]:
                     headway = scheduled_departures.get(lane)[veh_indx] - scheduled_departures.get(lane)[veh_indx - 1]
                     self.assertGreaterEqual(headway, min_headway - 0.01, msg="The min headway constraint is violated.")
