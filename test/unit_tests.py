@@ -75,12 +75,10 @@ class SimTest(unittest.TestCase):
                         self.assertGreaterEqual(dep_time, lead_dep_time + min_headway - 0.001,
                                                 msg="the follower cannot depart earlier than the lead.")
 
-    def test_SPaT_alternative(self, scheduled_departures, start_unsrvd_indx, end_vehicle_indx, last_vehicle_indx,
-                              min_headway):
+    def test_SPaT_alternative(self, lanes, start_unsrvd_indx, end_vehicle_indx, last_vehicle_indx, min_headway):
         """
         Checks for min headway to be respected in the schedule.
 
-        :param scheduled_departures:
         :param start_unsrvd_indx:
         :param end_vehicle_indx:
         :param last_vehicle_indx:
@@ -91,11 +89,14 @@ class SimTest(unittest.TestCase):
         :Date:
             April-2018
         """
-        for lane in range(len(scheduled_departures)):
-            for veh_indx in range(start_unsrvd_indx[lane], min(end_vehicle_indx[lane], last_vehicle_indx[lane] + 1)):
-                self.assertGreater(scheduled_departures.get(lane)[veh_indx], 0.0, msg="no departure time is scheduled")
-                if veh_indx > start_unsrvd_indx[lane]:
-                    headway = scheduled_departures.get(lane)[veh_indx] - scheduled_departures.get(lane)[veh_indx - 1]
+        for lane in range(len(start_unsrvd_indx)):
+            start_indx = start_unsrvd_indx[lane]
+            end_indx = min(end_vehicle_indx[lane], last_vehicle_indx[lane] + 1)
+            for veh_indx, veh in enumerate(lanes.vehlist.get(lane)[start_indx:end_indx], start_indx):
+                self.assertGreater(veh.best_temporary_departure, 0.0, msg="no departure time is scheduled")
+                if veh_indx > start_indx:
+                    headway = veh.best_temporary_departure - lanes.vehlist.get(lane)[
+                        veh_indx - 1].best_temporary_departure
                     self.assertGreaterEqual(headway, min_headway - 0.01, msg="The min headway constraint is violated.")
 
     def test_planned_departure(self, veh):

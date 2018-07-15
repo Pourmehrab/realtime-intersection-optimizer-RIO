@@ -37,10 +37,11 @@ def run_avian(inter_name, sig_method, sc, start_time_stamp, tester):
     traffic = Traffic(intersection, sc, start_time_stamp)
     first_detection_time = traffic.get_first_detection_time()
 
-    if sig_method == "GA":
+    if staticmethod == "MCF":
+        signal = MCF_SPaT(first_detection_time, intersection, sc, start_time_stamp)
+    elif sig_method == "GA":
         signal = GA_SPaT(first_detection_time, intersection, sc, start_time_stamp)
-    elif sig_method == "pretimed":
-        signal = Pretimed(first_detection_time, intersection, sc, start_time_stamp)
+
     trajectory_planner = TrajectoryPlanner(intersection)
     simulator = Simulator(first_detection_time)
 
@@ -98,7 +99,7 @@ if __name__ == "__main__":
     from time import perf_counter
     from src.simulator import Simulator
     from src.intersection import Intersection, Lanes, Traffic, TrajectoryPlanner
-    from src.signal import GA_SPaT, Pretimed
+    from src.signal import MCF_SPaT, GA_SPaT
     from src.sig_ctrl_interface import snmp_phase_ctrl
 
     try:
@@ -114,8 +115,8 @@ if __name__ == "__main__":
     print("Python Path: ", sys.executable)
     print("Python Version: ", sys.version)
 
-    inter_name, method = "TERL", "GA"  # look into the documentation for more options
-    
+    inter_name, method = "TERL", "MCF"  # look into the documentation for more options
+
     not os.path.isdir("./log/" + inter_name) and os.makedirs("./log/" + inter_name)
 
     print("\nProgram Started ################# CLOCK: {:>5.1f} SEC #################################".format(0.0))

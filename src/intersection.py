@@ -151,19 +151,7 @@ class Lanes:
             April-2018
         """
         self.last_vehicle_indx[lane] += 1
-
-    def reset_first_unsrvd_indx(self, num_lanes):
-        """
-        This is to reset the most important variable in this module which keeps track of the vehicle in which all ahead of it are served.
-
-        :param num_lanes: the number of lanes
-
-        :Author:
-            Mahmoud Pourmehrab <pourmehrab@gmail.com>
-        :Date:
-            April-2018
-        """
-        self.first_unsrvd_indx = np.zeros(num_lanes, dtype=int)
+        assert self.last_vehicle_indx[lane] + 1 == len(self.vehlist.get(lane)), "check this out"
 
     def decrement_last_veh_indx(self, lane, n):
         """
@@ -178,6 +166,36 @@ class Lanes:
             April-2018
         """
         self.last_vehicle_indx[lane] -= n
+        assert self.last_vehicle_indx[lane] + 1 == len(self.vehlist.get(lane)), "check this out"
+
+    def set_temp_as_best_departure(self, start_indx_vec, end_indx_vec):
+        """
+        Happens when the GA finds a good individual
+
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            July-2018
+        """
+        num_lanes = len(self.vehlist)
+        for lane in range(num_lanes):
+            start_indx = start_indx_vec[lane]
+            end_indx = min(end_indx_vec[lane], self.last_vehicle_indx[lane] + 1)
+            for veh_indx, veh in enumerate(self.vehlist.get(lane)[start_indx:end_indx], start_indx):
+                veh.set_best_temporary_departure(veh.temporary_departure)
+
+    def reset_first_unsrvd_indx(self, num_lanes):
+        """
+        This is to reset the most important variable in this module which keeps track of the vehicle in which all ahead of it are served.
+
+        :param num_lanes: the number of lanes
+
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
+        """
+        self.first_unsrvd_indx = np.zeros(num_lanes, dtype=int)
 
     def purge_served_vehs(self, lane, indx):
         """
@@ -307,7 +325,10 @@ class Vehicle:
         if det_type == 1:
             self.poly = {'ref time': 0.0, 'coeffs': np.zeros(intersection._general_params.get('k'))}
 
-        self.earliest_departure, self.scheduled_departure = 0.0, 0.0
+        self.earliest_departure = 0.0
+        self.temporary_departure = 0.0  # a place holder for the place holder when doing GA
+        self.best_temporary_departure = 0.0  # a place holder when doing GA
+        self.scheduled_departure = 0.0
         self.reschedule_departure, self.freshly_scheduled = True, False
         self._times_sent_to_traj_planner = 0
 
@@ -409,6 +430,32 @@ class Vehicle:
 
         assert trj_indx <= max_trj_indx, "The vehicle should've been removed instead of getting updated for trajectory points"
         self.set_first_trj_point_indx(trj_indx)
+
+    def set_temporary_departure(self, t):
+        """
+        Sets the temporary departure time. Mostly used for heuristic algorithms like GA.
+
+        :param t:
+
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            July-2018
+        """
+        self.temporary_departure = t
+
+    def set_best_temporary_departure(self, t):
+        """
+        Sets the best temporary departure time. Mostly used for heuristic algorithms like GA.
+
+        :param t:
+
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            July-2018
+        """
+        self.best_temporary_departure = t
 
     def set_scheduled_departure(self, t_scheduled, d_scheduled, s_scheduled, lane, veh_indx, intersection):
         """
