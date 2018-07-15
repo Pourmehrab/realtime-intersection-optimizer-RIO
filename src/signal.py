@@ -775,9 +775,9 @@ class MCF_SPaT(Signal):
 
         c0 = 1.0
         eps = 1.0
-        max_phase_length = max([len(phase) for phase in self._phase_lane_incidence])
+        max_phase_length = max([len(phase) for phase_indx, phase in self._phase_lane_incidence.items()])
 
-        for lane, phase_set in self._lane_phase_incidence:
+        for lane, phase_set in self._lane_phase_incidence.items():
             var_name_l2p = ["l" + str(lane) + "p" + str(phase_indx) for phase_indx in phase_set]
             n = len(var_name_l2p)
             self._mcf_model.variables.add(obj=[0.0] * n, names=var_name_l2p, lb=[0.0] * n, ub=[cplex.infinity] * n)
@@ -789,7 +789,7 @@ class MCF_SPaT(Signal):
                 names=["lane_" + str(lane)],
             )
 
-        for phase_indx, phase in enumerate(self._phase_lane_incidence):
+        for phase_indx, phase in self._phase_lane_incidence.items():
             var_name_p2p = ["p" + str(phase_indx) + "p" + str(phase_indx),
                             "pp" + str(phase_indx) + "pp" + str(phase_indx)]
             c1 = max_phase_length - len(phase) + c0
@@ -799,10 +799,10 @@ class MCF_SPaT(Signal):
             var_name_l2p = ["l" + str(lane) + "p" + str(phase_indx) for lane in phase]
             self._mcf_model.linear_constraints.add(
                 lin_expr=[[var_name_l2p + var_name_p2p, [1.0] * len(var_name_l2p) + [-1.0, -1.0]],
-                          [[var_name_p2p + ["p" + str(phase_indx) + "s"]], [1.0, 1.0, -1.0]]],
-                senses=["E"],
-                rhs=[0.0],
-                names=["phase_" + str(phase_indx)],
+                          [var_name_p2p + ["p" + str(phase_indx) + "s"], [1.0, 1.0, -1.0]]],
+                senses=["E"] * 2,
+                rhs=[0.0, 0.0],
+                names=["phase_" + str(phase_indx), "sink_" + str(phase_indx)],
             )
         self._mcf_model.linear_constraints.add(
             lin_expr=[[["p" + str(phase_indx) + "s" for phase_indx in self._phase_lane_incidence.keys()],
@@ -812,7 +812,10 @@ class MCF_SPaT(Signal):
             names=["sink_" + str(lane)],
         )
         self._mcf_model.write('mcf.lp')
+        self._mcf_model.write('mcf.sav')
+
         print('done')
+
         def solve(self, lanes, intersection, critical_volume_ratio, trajectory_planner, tester):
             """
 

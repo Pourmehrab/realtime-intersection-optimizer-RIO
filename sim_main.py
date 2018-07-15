@@ -37,7 +37,7 @@ def run_avian(inter_name, sig_method, sc, start_time_stamp, tester):
     traffic = Traffic(intersection, sc, start_time_stamp)
     first_detection_time = traffic.get_first_detection_time()
 
-    if staticmethod == "MCF":
+    if sig_method == "MCF":
         signal = MCF_SPaT(first_detection_time, intersection, sc, start_time_stamp)
     elif sig_method == "GA":
         signal = GA_SPaT(first_detection_time, intersection, sc, start_time_stamp)
