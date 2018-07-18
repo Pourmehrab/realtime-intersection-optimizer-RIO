@@ -34,7 +34,7 @@ class Signal:
 
         Instantiate like::
 
-            >>> signal = GA_SPaT/Pretimed(.)
+            >>> signal = MCF_SPaT(.)
 
         Perform :term:`SPaT` computation by::
 
@@ -783,52 +783,90 @@ class MCF_SPaT(Signal):
             self._mcf_model.variables.add(obj=[0.0] * n, names=var_name_l2p, lb=[0.0] * n, ub=[cplex.infinity] * n)
 
             self._mcf_model.linear_constraints.add(
-                lin_expr=[[var_name_l2p, [1.0] * n]],
-                senses=["E"],
-                rhs=[0.0],  # rhs changes
-                names=["lane_" + str(lane)],
-            )
+                lin_expr=[[var_name_l2p, [1.0] * n]], senses=["E"], rhs=[0.0], names=["lane_" + str(lane)], )
 
         for phase_indx, phase in self._phase_lane_incidence.items():
             var_name_p2p = ["p" + str(phase_indx) + "p" + str(phase_indx),
                             "pp" + str(phase_indx) + "pp" + str(phase_indx)]
             c1 = max_phase_length - len(phase) + c0
             self._mcf_model.variables.add(obj=[c1, c1 + eps, 0.0], names=var_name_p2p + ["p" + str(phase_indx) + "s"],
-                                          lb=[0.0] * 3, ub=[1.0, 5.0, cplex.infinity])  # upper bound changes
+                                          lb=[0.0] * 3, ub=[1.0, 5.0, cplex.infinity])
 
             var_name_l2p = ["l" + str(lane) + "p" + str(phase_indx) for lane in phase]
             self._mcf_model.linear_constraints.add(
                 lin_expr=[[var_name_l2p + var_name_p2p, [1.0] * len(var_name_l2p) + [-1.0, -1.0]],
-                          [var_name_p2p + ["p" + str(phase_indx) + "s"], [1.0, 1.0, -1.0]]],
-                senses=["E"] * 2,
-                rhs=[0.0, 0.0],
-                names=["phase_" + str(phase_indx), "sink_" + str(phase_indx)],
-            )
+                          [var_name_p2p + ["p" + str(phase_indx) + "s"], [1.0, 1.0, -1.0]]], senses=["E"] * 2,
+                rhs=[0.0, 0.0], names=["phase_" + str(phase_indx), "sink_" + str(phase_indx)], )
         self._mcf_model.linear_constraints.add(
             lin_expr=[[["p" + str(phase_indx) + "s" for phase_indx in self._phase_lane_incidence.keys()],
-                       [1.0] * len(self._phase_lane_incidence)]],
-            senses=["E"],
-            rhs=[0.0],  # rhs changes
-            names=["sink_" + str(lane)],
-        )
-        self._mcf_model.write('mcf.lp')
-        self._mcf_model.write('mcf.sav')
+                       [1.0] * len(self._phase_lane_incidence)]], senses=["E"], rhs=[0.0], names=["sink"], )
 
+    def solve(self, lanes, intersection, critical_volume_ratio, trajectory_planner, tester):
+        """
+
+        :param lanes:
+        :param intersection:
+        :param critical_volume_ratio:
+        :param trajectory_planner:
+        :param tester:
+        :return:
+
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            July-2018
+        """
+        num_lanes = intersection._general_params.get("num_lanes")
+        self._flush_upcoming_SPaTs(intersection)
+
+        demand = [float(len(lanes.vehlist.get(lane))) for lane in range(num_lanes)]
+        total_demand = sum(demand)
+        if total_demand > 0:
+            self._mcf_model.linear_constraints.set_rhs(
+                [("sink", total_demand), ] + list(zip(["lane_" + str(lane) for lane in range(num_lanes)], demand)))
+            self._mcf_model.variables.set_upper_bounds(list(zip(
+                ["pp" + str(phase_indx) + "pp" + str(phase_indx) for phase_indx in self._phase_lane_incidence],
+                [-1.0 + max(sum([demand[lane] for lane in phase]), 1.0) for phase_indx, phase in
+                 self._phase_lane_incidence.items()])))
+
+            try:
+                self._mcf_model.solve()
+            except cplex.exceptions.CplexSolverError:
+                raise Exception("Exception raised during solve")
+
+            if self._mcf_model.solution.get_status() in {1, }:
+                self._mcf_model.write('mcf.lp')
+                self._mcf_model.solution.write("mcf.sol")
+            else:
+                raise Exception("Check MCF CPLEX model")
+
+            phase_veh_incidence = np.array(self._mcf_model.solution.get_values(
+                ["p" + str(phase_indx) + "p" + str(phase_indx) for phase_indx in self._phase_lane_incidence]),
+                dtype=np.int) + np.array(self._mcf_model.solution.get_values(
+                ["pp" + str(phase_indx) + "pp" + str(phase_indx) for phase_indx in self._phase_lane_incidence]),
+                dtype=np.int)
+
+            phase_early_first = SortedDict({})
+            for phase_indx, phase in self._phase_lane_incidence.items():
+                if phase_veh_incidence[phase_indx] > 0:
+                    min_dep_time = min([lanes.vehlist.get(lane)[0].earliest_departure for lane in phase if
+                                        bool(lanes.vehlist.get(lane))])
+                    phase_early_first[min_dep_time] = phase_indx
+
+            phase_ordered = list(phase_early_first.keys())
+            served_veh_indx = [len(vehlist) - 1 for vehlist in lanes.vehlist]
+            vehicle_counter, num_vehicles = 0, sum(served_veh_indx) + num_lanes
+            green_dur = 0.0 if phase_ordered[0] != self.SPaT_sequence[-1] else -self.SPaT_green_dur[-1]
+            phase_indx, mod = -1, len(phase_ordered)
+            while vehicle_counter < num_vehicles:
+                phase_indx = (phase_indx + 1) % mod
+                for lane in self._phase_lane_incidence.get(phase_ordered[phase_indx]):
+                    if served_veh_indx[lane] < lanes.last_vehicle_indx[lane]:
+
+                        pass
+                        # check flags
+                        # optimize trajectories
+                        # set flags
+        else:
+            pass  # check if a dummy phase is needed
         print('done')
-
-        def solve(self, lanes, intersection, critical_volume_ratio, trajectory_planner, tester):
-            """
-
-            :param lanes:
-            :param intersection:
-            :param critical_volume_ratio:
-            :param trajectory_planner:
-            :param tester:
-            :return:
-
-            :Author:
-                Mahmoud Pourmehrab <pourmehrab@gmail.com>
-            :Date:
-                July-2018
-            """
-            pass

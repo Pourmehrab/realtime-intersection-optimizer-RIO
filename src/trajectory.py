@@ -575,7 +575,7 @@ class LeadConnected(Trajectory):
         Converts the polynomial trajectory to the trajectory points.
 
         :param f: the coefficients to define trajectory polynomial
-        :param f_prime: the coeeficients to define the speed polynomial
+        :param f_prime: the coefficients to define the speed polynomial
         :param departure_time_relative: span of the trajectory
         :return: t, d, s
 

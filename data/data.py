@@ -46,7 +46,8 @@ def get_general_params(inter_name):
     if inter_name == "13th16th":
         return {"inter_name": "13th16th",
                 "max_speed": 15.0,
-                "min_headway": 2.0,
+                "min_CAV_headway": 2.0,
+                "min_CNV_headway": 3.0,
                 "det_range": 500.0,
                 "k": int(10),
                 "m": int(20),
@@ -65,7 +66,8 @@ def get_general_params(inter_name):
     elif inter_name == "TERL":
         return {"inter_name": "TERL",
                 "max_speed": 17.8816,  # 40 mph
-                "min_headway": 1.5,
+                "min_CAV_headway": 1.5,
+                "min_CNV_headway": 2.0,
                 "det_range": 500.0,
                 "k": int(20),
                 "m": int(40),
@@ -84,7 +86,8 @@ def get_general_params(inter_name):
     elif inter_name == "reserv":
         return {"inter_name": "reserv",
                 "max_speed": 15.0,
-                "min_headway": 2.0,
+                "min_CAV_headway": 2.0,
+                "min_CNV_headway": 3.0,
                 "det_range": 500.0,
                 "k": int(20),
                 "m": int(40),
