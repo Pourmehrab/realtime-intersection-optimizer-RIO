@@ -12,7 +12,7 @@ from copy import deepcopy
 import numpy as np
 from sortedcontainers import SortedDict
 
-from data.data import get_signal_params, get_conflict_dict, get_phases, get_GA_parameters
+from data.data import get_GA_parameters
 
 np.random.seed(2018)
 
@@ -63,8 +63,8 @@ class Signal:
        """
         self._inter_name, num_lanes = map(intersection._general_params.get, ["inter_name", "num_lanes"])
 
-        self._set_lane_lane_incidence(num_lanes)
-        self._set_phase_lane_incidence(num_lanes)
+        self._set_lane_lane_incidence(intersection)
+        self._set_phase_lane_incidence(intersection)
 
         if intersection._general_params.get("log_csv"):
             filepath_sig = os.path.join(
@@ -76,7 +76,7 @@ class Signal:
         else:
             self.__sig_csv_file = None
 
-    def _set_lane_lane_incidence(self, num_lanes):
+    def _set_lane_lane_incidence(self, intersection):
         """
         This converts a dictionary of the form:
         key is a lane and value is a *set* of lanes that are in conflict with key (note numbering starts from 1 not 0) to ``lane_lane_incidence`` which includes the conflict matrix :math:`|L|\\times |L|` where element :math:`ij` is 1 if :math:`i` and :math:`j` are conflicting movements
@@ -88,14 +88,14 @@ class Signal:
         :Date:
             April-2018
         """
-        lane_lane_incidence_one_based = get_conflict_dict(self._inter_name)
+        lane_lane_incidence_one_based, num_lanes = map(intersection._general_params.get, ["lli", "num_lanes"])
 
         self._lane_lane_incidence = {lane: set([]) for lane in range(num_lanes)}
         for lane, conflicting_lane_set in lane_lane_incidence_one_based.items():  # the whole loop makes lanes zero-based
             self._lane_lane_incidence[lane - 1] = {conflicting_lane_1 - 1 for conflicting_lane_1 in
                                                    conflicting_lane_set}
 
-    def _set_phase_lane_incidence(self, num_lanes):
+    def _set_phase_lane_incidence(self, intersection):
         """
         Sets the phase-phase incidence matrix of the intersection
 
@@ -106,7 +106,7 @@ class Signal:
         :Date:
             April-2018
         """
-        phase_lane_incidence_one_based = get_phases(self._inter_name)
+        phase_lane_incidence_one_based, num_lanes = map(intersection._general_params.get, ["pli", "num_lanes"])
 
         self._phase_lane_incidence = {phase: set([]) for phase in range(len(phase_lane_incidence_one_based))}
         # the whole following loop makes lanes and phases zero-based
@@ -745,11 +745,10 @@ class MCF_SPaT(Signal):
         """
 
         super().__init__(intersection, sc, start_time_stamp)
-        inter_name, num_lanes, print_commandline = map(intersection._general_params.get,
-                                                       ["inter_name", "num_lanes", "print_commandline"])
-        self.__GA_params = get_GA_parameters(inter_name)
+        inter_name, num_lanes, print_commandline, self._y, self._ar, self.min_green, self.max_green = map(
+            intersection._general_params.get,
+            ["inter_name", "num_lanes", "print_commandline", "yellow", "allred", "min_green", "max_green"])
 
-        self._y, self._ar, self.min_green, self.max_green = get_signal_params(inter_name)
         self._ts_min, self._ts_max = self.min_green + self._y + self._ar, self.max_green + self._y + self._ar
         self._ts_diff = self.max_green - self.min_green
 
@@ -816,7 +815,9 @@ class MCF_SPaT(Signal):
         :Date:
             July-2018
         """
-        num_lanes = intersection._general_params.get("num_lanes")
+        num_lanes, min_CAV_headway, min_CNV_headway, lag_on_green = map(intersection._general_params.get,
+                                                                        ["num_lanes", "min_CAV_headway",
+                                                                         "min_CNV_headway", "lag_on_green"])
         self._flush_upcoming_SPaTs(intersection)
 
         demand = [float(len(lanes.vehlist.get(lane))) for lane in range(num_lanes)]
@@ -853,20 +854,35 @@ class MCF_SPaT(Signal):
                                         bool(lanes.vehlist.get(lane))])
                     phase_early_first[min_dep_time] = phase_indx
 
-            phase_ordered = list(phase_early_first.keys())
-            served_veh_indx = [len(vehlist) - 1 for vehlist in lanes.vehlist]
+            phase_ordered = list(phase_early_first.values())
+            served_veh_indx = [len(veh_list) - 1 for lane, veh_list in lanes.vehlist.items()]
             vehicle_counter, num_vehicles = 0, sum(served_veh_indx) + num_lanes
-            green_dur = 0.0 if phase_ordered[0] != self.SPaT_sequence[-1] else -self.SPaT_green_dur[-1]
+            # green_dur = 0.0 if phase_ordered[0] != self.SPaT_sequence[-1] else -self.SPaT_green_dur[-1]
+            phase_start_time = self.SPaT_end[-1] if phase_ordered[0] != self.SPaT_sequence[-1] else self.SPaT_start[-1]
+            phase_end_time = phase_start_time
             phase_indx, mod = -1, len(phase_ordered)
             while vehicle_counter < num_vehicles:
-                phase_indx = (phase_indx + 1) % mod
-                for lane in self._phase_lane_incidence.get(phase_ordered[phase_indx]):
-                    if served_veh_indx[lane] < lanes.last_vehicle_indx[lane]:
+                phase = phase_ordered[(phase_indx + 1) % mod]
+                served_veh_phase_counter = 0
+                for lane in self._phase_lane_incidence.get(phase):
+                    start_indx = served_veh_indx[lane]
+                    for veh_indx, veh in enumerate(lanes.vehlist.get(lane)[start_indx:], start_indx):
+                        t_scheduled = max(veh.earliest_departure, phase_start_time + lag_on_green)
+                        if veh_indx > 0:
+                            lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
+                            t_scheduled = max(t_scheduled,
+                                              lead_veh.scheduled_departure + min_CAV_headway if veh.veh_type == 0 else min_CNV_headway)
 
-                        pass
-                        # check flags
-                        # optimize trajectories
-                        # set flags
+                        if t_scheduled <= phase_start_time + self.max_green and served_veh_phase_counter < \
+                                phase_veh_incidence[phase_indx]:
+                            served_veh_indx[lane] += 1
+                            vehicle_counter += 1
+                            veh.set_scheduled_departure(t_scheduled)
+                            phase_end_time = max(t_scheduled, phase_end_time)  # todo phase_start_time + self.min_green
+                            # check flags
+                            # optimize trajectories
+                            # set flags
+                    self._append_extend_phase(int(phase_indx), phase_end_time - phase_start_time, intersection)
         else:
             pass  # check if a dummy phase is needed
         print('done')

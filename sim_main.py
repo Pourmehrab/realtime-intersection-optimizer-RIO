@@ -67,7 +67,8 @@ def run_avian(inter_name, sig_method, sc, start_time_stamp, tester):
 
         # update the space mean speed
         volumes = traffic.get_volumes(lanes, intersection)
-        critical_volume_ratio = 3_600 * volumes.max() / intersection._general_params.get("min_headway")
+        critical_volume_ratio = 3_600 * volumes.max() / intersection._general_params.get(
+            "min_CAV_headway")  # todo could depend on min_CNV_headway too
 
         # perform signal optimization
         signal.solve(lanes, intersection, critical_volume_ratio, trajectory_planner, tester)
@@ -100,7 +101,6 @@ if __name__ == "__main__":
     from src.simulator import Simulator
     from src.intersection import Intersection, Lanes, Traffic, TrajectoryPlanner
     from src.signal import MCF_SPaT, GA_SPaT
-    from src.sig_ctrl_interface import snmp_phase_ctrl
 
     try:
         from test.unit_tests import SimTest
