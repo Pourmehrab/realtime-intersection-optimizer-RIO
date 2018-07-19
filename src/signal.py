@@ -745,15 +745,16 @@ class MCF_SPaT(Signal):
         """
 
         super().__init__(intersection, sc, start_time_stamp)
-        inter_name, num_lanes, print_commandline, self._y, self._ar, self.min_green, self.max_green = map(
+        inter_name, num_lanes, print_commandline, self._y, self._ar, self.min_green, self.max_green, self._allowable_phases = map(
             intersection._general_params.get,
-            ["inter_name", "num_lanes", "print_commandline", "yellow", "allred", "min_green", "max_green"])
+            ["inter_name", "num_lanes", "print_commandline", "yellow", "allred", "min_green", "max_green",
+             "allowable_phases"])
 
         self._ts_min, self._ts_max = self.min_green + self._y + self._ar, self.max_green + self._y + self._ar
         self._ts_diff = self.max_green - self.min_green
 
         # add a dummy phase to initiate
-        self.SPaT_sequence = [self.__GA_params.get("allowable_phases")[0]]
+        self.SPaT_sequence = [self._allowable_phases[0]]
         self.SPaT_green_dur = [first_detection_time - self._y - self._ar]
         self.SPaT_start = [0.0]
         self.SPaT_end = [first_detection_time]
@@ -854,7 +855,17 @@ class MCF_SPaT(Signal):
                                         bool(lanes.vehlist.get(lane))])
                     phase_early_first[min_dep_time] = phase_indx
 
+            time_ordered = list(phase_early_first.keys())
             phase_ordered = list(phase_early_first.values())
+
+            if time_ordered[0] > self.SPaT_end[-1]:
+                phase = np.random.randint(0, len(self._phase_lane_incidence))
+                while phase == phase_ordered[0]:
+                    phase = np.random.randint(0, len(self._phase_lane_incidence))
+                self._append_extend_phase(phase,
+                                          time_ordered[0] - self.SPaT_end[-1] - self._y - self._ar - lag_on_green,
+                                          intersection)
+
             served_veh_indx = [len(veh_list) - 1 for lane, veh_list in lanes.vehlist.items()]
             vehicle_counter, num_vehicles = 0, sum(served_veh_indx) + num_lanes
             # green_dur = 0.0 if phase_ordered[0] != self.SPaT_sequence[-1] else -self.SPaT_green_dur[-1]
@@ -882,6 +893,7 @@ class MCF_SPaT(Signal):
                             # check flags
                             # optimize trajectories
                             # set flags
+                        # elif
                     self._append_extend_phase(int(phase_indx), phase_end_time - phase_start_time, intersection)
         else:
             pass  # check if a dummy phase is needed

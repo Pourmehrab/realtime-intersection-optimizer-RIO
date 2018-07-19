@@ -100,7 +100,7 @@ if __name__ == "__main__":
     from time import perf_counter
     from src.simulator import Simulator
     from src.intersection import Intersection, Lanes, Traffic, TrajectoryPlanner
-    from src.signal import MCF_SPaT, GA_SPaT
+    from src.signal import MCF_SPaT  # , GA_SPaT
 
     try:
         from test.unit_tests import SimTest
