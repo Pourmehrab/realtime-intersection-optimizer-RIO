@@ -88,12 +88,12 @@ class Signal:
         :Date:
             April-2018
         """
-        lane_lane_incidence_one_based, num_lanes = map(intersection._general_params.get, ["lli", "num_lanes"])
+        self._lane_lane_incidence, num_lanes = map(intersection._general_params.get, ["lli", "num_lanes"])
 
-        self._lane_lane_incidence = {lane: set([]) for lane in range(num_lanes)}
-        for lane, conflicting_lane_set in lane_lane_incidence_one_based.items():  # the whole loop makes lanes zero-based
-            self._lane_lane_incidence[lane - 1] = {conflicting_lane_1 - 1 for conflicting_lane_1 in
-                                                   conflicting_lane_set}
+        # self._lane_lane_incidence = {lane: set([]) for lane in range(num_lanes)}
+        # for lane, conflicting_lane_set in lane_lane_incidence_one_based.items():  # the whole loop makes lanes zero-based
+        #     self._lane_lane_incidence[lane - 1] = {conflicting_lane_1 - 1 for conflicting_lane_1 in
+        #                                            conflicting_lane_set}
 
     def _set_phase_lane_incidence(self, intersection):
         """
@@ -106,13 +106,13 @@ class Signal:
         :Date:
             April-2018
         """
-        phase_lane_incidence_one_based, num_lanes = map(intersection._general_params.get, ["pli", "num_lanes"])
+        self._phase_lane_incidence, num_lanes = map(intersection._general_params.get, ["pli", "num_lanes"])
 
-        self._phase_lane_incidence = {phase: set([]) for phase in range(len(phase_lane_incidence_one_based))}
+        # self._phase_lane_incidence = {phase: set([]) for phase in range(len(self._phase_lane_incidence))}
         # the whole following loop makes lanes and phases zero-based
-        for lane_1, nonconflicting_lane_set in phase_lane_incidence_one_based.items():
-            self._phase_lane_incidence[lane_1 - 1] = {nonconflicting_lane_1 - 1 for nonconflicting_lane_1 in
-                                                      nonconflicting_lane_set}
+        # for lane_1, nonconflicting_lane_set in phase_lane_incidence_one_based.items():
+        #     self._phase_lane_incidence[lane_1 - 1] = {nonconflicting_lane_1 - 1 for nonconflicting_lane_1 in
+        #                                               nonconflicting_lane_set}
 
         self._lane_phase_incidence = {lane: set([]) for lane in range(num_lanes)}
         for phase_indx, phase in self._phase_lane_incidence.items():
@@ -207,10 +207,6 @@ class Signal:
             del self.SPaT_green_dur[1:]
             del self.SPaT_start[1:]
             del self.SPaT_end[1:]
-            # self.SPaT_sequence = [self.SPaT_sequence[0]]
-            # self.SPaT_green_dur = [self.SPaT_green_dur[0]]
-            # self.SPaT_start = [self.SPaT_start[0]]
-            # self.SPaT_end = [self.SPaT_end[0]]
 
     def _do_base_SPaT(self, lanes, intersection, trajectory_planner, tester):
         """
@@ -866,17 +862,18 @@ class MCF_SPaT(Signal):
                                           time_ordered[0] - self.SPaT_end[-1] - self._y - self._ar - lag_on_green,
                                           intersection)
 
-            served_veh_indx = [len(veh_list) - 1 for lane, veh_list in lanes.vehlist.items()]
+            served_veh_indx = tuple(len(veh_list) - 1 for lane, veh_list in lanes.vehlist.items())
+            veh_indx_vec = [min(0, served_veh_indx[lane]) for lane in range(num_lanes)]
             vehicle_counter, num_vehicles = 0, sum(served_veh_indx) + num_lanes
             # green_dur = 0.0 if phase_ordered[0] != self.SPaT_sequence[-1] else -self.SPaT_green_dur[-1]
             phase_start_time = self.SPaT_end[-1] if phase_ordered[0] != self.SPaT_sequence[-1] else self.SPaT_start[-1]
-            phase_end_time = phase_start_time
-            phase_indx, mod = -1, len(phase_ordered)
+            phase, mod = -1, len(phase_ordered)
             while vehicle_counter < num_vehicles:
-                phase = phase_ordered[(phase_indx + 1) % mod]
+                phase_green_end_time = phase_start_time + self.min_green
+                phase = phase_ordered[(phase + 1) % mod]
                 served_veh_phase_counter = 0
                 for lane in self._phase_lane_incidence.get(phase):
-                    start_indx = served_veh_indx[lane]
+                    start_indx = veh_indx_vec[lane]
                     for veh_indx, veh in enumerate(lanes.vehlist.get(lane)[start_indx:], start_indx):
                         t_scheduled = max(veh.earliest_departure, phase_start_time + lag_on_green)
                         if veh_indx > 0:
@@ -885,16 +882,18 @@ class MCF_SPaT(Signal):
                                               lead_veh.scheduled_departure + min_CAV_headway if veh.veh_type == 0 else min_CNV_headway)
 
                         if t_scheduled <= phase_start_time + self.max_green and served_veh_phase_counter < \
-                                phase_veh_incidence[phase_indx]:
-                            served_veh_indx[lane] += 1
+                                phase_veh_incidence[phase]:
+                            veh_indx_vec[lane] += 1
                             vehicle_counter += 1
-                            veh.set_scheduled_departure(t_scheduled)
-                            phase_end_time = max(t_scheduled, phase_end_time)  # todo phase_start_time + self.min_green
+                            veh.set_scheduled_departure(t_scheduled, 0, veh.desired_speed, lane, veh_indx, intersection)
+                            phase_green_end_time = max(t_scheduled,
+                                                       phase_green_end_time)  # todo phase_start_time + self.min_green
                             # check flags
                             # optimize trajectories
                             # set flags
                         # elif
-                    self._append_extend_phase(int(phase_indx), phase_end_time - phase_start_time, intersection)
+                self._append_extend_phase(int(phase), phase_green_end_time - phase_start_time, intersection)
+                phase_start_time = self.SPaT_end[-1]
         else:
             pass  # check if a dummy phase is needed
-        print('done')
+        # print('done')

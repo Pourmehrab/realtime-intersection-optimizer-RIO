@@ -835,7 +835,7 @@ class Traffic:
                           intersection)
 
             self._print_commandline and print(
-                r'\\\ ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane + 1).zfill(
+                r'\\\ ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane ).zfill(
                     2) + ':' + '({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s)'.format(det_time, dist, speed))
 
             # append it to its lane
