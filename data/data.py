@@ -127,7 +127,7 @@ def get_general_params(inter_name):
                         12: {1, 2, 3, 8, 9, 10, 11},
                         13: {1, 2, 3, 4, 8, 9, 10, 11},
                         14: {1, 2, 3, 4, 5, 6, 7, 10, 11},
-                        15: {1, 2, 3, 4, 6, 7, 10, 11}, },  # todo make zero based
+                        15: {1, 2, 3, 4, 6, 7, 10, 11}, },
                 "allowable_phases": None,  # todo add this
                 "yellow": 1.5,
                 "allred": 1.0,

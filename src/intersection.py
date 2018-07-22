@@ -83,8 +83,9 @@ class Lanes:
             April-2018
         """
         # compute trajectory to get the earliest departure time
-        num_lanes, min_headway, max_speed = map(intersection._general_params.get,
-                                                ['num_lanes', 'min_headway', 'max_speed'])
+        num_lanes, min_CAV_headway, min_CNV_headway, max_speed = map(intersection._general_params.get,
+                                                                     ['num_lanes', "min_CAV_headway", "min_CNV_headway",
+                                                                      'max_speed'])
         for lane in range(num_lanes):
             if bool(lanes.vehlist[lane]):  # not an empty lane
                 for veh_indx, veh in enumerate(lanes.vehlist[lane]):
@@ -97,8 +98,9 @@ class Lanes:
                         else:
                             # vehicles is a follower connected vehicle
                             # happens when a connected vehicle is NOT the first in the lane
-                            veh.earliest_arrival_connected(max_speed, min_headway,
-                                                           lanes.vehlist.get(lane)[-2].earliest_departure)
+                            lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
+                            min_headway = min_CAV_headway if lead_veh.veh_type == 1 else min_CNV_headway
+                            veh.earliest_arrival_connected(max_speed, min_headway, lead_veh.earliest_departure)
                     elif veh.veh_type == 0:
                         if len(lanes.vehlist.get(lane)) == 1:
                             # vehicles is a lead conventional vehicle
@@ -107,8 +109,9 @@ class Lanes:
                         else:
                             # vehicles is a lead conventional vehicle
                             # happens when a conventional vehicle is NOT the first in the lane
-                            veh.earliest_arrival_conventional(max_speed, min_headway,
-                                                              lanes.vehlist.get(lane)[-2].earliest_departure)
+                            lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
+                            min_headway = min_CAV_headway if lead_veh.veh_type == 1 else min_CNV_headway
+                            veh.earliest_arrival_conventional(max_speed, min_headway, lead_veh.earliest_departure)
                     else:
                         raise Exception("The detected vehicle could not be classified.")
 
@@ -835,7 +838,7 @@ class Traffic:
                           intersection)
 
             self._print_commandline and print(
-                r'\\\ ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane ).zfill(
+                r'\\\ ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane).zfill(
                     2) + ':' + '({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s)'.format(det_time, dist, speed))
 
             # append it to its lane

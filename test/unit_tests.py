@@ -53,8 +53,9 @@ class SimTest(unittest.TestCase):
         :Date:
             April-2018
         """
-        num_lanes, max_speed, min_headway = map(intersection._general_params.get,
-                                                ['num_lanes', 'max_speed', 'min_headway'])
+        num_lanes, max_speed, min_CAV_headway, min_CNV_headway = map(intersection._general_params.get,
+                                                                     ['num_lanes', 'max_speed', "min_CAV_headway",
+                                                                      "min_CNV_headway"])
         for lane in range(num_lanes):
             if bool(lanes.vehlist[lane]):
                 for veh_indx in range(start_indx[lane], end_indx[lane]):
@@ -72,6 +73,7 @@ class SimTest(unittest.TestCase):
                     if veh_indx > 0:
                         lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
                         lead_dep_time, _, _ = lead_veh.get_departure_schedule()
+                        min_headway = min_CAV_headway if lead_veh.veh_type == 1 else min_CNV_headway
                         self.assertGreaterEqual(dep_time, lead_dep_time + min_headway - 0.001,
                                                 msg="the follower cannot depart earlier than the lead.")
 

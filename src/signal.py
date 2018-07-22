@@ -208,6 +208,11 @@ class Signal:
             del self.SPaT_start[1:]
             del self.SPaT_end[1:]
 
+            extra_green = self.SPaT_green_dur[0] - self.min_green
+            if extra_green > 0:
+                self.SPaT_green_dur[0] -= extra_green
+                self.SPaT_end[0] -= extra_green
+
     def _do_base_SPaT(self, lanes, intersection, trajectory_planner, tester):
         """
         This method aims to serve as many vehicles as possible given the available SPaT. Depending on the signal method, the set of current SPaT could be different. For example:
@@ -784,6 +789,7 @@ class MCF_SPaT(Signal):
         for phase_indx, phase in self._phase_lane_incidence.items():
             var_name_p2p = ["p" + str(phase_indx) + "p" + str(phase_indx),
                             "pp" + str(phase_indx) + "pp" + str(phase_indx)]
+
             c1 = max_phase_length - len(phase) + c0
             self._mcf_model.variables.add(obj=[c1, c1 + eps, 0.0], names=var_name_p2p + ["p" + str(phase_indx) + "s"],
                                           lb=[0.0] * 3, ub=[1.0, 5.0, cplex.infinity])
@@ -815,6 +821,7 @@ class MCF_SPaT(Signal):
         num_lanes, min_CAV_headway, min_CNV_headway, lag_on_green = map(intersection._general_params.get,
                                                                         ["num_lanes", "min_CAV_headway",
                                                                          "min_CNV_headway", "lag_on_green"])
+        num_phases = len(self._phase_lane_incidence)
         self._flush_upcoming_SPaTs(intersection)
 
         demand = [float(len(lanes.vehlist.get(lane))) for lane in range(num_lanes)]
@@ -822,10 +829,13 @@ class MCF_SPaT(Signal):
         if total_demand > 0:
             self._mcf_model.linear_constraints.set_rhs(
                 [("sink", total_demand), ] + list(zip(["lane_" + str(lane) for lane in range(num_lanes)], demand)))
-            self._mcf_model.variables.set_upper_bounds(list(zip(
-                ["pp" + str(phase_indx) + "pp" + str(phase_indx) for phase_indx in self._phase_lane_incidence],
-                [-1.0 + max(sum([demand[lane] for lane in phase]), 1.0) for phase_indx, phase in
-                 self._phase_lane_incidence.items()])))
+            # self._mcf_model.variables.set_upper_bounds(list(zip(
+            #     ["pp" + str(phase_indx) + "pp" + str(phase_indx) for phase_indx in self._phase_lane_incidence],
+            #     [-1.0 + max(sum([demand[lane] for lane in phase]), 1.0) for phase_indx, phase in
+            #      self._phase_lane_incidence.items()])))
+            self._mcf_model.variables.set_upper_bounds([("pp" + str(phase_indx) + "pp" + str(phase_indx),
+                                                         -1.0 + max(sum([demand[lane] for lane in phase]), 1.0)) for
+                                                        phase_indx, phase in self._phase_lane_incidence.items()])
 
             try:
                 self._mcf_model.solve()
@@ -839,9 +849,9 @@ class MCF_SPaT(Signal):
                 raise Exception("Check MCF CPLEX model")
 
             phase_veh_incidence = np.array(self._mcf_model.solution.get_values(
-                ["p" + str(phase_indx) + "p" + str(phase_indx) for phase_indx in self._phase_lane_incidence]),
+                ["p" + str(phase_indx) + "p" + str(phase_indx) for phase_indx in range(num_phases)]),
                 dtype=np.int) + np.array(self._mcf_model.solution.get_values(
-                ["pp" + str(phase_indx) + "pp" + str(phase_indx) for phase_indx in self._phase_lane_incidence]),
+                ["pp" + str(phase_indx) + "pp" + str(phase_indx) for phase_indx in range(num_phases)]),
                 dtype=np.int)
 
             phase_early_first = SortedDict({})
@@ -849,10 +859,10 @@ class MCF_SPaT(Signal):
                 if phase_veh_incidence[phase_indx] > 0:
                     min_dep_time = min([lanes.vehlist.get(lane)[0].earliest_departure for lane in phase if
                                         bool(lanes.vehlist.get(lane))])
-                    phase_early_first[min_dep_time] = phase_indx
+                    key = min_dep_time + 0.01 if min_dep_time in phase_early_first else min_dep_time
+                    phase_early_first[key] = phase_indx
 
-            time_ordered = list(phase_early_first.keys())
-            phase_ordered = list(phase_early_first.values())
+            time_ordered, phase_ordered = map(list, [phase_early_first.keys(), phase_early_first.values()])
 
             if time_ordered[0] > self.SPaT_end[-1]:
                 phase = np.random.randint(0, len(self._phase_lane_incidence))
@@ -862,15 +872,15 @@ class MCF_SPaT(Signal):
                                           time_ordered[0] - self.SPaT_end[-1] - self._y - self._ar - lag_on_green,
                                           intersection)
 
-            served_veh_indx = tuple(len(veh_list) - 1 for lane, veh_list in lanes.vehlist.items())
-            veh_indx_vec = [min(0, served_veh_indx[lane]) for lane in range(num_lanes)]
-            vehicle_counter, num_vehicles = 0, sum(served_veh_indx) + num_lanes
+            veh_indx_vec = [min(0, len(veh_list) - 1) for lane, veh_list in lanes.vehlist.items()]
+            vehicle_counter, num_vehicles = 0, int(total_demand)
             # green_dur = 0.0 if phase_ordered[0] != self.SPaT_sequence[-1] else -self.SPaT_green_dur[-1]
             phase_start_time = self.SPaT_end[-1] if phase_ordered[0] != self.SPaT_sequence[-1] else self.SPaT_start[-1]
-            phase, mod = -1, len(phase_ordered)
+            phase_circular_indx, mod = -1, len(phase_ordered)
             while vehicle_counter < num_vehicles:
                 phase_green_end_time = phase_start_time + self.min_green
-                phase = phase_ordered[(phase + 1) % mod]
+                phase_circular_indx = (phase_circular_indx + 1) % mod
+                phase = phase_ordered[phase_circular_indx]
                 served_veh_phase_counter = 0
                 for lane in self._phase_lane_incidence.get(phase):
                     start_indx = veh_indx_vec[lane]
@@ -885,6 +895,7 @@ class MCF_SPaT(Signal):
                                 phase_veh_incidence[phase]:
                             veh_indx_vec[lane] += 1
                             vehicle_counter += 1
+                            served_veh_phase_counter += 1
                             veh.set_scheduled_departure(t_scheduled, 0, veh.desired_speed, lane, veh_indx, intersection)
                             phase_green_end_time = max(t_scheduled,
                                                        phase_green_end_time)  # todo phase_start_time + self.min_green
@@ -896,4 +907,4 @@ class MCF_SPaT(Signal):
                 phase_start_time = self.SPaT_end[-1]
         else:
             pass  # check if a dummy phase is needed
-        # print('done')
+        print('done')
