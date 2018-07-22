@@ -5,9 +5,10 @@
 # Last Modified: May/30/2018       #
 ####################################
 
+import operator
 import sys
 import unittest
-import operator
+
 import numpy as np
 import numpy.testing as npt
 
@@ -34,20 +35,6 @@ class SimTest(unittest.TestCase):
         """
         assert all(sys.version_info[i] >= req[i] for i in range(len(req))), "Please update python interpreter."
 
-    def arguments_check(self, req=({"13th16th", "TERL", "reserv", },
-                                   {"GA", "pretimed", },
-                                   {"simulation", "realtime", },)):
-        """
-
-        :param req: set of available intersections, signal opt methods, and run modes to choose
-
-        :Author:
-            Mahmoud Pourmehrab <pourmehrab@gmail.com>
-        :Date:
-            April-2018
-        """
-        assert all(sys.argv[i + 1] in req[i] for i in range(len(req))), "Check the input arguments and try again."
-
     def test_departure_of_trj(self, lanes, intersection, start_indx, end_indx):
         """
         Checks scheduled arrivals for:
@@ -66,8 +53,9 @@ class SimTest(unittest.TestCase):
         :Date:
             April-2018
         """
-        num_lanes, max_speed, min_headway = map(intersection._general_params.get,
-                                                ['num_lanes', 'max_speed', 'min_headway'])
+        num_lanes, max_speed, min_CAV_headway, min_CNV_headway = map(intersection._general_params.get,
+                                                                     ['num_lanes', 'max_speed', "min_CAV_headway",
+                                                                      "min_CNV_headway"])
         for lane in range(num_lanes):
             if bool(lanes.vehlist[lane]):
                 for veh_indx in range(start_indx[lane], end_indx[lane]):
@@ -85,15 +73,14 @@ class SimTest(unittest.TestCase):
                     if veh_indx > 0:
                         lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
                         lead_dep_time, _, _ = lead_veh.get_departure_schedule()
-                        self.assertGreaterEqual(dep_time, lead_dep_time + min_headway - 0.001,
+                        min_headway = min_CAV_headway if veh.veh_type == 1 else min_CNV_headway
+                        self.assertGreaterEqual(dep_time, lead_dep_time + min_headway - 0.01,
                                                 msg="the follower cannot depart earlier than the lead.")
 
-    def test_SPaT_alternative(self, scheduled_departures, start_unsrvd_indx, end_vehicle_indx, last_vehicle_indx,
-                              min_headway):
+    def test_SPaT_alternative(self, lanes, start_unsrvd_indx, end_vehicle_indx, last_vehicle_indx, min_headway):
         """
         Checks for min headway to be respected in the schedule.
 
-        :param scheduled_departures:
         :param start_unsrvd_indx:
         :param end_vehicle_indx:
         :param last_vehicle_indx:
@@ -104,10 +91,14 @@ class SimTest(unittest.TestCase):
         :Date:
             April-2018
         """
-        for lane in range(len(scheduled_departures)):
-            for veh_indx in range(start_unsrvd_indx[lane], min(end_vehicle_indx[lane], last_vehicle_indx[lane] + 1)):
-                if veh_indx > start_unsrvd_indx[lane]:
-                    headway = scheduled_departures.get(lane)[veh_indx] - scheduled_departures.get(lane)[veh_indx - 1]
+        for lane in range(len(start_unsrvd_indx)):
+            start_indx = start_unsrvd_indx[lane]
+            end_indx = min(end_vehicle_indx[lane], last_vehicle_indx[lane] + 1)
+            for veh_indx, veh in enumerate(lanes.vehlist.get(lane)[start_indx:end_indx], start_indx):
+                self.assertGreater(veh.best_temporary_departure, 0.0, msg="no departure time is scheduled")
+                if veh_indx > start_indx:
+                    headway = veh.best_temporary_departure - lanes.vehlist.get(lane)[
+                        veh_indx - 1].best_temporary_departure
                     self.assertGreaterEqual(headway, min_headway - 0.01, msg="The min headway constraint is violated.")
 
     def test_planned_departure(self, veh):

@@ -6,6 +6,7 @@
 ####################################
 
 import operator
+
 import numpy as np
 
 
@@ -338,7 +339,7 @@ class FollowerConventional(Trajectory):
             assert all(map(operator.not_, np.isnan([next_foll_d, next_foll_s]))), 'nan found in trajectory'
             assert all(map(operator.not_, np.isinf([next_foll_d, next_foll_s]))), 'infinity found in the schedule'
             assert next_foll_d > next_lead_d, "lead vehicle is made of solid; follower cannot pass through it"
-            assert next_foll_d - curr_foll_d < 1, "vehicle got farther to the stop bar"
+            # assert next_foll_d - curr_foll_d < 1, "vehicle got farther to the stop bar"
 
             veh.trajectory[:, foll_trj_indx] = [next_foll_t, next_foll_d, next_foll_s]
             curr_lead_t, curr_lead_d, curr_lead_s = next_lead_t, next_lead_d, next_lead_s
@@ -347,13 +348,23 @@ class FollowerConventional(Trajectory):
             lead_trj_indx += 1
             next_lead_t, next_lead_d, next_lead_s = lead_veh.trajectory[:, lead_trj_indx]
 
-        t_departure_relative = veh.scheduled_departure - curr_foll_t
+        assert curr_foll_d >= 0, "Passed the stop bar"
+        dt_total = curr_foll_t - veh.scheduled_departure + curr_foll_d / self._max_speed
+
+        if dt_total > 0:
+            veh.scale_traj_points(foll_trj_indx, curr_foll_t, dt_total)
+            curr_foll_t = veh.trajectory[0, foll_trj_indx - 1]
+            t_departure_relative = veh.scheduled_departure - curr_foll_t
+        else:
+            t_departure_relative = veh.scheduled_departure - curr_foll_t
         v_departure_relative = curr_foll_d / t_departure_relative
         # assert 0 <= v_departure_relative <= veh.desired_speed, "the scheduled departure was too early or car following yielded slow speeds"
-        assert 0 <= v_departure_relative, "C'mon! lead vehicle is made of solid, follower cannot get through it"
-        t_augment = self.discretize_time_interval(self._trj_time_resolution, t_departure_relative)
-        d_augment = [curr_foll_d - t * v_departure_relative for t in t_augment]
-        v_augment = [v_departure_relative] * len(t_augment)
+        if self._trj_time_resolution <= t_departure_relative:
+            t_augment = self.discretize_time_interval(self._trj_time_resolution, t_departure_relative)
+            d_augment = [curr_foll_d - t * v_departure_relative for t in t_augment]
+            v_augment = [v_departure_relative] * len(t_augment)
+        else:
+            t_augment, d_augment, v_augment = [t_departure_relative], [0.0], [v_departure_relative]
         last_index = foll_trj_indx + len(t_augment)
         veh.trajectory[:, foll_trj_indx:last_index] = t_augment + curr_foll_t, d_augment, v_augment
         veh.set_last_trj_point_indx(last_index - 1)
@@ -365,7 +376,7 @@ class FollowerConventional(Trajectory):
 
         .. note:: Checks for:
             - Speed should be positive
-            - Acceleration/deceleration constraints should be met.
+            - Acceleration/deceleration constraints should be met
             - Enforce a gap of equal to length of lead to the lead vehicle
 
         :param t0: the time at the beginning of the small interval that acceleration is constant
@@ -386,10 +397,7 @@ class FollowerConventional(Trajectory):
         d_min = next_lead_d + lead_l
         s = a * dt + v0 if d >= d_min else (d0 - d_min) / dt
         d = d if d >= d_min else d_min
-        return d, s
-
-
-import cplex
+        return d, max(s, 0)
 
 
 # -------------------------------------------------------
@@ -421,6 +429,8 @@ class LeadConnected(Trajectory):
     """
 
     def __init__(self, intersection):
+        import cplex
+
         """
          Objectives:
             - Sets :math:`k, m` values
@@ -569,7 +579,7 @@ class LeadConnected(Trajectory):
         Converts the polynomial trajectory to the trajectory points.
 
         :param f: the coefficients to define trajectory polynomial
-        :param f_prime: the coeeficients to define the speed polynomial
+        :param f_prime: the coefficients to define the speed polynomial
         :param departure_time_relative: span of the trajectory
         :return: t, d, s
 
@@ -751,7 +761,7 @@ class FollowerConnected(LeadConnected):
 
         dt = t[0] - foll_det_time
         v = (foll_det_dist - d[0]) / dt
-        assert v >= 0, "negative speed for AV"
+        # assert v >= 0, "negative speed for AV"
         t_augment = self.discretize_time_interval(0, dt)
         d_augment = [foll_det_dist - v * t_i for t_i in t_augment]
         s_augment = [v] * len(t_augment)
