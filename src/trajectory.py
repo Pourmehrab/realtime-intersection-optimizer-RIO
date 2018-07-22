@@ -6,6 +6,7 @@
 ####################################
 
 import operator
+
 import numpy as np
 
 
@@ -338,7 +339,7 @@ class FollowerConventional(Trajectory):
             assert all(map(operator.not_, np.isnan([next_foll_d, next_foll_s]))), 'nan found in trajectory'
             assert all(map(operator.not_, np.isinf([next_foll_d, next_foll_s]))), 'infinity found in the schedule'
             assert next_foll_d > next_lead_d, "lead vehicle is made of solid; follower cannot pass through it"
-            assert next_foll_d - curr_foll_d < 1, "vehicle got farther to the stop bar"
+            # assert next_foll_d - curr_foll_d < 1, "vehicle got farther to the stop bar"
 
             veh.trajectory[:, foll_trj_indx] = [next_foll_t, next_foll_d, next_foll_s]
             curr_lead_t, curr_lead_d, curr_lead_s = next_lead_t, next_lead_d, next_lead_s
@@ -358,9 +359,12 @@ class FollowerConventional(Trajectory):
             t_departure_relative = veh.scheduled_departure - curr_foll_t
         v_departure_relative = curr_foll_d / t_departure_relative
         # assert 0 <= v_departure_relative <= veh.desired_speed, "the scheduled departure was too early or car following yielded slow speeds"
-        t_augment = self.discretize_time_interval(self._trj_time_resolution, t_departure_relative)
-        d_augment = [curr_foll_d - t * v_departure_relative for t in t_augment]
-        v_augment = [v_departure_relative] * len(t_augment)
+        if self._trj_time_resolution <= t_departure_relative:
+            t_augment = self.discretize_time_interval(self._trj_time_resolution, t_departure_relative)
+            d_augment = [curr_foll_d - t * v_departure_relative for t in t_augment]
+            v_augment = [v_departure_relative] * len(t_augment)
+        else:
+            t_augment, d_augment, v_augment = [t_departure_relative], [0.0], [v_departure_relative]
         last_index = foll_trj_indx + len(t_augment)
         veh.trajectory[:, foll_trj_indx:last_index] = t_augment + curr_foll_t, d_augment, v_augment
         veh.set_last_trj_point_indx(last_index - 1)
@@ -393,7 +397,7 @@ class FollowerConventional(Trajectory):
         d_min = next_lead_d + lead_l
         s = a * dt + v0 if d >= d_min else (d0 - d_min) / dt
         d = d if d >= d_min else d_min
-        return d, s
+        return d, max(s, 0)
 
 
 # -------------------------------------------------------
@@ -757,7 +761,7 @@ class FollowerConnected(LeadConnected):
 
         dt = t[0] - foll_det_time
         v = (foll_det_dist - d[0]) / dt
-        assert v >= 0, "negative speed for AV"
+        # assert v >= 0, "negative speed for AV"
         t_augment = self.discretize_time_interval(0, dt)
         d_augment = [foll_det_dist - v * t_i for t_i in t_augment]
         s_augment = [v] * len(t_augment)

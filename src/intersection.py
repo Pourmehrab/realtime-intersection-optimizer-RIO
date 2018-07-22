@@ -16,7 +16,6 @@ from scipy import stats
 from data.data import *
 from src.trajectory import LeadConventional, LeadConnected, FollowerConventional, FollowerConnected
 
-
 class Intersection:
     """
     Keeps intersection/simulation parameters
@@ -335,6 +334,33 @@ class Vehicle:
         self.reschedule_departure, self.freshly_scheduled = True, False
         self._times_sent_to_traj_planner = 0
 
+    def earliest_arrival_conventional(self, max_speed, min_headway=0.0, t_earliest=0.0):
+        """
+        Uses the latest departure time under the following cases to compute the earliest time the conventional vehicle can reach the stop bar:
+            - Maintains the *estimated mean speed* till departure
+            - Departs at the minimum headway with the vehicle in front
+
+        :param min_headway: when 0, the vehicle is a lead and this constraint relaxes
+        :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
+        :return: The earliest departure time of the subject conventional vehicle in seconds from the reference time
+
+        .. note::
+            - Assumes the conventional vehicle would maintain its arrival speed if not restricted by other vehicles or the signal.
+            - Enter ``min_headway`` and ``t_earliest`` as zeros (default values), if a vehicle is the first in its lane.
+            - Make sure this is compatible with what implemented under :any:`FollowerConventional`
+            - There are consequences if this method underestimates/overestimates the earliest departure time.
+
+        :Author:
+            Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        :Date:
+            April-2018
+        """
+        det_time, dist, speed = self.get_arrival_schedule()
+        mean_speed_est = min(self.desired_speed, 0.85 * max_speed)
+        t = max(det_time + dist / mean_speed_est, t_earliest + min_headway)
+        assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
+        self.earliest_departure = t
+
     def earliest_arrival_connected(self, max_speed, min_headway=0.0, t_earliest=0.0):
         """
         Uses the latest departure time under the following cases to compute the earliest time the connected vehicle can reach the stop bar:
@@ -368,33 +394,6 @@ class Vehicle:
             t = max(
                 det_time + (max_speed - v_dest) / a  # min time to get to stop bar
                 , t_earliest + min_headway)
-        assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
-        self.earliest_departure = t
-
-    def earliest_arrival_conventional(self, max_speed, min_headway=0.0, t_earliest=0.0):
-        """
-        Uses the latest departure time under the following cases to compute the earliest time the conventional vehicle can reach the stop bar:
-            - Maintains the *estimated mean speed* till departure
-            - Departs at the minimum headway with the vehicle in front
-
-        :param min_headway: when 0, the vehicle is a lead and this constraint relaxes
-        :param t_earliest: earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle
-        :return: The earliest departure time of the subject conventional vehicle in seconds from the reference time
-
-        .. note::
-            - Assumes the conventional vehicle would maintain its arrival speed if not restricted by other vehicles or the signal.
-            - Enter ``min_headway`` and ``t_earliest`` as zeros (default values), if a vehicle is the first in its lane.
-            - Make sure this is compatible with what implemented under :any:`FollowerConventional`
-            - There are consequences if this method underestimates/overestimates the earliest departure time.
-
-        :Author:
-            Mahmoud Pourmehrab <pourmehrab@gmail.com>
-        :Date:
-            April-2018
-        """
-        det_time, dist, speed = self.get_arrival_schedule()
-        mean_speed_est = speed  # min(self.desired_speed, max_speed)
-        t = max(det_time + dist / mean_speed_est, t_earliest + min_headway)
         assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
         self.earliest_departure = t
 
@@ -964,6 +963,7 @@ class TrajectoryPlanner:
         :Date:
             April-2018
         """
+
         veh.increment_times_sent_to_traj_planner()
         veh_type, departure_time = veh.veh_type, veh.scheduled_departure
         if veh_indx > 0 and veh_type == 1:  # Follower CAV
@@ -988,6 +988,6 @@ class TrajectoryPlanner:
             assert veh.trajectory[1, veh.last_trj_point_indx] < 1, "vehicle did not get to stop bar"
             tester.test_planned_departure(veh)
             tester.test_trj_points(veh)
-            veh_indx > 0 and tester.check_for_collision(veh, lead_veh)
+            # veh_indx > 0 and tester.check_for_collision(veh, lead_veh)
 
-        intersection._general_params.get('print_commandline') and veh.print_trj_points(lane, veh_indx, identifier)
+        intersection._general_params.get("print_commandline") and veh.print_trj_points(lane, veh_indx, identifier)

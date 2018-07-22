@@ -73,8 +73,8 @@ class SimTest(unittest.TestCase):
                     if veh_indx > 0:
                         lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
                         lead_dep_time, _, _ = lead_veh.get_departure_schedule()
-                        min_headway = min_CAV_headway if lead_veh.veh_type == 1 else min_CNV_headway
-                        self.assertGreaterEqual(dep_time, lead_dep_time + min_headway - 0.001,
+                        min_headway = min_CAV_headway if veh.veh_type == 1 else min_CNV_headway
+                        self.assertGreaterEqual(dep_time, lead_dep_time + min_headway - 0.01,
                                                 msg="the follower cannot depart earlier than the lead.")
 
     def test_SPaT_alternative(self, lanes, start_unsrvd_indx, end_vehicle_indx, last_vehicle_indx, min_headway):

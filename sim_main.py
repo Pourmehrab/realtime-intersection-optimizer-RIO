@@ -56,8 +56,7 @@ def run_avian(inter_name, sig_method, sc, start_time_stamp, tester):
 
         # update the assigned trajectories
         traffic.serve_update_at_stop_bar(lanes, simulation_time, intersection)
-        tester is not None and intersection._general_params.get("do_traj_computation") and tester.check_order_in_lanes(
-            lanes)
+        # tester is not None and intersection._general_params.get("do_traj_computation") and tester.check_order_in_lanes(lanes)
         # add/update the vehicles
         traffic.get_traffic_info(lanes, simulation_time, intersection)
         # update earliest departure schedule
@@ -121,5 +120,5 @@ if __name__ == "__main__":
 
     print("\nProgram Started ################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
     start_time_stamp = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")  # only for naming the CSV files
-    run_avian(inter_name, method, 1, start_time_stamp, tester)
+    run_avian(inter_name, method, 2, start_time_stamp, tester)
     print("\nProgram Terminated.")

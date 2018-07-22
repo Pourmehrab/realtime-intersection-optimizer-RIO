@@ -816,9 +816,9 @@ class MCF_SPaT(Signal):
         :Date:
             July-2018
         """
-        num_lanes, min_CAV_headway, min_CNV_headway, lag_on_green = map(intersection._general_params.get,
-                                                                        ["num_lanes", "min_CAV_headway",
-                                                                         "min_CNV_headway", "lag_on_green"])
+        num_lanes, min_CAV_headway, min_CNV_headway, lag_on_green, min_dist_to_stop_bar = map(
+            intersection._general_params.get,
+            ["num_lanes", "min_CAV_headway", "min_CNV_headway", "lag_on_green", "min_dist_to_stop_bar"])
         num_phases = len(self._phase_lane_incidence)
         self._flush_upcoming_SPaTs(intersection)
 
@@ -837,8 +837,7 @@ class MCF_SPaT(Signal):
                 raise Exception("Exception raised during solve")
 
             if self._mcf_model.solution.get_status() in {1, }:
-                self._mcf_model.write('mcf.lp')
-                self._mcf_model.solution.write("mcf.sol")
+                pass
             else:
                 raise Exception("Check MCF CPLEX model")
 
@@ -874,28 +873,32 @@ class MCF_SPaT(Signal):
                 phase_circular_indx = (phase_circular_indx + 1) % mod
                 phase = phase_ordered[phase_circular_indx]
                 served_veh_phase_counter = 0
+                flag = True
                 for lane in self._phase_lane_incidence.get(phase):
                     start_indx = veh_indx_vec[lane]
                     for veh_indx, veh in enumerate(lanes.vehlist.get(lane)[start_indx:], start_indx):
                         t_scheduled = max(veh.earliest_departure, phase_start_time + lag_on_green)
                         if veh_indx > 0:
                             lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
-                            t_scheduled = max(t_scheduled,
-                                              lead_veh.scheduled_departure + (
-                                                  min_CNV_headway if veh.veh_type == 0 else min_CAV_headway))
+                            t_scheduled = max(t_scheduled, lead_veh.scheduled_departure + (
+                                min_CAV_headway if veh.veh_type == 1 else min_CNV_headway))
 
-                        if t_scheduled <= phase_start_time + self.max_green and served_veh_phase_counter < \
-                                phase_veh_incidence[phase]:
+                        if served_veh_phase_counter < phase_veh_incidence[phase]: # t_scheduled <= phase_start_time + self.max_green and
                             veh_indx_vec[lane] += 1
                             vehicle_counter += 1
                             served_veh_phase_counter += 1
-                            veh.set_scheduled_departure(t_scheduled, 0, veh.desired_speed, lane, veh_indx, intersection)
-                            phase_green_end_time = max(t_scheduled,
-                                                       phase_green_end_time)  # todo phase_start_time + self.min_green
+                            phase_green_end_time = max(t_scheduled, phase_green_end_time)
+                            _, det_dist, _ = veh.get_arrival_schedule()
+                            flag = False
+                            if det_dist >= min_dist_to_stop_bar:
+                                veh.set_scheduled_departure(t_scheduled, 0, veh.desired_speed, lane, veh_indx,
+                                                            intersection)
+                                trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, tester,
+                                                                   '#')
+                                veh.freshly_scheduled = False
 
-                            trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, tester, '#')
-                            # veh.freshly_scheduled = False
-
+                if flag:
+                    print("done")
                 self._append_extend_phase(int(phase), phase_green_end_time - phase_start_time, intersection)
                 phase_start_time = self.SPaT_end[-1]
         else:
