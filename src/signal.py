@@ -881,7 +881,8 @@ class MCF_SPaT(Signal):
                         if veh_indx > 0:
                             lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
                             t_scheduled = max(t_scheduled,
-                                              lead_veh.scheduled_departure + min_CAV_headway if veh.veh_type == 0 else min_CNV_headway)
+                                              lead_veh.scheduled_departure + (
+                                                  min_CNV_headway if veh.veh_type == 0 else min_CAV_headway))
 
                         if t_scheduled <= phase_start_time + self.max_green and served_veh_phase_counter < \
                                 phase_veh_incidence[phase]:
