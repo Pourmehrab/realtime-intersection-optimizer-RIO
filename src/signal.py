@@ -774,8 +774,6 @@ class MCF_SPaT(Signal):
         self._mcf_model.set_warning_stream(None)
         self._mcf_model.set_results_stream(None)
 
-        c0 = 1.0
-        eps = 1.0
         max_phase_length = max([len(phase) for phase_indx, phase in self._phase_lane_incidence.items()])
 
         for lane, phase_set in self._lane_phase_incidence.items():
@@ -787,17 +785,17 @@ class MCF_SPaT(Signal):
                 lin_expr=[[var_name_l2p, [1.0] * n]], senses=["E"], rhs=[0.0], names=["lane_" + str(lane)], )
 
         for phase_indx, phase in self._phase_lane_incidence.items():
-            var_name_p2p = ["p" + str(phase_indx) + "p" + str(phase_indx),
-                            "pp" + str(phase_indx) + "pp" + str(phase_indx)]
+            var_name_p2p = ["p" + str(phase_indx) + "p" + str(phase_indx)]
+            var_name_p2s = ["p" + str(phase_indx) + "s"]
 
-            c1 = max_phase_length - len(phase) + c0
-            self._mcf_model.variables.add(obj=[c1, c1 + eps, 0.0], names=var_name_p2p + ["p" + str(phase_indx) + "s"],
-                                          lb=[0.0] * 3, ub=[1.0, 5.0, cplex.infinity])
+            c = max_phase_length - len(phase)
+            self._mcf_model.variables.add(obj=[c, 0.0], names=var_name_p2p + var_name_p2s,
+                                          lb=[0.0] * 2, ub=[0.0, cplex.infinity])
 
             var_name_l2p = ["l" + str(lane) + "p" + str(phase_indx) for lane in phase]
             self._mcf_model.linear_constraints.add(
-                lin_expr=[[var_name_l2p + var_name_p2p, [1.0] * len(var_name_l2p) + [-1.0, -1.0]],
-                          [var_name_p2p + ["p" + str(phase_indx) + "s"], [1.0, 1.0, -1.0]]], senses=["E"] * 2,
+                lin_expr=[[var_name_l2p + var_name_p2p, [1.0] * len(var_name_l2p) + [-1.0]],
+                          [var_name_p2p + var_name_p2s, [1.0, -1.0]]], senses=["E"] * 2,
                 rhs=[0.0, 0.0], names=["phase_" + str(phase_indx), "sink_" + str(phase_indx)], )
         self._mcf_model.linear_constraints.add(
             lin_expr=[[["p" + str(phase_indx) + "s" for phase_indx in self._phase_lane_incidence.keys()],
@@ -829,12 +827,8 @@ class MCF_SPaT(Signal):
         if total_demand > 0:
             self._mcf_model.linear_constraints.set_rhs(
                 [("sink", total_demand), ] + list(zip(["lane_" + str(lane) for lane in range(num_lanes)], demand)))
-            # self._mcf_model.variables.set_upper_bounds(list(zip(
-            #     ["pp" + str(phase_indx) + "pp" + str(phase_indx) for phase_indx in self._phase_lane_incidence],
-            #     [-1.0 + max(sum([demand[lane] for lane in phase]), 1.0) for phase_indx, phase in
-            #      self._phase_lane_incidence.items()])))
-            self._mcf_model.variables.set_upper_bounds([("pp" + str(phase_indx) + "pp" + str(phase_indx),
-                                                         -1.0 + max(sum([demand[lane] for lane in phase]), 1.0)) for
+            self._mcf_model.variables.set_upper_bounds([("p" + str(phase_indx) + "p" + str(phase_indx),
+                                                         sum([demand[lane] for lane in phase])) for
                                                         phase_indx, phase in self._phase_lane_incidence.items()])
 
             try:
@@ -850,8 +844,6 @@ class MCF_SPaT(Signal):
 
             phase_veh_incidence = np.array(self._mcf_model.solution.get_values(
                 ["p" + str(phase_indx) + "p" + str(phase_indx) for phase_indx in range(num_phases)]),
-                dtype=np.int) + np.array(self._mcf_model.solution.get_values(
-                ["pp" + str(phase_indx) + "pp" + str(phase_indx) for phase_indx in range(num_phases)]),
                 dtype=np.int)
 
             phase_early_first = SortedDict({})
@@ -899,12 +891,11 @@ class MCF_SPaT(Signal):
                             veh.set_scheduled_departure(t_scheduled, 0, veh.desired_speed, lane, veh_indx, intersection)
                             phase_green_end_time = max(t_scheduled,
                                                        phase_green_end_time)  # todo phase_start_time + self.min_green
-                            # check flags
-                            # optimize trajectories
-                            # set flags
-                        # elif
+
+                            trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, tester, '#')
+                            # veh.freshly_scheduled = False
+
                 self._append_extend_phase(int(phase), phase_green_end_time - phase_start_time, intersection)
                 phase_start_time = self.SPaT_end[-1]
         else:
             pass  # check if a dummy phase is needed
-        print('done')

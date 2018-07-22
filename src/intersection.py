@@ -490,9 +490,8 @@ class Vehicle:
         small_positive_num = intersection._general_params.get("small_positive_num")
 
         det_time, det_dist, det_speed = self.get_arrival_schedule()
-        if det_dist >= min_dist_to_stop_bar and abs(
-                t_scheduled - self.trajectory[0, self.last_trj_point_indx]) > small_positive_num:
-            self.freshly_scheduled = True
+        if det_dist >= min_dist_to_stop_bar:
+            # self.freshly_scheduled = True
 
             self.set_first_trj_point_indx(0)
             self.trajectory[:, 0] = [det_time, det_dist, det_speed]
