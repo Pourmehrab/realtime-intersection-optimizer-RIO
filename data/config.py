@@ -1,4 +1,4 @@
-# File name: data.py
+# File name: config.py
 # Authors: Mahmoud Pourmehrab / Aschkan Omidvar    
 # Emails: pourmehrab@gmail.com / aschkan@ufl.edu      
 # Updated (Pourmehrab): May/30/2018
