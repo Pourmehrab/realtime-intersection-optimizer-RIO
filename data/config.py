@@ -220,6 +220,41 @@ def get_general_params(inter_name):
                 "log_csv": True,
                 "print_commandline": True,
                 }
+    elif inter_name == "Gale&Std":
+        return {"inter_name": "Gale&Std",
+                "max_speed": 15.0,
+                "min_CAV_headway": 1.5,
+                "min_CNV_headway": 2.0,
+                "det_range": 500.0,
+                "k": int(20),
+                "m": int(40),
+                "num_lanes": int(8),
+                "phase_cover_set": (0, 1, 2, 3,),
+                "small_positive_num": 0.01,
+                "large_positive_num": 999_999_999,
+                "lli": None,  # todo add
+                "pli": {0: {0, 1},  # South Bound
+                        1: {2, 3},  # West Bound
+                        2: {4, 5},  # North Bound
+                        3: {6, 7},  # East Bound
+                        4: {0, 4},  # D th
+                        5: {2, 6},  # D th
+                        6: {1, 5},  # D l
+                        7: {3, 7},  # D l
+                        },
+                "allowable_phases": (0, 1, 2, 3,),
+                "yellow": 3.0,
+                "allred": 1.5,
+                "min_green": 5.0,
+                "max_green": 25.0,
+                "lag_on_green": 1.0,
+                "max_num_traj_points": int(1_000),
+                "min_dist_to_stop_bar": 50,
+                "do_traj_computation": True,
+                "trj_time_resolution": 1.0,
+                "log_csv": True,
+                "print_commandline": True,
+                }
     else:
         raise Exception("Simulation parameters are not known for this intersection.")
 
