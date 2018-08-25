@@ -12,7 +12,7 @@ from copy import deepcopy
 import numpy as np
 from sortedcontainers import SortedDict
 
-from data.data import get_GA_parameters
+from data.config import get_GA_parameters
 
 np.random.seed(2018)
 
@@ -389,7 +389,7 @@ class GA_SPaT(Signal):
 
     .. warning::
         - ``allowable_phases`` **must** cover all lanes or some would not get green at all.
-        - ``allowable_phases`` **must** be zero-based unlike what is provided in ``data.py``
+        - ``allowable_phases`` **must** be zero-based unlike what is provided in ``config.py``
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -441,7 +441,7 @@ class GA_SPaT(Signal):
 
         .. attention::
             - We define :term:`badness` (the opposite of fitness) as the measure that less of it is preferred for choosing a SPaT.
-            - GA has access to only the given subset of phases provided by ``allowable_phases`` from the full set in ``data.py`` file.
+            - GA has access to only the given subset of phases provided by ``allowable_phases`` from the full set in ``config.py`` file.
             - If an alternative beats the best known SPaT, it takes the ``__best_SPaT`` spot inside the :any:`_evaluate_badness` call.
             - GA tries cycles with 1 up to the defined number of phases and for each it computes the cycle length using the time budget concept in traffic flow theory.
             - GA keeps the alternative in a sorted dictionary that the key is ``badness`` and the value keeps the corresponding SPaT decision. This helps when we want to replace worse individuals with new ones from crossover.

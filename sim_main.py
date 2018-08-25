@@ -15,7 +15,7 @@ def run_avian(inter_name, sig_method, sc, start_time_stamp, tester):
         - The desired speed of vehicles shall not exceed the speed limit or they will be advised speeding
         - Use default values for pieces of information that are impossible to obtain, i.e. accel/decel rates and destination of conventional vehicles.
 
-    :param inter_name: The intersection name (should match the name given to identify an intersection in ``data.py``)
+    :param inter_name: The intersection name (should match the name given to identify an intersection in ``config.py``)
     :type inter_name: str
     :param sig_method: signalization method ``pretimed, GA, ...``
     :type sig_method: str

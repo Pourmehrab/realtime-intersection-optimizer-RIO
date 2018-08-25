@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from data.data import *
+from data.config import *
 from src.trajectory import LeadConventional, LeadConnected, FollowerConventional, FollowerConnected
 
 class Intersection:
@@ -661,7 +661,7 @@ class Traffic:
 
     .. note::
         - The CSV should be located under the ``/data/`` directory with the valid name consistent to what was inputted
-            as an argument and what exists in the ``data.py`` file.
+            as an argument and what exists in the ``config.py`` file.
         - The scenario number should be appended to the name of intersection followed by an underscore.
 
     :Author:
