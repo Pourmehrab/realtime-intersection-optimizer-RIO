@@ -1,14 +1,18 @@
+################################################
 # File name: config.py
-# Authors: Mahmoud Pourmehrab / Aschkan Omidvar    
+# Authors: Mahmoud Pourmehrab / Ash Omidvar
 # Emails: pourmehrab@gmail.com / aschkan@ufl.edu      
 # Updated (Pourmehrab): May/30/2018
-# Updated (Omidvar): May/28/2018     
-####################################
+# Updated (Omidvar): Dec/13/2018
+################################################
 
 # -------------------------------------------------------
-# GENERAL PARAMETERS
+# Vehicle and Intersection Configuration Parameters
 # -------------------------------------------------------
-def get_general_params(inter_name):
+import scipy.io
+
+
+def load_inter_params(inter_name):
     """
     :return:
         - inter_name: intersection name
@@ -79,9 +83,12 @@ def get_general_params(inter_name):
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        Ash Omidvar <aschkan@ufl.edu>
     :Date:
         April-2018
+        Dec-2018
     """
+
     if inter_name == "13th16th":
         return {"inter_name": "13th16th",
                 "max_speed": 15.0,
@@ -214,12 +221,13 @@ def get_general_params(inter_name):
                 "min_green": 5.0,
                 "max_green": 40.0,
                 "lag_on_green": 1.0,
-                "max_num_traj_points": int(1_000),
+                "max_num_traj_points": int(1_0000),
                 "min_dist_to_stop_bar": 50,
                 "do_traj_computation": False,
                 "trj_time_resolution": 1.0,
                 "log_csv": True,
                 "print_commandline": True,
+
                 }
     elif inter_name == "Gale&Std":
         return {"inter_name": "Gale&Std",
@@ -256,10 +264,47 @@ def get_general_params(inter_name):
                 "log_csv": True,
                 "print_commandline": True,
                 }
+
+    elif inter_name == "RTS":
+        return {"inter_name": "RTS",
+                "max_speed": 6.7,  # 15 mph
+                "min_CAV_headway": 1.5,
+                "min_CNV_headway": 2.0,
+                "det_range": 300.01, # Max. distance
+                "k": int(20),   # LeadConnected Trajectory method params
+                "m": int(40),
+                "num_lanes": int(4),
+                "phase_cover_set": (0, 1,),
+                "small_positive_num": 0.01, # GA params
+                "large_positive_num": 999_999_999,
+                "pli": {0: {0, 1, },
+                        1: {1, 0, },
+                        2: {2, 3, },
+                        3: {3, 2, }, },
+                "lli": {0: {2, 3, },  # Northeast (ATC: 1) - Lane: 1
+                        1: {2, 3, },  # Southwest (ATC: 2) - Lane: 2
+                        2: {0, 1, },  # Southeast (ATC: 3) - Lane: 3
+                        3: {0, 1, },  # Northwest (ATC: 4) - Lane: 4
+                        },
+                "allowable_phases": (0, 1, 2, 3,),
+                "yellow": 3.0,
+                "allred": 1.5,
+                "min_green": 5,
+                "max_green": 20.0,
+                "lag_on_green": 1.0,
+                "max_num_traj_points": int(1_000),
+                "min_dist_to_stop_bar": 20,
+                "do_traj_computation": True,
+                "trj_time_resolution": 1.0,
+                "log_csv": True,
+                "print_commandline": True,
+                # "gps_points": scipy.io.loadmat('file.mat') # FIXME @ Pat: Please import GPS points here. In order to avoid mapping and its
+                # FIXME: confusing consequences, it would be tight if you could follow the lane numbers in accordance
+                # FIXME: with what you see above and the schematic map I sent you. I believe for UTC demo you used the
+                # FIXME: lane number as annotated on the map I sent you. Alternatively, let me know and I'll change phasing according to your lane numbers.
+                }
     else:
         raise Exception("Simulation parameters are not known for this intersection.")
-
-
 # -------------------------------------------------------
 # PRETIMED CONTROL PARAMETERS
 # -------------------------------------------------------
@@ -273,13 +318,7 @@ def get_pretimed_parameters(inter_name):
 
     .. warning::
             Must choose ``num_cycles`` at least 2.
-
-    :Author:
-        Mahmoud Pourmehrab <pourmehrab@gmail.com>
-    :Date:
-        April-2018
     """
-
     if inter_name == "13th16th":
         return None  # todo compute these
 
@@ -290,6 +329,8 @@ def get_pretimed_parameters(inter_name):
     elif inter_name == "reserv":
         return {"green_dur": (25.0, 25.0, 25.0, 25.0), "phase_seq": (0, 1, 2, 3,), "yellow": 3.0, "all-red": 1.5,
                 "num_cycles": 5}
+    elif inter_name == "RTS":
+        return None  # todo compute these
 
     else:
         raise Exception("Pretimed parameters are not known for this intersection.")
@@ -310,10 +351,6 @@ def get_GA_parameters(inter_name):
         - badness_accuracy: 10 raised to the number of digits we want to keep when hashing the :term:`badness` of an individual
         - allowable_phases: subset of all possible phases to be used. These are different than the phase_cover_set
 
-    :Author:
-        Mahmoud Pourmehrab <pourmehrab@gmail.com>
-    :Date:
-        April-2018
     """
     if inter_name == "13th16th":
         return None  # todo add these
@@ -334,7 +371,8 @@ def get_GA_parameters(inter_name):
                 "lambda": 1 / 500,
                 "badness_accuracy": 10 ** 2,
                 }
-
+    elif inter_name == "RTS":
+        return None  # todo add these
     else:
         raise Exception("GA parameters are not known for this intersection.")
 
@@ -360,7 +398,11 @@ def get_sig_ctrl_interface_params(inter_name):
         al = range(1, num_phase + 1)
         non = [0]
         non_conflict = [[2], [3, 8], [4, 7], [6]]  # Conflict monitor phases
-
+    elif inter_name == "RTS":
+        num_phase = 4  # Total Number of phases at RTS
+        al = range(1, num_phase + 1)
+        non = [0]
+        non_conflict = [[1, 2], [4, 3]]  # Conflict monitor phases
     else:
         raise Exception("Controller parameters are not known for this intersection.")
 

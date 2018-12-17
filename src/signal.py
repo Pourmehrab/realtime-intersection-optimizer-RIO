@@ -61,12 +61,12 @@ class Signal:
         :Date:
             April-2018
        """
-        self._inter_name, num_lanes = map(intersection._general_params.get, ["inter_name", "num_lanes"])
+        self._inter_name, num_lanes = map(intersection._inter_config_params.get, ["inter_name", "num_lanes"])
 
         self._set_lane_lane_incidence(intersection)
         self._set_phase_lane_incidence(intersection)
 
-        if intersection._general_params.get("log_csv"):
+        if intersection._inter_config_params.get("log_csv"):
             filepath_sig = os.path.join(
                 "log/" + self._inter_name + "/" + start_time_stamp + "_" + str(sc) + "_sig_level.csv")
             self.__sig_csv_file = open(filepath_sig, "w", newline="")
@@ -88,7 +88,7 @@ class Signal:
         :Date:
             April-2018
         """
-        self._lane_lane_incidence, num_lanes = map(intersection._general_params.get, ["lli", "num_lanes"])
+        self._lane_lane_incidence, num_lanes = map(intersection._inter_config_params.get, ["lli", "num_lanes"])
 
         # self._lane_lane_incidence = {lane: set([]) for lane in range(num_lanes)}
         # for lane, conflicting_lane_set in lane_lane_incidence_one_based.items():  # the whole loop makes lanes zero-based
@@ -106,7 +106,7 @@ class Signal:
         :Date:
             April-2018
         """
-        self._phase_lane_incidence, num_lanes = map(intersection._general_params.get, ["pli", "num_lanes"])
+        self._phase_lane_incidence, num_lanes = map(intersection._inter_config_params.get, ["pli", "num_lanes"])
 
         # self._phase_lane_incidence = {phase: set([]) for phase in range(len(self._phase_lane_incidence))}
         # the whole following loop makes lanes and phases zero-based
@@ -132,26 +132,26 @@ class Signal:
         """
         if self.SPaT_sequence[-1] == phase:  # extend the phase
             self.SPaT_end[-1] = self.SPaT_end[-1] - self._y - self._ar + actual_green
-            intersection._general_params.get("print_commandline") and print(
+            intersection._inter_config_params.get("print_commandline") and print(
                 '>-> Phase {:d} extended (ends @ {:>5.1f} sec)'.format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
         else:  # append a new phase
             self.SPaT_sequence += [phase]
             self.SPaT_green_dur += [actual_green]
             self.SPaT_start += [self.SPaT_end[-1]]
             self.SPaT_end += [self.SPaT_start[-1] + actual_green + self._y + self._ar]
-            intersection._general_params.get("print_commandline") and print(
+            intersection._inter_config_params.get("print_commandline") and print(
                 '>>> Phase {:d} appended (ends @ {:>5.1f} sec)'.format(phase, self.SPaT_end[-1]))
 
-    def update_SPaT(self, intersection, time_threshold, sc):
+    def update_SPaT(self, intersection, simulation_time, sc):
         """
-        Performs two tasks to update SPaT based on the given clock:
+        Performs two tasks to update SPaT based on the given opt_clock:
             - Removes terminated phase (happens when the all-red is passed)
             - Checks for SPaT to not get empty after being updated
 
         .. attention::
             - If all phases are getting purged, either make longer SPaT decisions or reduce the simulation steps.
 
-        :param time_threshold: Normally the current clock of simulation or real-time in :math:`s`
+        :param simulation_time: Normally the current opt_clock of simulation or real-time in :math:`s`
         :param sc: scenario number to be recorded in CSV
 
         :Author:
@@ -159,17 +159,17 @@ class Signal:
         :Date:
             April-2018
         """
-        assert self.SPaT_end[-1] >= time_threshold, "If all phases get purged, SPaT becomes empty"
+        assert self.SPaT_end[-1] >= simulation_time, "If all phases get purged, SPaT becomes empty"
 
         phase_indx, any_phase_to_purge = 0, False
 
         if self.__sig_csv_file is None:
-            while time_threshold >= self.SPaT_end[phase_indx]:
+            while simulation_time > self.SPaT_end[phase_indx]:
                 any_phase_to_purge = True
                 phase_indx += 1
         else:
             writer = csv.writer(self.__sig_csv_file, delimiter=',')
-            while time_threshold > self.SPaT_end[phase_indx]:
+            while simulation_time > self.SPaT_end[phase_indx]:
                 any_phase_to_purge = True
                 writer.writerows(
                     [[sc, self.SPaT_sequence[phase_indx], self.SPaT_start[phase_indx], self.SPaT_end[phase_indx]]])
@@ -177,7 +177,7 @@ class Signal:
                 phase_indx += 1
 
         if any_phase_to_purge:
-            intersection._general_params.get("print_commandline") and print(
+            intersection._inter_config_params.get("print_commandline") and print(
                 '<<< Phase(s) ' + ','.join(str(p) for p in self.SPaT_sequence[:phase_indx]) + ' expired')
             del self.SPaT_sequence[:phase_indx]
             del self.SPaT_green_dur[:phase_indx]
@@ -200,7 +200,7 @@ class Signal:
             April-2018
         """
         if len(self.SPaT_sequence) > 1:
-            intersection._general_params.get("print_commandline") and print(
+            intersection._inter_config_params.get("print_commandline") and print(
                 '<<< Phase(s) ' + ','.join(str(p) for p in self.SPaT_sequence[1:]) + ' flushed')
 
             del self.SPaT_sequence[1:]
@@ -233,7 +233,7 @@ class Signal:
 
         The schedule keeps the earliest departures at the stop bars of each lane and gets updated when a signal decision goes permanent. It is made by a dictionary of arrays (key is lane, value is sorted earliest departures).
 
-        ``lanes.first_unsrvd_indx`` and setting the schedule of any possible served vehicles make the main result of this method. The ``lanes.first_unsrvd_indx`` will be used after this to avoid reserving and double-counting those already served with base SPaT. This also returns ``any_unserved_vehicle`` array that has True if any lane has vehicles that could not be unserved with base SPaT.
+        ``lanes.first_unsrv_pos`` and setting the schedule of any possible served vehicles make the main result of this method. The ``lanes.first_unsrv_pos`` will be used after this to avoid reserving and double-counting those already served with base SPaT. This also returns ``any_unserved_vehicle`` array that has True if any lane has vehicles that could not be unserved with base SPaT.
 
         .. note::
             - Since base SPaT never gets changed (for safety and practical reasons), any vehicle served by it has to get ``reschedule_departure`` value set to ``False``.
@@ -249,14 +249,14 @@ class Signal:
         :type intersection: Intersection
         :param trajectory_planner:
         :type trajectory_planner: src.intersection.TrajectoryPlanner
-        :return: Increments the ``lanes.first_unsrvd_indx`` array that keeps index off the first unserved vehicle in each lane, is initialized to zero before calling this method and gets updated by the end of this call. It also returns ``served_vehicle_time`` that shows the schedule
+        :return: Increments the ``lanes.first_unsrv_pos`` array that keeps index off the first unserved vehicle in each lane, is initialized to zero before calling this method and gets updated by the end of this call. It also returns ``served_vehicle_time`` that shows the schedule
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
             April-2018
         """
-        num_lanes, max_speed, min_headway, do_traj_computation, lag_on_green = map(intersection._general_params.get,
+        num_lanes, max_speed, min_headway, do_traj_computation, lag_on_green = map(intersection._inter_config_params.get,
                                                                                    ['num_lanes', 'max_speed',
                                                                                     'min_headway',
                                                                                     'do_traj_computation',
@@ -275,12 +275,12 @@ class Signal:
                                                      veh_indx - 1].best_temporary_departure + min_headway if veh_indx > 0 else -10.0
                             t_scheduled = max(veh.earliest_departure, green_starts, dep_after_lead_veh)
                             if t_scheduled <= yellow_ends:
-                                lanes.increment_first_unsrvd_indx(lane)
+                                lanes.inc_first_unsrv_pos(lane)
                                 # t, d, s = t_scheduled, 0.0, min(max_speed, veh.desired_speed)
                                 veh.set_best_temporary_departure(t_scheduled)
-                                # veh.set_scheduled_departure(t, d, s, lane, veh_indx, intersection)
+                                # veh.set_sched_dep(t, d, s, lane, veh_indx, intersection)
 
-                                if do_traj_computation and veh.freshly_scheduled:  # freshly_scheduled is set within set_scheduled_departure method
+                                if do_traj_computation and veh.freshly_scheduled:  # got_trajectory is set within set_sched_dep method
                                     trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, tester,
                                                                        '*')
                                     veh.reschedule_departure, veh.freshly_scheduled = False, False
@@ -288,13 +288,13 @@ class Signal:
                                     break  # no more room to serve vehicles in this phase
                         else:  # next vehicle may want trajectory
                             veh.set_best_temporary_departure(veh.scheduled_departure)
-                            lanes.increment_first_unsrvd_indx(lane)
+                            lanes.inc_first_unsrv_pos(lane)
 
                     if lanes.first_unsrvd_indx[lane] > lanes.last_vehicle_indx[lane]:
                         any_unserved_vehicle[lane] = False
         tester is not None and tester.test_departure_of_trj(lanes, intersection, [0] * num_lanes,
                                                             lanes.first_unsrvd_indx)
-        return any_unserved_vehicle  # it also sets the lanes.first_unsrvd_indx and veh.set_best_temporary_departure but does not return them
+        return any_unserved_vehicle  # it also sets the lanes.first_unsrv_pos and veh.set_best_temporary_departure but does not return them
 
     def _do_non_base_SPaT(self, lanes, first_unsrvd_indx, intersection, tester):
         """
@@ -308,7 +308,7 @@ class Signal:
 
         .. warning::
             - Since the departure times are definitely temporal, DO NOT set ``reschedule_departure`` to ``False``.
-            - The ``lanes.first_unsrvd_indx`` cannot be used since it does not keep GA newly served vehicles. However, it would work for pretimed since the method is static.
+            - The ``lanes.first_unsrv_pos`` cannot be used since it does not keep GA newly served vehicles. However, it would work for pretimed since the method is static.
 
         :param lanes:
         :type lanes: Lanes
@@ -323,7 +323,7 @@ class Signal:
             April-2018
         """
         num_lanes, max_speed, phase_cover_set, lag_on_green, min_headway, do_traj_computation = map(
-            intersection._general_params.get,
+            intersection._inter_config_params.get,
             ["num_lanes", "max_speed", "phase_cover_set", "lag_on_green", "min_headway", "do_traj_computation"])
         time_phase_ends = self.SPaT_end[-1] - self._ar
         for phase in phase_cover_set:
@@ -363,7 +363,7 @@ class Signal:
             April-2018
         """
         max_speed, num_lanes, min_headway, do_traj_computation = map(
-            intersection._general_params.get, ["max_speed", "num_lanes", "min_headway", "do_traj_computation"])
+            intersection._inter_config_params.get, ["max_speed", "num_lanes", "min_headway", "do_traj_computation"])
         for lane in range(num_lanes):
             if any_unserved_vehicle[lane]:
                 for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
@@ -371,7 +371,7 @@ class Signal:
                     if veh_indx > 0:
                         assert t + 0.01 >= min_headway + lanes.vehlist.get(lane)[
                             veh_indx - 1].scheduled_departure, "violation in min headway"
-                    veh.reschedule_departure and veh.set_scheduled_departure(t, d, s, lane, veh_indx, intersection)
+                    veh.reschedule_departure and veh.set_sched_dep(t, d, s, lane, veh_indx, intersection)
                     if do_traj_computation and veh.freshly_scheduled:
                         trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, tester, '#')
                         veh.freshly_scheduled = False
@@ -413,7 +413,7 @@ class GA_SPaT(Signal):
         """
 
         super().__init__(intersection, sc, start_time_stamp)
-        inter_name, print_commandline = map(intersection._general_params.get, ["inter_name", "print_commandline"])
+        inter_name, print_commandline = map(intersection._inter_config_params.get, ["inter_name", "print_commandline"])
         self.__GA_params = get_GA_parameters(inter_name)
 
         self._max_phase_length = min(len(self.__GA_params.get("allowable_phases")),
@@ -465,7 +465,7 @@ class GA_SPaT(Signal):
         :Date:
             April-2018
         """
-        num_lanes, large_positive_num = map(intersection._general_params.get, ['num_lanes', 'large_positive_num'])
+        num_lanes, large_positive_num = map(intersection._inter_config_params.get, ['num_lanes', 'large_positive_num'])
         self._flush_upcoming_SPaTs(intersection)
         any_unserved_vehicle = self._do_base_SPaT(lanes, intersection, trajectory_planner, tester)
         if any(any_unserved_vehicle):
@@ -534,7 +534,7 @@ class GA_SPaT(Signal):
          .. attention::
             - A rough approximate for :math:`\lambda` is the inverse of the detection range.
             - Here we do not account for the vehicles served with base :term:`SPaT` as they are already served.
-            - We create a copy of ``first_unsrvd_indx`` since there is no guarantee this :term:`SPaT` is the best by the end of :term:`GA`.
+            - We create a copy of ``first_unsrv_pos`` since there is no guarantee this :term:`SPaT` is the best by the end of :term:`GA`.
             - The vehicle to be served by this method should have had ``veh.reschedule_departure`` set to ``True``.
             - An individual which has ``throughput`` of zero is not qualified for comparison to best known :term:`SPaT`.
             - Please note base on the provided definition :term:`badness` can acquire negative values.
@@ -556,7 +556,7 @@ class GA_SPaT(Signal):
         :Date:
             April-2018
         """
-        num_lanes, large_positive_num, lag_on_green, min_headway = map(intersection._general_params.get,
+        num_lanes, large_positive_num, lag_on_green, min_headway = map(intersection._inter_config_params.get,
                                                                        ['num_lanes', 'large_positive_num',
                                                                         'lag_on_green', 'min_headway'])
         mean_travel_time, throughput = 0.0, 0  # if no vehicle is found return zero throughput
@@ -747,7 +747,7 @@ class MCF_SPaT(Signal):
 
         super().__init__(intersection, sc, start_time_stamp)
         inter_name, num_lanes, print_commandline, self._y, self._ar, self.min_green, self.max_green, self._allowable_phases = map(
-            intersection._general_params.get,
+            intersection._inter_config_params.get,
             ["inter_name", "num_lanes", "print_commandline", "yellow", "allred", "min_green", "max_green",
              "allowable_phases"])
 
@@ -756,9 +756,9 @@ class MCF_SPaT(Signal):
 
         # add a dummy phase to initiate
         self.SPaT_sequence = [self._allowable_phases[0]]
-        self.SPaT_green_dur = [first_detection_time - self._y - self._ar]
-        self.SPaT_start = [0.0]
-        self.SPaT_end = [first_detection_time]
+        self.SPaT_green_dur = [self.min_green]
+        self.SPaT_start = [first_detection_time]
+        self.SPaT_end = [first_detection_time + self.SPaT_green_dur[0] + self._y + self._ar]
 
         if print_commandline:
             print(">>> Phase {:d} appended (ends @ {:2.1f} sec)".format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
@@ -817,7 +817,7 @@ class MCF_SPaT(Signal):
             July-2018
         """
         num_lanes, min_CAV_headway, min_CNV_headway, lag_on_green, min_dist_to_stop_bar = map(
-            intersection._general_params.get,
+            intersection._inter_config_params.get,
             ["num_lanes", "min_CAV_headway", "min_CNV_headway", "lag_on_green", "min_dist_to_stop_bar"])
         num_phases = len(self._phase_lane_incidence)
         self._flush_upcoming_SPaTs(intersection)
@@ -878,24 +878,26 @@ class MCF_SPaT(Signal):
                     start_indx = veh_indx_vec[lane]
                     for veh_indx, veh in enumerate(lanes.vehlist.get(lane)[start_indx:], start_indx):
                         t_scheduled = max(veh.earliest_departure, phase_start_time + lag_on_green)
+                        veh.got_trajectory = False
                         if veh_indx > 0:
                             lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
                             t_scheduled = max(t_scheduled, lead_veh.scheduled_departure + (
                                 min_CAV_headway if veh.veh_type == 1 else min_CNV_headway))
 
-                        if served_veh_phase_counter < phase_veh_incidence[phase]: # t_scheduled <= phase_start_time + self.max_green and
+                        if served_veh_phase_counter < phase_veh_incidence[
+                            phase]:  # t_scheduled <= phase_start_time + self.max_green and
                             veh_indx_vec[lane] += 1
                             vehicle_counter += 1
                             served_veh_phase_counter += 1
                             phase_green_end_time = max(t_scheduled, phase_green_end_time)
-                            _, det_dist, _ = veh.get_arrival_schedule()
+                            _, det_dist, _ = veh.get_arr_sched()
                             flag = False
                             if det_dist >= min_dist_to_stop_bar:
-                                veh.set_scheduled_departure(t_scheduled, 0, veh.desired_speed, lane, veh_indx,
-                                                            intersection)
+                                veh.set_sched_dep(t_scheduled, 0, veh.desired_speed, lane, veh_indx,
+                                                  intersection)
                                 trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, tester,
                                                                    '#')
-                                veh.freshly_scheduled = False
+                                veh.got_trajectory =True
 
                 if flag:
                     print("done")
