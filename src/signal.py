@@ -897,7 +897,7 @@ class MCF_SPaT(Signal):
                                                   intersection)
                                 trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, tester,
                                                                    '#')
-                                veh.got_trajectory =True
+                                veh.got_trajectory = True
 
                 if flag:
                     print("done")
