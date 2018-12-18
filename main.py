@@ -1,14 +1,26 @@
 #!/usr/bin/python3
-
 #######################################
 # File name: main.py                  #
 # Author: Ash Omidvar                 #
 # Email: aschkan@ufl.edu              #
 # Last Modified: Dec/12/2018 - Ash    #
 #######################################
+import sys
+import os
+import argparse
+import time
+
+from datetime import datetime
+from time import perf_counter
+from src.time_tracker import Timer
+from src.intersection import Intersection, Lanes, TrajectoryPlanner
+from src.traffic import SimTraffic, RealTimeTraffic
+from src.traffic_io import TrafficListener, TrafficPublisher
+from src.signal import MCF_SPaT  # , GA_SPaT
+from src.util import *
 
 
-def run_rio(inter_name, sc, start_time_stamp, run_duration, offline=True):
+def run_rio(args):
     """
     .. note:: Assumptions for trajectory generation :
         - Trajectories must show departure at the stop bar, i.e. the distance to stop bar converges to zero, even if
@@ -38,120 +50,131 @@ def run_rio(inter_name, sc, start_time_stamp, run_duration, offline=True):
     :Organization:
         University of Florida
     """
-    import time
+    if args.run_with_signal_control:
+        from src.sig_ctrl_interface import snmp_phase_ctrl
 
-    intersection = Intersection(inter_name)
+    intersection = Intersection(args.intersection)
     lanes = Lanes(intersection)
-    if offline:
-        traffic = OffTraffic(intersection, sc, start_time_stamp)
+    start_time_stamp_name = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")  # only for naming the CSV files
+    if args.mode == "sim":
+        traffic = SimTraffic(intersection, args.sc, start_time_stamp_name)
+        initial_time_stamp = 0
+        resolution = 1./args.loop_freq
     else:
-        tl = TrafficListener(...)
-        tp = TrafficPublisher(...)
-        traffic = RealTimeTraffic(tl.get_vehicle_data_queue(), tl.get_track_split_merge_queue(), tp.get_cav_traj_queue())
-    first_detection_time = datetime.utctimenow().to_epoch()  # Start point of operation to epoch
+        tl = TrafficListener(args.traffic_listener_ip, args.traffic_listener_port)
+        tp = TrafficPublisher(args.traffic_publisher_ip, args.traffic_publisher_port)
+        traffic = RealTimeTraffic(tl.get_vehicle_data_queue(), tl.get_track_split_merge_queue(), 
+            tp.get_cav_traj_queue(), intersection, args.sc, args.do_logging)
+        initial_time_stamp = datetime.utcnow()
+        resolution = datetime.timedelta(seconds=(1./args.loop_freq))
+    time_tracker = Timer.get_timer(args.mode, initial_time_stamp, resolution)
     num_lanes = intersection._inter_config_params.get("num_lanes")
 
     # Load MCF_SPaT optimization module for initial SPat
-    signal = MCF_SPaT(first_detection_time, intersection, sc, start_time_stamp)
+    signal = MCF_SPaT(0, intersection, args.sc, start_time_stamp_name)
 
     # Load trajectory optimization sub-models and planner
     trajectory_generator = TrajectoryPlanner(intersection)
-    timer = Timer(first_detection_time)
 
     # to measure the total RIO run time for performance measure (Different from RIO clock)
-    if intersection._inter_config_params.get("log_csv"):
+    if args.do_logging:
         t_start = perf_counter()
 
-    # Patrick
     try:
+        optimizer_call_ctr = 0
+        call_opt = int(args.loop_freq / args.solve_freq)
         while True:  # stop when pandas gets empty in offline mode, and when run duration has been reached in online mode.
-            run_time = timer.clock  # get current RIO clock
+            run_time = time_tracker.get_elapsed_time() # get current RIO clock
             intersection._inter_config_params.get("print_commandline") and print(
                 "\n################################# CLOCK: {:>5.1f} SEC #################################".format(
                     run_time))
 
             # update the assigned trajectories
-            traffic.serve_update_at_stop_bar(lanes, run_time, intersection)
+            traffic.serve_update_at_stop_bar(lanes, run_time, intersection) 
 
             # add/update the vehicles
-            if offline:
-                traffic.get_traffic_info(lanes, run_time, intersection)
+            if args.mode == "sim":
+                traffic.get_traffic_info(lanes, run_time, intersection) 
             else:
-                # TODO: @Pat: Listen to Pat's OffTraffic Listener.
                 traffic.get_traffic_info(lanes)
 
             # update earliest departure time
             lanes.reset_earliest_departure_times(lanes, intersection)
 
             # update SPaT
-            signal.update_SPaT(intersection, run_time, sc)
+            signal.update_SPaT(intersection, run_time, args.sc)
 
             # update the space mean speed
             volumes = traffic.get_volumes(lanes, intersection)
             critical_volume_ratio = 3_600 * volumes.max() / intersection._inter_config_params.get(
                 "min_CAV_headway")
 
-            # perform signal optimization
-            signal.solve(lanes, intersection, critical_volume_ratio, trajectory_generator, None)
-            # Send out IAMs to all CAVs
-            traffic.publish(lanes)
-
-            # call the proper phase on ATC Controller # ToDo: comment the line below when not connected to signal controller
-            # snmp_phase_ctrl(signal.SPaT_sequence[0],'reserv')
+            if optimizer_call_ctr % call_opt == 0:
+                # perform signal optimization
+                signal.solve(lanes, intersection, critical_volume_ratio, trajectory_generator, None)
+                # Send out IAMs to all CAVs
+                traffic.publish(lanes)
+            optimizer_call_ctr += 1
+            
+            # call the proper phase on ATC Controller 
+            if args.run_with_signal_control:
+                snmp_phase_ctrl(signal.SPaT_sequence[0], args.intersection)
 
             # Wrap up and log
-            if offline: #TODO" @Pat: You may add additional logging or time measurement code here.
-                if traffic.last_veh_arr() and lanes.all_served(num_lanes):
-                    if intersection._inter_config_params.get("log_csv"):
-                        elapsed_process_time = perf_counter() - t_start
-                        timer.log_time_stats(sc, inter_name, start_time_stamp, elapsed_process_time, )  # log timings
-                        traffic.save_veh_level_csv(inter_name, start_time_stamp)
+            if (args.mode == "sim" and (traffic.last_veh_arr() and lanes.all_served(num_lanes))) or \
+                (args.mode == "realtime" and (args.run_duration < run_time)):
+                    if args.do_logging:
+                        #elapsed_process_time = perf_counter() - t_start
+                        #timer.log_time_stats(sc, inter_name, start_time_stamp, elapsed_process_time, )  # log timings
+                        traffic.save_veh_level_csv(args.intersection, start_time_stamp_name)
                         traffic.close_trj_csv()
                         signal.close_sig_csv()
                         intersection._inter_config_params.get("print_commandline") and print(
-                            "\n### Elapsed Process Time: {:>5d} ms ###".format(int(1000 * elapsed_process_time)), "\n"
-                            "### Actual RIO run start time: {:>5d} micro sec. ###".format(int(1000000 * t_start)))
-                    return
+                            "\n### Elapsed Process Time: {:>5d} ms ###".format(int(1000 * elapsed_process_time)), \
+                            "\n### Actual RIO run start time: {:>5d} micro sec. ###".format(int(1000000 * t_start)))
+            
+            time_tracker.step()
 
-                else:
-                    timer.next_time_step()
-                    time.sleep(timer.res)
-            else:  # online mode
-                if run_duration <= run_time:
-                    if intersection._inter_config_params.get("log_csv"):
-                        elapsed_process_time = perf_counter() - t_start
-                        timer.log_time_stats(sc, inter_name, start_time_stamp, elapsed_process_time, )  # log timings
-                        traffic.save_veh_level_csv(inter_name, start_time_stamp)
-                        traffic.close_trj_csv()
-                        signal.close_sig_csv()
-                        intersection._inter_config_params.get("print_commandline") and print(
-                            "\n### Elapsed Process Time: {:>5d} ms ###".format(int(1000 * elapsed_process_time)), "\n"
-                            "### Actual RIO run start time: {:>5d} micro sec. ###".format(int(1000000 * t_start)))
     except KeyboardInterrupt:
         print("RIO got KeyboardInterrupt, shutting down threads")
         # close TrafficListener
         
 if __name__ == "__main__":
-    import sys
-    import os
+    parser = argparse.ArgumentParser("Runtime arguments for RIO")
+    parser.add_argument("--intersection", type=str, default="RTS",
+        help="The name of the intersection")
+    parser.add_argument("--mode", type=str, default="sim",
+        help="Run with traffic from CSV (sim) or sensor fusion (realtime)")
+    parser.add_argument("--run-duration", type=int, default=300,
+        help="Seconds to run until termination.")
+    parser.add_argument("--loop-freq", type=int, default=10,
+        help="Frequency (Hz) to run the main loop")
+    parser.add_argument("--solve-freq", type=float, default=0.5,
+        help="Frequency (Hz) to call the optimizer")
+    parser.add_argument("--sc", type=int, default=1, help="Scenario code number")
+    parser.add_argument("--traffic-listener-ip", type=str, default="localhost",
+        help="The IP address to connect via UDP to receive incoming traffic messages")
+    parser.add_argument("--traffic-listener-port", type=int, default=7000,
+        help="The port number to connect via UDP to receive incoming traffic messages")
+    parser.add_argument("--traffic-publisher-ip", type=str, default="localhost",
+        help="The IP address to connect via UDP to publish outgoing traffic messages")
+    parser.add_argument("--traffic-publisher-port", type=int, default=7001,
+        help="The port number to connect via UDP to publish outgoing traffic messages")
+    parser.add_argument("--do-logging", type=str_to_bool, default="False", 
+        help="Toggle logging")
+    parser.add_argument("--run-with-signal-control", type=str_to_bool, default="False")
 
-    from datetime import datetime
-    from time import perf_counter
-    from src.time_tracker import Timer
-    from src.intersection import Intersection, Lanes, OffTraffic, TrajectoryPlanner
-    from src.signal import MCF_SPaT  # , GA_SPaT
-    # from src.sig_ctrl_interface import snmp_phase_ctrl
-
-
+    args = parser.parse_args()
     print("Interpreter Information")
     print("Python Path: ", sys.executable)
     print("Python Version: ", sys.version)
 
-    inter_name = "reserv"  # look in config file for the target intersection names.
-
-    not os.path.isdir("./log/" + inter_name) and os.makedirs("./log/" + inter_name)
-
+    if args.do_logging:
+        suffix = "_" + time.strftime("%y%m%d_%H%M%S")
+        args.log_dir = os.path.join("log", args.intersection + suffix)
+        os.makedirs(args.log_dir)
+        print("creating log dir {}...".format(args.log_dir))
+    
     print("\nProgram Started ################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
-    start_time_stamp = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")  # only for naming the CSV files
-    run_rio(inter_name, 1, start_time_stamp, 300.00, True)
+    run_rio(args)
     print("\nProgram Terminated.")

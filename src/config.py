@@ -5,16 +5,55 @@
 # Updated (Pourmehrab): May/30/2018
 # Updated (Omidvar): Dec/13/2018
 ################################################
+import os
+import glob
+import utm
+from collections import namedtuple
+import src.util as util
 
 # -------------------------------------------------------
 # Vehicle and Intersection Configuration Parameters
 # -------------------------------------------------------
-import scipy.io
+Lane = namedtuple("Lane", ["utmzone", "utmletter", "easting", "northing", "distances", "lane_length", "is_straight"])
 
+def load_optimization_zone_constraints(inter_name):
+    """TODO"""
+    return {"heading":[], "speed":[], "poly":[]}
+
+def read_and_process_gps(inter_name):
+    """TODO: add scipy.linregress to test whether GPS points form straight line, to set is_straight"""
+    gps_file_names = os.path.join(inter_name, "GPS", "*.csv")
+    lane_gps_csvs = glob.glob(gps_file_names)
+    lanes = {}
+    for lane in lane_gps_csvs:
+        l = Lane(utmzone="",easting=[],northing=[],distances=[],lane_length=0,is_straight=True)
+        lane_id = os.path.splitext(lane)[0]
+        with open(lane, 'r') as f:
+            f.readline() # throw away header
+            gps_line = f.readline()
+            while gps_line:
+                lat, lon = gps_line.split(",")
+                e, n, zone_num, zone_letter = utm.from_latlon(lat, lon)
+                l.utmzone = zone_num
+                l.utmletter = zone_letter
+                l.easting.append(e)
+                l.northing.append(n)
+            total_length = 0.
+            #l.distances[0] = util.meters_to_feet(total_length)
+            l.distances[0] = total_length
+            for i in range(len(l.easting)-1):
+                total_length += util.euclidean_distance(l.easting[i], l.northing[i], l.easting[i+1], l.northing[i+1])
+                #l.distances[i+1] = util.meters_to_feet(total_length)
+                l.distances[i+1] = total_length
+            #l.lane_length = util.meters_to_feet(total_length)
+            l.lane_length = total_length
+            # l.is_straight = ? TODO:
+        lanes[lane_id] = l
+    return lanes
 
 def load_inter_params(inter_name):
     """
-    :return:
+    :retuutmrn:
         - inter_name: intersection name
         - max_speed: maximum speed in :math:`m/s`
         - min_headway: the lowest headway at the stop bar in :math:`s` (corresponds to the highest flow)
@@ -88,9 +127,11 @@ def load_inter_params(inter_name):
         April-2018
         Dec-2018
     """
+    lane_info = read_and_process_gps(inter_name)
+    opt_zone_info = load_optimization_zone_constraints(inter_name)
 
     if inter_name == "13th16th":
-        return {"inter_name": "13th16th",
+        return {
                 "max_speed": 15.0,
                 "min_CAV_headway": 2.0,
                 "min_CNV_headway": 3.0,
@@ -146,11 +187,10 @@ def load_inter_params(inter_name):
                 "min_dist_to_stop_bar": 50,
                 "do_traj_computation": True,
                 "trj_time_resolution": 1.0,
-                "log_csv": True,
                 "print_commandline": True,
                 }
     elif inter_name == "TERL":
-        return {"inter_name": "TERL",
+        return {
                 "max_speed": 17.8816,  # 40 mph
                 "min_CAV_headway": 1.5,
                 "min_CNV_headway": 2.0,
@@ -184,11 +224,11 @@ def load_inter_params(inter_name):
                 "min_dist_to_stop_bar": 50,
                 "do_traj_computation": True,
                 "trj_time_resolution": 1.0,
-                "log_csv": True,
+                
                 "print_commandline": True,
                 }
     elif inter_name == "reserv":
-        return {"inter_name": "reserv",
+        return {
                 "max_speed": 15.0,
                 "min_CAV_headway": 2.0,
                 "min_CNV_headway": 3.0,
@@ -225,12 +265,12 @@ def load_inter_params(inter_name):
                 "min_dist_to_stop_bar": 50,
                 "do_traj_computation": False,
                 "trj_time_resolution": 1.0,
-                "log_csv": True,
+                
                 "print_commandline": True,
 
                 }
     elif inter_name == "Gale&Std":
-        return {"inter_name": "Gale&Std",
+        return {
                 "max_speed": 15.0,
                 "min_CAV_headway": 1.5,
                 "min_CNV_headway": 2.0,
@@ -261,16 +301,16 @@ def load_inter_params(inter_name):
                 "min_dist_to_stop_bar": 50,
                 "do_traj_computation": True,
                 "trj_time_resolution": 1.0,
-                "log_csv": True,
+                
                 "print_commandline": True,
                 }
 
     elif inter_name == "RTS":
-        return {"inter_name": "RTS",
+        return {
                 "max_speed": 6.7,  # 15 mph
                 "min_CAV_headway": 1.5,
                 "min_CNV_headway": 2.0,
-                "det_range": 300.01, # Max. distance
+                "det_range": (240, 300, 80, 100,),
                 "k": int(20),   # LeadConnected Trajectory method params
                 "m": int(40),
                 "num_lanes": int(4),
@@ -281,7 +321,7 @@ def load_inter_params(inter_name):
                         1: {1, 0, },
                         2: {2, 3, },
                         3: {3, 2, }, },
-                "lli": {0: {2, 3, },  # Northeast (ATC: 1) - Lane: 1
+                "pli": {0: {2, 3, },  # Northeast (ATC: 1) - Lane: 1
                         1: {2, 3, },  # Southwest (ATC: 2) - Lane: 2
                         2: {0, 1, },  # Southeast (ATC: 3) - Lane: 3
                         3: {0, 1, },  # Northwest (ATC: 4) - Lane: 4
@@ -293,13 +333,14 @@ def load_inter_params(inter_name):
                 "max_green": 20.0,
                 "lag_on_green": 1.0,
                 "max_num_traj_points": int(1_000),
-                "min_dist_to_stop_bar": 20,
+                "min_dist_to_stop_bar": 50,
                 "do_traj_computation": True,
                 "trj_time_resolution": 1.0,
-                "log_csv": True,
+                
                 "print_commandline": True,
-                # "gps_points": scipy.io.loadmat('file.mat') # FIXME @ Pat: Please import GPS points here. In order to avoid mapping and its
-                # FIXME: confusing consequences, it would be tight if you could follow the lane numbers in accordance
+                "lane_estimation": "gps", # gps/video
+                "optimization_zone_constraints": opt_zone_info,
+                "lanes": lane_info # FIXME @ Pat: Please import GPS points here. In order to avoid mapping and its                # FIXME: confusing consequences, it would be tight if you could follow the lane numbers in accordance
                 # FIXME: with what you see above and the schematic map I sent you. I believe for UTC demo you used the
                 # FIXME: lane number as annotated on the map I sent you. Alternatively, let me know and I'll change phasing according to your lane numbers.
                 }

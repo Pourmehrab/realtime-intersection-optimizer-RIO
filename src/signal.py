@@ -12,7 +12,7 @@ from copy import deepcopy
 import numpy as np
 from sortedcontainers import SortedDict
 
-from data.config import get_GA_parameters
+from src.config import get_GA_parameters
 
 np.random.seed(2018)
 
