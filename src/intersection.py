@@ -12,7 +12,6 @@ import utm
 
 import numpy as np
 import pandas as pd
-from scipy import stats
 
 from src.config import *
 from src.trajectory import LeadConventional, LeadConnected, FollowerConventional, FollowerConnected
@@ -304,7 +303,7 @@ class Vehicle:
         :param det_id:          the *ID* assigned to vehicle by radio (in online mode) or a generator (in offline mode)
         :type det_id:           str
         :param det_type:        0: :term:`CNV`, 1: :term:`CAV`
-        :param det_time:        detection time in :math:`s` from reference time point # Patrick: TODO: This should be a python datetime object
+        :param det_time:        detection time in :math:`s` from reference time point
         :param speed:           detection speed in :math:`m/s`
         :param dist:            detection distance to stop bar in :math:`m`
         :param des_speed:       desired speed in :math:`m/s`
@@ -463,7 +462,7 @@ class Vehicle:
 
     def reset_trj_pts(self, sc, lane, time_threshold, file):
         """
-        Writes the trajectory points in the loog file if the time stamp is before the ``time_threshold``
+        Writes the trajectory points in the log file if the time stamp is before the ``time_threshold``
         and then removes those points by updating the pointer to the first trajectory point.
 
         .. warning::

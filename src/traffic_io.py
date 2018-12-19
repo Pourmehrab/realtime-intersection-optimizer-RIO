@@ -140,7 +140,9 @@ class TrafficPublisher(StoppableThread):
         self._cav_traj_queue = deque()
         self._IAM_publisher = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._IAM_publisher.setblocking(0)
-
+        self.ip = ip
+        self.port = port
+        
     def get_cav_traj_queue(self):
         return self._cav_traj_queue
 

@@ -6,6 +6,7 @@
 ################################################
 import numpy as np
 from datetime import datetime
+import time
 
 def meters_to_feet(m):
     """Converts a measurement in meters to feet."""
@@ -39,7 +40,7 @@ def periodic_sleep(period):
     t = datetime(timenow.year, timenow.month, timenow.day,
             timenow.hour, timenow.minute, timenow.second, 0)
     splits = [t]
-    for _ in range(freq):
+    for _ in range(int(1./period)):
         t = t + time_dt
         splits.append(t)
     # get next largest

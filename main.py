@@ -57,7 +57,7 @@ def run_rio(args):
     lanes = Lanes(intersection)
     start_time_stamp_name = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")  # only for naming the CSV files
     if args.mode == "sim":
-        traffic = SimTraffic(intersection, args.sc, start_time_stamp_name)
+        traffic = SimTraffic(intersection, args.sc, start_time_stamp_name, args)
         initial_time_stamp = 0
         resolution = 1./args.loop_freq
     else:
@@ -72,17 +72,15 @@ def run_rio(args):
 
     # Load MCF_SPaT optimization module for initial SPat
     signal = MCF_SPaT(0, intersection, args.sc, start_time_stamp_name)
-
     # Load trajectory optimization sub-models and planner
     trajectory_generator = TrajectoryPlanner(intersection)
 
     # to measure the total RIO run time for performance measure (Different from RIO clock)
     if args.do_logging:
         t_start = perf_counter()
-
     try:
         optimizer_call_ctr = 0
-        call_opt = int(args.loop_freq / args.solve_freq)
+        solve_freq = int(args.loop_freq / args.solve_freq)
         while True:  # stop when pandas gets empty in offline mode, and when run duration has been reached in online mode.
             run_time = time_tracker.get_elapsed_time() # get current RIO clock
             intersection._inter_config_params.get("print_commandline") and print(
@@ -101,15 +99,13 @@ def run_rio(args):
             # update earliest departure time
             lanes.reset_earliest_departure_times(lanes, intersection)
 
-            # update SPaT
-            signal.update_SPaT(intersection, run_time, args.sc)
-
-            # update the space mean speed
-            volumes = traffic.get_volumes(lanes, intersection)
-            critical_volume_ratio = 3_600 * volumes.max() / intersection._inter_config_params.get(
+            if optimizer_call_ctr % solve_freq == 0:
+                # update SPaT
+                signal.update_SPaT(intersection, run_time, args.sc)
+                # update the space mean speed
+                volumes = traffic.get_volumes(lanes, intersection)
+                critical_volume_ratio = 3_600 * volumes.max() / intersection._inter_config_params.get(
                 "min_CAV_headway")
-
-            if optimizer_call_ctr % call_opt == 0:
                 # perform signal optimization
                 signal.solve(lanes, intersection, critical_volume_ratio, trajectory_generator, None)
                 # Send out IAMs to all CAVs
@@ -130,9 +126,9 @@ def run_rio(args):
                         traffic.close_trj_csv()
                         signal.close_sig_csv()
                         intersection._inter_config_params.get("print_commandline") and print(
-                            "\n### Elapsed Process Time: {:>5d} ms ###".format(int(1000 * elapsed_process_time)), \
+                            "\n### Elapsed Process Time: {:>5d} ms ###".format(int(1000 * run_time)), \
                             "\n### Actual RIO run start time: {:>5d} micro sec. ###".format(int(1000000 * t_start)))
-            
+                    break
             time_tracker.step()
 
     except KeyboardInterrupt:
@@ -147,7 +143,7 @@ if __name__ == "__main__":
         help="Run with traffic from CSV (sim) or sensor fusion (realtime)")
     parser.add_argument("--run-duration", type=int, default=300,
         help="Seconds to run until termination.")
-    parser.add_argument("--loop-freq", type=int, default=10,
+    parser.add_argument("--loop-freq", type=float, default=0.5,
         help="Frequency (Hz) to run the main loop")
     parser.add_argument("--solve-freq", type=float, default=0.5,
         help="Frequency (Hz) to call the optimizer")

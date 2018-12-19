@@ -2,6 +2,7 @@ import os
 import csv
 import pandas as pd
 import numpy as np
+from scipy import stats
 
 from src.intersection import Vehicle
 
@@ -49,7 +50,7 @@ class RealTimeTraffic:
         """
         # Read latest msgs from queues
         if self._track_split_merge_queue.count() != 0:
-            track_split_merge_msgs = self._track_split_merge_queue.pop()
+            self._track_split_merge_queue.pop()
             # Handle track split/merge msgs - TODO
         
         if self._vehicle_data_queue.count() != 0:
@@ -415,7 +416,7 @@ class SimTraffic:
                 indx = curr_speed > 0
                 if any(indx):
                     s = stats.hmean(curr_speed[indx])
-                    volumes[lane] = num_of_vehs / det_range * s
+                    volumes[lane] = num_of_vehs / det_range[lane] * s
                 else:
                     volumes[lane] = 0.0
             else:
@@ -441,18 +442,21 @@ class SimTraffic:
                 for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
                     det_time, _, _ = veh.get_arr_sched()
                     dep_time, _, _ = veh.get_dep_sched()
-                    assert dep_time > 0, "no departure is set"
-                    if dep_time < simulation_time:  # record/remove departure
-                        last_veh_indx_to_remove += 1
-                        intersection._inter_config_params.get('print_commandline') and print(
-                            '/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID + '@({:>4.1f} s)'.format(
-                                dep_time))
-                        self._log_csv and self.set_row_vehicle_level_csv(dep_time, veh)
-                    elif det_time < simulation_time:  # record/remove expired points
-                        veh.reset_trj_pts(self.scenario_num, lane, simulation_time, self.full_traj_csv_file)
+                    if dep_time != 0:
+                        # n.b. dep_time == 0 for vehicles that arrive but haven't yet 
+                        # been assigned a trajectory (e.g., if trajectories are only assigned
+                        #  once every 2 seconds)
+                        if dep_time < simulation_time:  # record/remove departure
+                            last_veh_indx_to_remove += 1
+                            intersection._inter_config_params.get('print_commandline') and print(
+                                '/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID + '@({:>4.1f} s)'.format(
+                                    dep_time))
+                            self._log_csv and self.set_row_vehicle_level_csv(dep_time, veh)
+                        elif det_time < simulation_time:  # record/remove expired points
+                            veh.reset_trj_pts(self.scenario_num, lane, simulation_time, self.full_traj_csv_file)
 
-                    else:  # det_time of all behind this vehicle is larger, so we can stop.
-                        break
+                        else:  # det_time of all behind this vehicle is larger, so we can stop.
+                            break
 
                 last_veh_indx_to_remove > -1 and lanes.remove_srv_vehs(lane, last_veh_indx_to_remove)
     
