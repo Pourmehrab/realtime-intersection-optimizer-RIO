@@ -49,9 +49,6 @@ def run_rio(inter_name, sc, start_time_stamp, run_duration, offline=True):
     # Load MCF_SPaT optimization module for initial SPat
     signal = MCF_SPaT(first_detection_time, intersection, sc, start_time_stamp)
 
-    # call the proper phase on ATC Controller # ToDo: comment the line below when not connected to signal controller
-    snmp_phase_ctrl(signal.SPaT_sequence[0]+1, inter_name)
-
     # Load trajectory optimization sub-models and planner
     trajectory_generator = TrajectoryPlanner(intersection)
     timer = Timer(first_detection_time)
@@ -93,7 +90,7 @@ def run_rio(inter_name, sc, start_time_stamp, run_duration, offline=True):
         signal.solve(lanes, intersection, critical_volume_ratio, trajectory_generator, None)
 
         # call the proper phase on ATC Controller # ToDo: comment the line below when not connected to signal controller
-        snmp_phase_ctrl(signal.SPaT_sequence[0]+1, inter_name)
+        # snmp_phase_ctrl(signal.SPaT_sequence[0], inter_name)
 
         # Wrap up and log
         if offline: #TODO" @Pat: You may add additional logging or time measurement code here.
