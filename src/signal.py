@@ -12,7 +12,7 @@ from copy import deepcopy
 import numpy as np
 from sortedcontainers import SortedDict
 
-from data.config import get_GA_parameters
+from src.config import get_GA_parameters
 
 np.random.seed(2018)
 
@@ -897,7 +897,7 @@ class MCF_SPaT(Signal):
                                                   intersection)
                                 trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, tester,
                                                                    '#')
-                                veh.got_trajectory =True
+                                veh.got_trajectory = True
 
                 if flag:
                     print("done")

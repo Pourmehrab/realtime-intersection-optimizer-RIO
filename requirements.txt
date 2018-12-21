@@ -4,4 +4,4 @@ pandas==0.22.0
 sortedcontainers==1.5.9
 cplex==12.8.0.0
 pysnmp==4.4.4
-python==3.6
+utm==0.4.2

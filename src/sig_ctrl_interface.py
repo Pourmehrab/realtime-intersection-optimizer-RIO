@@ -7,6 +7,7 @@
 # University of Florida
 # UF Transportation Institute
 # Dept. of Civil and Coastal Engineering
+# @author: aschkan
 
 from pysnmp.hlapi import *
 from data.config import get_sig_ctrl_interface_params
@@ -198,4 +199,4 @@ def snmp_phase_ctrl(Phase, inter_name):
             snmpOmit([i for i in al if i not in non_conflict[p]])
 
 # Quickstart Test
-# snmp_phase_ctrl(2)
+# snmp_phase_ctrl(4)
