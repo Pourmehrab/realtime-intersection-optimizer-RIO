@@ -58,7 +58,7 @@ def snmpTranslate(List):
 
     .. note::
         This module translates the phase numbers in a given list into snmp legible
-        integers according to NTCIP 1202. The code encripts the list of the phases
+        integers according to NTCIP 1202. The code encrypts the list of the phases
         into a binary string and then parses it to an snmp int value.
 
     """

@@ -1,0 +1,892 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>4. Intersection &mdash; AVIAN 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="5. Signal Phase and Timing (SPaT)" href="[1.3].signal.html" />
+    <link rel="prev" title="2. Simulation" href="[1.1].simulator.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/uf_logo_AVIAN.jpg" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="[0].overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1.1].simulator.html">2. Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1.1].simulator.html#python-data">3. Python Data</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. Intersection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1.3].signal.html">5. Signal Phase and Timing (SPaT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1.4].trajectory.html">6. Trajectory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1.5].opt.unit.tests.html">7. Optimizers/Simulator Unit Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[2].signal.ctrl.interface.html">8. Signal Controller Interface</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">AVIAN</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>4. Intersection</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-src.intersection">
+<span id="intersection"></span><h1>4. Intersection<a class="headerlink" href="#module-src.intersection" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="src.intersection.Intersection">
+<em class="property">class </em><code class="descclassname">src.intersection.</code><code class="descname">Intersection</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Intersection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Keeps intersection/simulation parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Ash Omidvar &lt;<a class="reference external" href="mailto:aschkan&#37;&#52;&#48;ufl&#46;edu">aschkan<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">Sep - 2018</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="src.intersection.Intersection.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Intersection.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>inter_name</strong> – comes from what user input in the command line as the intersection name</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Intersection.detect_lane">
+<code class="descname">detect_lane</code><span class="sig-paren">(</span><em>vehicle_msg</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Intersection.detect_lane" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements video or GPS (UTM) based lane detection.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Intersection.LLA_to_distance_from_stopbar">
+<code class="descname">LLA_to_distance_from_stopbar</code><span class="sig-paren">(</span><em>lat</em>, <em>lon</em>, <em>lane</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Intersection.LLA_to_distance_from_stopbar" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Intersection.UTM_to_distance_from_stopbar">
+<code class="descname">UTM_to_distance_from_stopbar</code><span class="sig-paren">(</span><em>easting</em>, <em>northing</em>, <em>lane</em>, <em>units='m'</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Intersection.UTM_to_distance_from_stopbar" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Intersection.distance_from_stopbar_to_LLA">
+<code class="descname">distance_from_stopbar_to_LLA</code><span class="sig-paren">(</span><em>dist_ft</em>, <em>lane</em>, <em>tol=2</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Intersection.distance_from_stopbar_to_LLA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a distance (feet) from the stopbar in lane to LLA</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Intersection.in_optimization_zone">
+<code class="descname">in_optimization_zone</code><span class="sig-paren">(</span><em>vm</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Intersection.in_optimization_zone" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="src.intersection.Lanes">
+<em class="property">class </em><code class="descclassname">src.intersection.</code><code class="descname">Lanes</code><span class="sig-paren">(</span><em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Lanes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Create data structure in which the key is lane index and value is an arrays a vehicle objects in corresponding lane.</p>
+<dl class="docutils">
+<dt>Objectives:</dt>
+<dd><ul class="first simple">
+<li>To keep vehicles in order</li>
+<li>To keep track of served/un-served vehicles (vehicles which have received optimized trajectory/vehicles which</li>
+</ul>
+<p class="last">are waiting for optimized trajectory
+- Other low level methods: Check if all lanes are empty, maintain indices of vehicles in arrays, etc.</p>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Ash Omidvar &lt;<a class="reference external" href="mailto:aschkan&#37;&#52;&#48;ufl&#46;edu">aschkan<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">Oct-2018</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">some methods of this class are adopted from the simulation version of the system, developed</p>
+</div>
+<p>by Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:mpourmehrab&#37;&#52;&#48;ufl&#46;edu">mpourmehrab<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;.</p>
+<dl class="method">
+<dt id="src.intersection.Lanes.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Lanes.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dictionary of arrays to keep the sequence of vehicles in each lane</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>Use <cite>insert(index)</cite> to add vehicles in the middle of the list.</li>
+<li>Use <cite>del lanes.vehlist[lane][vehicle_index]</cite> to remove a vehicle.</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>intersection</strong> (<a class="reference internal" href="#src.intersection.Intersection" title="src.intersection.Intersection"><em>Intersection</em></a>) – Object to keep parameters related to an intersection</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Lanes.find_and_return_vehicle_by_id">
+<code class="descname">find_and_return_vehicle_by_id</code><span class="sig-paren">(</span><em>lane</em>, <em>veh_id</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Lanes.find_and_return_vehicle_by_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds and returns the vehicle in the lane with
+the query id.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="src.intersection.Lanes.reset_earliest_departure_times">
+<em class="property">static </em><code class="descname">reset_earliest_departure_times</code><span class="sig-paren">(</span><em>lanes</em>, <em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Lanes.reset_earliest_departure_times" title="Permalink to this definition">¶</a></dt>
+<dd><p>”
+To compute the earliest departure time for all vehicles.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lanes</strong> (<a class="reference internal" href="#src.intersection.Lanes" title="src.intersection.Lanes"><em>Lanes</em></a>) – includes all vehicles in all lanes</li>
+<li><strong>intersection</strong> (<a class="reference internal" href="#src.intersection.Intersection" title="src.intersection.Intersection"><em>Intersection</em></a>) – all the intersection parameters are kept here</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Lanes.reset_first_unsrv_indx">
+<code class="descname">reset_first_unsrv_indx</code><span class="sig-paren">(</span><em>num_lanes</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Lanes.reset_first_unsrv_indx" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>num_lanes</strong> – the number of lanes</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Lanes.remove_srv_vehs">
+<code class="descname">remove_srv_vehs</code><span class="sig-paren">(</span><em>lane</em>, <em>indx</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Lanes.remove_srv_vehs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes vehicles from 0 to <code class="docutils literal notranslate"><span class="pre">indx</span></code> where <code class="docutils literal notranslate"><span class="pre">indx</span></code> is the pointer to the position of the last served vehicle</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">deletion also includes vehicle at <code class="docutils literal notranslate"><span class="pre">indx</span></code>. <code class="docutils literal notranslate"><span class="pre">indx</span></code> simply refers to position of vehicles in lane.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lane</strong> (<em>int</em>) – the lane index</li>
+<li><strong>indx</strong> (<em>int</em>) – The index in which all vehicles with indices less than or equal to this get removed</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Lanes.all_served">
+<code class="descname">all_served</code><span class="sig-paren">(</span><em>num_lanes</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Lanes.all_served" title="Permalink to this definition">¶</a></dt>
+<dd><p>To check if all lanes are empty. Used in offline mode to wrap up the computation. Ignore in online mode</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>num_lanes</strong> – number of lanes</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">True</span></code> if all lanes are empty.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Lanes.dec_first_unsrvd_pos">
+<code class="descname">dec_first_unsrvd_pos</code><span class="sig-paren">(</span><em>lane</em>, <em>num_served</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Lanes.dec_first_unsrvd_pos" title="Permalink to this definition">¶</a></dt>
+<dd><p>To Set the index of the first un-served vehicle after vehicles get served (receive trajectory).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lane</strong> – the lane in which the vehicles are served</li>
+<li><strong>num_served</strong> – number of served vehicle</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Lanes.dec_last_veh_pos">
+<code class="descname">dec_last_veh_pos</code><span class="sig-paren">(</span><em>lane</em>, <em>n</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Lanes.dec_last_veh_pos" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lane</strong> – the lane index</li>
+<li><strong>n</strong> – the number of vehicles to be subtracted from index of this lane</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Lanes.inc_first_unsrv_pos">
+<code class="descname">inc_first_unsrv_pos</code><span class="sig-paren">(</span><em>lane</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Lanes.inc_first_unsrv_pos" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>lane</strong> – the lane index</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Lanes.inc_last_veh_pos">
+<code class="descname">inc_last_veh_pos</code><span class="sig-paren">(</span><em>lane</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Lanes.inc_last_veh_pos" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>lane</strong> – the lane index</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="src.intersection.Vehicle">
+<em class="property">class </em><code class="descclassname">src.intersection.</code><code class="descname">Vehicle</code><span class="sig-paren">(</span><em>det_id</em>, <em>det_type</em>, <em>det_time</em>, <em>speed</em>, <em>dist</em>, <em>des_speed</em>, <em>dest</em>, <em>length</em>, <em>a_min</em>, <em>a_max</em>, <em>indx</em>, <em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Vehicle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="docutils">
+<dt>Objectives:</dt>
+<dd><ul class="first last simple">
+<li>To define the vehicle object.</li>
+<li>TO update/record the trajectory points and indices</li>
+<li>To return necessary output info.</li>
+<li>To decide if feedback-loop needs to be actuated</li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:mpourmehrab&#37;&#52;&#48;ufl&#46;edu">mpourmehrab<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;
+Ash Omidvar &lt;<a class="reference external" href="mailto:aschkan&#37;&#52;&#48;ufl&#46;edu">aschkan<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">April-2018
+Oct-2018</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="src.intersection.Vehicle.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>det_id</em>, <em>det_type</em>, <em>det_time</em>, <em>speed</em>, <em>dist</em>, <em>des_speed</em>, <em>dest</em>, <em>length</em>, <em>a_min</em>, <em>a_max</em>, <em>indx</em>, <em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Vehicle.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>To initialize the vehicle object.</p>
+<div class="admonition attention">
+<p class="first admonition-title">Attention</p>
+<ul class="simple">
+<li>The last trajectory index is set to -1 and the first to 0 for initialization purposes. Therefore, if the</li>
+</ul>
+<p>last trajectory point index is less than the first, no trajectory has been computed yet.
+- The shape of trajectory matrix is <span class="math notranslate nohighlight">\(3 \times n\)</span>, where <span class="math notranslate nohighlight">\(n\)</span> is the maximum number of trajectory</p>
+<blockquote>
+<div>points to be kept. The first to third rows correspond to time, distance, and speed profile, respectively.</div></blockquote>
+<ul class="last simple">
+<li>Record vehicle detection time in <code class="docutils literal notranslate"><span class="pre">init_time</span></code>.</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>det_id</strong> (<em>str</em>) – the <em>ID</em> assigned to vehicle by radio (in online mode) or a generator (in offline mode)</li>
+<li><strong>det_type</strong> – 0: <a class="reference internal" href="[0].overview.html#term-cnv"><span class="xref std std-term">CNV</span></a>, 1: <a class="reference internal" href="[0].overview.html#term-cav"><span class="xref std std-term">CAV</span></a></li>
+<li><strong>det_time</strong> – detection time in <span class="math notranslate nohighlight">\(s\)</span> from reference time point</li>
+<li><strong>speed</strong> – detection speed in <span class="math notranslate nohighlight">\(m/s\)</span></li>
+<li><strong>dist</strong> – detection distance to stop bar in <span class="math notranslate nohighlight">\(m\)</span></li>
+<li><strong>des_speed</strong> – desired speed in <span class="math notranslate nohighlight">\(m/s\)</span></li>
+<li><strong>dest</strong> – destination 0: right turn; 1: through; 2: left</li>
+<li><strong>length</strong> – length of vehicle in <span class="math notranslate nohighlight">\(m\)</span></li>
+<li><strong>a_min</strong> – desirable deceleration rate in <span class="math notranslate nohighlight">\(m/s^2\)</span></li>
+<li><strong>a_max</strong> – desired acceleration rate in <span class="math notranslate nohighlight">\(m/s^2\)</span></li>
+<li><strong>indx</strong> – the original row index in the input CSV file</li>
+<li><strong>intersection</strong> (<a class="reference internal" href="#src.intersection.Intersection" title="src.intersection.Intersection"><em>Intersection</em></a>) – contains all the intersection parameters</li>
+<li><strong>self.trajectory</strong> – keeps the trajectory points as columns of a <span class="math notranslate nohighlight">\(3 \times n\)</span> array that <span class="math notranslate nohighlight">\(n\)</span> is
+<code class="docutils literal notranslate"><span class="pre">max_num_traj_pts</span></code></li>
+<li><strong>self.first_trj_point_indx</strong> – points to the column of the <code class="docutils literal notranslate"><span class="pre">trajectory</span></code> array where the current point is</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>stored. This gets updated as time steps get updated
+:param self.last_trj_point_indx: points to the column of the <code class="docutils literal notranslate"><span class="pre">trajectory</span></code> where the last trajectory</p>
+<blockquote>
+<div>point is stored</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>self.poly</strong> (<em>dict</em>) – keeps the polynomial degree, reference time and the coefficients to reproduce trajectory</li>
+<li><strong>self.earliest_departure</strong> – the earliest departure time from the stop bar</li>
+<li><strong>self.scheduled_departure</strong> – the scheduled departure time from the stop bar</li>
+<li><strong>self.resched_dep</strong> – True if a vehicle is available to receive a new departure time,</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>False if want to keep the previous trajectory
+:type self.resched_dep: bool
+:param self.get_sched: True if a vehicle is just scheduled a <strong>different</strong> departure and is ready to be
+assigned a new trajectory #TODO: Patrick - refactor to got_trajectory
+:type self.get_sched: bool
+:param self._call_reps_traj_planner: number of times a vehicle object trajectory is updated.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="simple">
+<li>By definition <code class="docutils literal notranslate"><span class="pre">scheduled_departure</span></code> is always greater than or equal to <code class="docutils literal notranslate"><span class="pre">earliest_arrival</span></code>.</li>
+<li>It is important that user sets an ideal size of trajectory array by <code class="docutils literal notranslate"><span class="pre">max_num_traj_points</span></code>.</li>
+<li>A vehicle may be available to be rescheduled but gets the same departure time;</li>
+</ul>
+<p class="last">in that case, <code class="docutils literal notranslate"><span class="pre">get_sched</span></code>  should hold False.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Vehicle.set_sched_dep">
+<code class="descname">set_sched_dep</code><span class="sig-paren">(</span><em>t_scheduled</em>, <em>d_scheduled</em>, <em>s_scheduled</em>, <em>lane</em>, <em>veh_indx</em>, <em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Vehicle.set_sched_dep" title="Permalink to this definition">¶</a></dt>
+<dd><p>It only schedules if the new departure time is different and vehicle is far enough for trajectory assignment</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>When a new vehicle is scheduled, it has two trajectory points: one for the current state and the other for the final state.</li>
+<li>If the vehicle is closer than <code class="docutils literal notranslate"><span class="pre">min_dist_to_stop_bar</span></code>, avoids appending the schedule.</li>
+<li>Set the <code class="docutils literal notranslate"><span class="pre">get_sched</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code> only if vehicle is getting a new schedule and trajectory planning might become relevant.</li>
+<li>Moves back the first trajectory point to make best use of limited size to store trajectory points</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>t_scheduled</strong> – scheduled departure time (<span class="math notranslate nohighlight">\(s\)</span>)</li>
+<li><strong>d_scheduled</strong> – scheduled departure distance (<span class="math notranslate nohighlight">\(m\)</span>)</li>
+<li><strong>s_scheduled</strong> – scheduled departure speed (<span class="math notranslate nohighlight">\(m/s\)</span>)</li>
+<li><strong>lane</strong> – the lane this vehicle is in (<em>for printing purpose only</em>)</li>
+<li><strong>veh_indx</strong> – The index of this vehicle in its lane (<em>for printing purpose only</em>)</li>
+<li><strong>intersection</strong> (<a class="reference internal" href="#src.intersection.Intersection" title="src.intersection.Intersection"><em>Intersection</em></a>) – </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Vehicle.earliest_arr_cnv">
+<code class="descname">earliest_arr_cnv</code><span class="sig-paren">(</span><em>max_speed</em>, <em>min_headway=0.0</em>, <em>t_earliest=0.0</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Vehicle.earliest_arr_cnv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses the latest departure time under the following cases to compute the earliest time the conventional
+vehicle can reach the stop bar:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Maintains the <em>estimated mean speed</em> till departure</li>
+<li>Departs at the minimum headway with the vehicle in front</li>
+</ul>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>min_headway</strong> – when 0, the vehicle is a lead and this constraint relaxes</li>
+<li><strong>t_earliest</strong> – earliest time of lead vehicle that is only needed if the vehicle is a follower vehicle</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The earliest departure time of the subject conventional vehicle in seconds from the reference time</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>Assumes the conventional vehicle would maintain its arrival speed if not restricted by other vehicles or the signal.</li>
+<li>Enter <code class="docutils literal notranslate"><span class="pre">min_headway</span></code> and <code class="docutils literal notranslate"><span class="pre">t_earliest</span></code> as zeros (default values), if a vehicle is the first in its lane.</li>
+<li>Make sure this is compatible with what implemented under <a class="reference internal" href="[1.4].trajectory.html#src.trajectory.FollowerConventional" title="src.trajectory.FollowerConventional"><code class="xref any py py-class docutils literal notranslate"><span class="pre">FollowerConventional</span></code></a></li>
+<li>There are consequences if this method underestimates/overestimates the earliest departure time.</li>
+</ul>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Vehicle.earliest_arr_cav">
+<code class="descname">earliest_arr_cav</code><span class="sig-paren">(</span><em>max_speed</em>, <em>min_headway=0.0</em>, <em>t_earliest=0.0</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Vehicle.earliest_arr_cav" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Uses the latest departure time under the following cases to compute the earliest time the connected vehicle can reach the stop bar:</dt>
+<dd><ul class="first last simple">
+<li>Accelerate/Decelerate to the maximum allowable speed and maintain the speed till departure</li>
+<li>Distance is short, it accelerates/decelerated to the best speed and departs</li>
+<li>Departs at the minimum headway with its lead vehicle (only for followers close enough to their lead)</li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The main assumption is that the CAV <em>would</em> accelerate to the maximum speed and maintain the speed util departure.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>max_speed</strong> – maximum speed limit</li>
+<li><strong>min_headway</strong> – minimum (saturation) headway at the stop bar</li>
+<li><strong>t_earliest</strong> – earliest timemap_veh_type2str of lead vehicle that is only needed if the vehicle is a follower vehicle</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The earliest departure time of the subject connected vehicle in seconds from the reference time</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Vehicle.reset_trj_pts">
+<code class="descname">reset_trj_pts</code><span class="sig-paren">(</span><em>sc</em>, <em>lane</em>, <em>time_threshold</em>, <em>file</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Vehicle.reset_trj_pts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the trajectory points in the log file if the time stamp is before the <code class="docutils literal notranslate"><span class="pre">time_threshold</span></code>
+and then removes those points by updating the pointer to the first trajectory point.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Before calling this make sure at least the first trajectory point’s time stamp is less than provided time
+threshold or such a call would be meaningless.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sc</strong> – scenario number being simulated</li>
+<li><strong>lane</strong> – lane number that is zero-based  (it records it one-based)</li>
+<li><strong>time_threshold</strong> – any trajectory point before this is considered expired (normally its simulation time)</li>
+<li><strong>file</strong> – The log file to be written. It is initialized in <code class="xref any docutils literal notranslate"><span class="pre">OffTraffic.__init__()</span></code> method, if <code class="docutils literal notranslate"><span class="pre">None</span></code>,</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>this does not record points in CSV.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Vehicle.print_trj_points">
+<code class="descname">print_trj_points</code><span class="sig-paren">(</span><em>lane</em>, <em>veh_indx</em>, <em>identifier</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Vehicle.print_trj_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print the first and last trajectory point information. This may be used either when a plan is scheduled or a trajectory is computed.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lane</strong> – zero-based lane number</li>
+<li><strong>veh_indx</strong> – index to find the vehicle in its lane array</li>
+<li><strong>identifier</strong> – is
+- <code class="docutils literal notranslate"><span class="pre">*</span></code> for optimized trajectory
+-<code class="docutils literal notranslate"><span class="pre">&#64;</span></code> for scheduled departure.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Example output to the commandline:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;@&gt;</span> <span class="n">CNV</span><span class="p">:</span><span class="n">xyz004</span><span class="p">:</span><span class="mi">2</span><span class="n">nd</span> <span class="ow">in</span> <span class="n">L04</span><span class="p">:</span> <span class="p">(</span><span class="mf">40.0</span> <span class="n">s</span><span class="p">,</span> <span class="mf">499.9</span> <span class="n">m</span><span class="p">,</span>  <span class="mf">7.8</span> <span class="n">m</span><span class="o">/</span><span class="n">s</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="mf">157.1</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span> <span class="mf">17.9</span><span class="p">),</span>   <span class="mi">2</span> <span class="n">points</span><span class="p">,</span>  <span class="mi">0</span> <span class="n">attempts</span>
+</pre></div>
+</div>
+<p>which reads a conventional vehicle with ID of <code class="docutils literal notranslate"><span class="pre">xyz004</span></code> is the second vehicle in the fourth lane. It was
+detected at time 40 second, distance to stop bar of 499.9 meters, speed of 7.8 m/s and is scheduled to depart
+at time 157.1 second, at speed of 17.9 m/s before sent to the trajectory optimizer.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Vehicle.set_poly">
+<code class="descname">set_poly</code><span class="sig-paren">(</span><em>beta</em>, <em>t_ref</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Vehicle.set_poly" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the coefficients that define the polynomial that defines trajectory of a connected vehicle</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>beta</strong> – coefficient vector of the assigned polynomial (after solving the LP with CPLEX)</li>
+<li><strong>t_ref</strong> – reference time in which the polynomial shall be evaluated from</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Vehicle.set_first_trj_pt_indx">
+<code class="descname">set_first_trj_pt_indx</code><span class="sig-paren">(</span><em>indx</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Vehicle.set_first_trj_pt_indx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the fist column index that points to the trajectory start
+:param indx: the index to the first trajectory point</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Vehicle.set_last_trj_pt_indx">
+<code class="descname">set_last_trj_pt_indx</code><span class="sig-paren">(</span><em>indx</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Vehicle.set_last_trj_pt_indx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the last column index that points to the trajectory start
+:param indx: the index to the last trajectory point</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="src.intersection.Vehicle.map_veh_type2str">
+<em class="property">static </em><code class="descname">map_veh_type2str</code><span class="sig-paren">(</span><em>code</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Vehicle.map_veh_type2str" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>For the purpose of printing, this method translates the vehicle codes. Currently, it supports:</dt>
+<dd><ul class="first last simple">
+<li>0 : Conventional Vehicle (<a class="reference internal" href="[0].overview.html#term-cnv"><span class="xref std std-term">CNV</span></a>)</li>
+<li>1 : Connected and Automated Vehicle (<a class="reference internal" href="[0].overview.html#term-cav"><span class="xref std std-term">CAV</span></a>)</li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>code</strong> (<em>int</em>) – numeric code for the vehicle type</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Vehicle.inc_traj_planner_calls">
+<code class="descname">inc_traj_planner_calls</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Vehicle.inc_traj_planner_calls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Increments the count on how many times sent to trajectory planner</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Vehicle.get_arr_sched">
+<code class="descname">get_arr_sched</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Vehicle.get_arr_sched" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The triple <span class="math notranslate nohighlight">\((t,d,s)\)</span> corresponding to the arrival of subject vehicle</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Vehicle.get_dep_sched">
+<code class="descname">get_dep_sched</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Vehicle.get_dep_sched" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The triple <span class="math notranslate nohighlight">\((t,d,s)\)</span> corresponding to the departure of subject vehicle</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Vehicle.scale_traj_pts">
+<code class="descname">scale_traj_pts</code><span class="sig-paren">(</span><em>final_indx</em>, <em>final_foll_t</em>, <em>dt_total</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Vehicle.scale_traj_pts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scales the trajectory of the vehicle according to scaling the trajectory along the time axes.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Only should get called if points are delayed compared to the scheduled departure time</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">self.trajectory</span></code> will be scaled after this.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.Vehicle.update">
+<code class="descname">update</code><span class="sig-paren">(</span><em>vehicle_msg</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.Vehicle.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>TODO update information with latest vehicle data</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="src.intersection.TrajectoryPlanner">
+<em class="property">class </em><code class="descclassname">src.intersection.</code><code class="descname">TrajectoryPlanner</code><span class="sig-paren">(</span><em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.TrajectoryPlanner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Plans trajectories of all type. This makes calls to <strong>trajectory</strong> classes.
+# Todo: &#64;Ash: explain planner and 4 optimizers briefly.
+:Author:</p>
+<blockquote>
+<div>Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;
+Ash Omidvar &lt;<a class="reference external" href="mailto:aschkan&#37;&#52;&#48;ufl&#46;edu">aschkan<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April-2018
+Nov-2018</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="src.intersection.TrajectoryPlanner.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.TrajectoryPlanner.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiates the <strong>trajectory</strong> classes</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.intersection.TrajectoryPlanner.plan_trajectory">
+<code class="descname">plan_trajectory</code><span class="sig-paren">(</span><em>lanes</em>, <em>veh</em>, <em>lane</em>, <em>veh_indx</em>, <em>intersection</em>, <em>tester</em>, <em>identifier</em><span class="sig-paren">)</span><a class="headerlink" href="#src.intersection.TrajectoryPlanner.plan_trajectory" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lanes</strong> (<a class="reference internal" href="#src.intersection.Lanes" title="src.intersection.Lanes"><em>Lanes</em></a>) – </li>
+<li><strong>veh</strong> (<a class="reference internal" href="#src.intersection.Vehicle" title="src.intersection.Vehicle"><em>Vehicle</em></a>) – </li>
+<li><strong>lane</strong> – </li>
+<li><strong>veh_indx</strong> – </li>
+<li><strong>intersection</strong> – </li>
+<li><strong>identifier</strong> – Shows type of assigned trajectory</li>
+<li><strong>tester</strong> (<em>test.unit_tests.SimTest</em>) – the test object</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="[1.3].signal.html" class="btn btn-neutral float-right" title="5. Signal Phase and Timing (SPaT)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="[1.1].simulator.html" class="btn btn-neutral" title="2. Simulation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Mahmoud Pourmehrab
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/copybutton.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

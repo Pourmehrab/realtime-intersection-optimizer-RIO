@@ -25,9 +25,9 @@
 
   
 
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="#" />
     <link rel="search" title="Search" href="search.html" /> 
 
@@ -88,7 +88,7 @@
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="[0].overview.html">1. Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="[1.1].simulator.html">2. Simulation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="[1.1].simulator.html#module-data.data">3. Python Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1.1].simulator.html#python-data">3. Python Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="[1.2].intersection.html">4. Intersection</a></li>
 <li class="toctree-l1"><a class="reference internal" href="[1.3].signal.html">5. Signal Phase and Timing (SPaT)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="[1.4].trajectory.html">6. Trajectory</a></li>
@@ -171,7 +171,6 @@
  | <a href="#I"><strong>I</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
- | <a href="#N"><strong>N</strong></a>
  | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#R"><strong>R</strong></a>
@@ -190,25 +189,21 @@
       <ul>
         <li><a href="[1.2].intersection.html#src.intersection.Lanes.__init__">(src.intersection.Lanes method)</a>
 </li>
-        <li><a href="[1.2].intersection.html#src.intersection.Traffic.__init__">(src.intersection.Traffic method)</a>
-</li>
         <li><a href="[1.2].intersection.html#src.intersection.TrajectoryPlanner.__init__">(src.intersection.TrajectoryPlanner method)</a>
 </li>
         <li><a href="[1.2].intersection.html#src.intersection.Vehicle.__init__">(src.intersection.Vehicle method)</a>
 </li>
         <li><a href="[1.3].signal.html#src.signal.GA_SPaT.__init__">(src.signal.GA_SPaT method)</a>
 </li>
-        <li><a href="[1.3].signal.html#src.signal.Pretimed.__init__">(src.signal.Pretimed method)</a>
+        <li><a href="[1.3].signal.html#src.signal.MCF_SPaT.__init__">(src.signal.MCF_SPaT method)</a>
 </li>
         <li><a href="[1.3].signal.html#src.signal.Signal.__init__">(src.signal.Signal method)</a>
-</li>
-        <li><a href="[1.1].simulator.html#src.simulator.Simulator.__init__">(src.simulator.Simulator method)</a>
 </li>
       </ul></li>
       <li><a href="[1.3].signal.html#src.signal.GA_SPaT._append_extend_phase">_append_extend_phase() (src.signal.GA_SPaT method)</a>
 
       <ul>
-        <li><a href="[1.3].signal.html#src.signal.Pretimed._append_extend_phase">(src.signal.Pretimed method)</a>
+        <li><a href="[1.3].signal.html#src.signal.MCF_SPaT._append_extend_phase">(src.signal.MCF_SPaT method)</a>
 </li>
         <li><a href="[1.3].signal.html#src.signal.Signal._append_extend_phase">(src.signal.Signal method)</a>
 </li>
@@ -218,7 +213,7 @@
       <li><a href="[1.3].signal.html#src.signal.GA_SPaT._do_base_SPaT">_do_base_SPaT() (src.signal.GA_SPaT method)</a>
 
       <ul>
-        <li><a href="[1.3].signal.html#src.signal.Pretimed._do_base_SPaT">(src.signal.Pretimed method)</a>
+        <li><a href="[1.3].signal.html#src.signal.MCF_SPaT._do_base_SPaT">(src.signal.MCF_SPaT method)</a>
 </li>
         <li><a href="[1.3].signal.html#src.signal.Signal._do_base_SPaT">(src.signal.Signal method)</a>
 </li>
@@ -226,7 +221,7 @@
       <li><a href="[1.3].signal.html#src.signal.GA_SPaT._do_non_base_SPaT">_do_non_base_SPaT() (src.signal.GA_SPaT method)</a>
 
       <ul>
-        <li><a href="[1.3].signal.html#src.signal.Pretimed._do_non_base_SPaT">(src.signal.Pretimed method)</a>
+        <li><a href="[1.3].signal.html#src.signal.MCF_SPaT._do_non_base_SPaT">(src.signal.MCF_SPaT method)</a>
 </li>
         <li><a href="[1.3].signal.html#src.signal.Signal._do_non_base_SPaT">(src.signal.Signal method)</a>
 </li>
@@ -238,7 +233,7 @@
       <li><a href="[1.3].signal.html#src.signal.GA_SPaT._flush_upcoming_SPaTs">_flush_upcoming_SPaTs() (src.signal.GA_SPaT method)</a>
 
       <ul>
-        <li><a href="[1.3].signal.html#src.signal.Pretimed._flush_upcoming_SPaTs">(src.signal.Pretimed method)</a>
+        <li><a href="[1.3].signal.html#src.signal.MCF_SPaT._flush_upcoming_SPaTs">(src.signal.MCF_SPaT method)</a>
 </li>
         <li><a href="[1.3].signal.html#src.signal.Signal._flush_upcoming_SPaTs">(src.signal.Signal method)</a>
 </li>
@@ -252,7 +247,7 @@
       <li><a href="[1.3].signal.html#src.signal.GA_SPaT._set_lane_lane_incidence">_set_lane_lane_incidence() (src.signal.GA_SPaT method)</a>
 
       <ul>
-        <li><a href="[1.3].signal.html#src.signal.Pretimed._set_lane_lane_incidence">(src.signal.Pretimed method)</a>
+        <li><a href="[1.3].signal.html#src.signal.MCF_SPaT._set_lane_lane_incidence">(src.signal.MCF_SPaT method)</a>
 </li>
         <li><a href="[1.3].signal.html#src.signal.Signal._set_lane_lane_incidence">(src.signal.Signal method)</a>
 </li>
@@ -260,7 +255,7 @@
       <li><a href="[1.3].signal.html#src.signal.GA_SPaT._set_non_base_scheduled_departures">_set_non_base_scheduled_departures() (src.signal.GA_SPaT method)</a>
 
       <ul>
-        <li><a href="[1.3].signal.html#src.signal.Pretimed._set_non_base_scheduled_departures">(src.signal.Pretimed method)</a>
+        <li><a href="[1.3].signal.html#src.signal.MCF_SPaT._set_non_base_scheduled_departures">(src.signal.MCF_SPaT method)</a>
 </li>
         <li><a href="[1.3].signal.html#src.signal.Signal._set_non_base_scheduled_departures">(src.signal.Signal method)</a>
 </li>
@@ -268,7 +263,7 @@
       <li><a href="[1.3].signal.html#src.signal.GA_SPaT._set_phase_lane_incidence">_set_phase_lane_incidence() (src.signal.GA_SPaT method)</a>
 
       <ul>
-        <li><a href="[1.3].signal.html#src.signal.Pretimed._set_phase_lane_incidence">(src.signal.Pretimed method)</a>
+        <li><a href="[1.3].signal.html#src.signal.MCF_SPaT._set_phase_lane_incidence">(src.signal.MCF_SPaT method)</a>
 </li>
         <li><a href="[1.3].signal.html#src.signal.Signal._set_phase_lane_incidence">(src.signal.Signal method)</a>
 </li>
@@ -301,22 +296,16 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="[0].overview.html#term-cav"><strong>CAV</strong></a>
 </li>
-      <li><a href="[1.5].opt.unit.tests.html#test.unit_tests.SimTest.check_for_collision">check_for_collision() (test.unit_tests.SimTest static method)</a>
-</li>
-      <li><a href="[1.5].opt.unit.tests.html#test.unit_tests.SimTest.check_order_in_lanes">check_order_in_lanes() (test.unit_tests.SimTest method)</a>
-</li>
       <li><a href="[1.3].signal.html#src.signal.GA_SPaT.close_sig_csv">close_sig_csv() (src.signal.GA_SPaT method)</a>
 
       <ul>
-        <li><a href="[1.3].signal.html#src.signal.Pretimed.close_sig_csv">(src.signal.Pretimed method)</a>
+        <li><a href="[1.3].signal.html#src.signal.MCF_SPaT.close_sig_csv">(src.signal.MCF_SPaT method)</a>
 </li>
         <li><a href="[1.3].signal.html#src.signal.Signal.close_sig_csv">(src.signal.Signal method)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[1.2].intersection.html#src.intersection.Traffic.close_trj_csv">close_trj_csv() (src.intersection.Traffic method)</a>
-</li>
       <li><a href="[0].overview.html#term-cnv"><strong>CNV</strong></a>
 </li>
       <li><a href="[1.4].trajectory.html#src.trajectory.FollowerConventional.comp_speed_distance">comp_speed_distance() (src.trajectory.FollowerConventional static method)</a>
@@ -331,15 +320,17 @@
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[1.1].simulator.html#module-data.data">data.data (module)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Lanes.dec_first_unsrvd_pos">dec_first_unsrvd_pos() (src.intersection.Lanes method)</a>
 </li>
-      <li><a href="[1.2].intersection.html#src.intersection.Lanes.decrement_first_unsrvd_indx">decrement_first_unsrvd_indx() (src.intersection.Lanes method)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Lanes.dec_last_veh_pos">dec_last_veh_pos() (src.intersection.Lanes method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[1.2].intersection.html#src.intersection.Lanes.decrement_last_veh_indx">decrement_last_veh_indx() (src.intersection.Lanes method)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Intersection.detect_lane">detect_lane() (src.intersection.Intersection method)</a>
 </li>
       <li><a href="[1.4].trajectory.html#src.trajectory.Trajectory.discretize_time_interval">discretize_time_interval() (src.trajectory.Trajectory method)</a>
+</li>
+      <li><a href="[1.2].intersection.html#src.intersection.Intersection.distance_from_stopbar_to_LLA">distance_from_stopbar_to_LLA() (src.intersection.Intersection method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -347,11 +338,11 @@
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.earliest_arrival_connected">earliest_arrival_connected() (src.intersection.Vehicle method)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.earliest_arr_cav">earliest_arr_cav() (src.intersection.Vehicle method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.earliest_arrival_conventional">earliest_arrival_conventional() (src.intersection.Vehicle method)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.earliest_arr_cnv">earliest_arr_cnv() (src.intersection.Vehicle method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -359,10 +350,12 @@
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[1.4].trajectory.html#src.trajectory.FollowerConnected">FollowerConnected (class in src.trajectory)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Lanes.find_and_return_vehicle_by_id">find_and_return_vehicle_by_id() (src.intersection.Lanes method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="[1.4].trajectory.html#src.trajectory.FollowerConnected">FollowerConnected (class in src.trajectory)</a>
+</li>
       <li><a href="[1.4].trajectory.html#src.trajectory.FollowerConventional">FollowerConventional (class in src.trajectory)</a>
 </li>
   </ul></td>
@@ -375,33 +368,11 @@
 </li>
       <li><a href="[1.3].signal.html#src.signal.GA_SPaT">GA_SPaT (class in src.signal)</a>
 </li>
-      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.get_arrival_schedule">get_arrival_schedule() (src.intersection.Vehicle method)</a>
-</li>
-      <li><a href="[1.1].simulator.html#data.data.get_conflict_dict">get_conflict_dict() (in module data.data)</a>
-</li>
-      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.get_departure_schedule">get_departure_schedule() (src.intersection.Vehicle method)</a>
-</li>
-      <li><a href="[1.2].intersection.html#src.intersection.Traffic.get_first_detection_time">get_first_detection_time() (src.intersection.Traffic method)</a>
-</li>
-      <li><a href="[1.1].simulator.html#data.data.get_GA_parameters">get_GA_parameters() (in module data.data)</a>
-</li>
-      <li><a href="[1.1].simulator.html#data.data.get_general_params">get_general_params() (in module data.data)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.get_arr_sched">get_arr_sched() (src.intersection.Vehicle method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[1.1].simulator.html#data.data.get_phases">get_phases() (in module data.data)</a>
-</li>
-      <li><a href="[1.1].simulator.html#data.data.get_pretimed_parameters">get_pretimed_parameters() (in module data.data)</a>
-</li>
-      <li><a href="[1.1].simulator.html#src.simulator.Simulator.get_running_clock">get_running_clock() (src.simulator.Simulator method)</a>
-</li>
-      <li><a href="[1.1].simulator.html#data.data.get_sig_ctrl_interface_params">get_sig_ctrl_interface_params() (in module data.data)</a>
-</li>
-      <li><a href="[1.1].simulator.html#data.data.get_signal_params">get_signal_params() (in module data.data)</a>
-</li>
-      <li><a href="[1.2].intersection.html#src.intersection.Traffic.get_traffic_info">get_traffic_info() (src.intersection.Traffic method)</a>
-</li>
-      <li><a href="[1.2].intersection.html#src.intersection.Traffic.get_volumes">get_volumes() (src.intersection.Traffic static method)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.get_dep_sched">get_dep_sched() (src.intersection.Vehicle method)</a>
 </li>
       <li><a href="[0].overview.html#term-gipps-cf"><strong>Gipps CF</strong></a>
 </li>
@@ -413,13 +384,15 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[1.2].intersection.html#src.intersection.Lanes.increment_first_unsrvd_indx">increment_first_unsrvd_indx() (src.intersection.Lanes method)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Intersection.in_optimization_zone">in_optimization_zone() (src.intersection.Intersection method)</a>
 </li>
-      <li><a href="[1.2].intersection.html#src.intersection.Lanes.increment_last_veh_indx">increment_last_veh_indx() (src.intersection.Lanes method)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Lanes.inc_first_unsrv_pos">inc_first_unsrv_pos() (src.intersection.Lanes method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.increment_times_sent_to_traj_planner">increment_times_sent_to_traj_planner() (src.intersection.Vehicle method)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Lanes.inc_last_veh_pos">inc_last_veh_pos() (src.intersection.Lanes method)</a>
+</li>
+      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.inc_traj_planner_calls">inc_traj_planner_calls() (src.intersection.Vehicle method)</a>
 </li>
       <li><a href="[1.2].intersection.html#src.intersection.Intersection">Intersection (class in src.intersection)</a>
 </li>
@@ -431,13 +404,13 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="[1.2].intersection.html#src.intersection.Lanes">Lanes (class in src.intersection)</a>
 </li>
-      <li><a href="[1.2].intersection.html#src.intersection.Traffic.last_veh_arrived">last_veh_arrived() (src.intersection.Traffic method)</a>
+      <li><a href="[1.4].trajectory.html#src.trajectory.LeadConnected">LeadConnected (class in src.trajectory)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[1.4].trajectory.html#src.trajectory.LeadConnected">LeadConnected (class in src.trajectory)</a>
-</li>
       <li><a href="[1.4].trajectory.html#src.trajectory.LeadConventional">LeadConventional (class in src.trajectory)</a>
+</li>
+      <li><a href="[1.2].intersection.html#src.intersection.Intersection.LLA_to_distance_from_stopbar">LLA_to_distance_from_stopbar() (src.intersection.Intersection method)</a>
 </li>
       <li><a href="[0].overview.html#term-lp"><strong>LP</strong></a>
 </li>
@@ -453,13 +426,7 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="[0].overview.html#term-mcf"><strong>MCF</strong></a>
 </li>
-  </ul></td>
-</tr></table>
-
-<h2 id="N">N</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[1.1].simulator.html#src.simulator.Simulator.next_sim_step">next_sim_step() (src.simulator.Simulator method)</a>
+      <li><a href="[1.3].signal.html#src.signal.MCF_SPaT">MCF_SPaT (class in src.signal)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -481,17 +448,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="[1.2].intersection.html#src.intersection.TrajectoryPlanner.plan_trajectory">plan_trajectory() (src.intersection.TrajectoryPlanner method)</a>
 </li>
-      <li><a href="[0].overview.html#term-pretimed"><strong>pretimed</strong></a>
-</li>
-      <li><a href="[1.3].signal.html#src.signal.Pretimed">Pretimed (class in src.signal)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="[0].overview.html#term-pretimed"><strong>pretimed</strong></a>
+</li>
       <li><a href="[1.2].intersection.html#src.intersection.Vehicle.print_trj_points">print_trj_points() (src.intersection.Vehicle method)</a>
-</li>
-      <li><a href="[1.2].intersection.html#src.intersection.Lanes.purge_served_vehs">purge_served_vehs() (src.intersection.Lanes method)</a>
-</li>
-      <li><a href="[1.5].opt.unit.tests.html#test.unit_tests.SimTest.py_version_test">py_version_test() (test.unit_tests.SimTest method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -499,17 +460,15 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[1.1].simulator.html#src.simulator.Simulator.record_sim_stats">record_sim_stats() (src.simulator.Simulator method)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Lanes.remove_srv_vehs">remove_srv_vehs() (src.intersection.Lanes method)</a>
 </li>
-      <li><a href="[1.2].intersection.html#src.intersection.Lanes.refresh_earliest_departure_times">refresh_earliest_departure_times() (src.intersection.Lanes static method)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Lanes.reset_earliest_departure_times">reset_earliest_departure_times() (src.intersection.Lanes static method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[1.2].intersection.html#src.intersection.Lanes.reset_first_unsrvd_indx">reset_first_unsrvd_indx() (src.intersection.Lanes method)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Lanes.reset_first_unsrv_indx">reset_first_unsrv_indx() (src.intersection.Lanes method)</a>
 </li>
-      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.reset_trj_points">reset_trj_points() (src.intersection.Vehicle method)</a>
-</li>
-      <li><a href="[0].overview.html#sim_main.run_avian">run_avian() (in module sim_main)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.reset_trj_pts">reset_trj_pts() (src.intersection.Vehicle method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -517,15 +476,11 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[1.2].intersection.html#src.intersection.Traffic.save_veh_level_csv">save_veh_level_csv() (src.intersection.Traffic method)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.scale_traj_pts">scale_traj_pts() (src.intersection.Vehicle method)</a>
 </li>
-      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.scale_traj_points">scale_traj_points() (src.intersection.Vehicle method)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.set_first_trj_pt_indx">set_first_trj_pt_indx() (src.intersection.Vehicle method)</a>
 </li>
-      <li><a href="[1.2].intersection.html#src.intersection.Traffic.serve_update_at_stop_bar">serve_update_at_stop_bar() (src.intersection.Traffic method)</a>
-</li>
-      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.set_first_trj_point_indx">set_first_trj_point_indx() (src.intersection.Vehicle method)</a>
-</li>
-      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.set_last_trj_point_indx">set_last_trj_point_indx() (src.intersection.Vehicle method)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.set_last_trj_pt_indx">set_last_trj_pt_indx() (src.intersection.Vehicle method)</a>
 </li>
       <li><a href="[1.4].trajectory.html#src.trajectory.FollowerConnected.set_model">set_model() (src.trajectory.FollowerConnected method)</a>
 
@@ -535,42 +490,18 @@
       </ul></li>
       <li><a href="[1.2].intersection.html#src.intersection.Vehicle.set_poly">set_poly() (src.intersection.Vehicle method)</a>
 </li>
-      <li><a href="[1.2].intersection.html#src.intersection.Traffic.set_row_vehicle_level_csv">set_row_vehicle_level_csv() (src.intersection.Traffic method)</a>
-</li>
-      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.set_scheduled_departure">set_scheduled_departure() (src.intersection.Vehicle method)</a>
+      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.set_sched_dep">set_sched_dep() (src.intersection.Vehicle method)</a>
 </li>
       <li><a href="[1.4].trajectory.html#src.trajectory.Trajectory.set_trajectory">set_trajectory() (src.trajectory.Trajectory static method)</a>
 </li>
       <li><a href="[1.3].signal.html#src.signal.Signal">Signal (class in src.signal)</a>
 </li>
-      <li><a href="[0].overview.html#module-sim_main">sim_main (module)</a>
-</li>
-      <li><a href="[1.5].opt.unit.tests.html#test.unit_tests.SimTest">SimTest (class in test.unit_tests)</a>
-</li>
-      <li><a href="[1.1].simulator.html#src.simulator.Simulator">Simulator (class in src.simulator)</a>
-</li>
-      <li><a href="[2].signal.ctrl.interface.html#src.sig_ctrl_interface.snmp_phase_ctrl">snmp_phase_ctrl() (in module src.sig_ctrl_interface)</a>
-</li>
-      <li><a href="[2].signal.ctrl.interface.html#src.sig_ctrl_interface.snmpForceOff">snmpForceOff() (in module src.sig_ctrl_interface)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[2].signal.ctrl.interface.html#src.sig_ctrl_interface.snmpHold">snmpHold() (in module src.sig_ctrl_interface)</a>
-</li>
-      <li><a href="[2].signal.ctrl.interface.html#src.sig_ctrl_interface.snmpOmit">snmpOmit() (in module src.sig_ctrl_interface)</a>
-</li>
-      <li><a href="[2].signal.ctrl.interface.html#src.sig_ctrl_interface.snmpSet">snmpSet() (in module src.sig_ctrl_interface)</a>
-</li>
-      <li><a href="[2].signal.ctrl.interface.html#src.sig_ctrl_interface.snmpTerminate">snmpTerminate() (in module src.sig_ctrl_interface)</a>
-</li>
-      <li><a href="[2].signal.ctrl.interface.html#src.sig_ctrl_interface.snmpTranslate">snmpTranslate() (in module src.sig_ctrl_interface)</a>
-</li>
-      <li><a href="[2].signal.ctrl.interface.html#src.sig_ctrl_interface.snmpVehCall">snmpVehCall() (in module src.sig_ctrl_interface)</a>
-</li>
       <li><a href="[1.3].signal.html#src.signal.GA_SPaT.solve">solve() (src.signal.GA_SPaT method)</a>
 
       <ul>
-        <li><a href="[1.3].signal.html#src.signal.Pretimed.solve">(src.signal.Pretimed method)</a>
+        <li><a href="[1.3].signal.html#src.signal.MCF_SPaT.solve">(src.signal.MCF_SPaT method)</a>
 </li>
         <li><a href="[1.4].trajectory.html#src.trajectory.FollowerConnected.solve">(src.trajectory.FollowerConnected method)</a>
 </li>
@@ -585,11 +516,7 @@
 </li>
       <li><a href="[1.2].intersection.html#module-src.intersection">src.intersection (module)</a>
 </li>
-      <li><a href="[2].signal.ctrl.interface.html#module-src.sig_ctrl_interface">src.sig_ctrl_interface (module)</a>
-</li>
       <li><a href="[1.3].signal.html#module-src.signal">src.signal (module)</a>
-</li>
-      <li><a href="[1.1].simulator.html#module-src.simulator">src.simulator (module)</a>
 </li>
       <li><a href="[1.4].trajectory.html#module-src.trajectory">src.trajectory (module)</a>
 </li>
@@ -599,26 +526,14 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[1.5].opt.unit.tests.html#module-test.unit_tests">test.unit_tests (module)</a>
-</li>
-      <li><a href="[1.5].opt.unit.tests.html#test.unit_tests.SimTest.test_departure_of_trj">test_departure_of_trj() (test.unit_tests.SimTest method)</a>
-</li>
-      <li><a href="[1.5].opt.unit.tests.html#test.unit_tests.SimTest.test_planned_departure">test_planned_departure() (test.unit_tests.SimTest method)</a>
-</li>
-      <li><a href="[1.5].opt.unit.tests.html#test.unit_tests.SimTest.test_SPaT_alternative">test_SPaT_alternative() (test.unit_tests.SimTest method)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="[1.5].opt.unit.tests.html#test.unit_tests.SimTest.test_trj_points">test_trj_points() (test.unit_tests.SimTest method)</a>
-</li>
-      <li><a href="[1.2].intersection.html#src.intersection.Traffic">Traffic (class in src.intersection)</a>
-</li>
       <li><a href="[0].overview.html#term-trajectory"><strong>Trajectory</strong></a>
 
       <ul>
         <li><a href="[1.4].trajectory.html#src.trajectory.Trajectory">(class in src.trajectory)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="[1.2].intersection.html#src.intersection.TrajectoryPlanner">TrajectoryPlanner (class in src.intersection)</a>
 </li>
   </ul></td>
@@ -627,14 +542,20 @@
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="[1.2].intersection.html#src.intersection.Vehicle.update">update() (src.intersection.Vehicle method)</a>
+</li>
       <li><a href="[1.3].signal.html#src.signal.GA_SPaT.update_SPaT">update_SPaT() (src.signal.GA_SPaT method)</a>
 
       <ul>
-        <li><a href="[1.3].signal.html#src.signal.Pretimed.update_SPaT">(src.signal.Pretimed method)</a>
+        <li><a href="[1.3].signal.html#src.signal.MCF_SPaT.update_SPaT">(src.signal.MCF_SPaT method)</a>
 </li>
         <li><a href="[1.3].signal.html#src.signal.Signal.update_SPaT">(src.signal.Signal method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="[1.2].intersection.html#src.intersection.Intersection.UTM_to_distance_from_stopbar">UTM_to_distance_from_stopbar() (src.intersection.Intersection method)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -666,7 +587,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, Mahmoud Pourmehrab.
+        &copy; Copyright 2018, Mahmoud Pourmehrab
 
     </p>
   </div>
@@ -685,35 +606,23 @@
 
   
 
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'1.0.0',
-            LANGUAGE:'None',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="_static/copybutton.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/copybutton.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
 
   
 
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="_static/js/theme.js"></script>
 
   <script type="text/javascript">
       jQuery(function () {
-          
-          SphinxRtdTheme.Navigation.enableSticky();
-          
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script> 
 

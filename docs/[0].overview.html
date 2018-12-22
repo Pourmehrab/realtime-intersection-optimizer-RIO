@@ -24,9 +24,9 @@
 
   
 
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="2. Simulation" href="[1.1].simulator.html" />
@@ -94,7 +94,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="[1.1].simulator.html">2. Simulation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="[1.1].simulator.html#module-data.data">3. Python Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1.1].simulator.html#python-data">3. Python Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="[1.2].intersection.html">4. Intersection</a></li>
 <li class="toctree-l1"><a class="reference internal" href="[1.3].signal.html">5. Signal Phase and Timing (SPaT)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="[1.4].trajectory.html">6. Trajectory</a></li>
@@ -327,9 +327,7 @@
 <dt>You also can choose from the following signal control methods:</dt>
 <dd><ul class="first last simple">
 <li><code class="docutils literal notranslate"><span class="pre">GA</span></code>: Genetic Algorithms</li>
-<li><code class="docutils literal notranslate"><span class="pre">pretimed</span></code>: pretimed control</li>
 <li><code class="docutils literal notranslate"><span class="pre">MCF</span></code>: Min Cost Flow (under development)</li>
-<li><code class="docutils literal notranslate"><span class="pre">actuated</span></code>: Actuated Control System (under development)</li>
 </ul>
 </dd>
 <dt>You can run in either of the following modes (<em>pay attention to the requirements of each run mode</em>):</dt>
@@ -377,42 +375,6 @@
 <div class="section" id="main-script">
 <h2>1.3. Main Script<a class="headerlink" href="#main-script" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">sim_main.py</span></code> file implements the following work flow:</p>
-<span class="target" id="module-sim_main"></span><dl class="function">
-<dt id="sim_main.run_avian">
-<code class="descclassname">sim_main.</code><code class="descname">run_avian</code><span class="sig-paren">(</span><em>inter_name</em>, <em>sig_method</em>, <em>sc</em>, <em>start_time_stamp</em>, <em>tester</em><span class="sig-paren">)</span><a class="headerlink" href="#sim_main.run_avian" title="Permalink to this definition">¶</a></dt>
-<dd><div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">The following assumptions are important to notice:
-- Trajectories must end at the stop bar, i.e. the distance to stop bar converges to zero, even if they are temporarily assigned.
-- The desired speed of vehicles shall not exceed the speed limit or they will be advised speeding
-- Use default values for pieces of information that are impossible to obtain, i.e. accel/decel rates and destination of conventional vehicles.</p>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>inter_name</strong> (<em>str</em>) – The intersection name (should match the name given to identify an intersection in <code class="docutils literal notranslate"><span class="pre">data.py</span></code>)</li>
-<li><strong>sig_method</strong> (<em>str</em>) – signalization method <code class="docutils literal notranslate"><span class="pre">pretimed,</span> <span class="pre">GA,</span> <span class="pre">...</span></code></li>
-<li><strong>sc</strong> (<em>int</em>) – scenario number (should match <code class="docutils literal notranslate"><span class="pre">/data/&lt;intersection</span> <span class="pre">name&gt;/&lt;intersection</span> <span class="pre">name&gt;_&lt;scenario</span> <span class="pre">number&gt;.csv</span></code>)</li>
-<li><strong>start_time_stamp</strong> – The local time stamp to name the output CSV files</li>
-<li><strong>tester</strong> (<a class="reference internal" href="[1.5].opt.unit.tests.html#test.unit_tests.SimTest" title="test.unit_tests.SimTest"><em>test.unit_tests.SimTest</em></a>) – The tester object</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body"><p class="first">April-2018</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Organization:</th><td class="field-body"><p class="first last">University of Florida</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
 <table class="docutils footnote" frame="void" id="id9" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
@@ -454,7 +416,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, Mahmoud Pourmehrab.
+        &copy; Copyright 2018, Mahmoud Pourmehrab
 
     </p>
   </div>
@@ -473,35 +435,23 @@
 
   
 
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'1.0.0',
-            LANGUAGE:'None',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="_static/copybutton.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/copybutton.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
 
   
 
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="_static/js/theme.js"></script>
 
   <script type="text/javascript">
       jQuery(function () {
-          
-          SphinxRtdTheme.Navigation.enableSticky();
-          
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script> 
 
