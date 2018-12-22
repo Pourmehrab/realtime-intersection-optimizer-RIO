@@ -1,16 +1,15 @@
 #!/usr/bin/python3
 #######################################
 # File name: main.py                  #
-# Author: Ash Omidvar                 #
-# Email: aschkan@ufl.edu              #
+# Author: Mahmoud Pourmehrab          #
+#         Ash Omidvar                 #
+# Email: pourmehrab@gmail.com         #
+#        aschkan@ufl.edu              #
 # Last Modified: Dec/12/2018 - Ash    #
 #######################################
 import sys
 import os
 import argparse
-import time
-
-from datetime import datetime
 from time import perf_counter
 from src.time_tracker import Timer
 from src.intersection import Intersection, Lanes, TrajectoryPlanner
