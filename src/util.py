@@ -1,9 +1,3 @@
-################################################
-# File name: util.py
-# Authors: Patrick Emami
-# Email: pemami@ufl.edu
-# Updated: Dec 2018
-################################################
 import numpy as np
 from datetime import datetime
 import time

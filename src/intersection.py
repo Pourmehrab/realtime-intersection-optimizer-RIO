@@ -1,10 +1,3 @@
-####################################
-# File name: intersection.py       #
-# Author: Ash Omidvar              #
-# Email: aschkan@ufl.edu           #
-# Last Modified: Dec - 2018        #
-####################################
-
 import csv
 import operator
 import os
@@ -127,11 +120,12 @@ class Lanes:
         - Other low level methods: Check if all lanes are empty, maintain indices of vehicles in arrays, etc.
 
     :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+
         Ash Omidvar <aschkan@ufl.edu>
     :Date:
         Oct-2018
-    .. note:: some methods of this class are adopted from the simulation version of the system, developed
-    by Mahmoud Pourmehrab <mpourmehrab@ufl.edu>.
+
     """
 
     def __init__(self, intersection):

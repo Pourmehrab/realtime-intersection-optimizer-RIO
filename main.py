@@ -1,12 +1,4 @@
 #!/usr/bin/python3
-#######################################
-# File name: main.py                  #
-# Author: Mahmoud Pourmehrab          #
-#         Ash Omidvar                 #
-# Email: pourmehrab@gmail.com         #
-#        aschkan@ufl.edu              #
-# Last Modified: Dec/12/2018 - Ash    #
-#######################################
 import sys
 import os
 import argparse
@@ -21,12 +13,12 @@ from src.util import *
 
 def run_rio(args):
     """
-    .. note:: Assumptions for trajectory generation :
-        - Trajectories must show departure at the stop bar, i.e. the distance to stop bar converges to zero, even if
-        they are temporarily assigned.
-        - The desired speed of vehicles shall not exceed the speed limit (see config file)
-        - Certain parameter value estimation has been considered in rio (e.g., accel/decel rates and destination of
-        conventional vehicles.
+    .. note:: Assumptions for trajectory generation:
+                - Trajectories must show departure at the stop bar, i.e. the distance to stop bar converges to zero, even if
+                they are temporarily assigned.
+                - The desired speed of vehicles shall not exceed the speed limit (see config file)
+                - Certain parameter value estimation has been considered in rio (e.g., accel/decel rates and destination of
+                conventional vehicles.
 
     :param inter_name: Intersection name (should match the name given in ``config.py``)
     :type inter_name: str
@@ -45,6 +37,7 @@ def run_rio(args):
 
     :Authors:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
+
         Ash Omidvar <aschkan@ufl.edu>
     :Date:
        Dec-2018
@@ -103,12 +96,8 @@ def run_rio(args):
             if optimizer_call_ctr % solve_freq == 0:
                 # update SPaT
                 signal.update_SPaT(intersection, run_time, args.sc)
-                # update the space mean speed
-                volumes = traffic.get_volumes(lanes, intersection)
-                critical_volume_ratio = 3_600 * volumes.max() / intersection._inter_config_params.get(
-                    "min_CAV_headway")
                 # perform signal optimization
-                signal.solve(lanes, intersection, critical_volume_ratio, trajectory_generator, None)
+                signal.solve(lanes, intersection, trajectory_generator, None)
                 # Send out IAMs to all CAVs
                 traffic.publish(lanes)
             optimizer_call_ctr += 1

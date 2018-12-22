@@ -1,9 +1,3 @@
-####################################
-# Author: Patrick Emami            #
-# Email: pemami@ufl.edu            #
-# Last Modified: Dec 2018          #
-####################################
-
 import threading
 import socket
 from collections import deque, namedtuple

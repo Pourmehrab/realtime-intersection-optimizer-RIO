@@ -1,10 +1,3 @@
-####################################
-# File name: trajectory.py         #
-# Author: Mahmoud Pourmehrab       #
-# Email: pourmehrab@gmail.com      #
-# Last Modified: May/30/2018       #
-####################################
-
 import operator
 
 import numpy as np

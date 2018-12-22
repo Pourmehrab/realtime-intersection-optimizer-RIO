@@ -1,10 +1,3 @@
-################################################
-# File name: config.py
-# Authors: Mahmoud Pourmehrab / Ash Omidvar
-# Emails: pourmehrab@gmail.com / aschkan@ufl.edu      
-# Updated (Pourmehrab): May/30/2018
-# Updated (Omidvar): Dec/13/2018
-################################################
 import os
 import glob
 import utm
@@ -309,7 +302,7 @@ def load_inter_params(inter_name):
             "m": int(40),
             "num_lanes": int(4),
             "phase_cover_set": (0, 1,),
-            "small_positive_num": 0.01,  # GA params
+            "small_positive_num": 0.01,
             "large_positive_num": 999_999_999,
             "pli": {0: {0, 2, },  # North/South bounds throughs
                     1: {1, 3, },  # East/West bounds throughs
@@ -319,7 +312,7 @@ def load_inter_params(inter_name):
                     2: {1, 3, },  # Southeast (ATC: 3) - Lane: 3
                     3: {0, 2, },  # Northwest (ATC: 4) - Lane: 4
                     },
-            "allowable_phases": (0, 1, 2, 3,),
+            "allowable_phases": (0, 1,),
             "yellow": 3.0,
             "allred": 1.5,
             "min_green": 5,

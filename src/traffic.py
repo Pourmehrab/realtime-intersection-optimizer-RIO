@@ -6,6 +6,7 @@ from scipy import stats
 
 from src.intersection import Vehicle
 
+
 class RealTimeTraffic:
     """
     TODO
@@ -22,7 +23,7 @@ class RealTimeTraffic:
         self._vehicle_data_queue = vehicle_data_queue
         self._track_split_merge_queue = track_split_merge_queue
         self._cav_traj_queue = cav_traj_queue
-        if args.do_logging: 
+        if args.do_logging:
             pass
             # df_size = len(self.__all_vehicles)
             # self._auxilary_departure_times = np.zeros(df_size, dtype=np.float)
@@ -38,7 +39,7 @@ class RealTimeTraffic:
             # self.full_traj_csv_file.flush()
         else:
             self.full_traj_csv_file = None
-    
+
     def get_traffic_info(self, lanes):
         """
         Objectives
@@ -52,7 +53,7 @@ class RealTimeTraffic:
         if self._track_split_merge_queue.count() != 0:
             self._track_split_merge_queue.pop()
             # Handle track split/merge msgs - TODO
-        
+
         if self._vehicle_data_queue.count() != 0:
             vehicle_data_msgs = self._vehicle_data_queue.pop()
             # Lane detection
@@ -66,21 +67,21 @@ class RealTimeTraffic:
                 if v is None:
                     # in the optimization zone?
                     if self.intersection.in_optimization_zone(vm):
-
                         # convert vehicle message to Vehicle
                         det_id = vm.track_id + ":" + vm.dsrc_id
                         det_type = vm.veh_type
-                        #det_time = # ? 
+                        # det_time = # ?
                         dist = self.intersection.UTM_to_distance_from_stopbar(vm.pos[0], vm.pos[1], lane)
                         speed = np.sqrt(vm.speed[0] ** 2 + vm.speed[1] ** 2)
-                        #des_speed = ? intersection speed limit?
-                        #dest = "" # ?
+                        # des_speed = ? intersection speed limit?
+                        # dest = "" # ?
                         length = vm.veh_len
                         amin = vm.max_decel
                         amax = vm.max_accel
 
-                        #indx? 
-                        veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax, indx,
+                        # indx?
+                        veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax,
+                                      indx,
                                       self.intersection)
 
                         self._print_commandline and print(
@@ -207,7 +208,7 @@ class RealTimeTraffic:
                         intersection._inter_config_params.get('print_commandline') and print(
                             '/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID + '@({:>4.1f} s)'.format(
                                 dep_time))
-                        #self._log_csv and self.set_row_vehicle_level_csv(dep_time, veh)
+                        # self._log_csv and self.set_row_vehicle_level_csv(dep_time, veh)
                     elif det_time < elapsed_time:  # record/remove expired points
                         veh.reset_trj_pts(self.scenario_num, lane, elapsed_time, self.full_traj_csv_file)
 
@@ -225,6 +226,8 @@ class RealTimeTraffic:
                     dsrc_id = veh.det_id.split(":")[1]
                     if dsrc_id != "" and veh.got_trajectory:
                         self._cav_traj_queue.append(veh)
+
+
 class SimTraffic:
     """
     Objectives:
@@ -259,7 +262,7 @@ class SimTraffic:
         :param start_time_stamp: local time stamp to include in the CSV filename
         """
         self._intersection = intersection
-        #inter_name = intersection._inter_config_params.get('inter_name')
+        # inter_name = intersection._inter_config_params.get('inter_name')
         inter_name = args.intersection
         # get the path to the CSV file and load up the traffic
         filepath = os.path.join(
@@ -459,7 +462,7 @@ class SimTraffic:
                             break
 
                 last_veh_indx_to_remove > -1 and lanes.remove_srv_vehs(lane, last_veh_indx_to_remove)
-    
+
     def publish(self, lanes):
         """TODO: incrementally write to CSV """
         pass

@@ -1,10 +1,3 @@
-####################################
-# File name: time_tracker.py       #
-# Author: Ash Omidvar              #
-# Email: aschkan@ufl.edu           #
-# Last Modified: Oct.-2018 - Ash   #
-####################################
-
 import os
 import csv
 from datetime import datetime
