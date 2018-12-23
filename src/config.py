@@ -57,7 +57,7 @@ def load_inter_params(inter_name):
         - det_range: detection range in :math:`m`
         - k, m: refer to :any:`LeadConnected` for the definitions
         - num_lanes: total number of incoming lanes
-        - phase_cover_set: a subset of mutually exclusive phases that cover all lanes for use in :any:`_set_non_base_scheduled_departures`
+        - phase_cover_set: a subset of phases that cover all lanes
         - small_positive_num: small number that lower than that is approximated by zero
         - large_positive_num: large number: is a large number to initialize badness of alternatives in GA. Make sure cannot be beaten by worst alternative.
         - lli: a dictionary of sets. The key is the phase number and is zero-based. The value to a key is a set of lanes included in that phase (lanes are also zero-based)
@@ -132,7 +132,7 @@ def load_inter_params(inter_name):
             "max_speed": 15.0,
             "min_CAV_headway": 2.0,
             "min_CNV_headway": 3.0,
-            "det_range": tuple([500.0 for i in range(16)]),
+            "det_range": tuple([500.0] * 16),
             "k": int(10),
             "m": int(20),
             "num_lanes": int(16),
@@ -181,7 +181,7 @@ def load_inter_params(inter_name):
             "max_speed": 17.8816,  # 40 mph
             "min_CAV_headway": 1.5,
             "min_CNV_headway": 2.0,
-            "det_range": tuple([500.0 for i in range(6)]),
+            "det_range": tuple([500.0] * 6),
             "k": int(20),
             "m": int(40),
             "num_lanes": int(6),
@@ -219,7 +219,7 @@ def load_inter_params(inter_name):
             "max_speed": 15.0,
             "min_CAV_headway": 2.0,
             "min_CNV_headway": 3.0,
-            "det_range": tuple([500.0 for i in range(12)]),
+            "det_range": tuple([500.0] * 12),
             "k": int(20),
             "m": int(40),
             "num_lanes": int(12),
@@ -261,7 +261,7 @@ def load_inter_params(inter_name):
             "max_speed": 15.0,
             "min_CAV_headway": 1.5,
             "min_CNV_headway": 2.0,
-            "det_range": tuple([500.0 for i in range(8)]),
+            "det_range": tuple([500.0] * 8),
             "k": int(20),
             "m": int(40),
             "num_lanes": int(8),
@@ -337,39 +337,9 @@ def load_inter_params(inter_name):
 
 
 # -------------------------------------------------------
-# PRE-TIMED CONTROL PARAMETERS
-# -------------------------------------------------------
-def get_pretimed_parameters(inter_name):
-    """
-    This returns the parameters needed for pre-timed control.
-
-    .. note::
-        - The sequence field includes the phases and is zero-based.
-        - You need to compute green splits, yellows, and all-reds based on traffic flow theory.
-
-    .. warning::
-            Must choose ``num_cycles`` at least 2.
-    """
-    if inter_name == "13th16th":
-        return None  # todo compute these
-
-    elif inter_name == "TERL":
-        return {"green_dur": (12.0, 12.0, 12.0, 12.0), "phase_seq": (0, 1, 2, 3,), "yellow": 1.5, "all-red": 1.5,
-                "num_cycles": 5}
-
-    elif inter_name == "reserv":
-        return {"green_dur": (25.0, 25.0, 25.0, 25.0), "phase_seq": (0, 1, 2, 3,), "yellow": 3.0, "all-red": 1.5,
-                "num_cycles": 5}
-    elif inter_name == "RTS":
-        return None  # todo compute these
-
-    else:
-        raise Exception("Pretimed parameters are not known for this intersection.")
-
-
-# -------------------------------------------------------
 # SIGNAL CONTROLLER PARAMETERS
 # -------------------------------------------------------
+# TODO add intersection-specific inputs above, under `load_inter_params(inter_name)`
 def get_sig_ctrl_interface_params(inter_name):
     """
     :return:

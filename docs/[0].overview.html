@@ -186,7 +186,6 @@
 </li>
 <li><p class="first">Dependencies are managed using <cite>pipenv</cite>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pip</span> <span class="n">install</span> <span class="n">pipenv</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">pipenv</span> <span class="n">install</span>
 </pre></div>
 </div>
 </li>
@@ -328,25 +327,24 @@
 <li><code class="docutils literal notranslate"><span class="pre">13th16th</span></code>: A physical intersection in Gainesville; google map it for the image and lane assignment detail.</li>
 <li><code class="docutils literal notranslate"><span class="pre">TERL</span></code>: A physical intersection located at <a class="reference external" href="https://goo.gl/maps/qiwW7TJe4co">2612 Springhill Road, Tallahassee, FL 32305</a>; google map it for the image and lane assignment detail. Note the lane numbering in the code is 1: Southbound (all movements), 2: Westbound (through and right turn), 3: Westbound (left turn), 4: Northbound (all movements), 5: Eastbound (through and right turn), 6: Eastbound (left turn).</li>
 <li><code class="docutils literal notranslate"><span class="pre">reserv</span></code>:  for the reservation based model intersection that has 12 incoming lanes: 3 per approach and all lanes are exclusive (for more detail check <a class="reference external" href="http://www.cs.utexas.edu/~aim/">UT Texas AIM</a>).</li>
-<li>Some possible intersections to add are <code class="docutils literal notranslate"><span class="pre">RTS,</span> <span class="pre">42nd40th,</span> <span class="pre">SolarPark</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Gale&amp;Std</span></code>: Gale Lemerand Dr and Stadium Dr.</li>
+<li><code class="docutils literal notranslate"><span class="pre">RTS</span></code>: RTS facility.</li>
 </ul>
 </dd>
-<dt>You also can choose from the following signal control methods:</dt>
+<dt>You also can choose the signal control methods:</dt>
 <dd><ul class="first last simple">
-<li><code class="docutils literal notranslate"><span class="pre">GA</span></code>: Genetic Algorithms</li>
-<li><code class="docutils literal notranslate"><span class="pre">MCF</span></code>: Min Cost Flow (under development)</li>
+<li><code class="docutils literal notranslate"><span class="pre">MCF</span></code>: Min Cost Flow based</li>
 </ul>
 </dd>
 <dt>You can run in either of the following modes (<em>pay attention to the requirements of each run mode</em>):</dt>
 <dd><ul class="first last simple">
-<li>For simulation of optimization: run <code class="docutils literal notranslate"><span class="pre">sim_main.py</span></code></li>
 <li>For real-time mode: run <code class="docutils literal notranslate"><span class="pre">main.py</span></code></li>
 </ul>
 </dd>
 </dl>
 <p>The <strong>UML diagram</strong> of the project is as the following (<em>you may want to zoom in</em>):</p>
 <div class="figure align-center" id="id10">
-<img alt="map to buried treasure" src="_images/UML.JPG" />
+<img alt="map to buried treasure" src="_images/UML.PNG" />
 <p class="caption"><span class="caption-text">The UML diagram of the simulation mode.</span></p>
 </div>
 </div>

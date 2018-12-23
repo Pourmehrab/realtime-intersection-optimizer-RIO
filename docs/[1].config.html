@@ -235,7 +235,7 @@
 <li>det_range: detection range in <span class="math notranslate nohighlight">\(m\)</span></li>
 <li>k, m: refer to <a class="reference internal" href="[6].trajectory.html#src.trajectory.LeadConnected" title="src.trajectory.LeadConnected"><code class="xref any py py-class docutils literal notranslate"><span class="pre">LeadConnected</span></code></a> for the definitions</li>
 <li>num_lanes: total number of incoming lanes</li>
-<li>phase_cover_set: a subset of mutually exclusive phases that cover all lanes for use in <code class="xref any docutils literal notranslate"><span class="pre">_set_non_base_scheduled_departures</span></code></li>
+<li>phase_cover_set: a subset of phases that cover all lanes</li>
 <li>small_positive_num: small number that lower than that is approximated by zero</li>
 <li>large_positive_num: large number: is a large number to initialize badness of alternatives in GA. Make sure cannot be beaten by worst alternative.</li>
 <li>lli: a dictionary of sets. The key is the phase number and is zero-based. The value to a key is a set of lanes included in that phase (lanes are also zero-based)</li>
@@ -300,23 +300,6 @@ Dec-2018</td>
 </tr>
 </tbody>
 </table>
-</dd></dl>
-
-<dl class="function">
-<dt id="src.config.get_pretimed_parameters">
-<code class="descclassname">src.config.</code><code class="descname">get_pretimed_parameters</code><span class="sig-paren">(</span><em>inter_name</em><span class="sig-paren">)</span><a class="headerlink" href="#src.config.get_pretimed_parameters" title="Permalink to this definition">¶</a></dt>
-<dd><p>This returns the parameters needed for pre-timed control.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<ul class="last simple">
-<li>The sequence field includes the phases and is zero-based.</li>
-<li>You need to compute green splits, yellows, and all-reds based on traffic flow theory.</li>
-</ul>
-</div>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">Must choose <code class="docutils literal notranslate"><span class="pre">num_cycles</span></code> at least 2.</p>
-</div>
 </dd></dl>
 
 <dl class="function">
