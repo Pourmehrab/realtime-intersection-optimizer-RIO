@@ -10,7 +10,6 @@
 # @author: aschkan
 
 from pysnmp.hlapi import *
-from data.config import get_sig_ctrl_interface_params
 
 
 def snmpSet(OID, Value):

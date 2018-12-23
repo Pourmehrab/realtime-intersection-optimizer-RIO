@@ -36,9 +36,9 @@ def run_rio(args):
     :type run_duration: float
 
     :Authors:
-        Mahmoud Pourmehrab <pourmehrab@gmail.com>
-
         Ash Omidvar <aschkan@ufl.edu>
+
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
     :Date:
        Dec-2018
     :Organization:
@@ -97,7 +97,7 @@ def run_rio(args):
                 # update SPaT
                 signal.update_SPaT(intersection, run_time, args.sc)
                 # perform signal optimization
-                signal.solve(lanes, intersection, trajectory_generator, None)
+                signal.solve(lanes, intersection, trajectory_generator)
                 # Send out IAMs to all CAVs
                 traffic.publish(lanes)
             optimizer_call_ctr += 1

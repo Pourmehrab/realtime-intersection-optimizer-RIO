@@ -3,7 +3,6 @@ import csv
 import pandas as pd
 import numpy as np
 from scipy import stats
-
 from src.intersection import Vehicle
 
 

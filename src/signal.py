@@ -1,11 +1,7 @@
 import csv
 import os
-from copy import deepcopy
-
 import numpy as np
 from sortedcontainers import SortedDict
-
-np.random.seed(2018)
 
 
 class Signal:
@@ -81,11 +77,6 @@ class Signal:
         """
         self._lane_lane_incidence, num_lanes = map(intersection._inter_config_params.get, ["lli", "num_lanes"])
 
-        # self._lane_lane_incidence = {lane: set([]) for lane in range(num_lanes)}
-        # for lane, conflicting_lane_set in lane_lane_incidence_one_based.items():  # the whole loop makes lanes zero-based
-        #     self._lane_lane_incidence[lane - 1] = {conflicting_lane_1 - 1 for conflicting_lane_1 in
-        #                                            conflicting_lane_set}
-
     def _set_phase_lane_incidence(self, intersection):
         """
         Sets the phase-phase incidence matrix of the intersection
@@ -98,12 +89,6 @@ class Signal:
             April-2018
         """
         self._phase_lane_incidence, num_lanes = map(intersection._inter_config_params.get, ["pli", "num_lanes"])
-
-        # self._phase_lane_incidence = {phase: set([]) for phase in range(len(self._phase_lane_incidence))}
-        # the whole following loop makes lanes and phases zero-based
-        # for lane_1, nonconflicting_lane_set in phase_lane_incidence_one_based.items():
-        #     self._phase_lane_incidence[lane_1 - 1] = {nonconflicting_lane_1 - 1 for nonconflicting_lane_1 in
-        #                                               nonconflicting_lane_set}
 
         self._lane_phase_incidence = {lane: set([]) for lane in range(num_lanes)}
         for phase_indx, phase in self._phase_lane_incidence.items():
@@ -212,6 +197,9 @@ class MCF_SPaT(Signal):
     """
     Under this class, the :term:`SPaT` is decided optimally by a :term:`MCF` model.
 
+    The first phase in `_allowable_phases` gets initialized with a minimum green in the constructor.
+
+
 
     :Author:
         Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -239,8 +227,7 @@ class MCF_SPaT(Signal):
         super().__init__(intersection, sc, start_time_stamp)
         num_lanes, print_commandline, self._y, self._ar, self.min_green, self.max_green, self._allowable_phases = map(
             intersection._inter_config_params.get,
-            ["num_lanes", "print_commandline", "yellow", "allred", "min_green", "max_green",
-             "allowable_phases"])
+            ["num_lanes", "print_commandline", "yellow", "allred", "min_green", "max_green", "allowable_phases"])
 
         self._ts_min, self._ts_max = self.min_green + self._y + self._ar, self.max_green + self._y + self._ar
         self._ts_diff = self.max_green - self.min_green
@@ -253,7 +240,8 @@ class MCF_SPaT(Signal):
         # todo: Ashkan, call controller for this first given green here
 
         if print_commandline:
-            print(">>> Phase {:d} appended (ends @ {:2.1f} sec)".format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
+            print(">>> Phase {:d} initializes SPaT (ends @ {:2.1f} sec)".format(self.SPaT_sequence[-1],
+                                                                                self.SPaT_end[-1]))
 
         self._mcf_model = cplex.Cplex()
         self._mcf_model.objective.set_sense(self._mcf_model.objective.sense.minimize)
@@ -293,14 +281,13 @@ class MCF_SPaT(Signal):
             lin_expr=[[["p" + str(phase_indx) + "s" for phase_indx in self._phase_lane_incidence.keys()],
                        [1.0] * len(self._phase_lane_incidence)]], senses=["E"], rhs=[0.0], names=["sink"], )
 
-    def solve(self, lanes, intersection, trajectory_planner, tester):
+    def solve(self, lanes, intersection, trajectory_planner):
         """
 
         :param lanes:
         :param intersection:
         :param critical_volume_ratio:
         :param trajectory_planner:
-        :param tester:
         :return:
 
         :Author:
@@ -385,8 +372,7 @@ class MCF_SPaT(Signal):
                             if det_dist >= min_dist_to_stop_bar:
                                 veh.set_sched_dep(t_scheduled, 0, veh.desired_speed, lane, veh_indx,
                                                   intersection)
-                                trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, tester,
-                                                                   '#')
+                                trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, '#')
                                 veh.got_trajectory = True
 
                 if flag:

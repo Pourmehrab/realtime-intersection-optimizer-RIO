@@ -304,9 +304,9 @@ def load_inter_params(inter_name):
             "phase_cover_set": (0, 1,),
             "small_positive_num": 0.01,
             "large_positive_num": 999_999_999,
-            "pli": {0: {0, 2, },  # North/South bounds throughs
-                    1: {1, 3, },  # East/West bounds throughs
-                    },  # TODO: once we have turning movements, pli & lli shall be modified
+            "pli": {0: {0, 1, },  # North/South bounds throughs
+                    1: {2, 3, },  # East/West bounds throughs
+                    },  # TODO: once we want to add turning movements, pli & lli shall be modified
             "lli": {0: {1, 3, },  # Northeast (ATC: 1) - Lane: 1
                     1: {0, 2, },  # Southwest (ATC: 2) - Lane: 2
                     2: {1, 3, },  # Southeast (ATC: 3) - Lane: 3
@@ -324,7 +324,7 @@ def load_inter_params(inter_name):
             "trj_time_resolution": 1.0,
 
             "print_commandline": True,
-            "lane_estimation": "gps",  # gps/video
+            "lane_estimation": "gps",  # gps/video todo: pls append these to the docstring above and explain briefly
             "optimization_zone_constraints": opt_zone_info,
             "lanes": lane_info
             # FIXME @ Pat: Please import GPS points here. In order to avoid mapping and its

@@ -1,14 +1,11 @@
 import csv
 import operator
-import os
-import utm
-
 import numpy as np
-import pandas as pd
 
 from src.config import *
 from src.trajectory import LeadConventional, LeadConnected, FollowerConventional, FollowerConnected
-import src.util as util # Patrick
+import src.util as util  # Patrick
+
 
 class Intersection:
     """
@@ -48,12 +45,12 @@ class Intersection:
             raise NotImplementedError
 
         return lane
-    
+
     # Patrick
     def LLA_to_distance_from_stopbar(self, lat, lon, lane):
         easting, northing, _, _ = utm.from_latlon(lat, lon)
         return UTM_to_distance_from_stopbar(easting, northing, lane)
-    
+
     def UTM_to_distance_from_stopbar(self, easting, northing, lane, units="m"):
         # starting from stopbar, find closest point, then compute
         lane_info = self._inter_config_params["lanes"]["Lane_{}".format(lane)]
@@ -109,6 +106,7 @@ class Intersection:
         # TODO:
         return True
 
+
 class Lanes:
     """
     Create data structure in which the key is lane index and value is an arrays a vehicle objects in corresponding lane.
@@ -144,8 +142,8 @@ class Lanes:
         self.vehlist = {l: [] for l in range(num_lanes)}
         self.reset_first_unsrv_indx(num_lanes)
         self.last_veh_indx = np.zeros(num_lanes, dtype=np.int) - 1
-    
-    #Patrick
+
+    # Patrick
     def find_and_return_vehicle_by_id(self, lane, veh_id):
         """Finds and returns the vehicle in the lane with
         the query id.
@@ -263,7 +261,6 @@ class Lanes:
         """
         self.last_veh_indx[lane] += 1
         assert self.last_veh_indx[lane] + 1 == len(self.vehlist.get(lane)), "Inspect vehicle positions!"
-
 
 
 class Vehicle:
@@ -601,6 +598,7 @@ class Vehicle:
         # every 2 sec we get a new trajectory (and log it and send the IAM)
         raise NotImplementedError
 
+
 class TrajectoryPlanner:
     """
     Plans trajectories of all type. This makes calls to **trajectory** classes.
@@ -612,7 +610,7 @@ class TrajectoryPlanner:
         April-2018
         Nov-2018
     """
-# TODO @Ash: handle tester methods.
+
     def __init__(self, intersection):
         """Instantiates the **trajectory** classes"""
 
@@ -623,10 +621,7 @@ class TrajectoryPlanner:
 
         self._max_speed = intersection._inter_config_params.get('max_speed')
 
-        # from optional.vis.vistrj import VisualizeSpaceTime  # todo remove after testing
-        # self._visualizer = VisualizeSpaceTime(12)
-
-    def plan_trajectory(self, lanes, veh, lane, veh_indx, intersection, tester, identifier):
+    def plan_trajectory(self, lanes, veh, lane, veh_indx, intersection, identifier):
         """
         :param lanes:
         :type lanes: Lanes
@@ -636,8 +631,6 @@ class TrajectoryPlanner:
         :param veh_indx:
         :param intersection:
         :param identifier: Shows type of assigned trajectory
-        :param tester: the test object
-        :type tester: test.unit_tests.SimTest
 
         """
 
@@ -658,13 +651,5 @@ class TrajectoryPlanner:
         else:
             raise Exception('One of lead/follower conventional/connected should have occurred.')
 
-        # self._visualizer.add_multi_trj_matplotlib(veh, lane)  # todo @Ash: remove after testing
-        # self._visualizer.export_matplot(0, 510, 20, 155)  # todo @Ash: remove after testing
-
-        if tester is not None:
-            assert veh.trajectory[1, veh.last_trj_point_indx] < 1, "vehicle did not get to stop bar"
-            tester.test_planned_departure(veh)
-            tester.test_trj_points(veh)
-            # veh_indx > 0 and tester.check_for_collision(veh, lead_veh)
-    # ToDo @Ash: distinguish the tracks.
+        # ToDo @Ash: distinguish the tracks.
         intersection._inter_config_params.get("print_commandline") and veh.print_trj_points(lane, veh_indx, identifier)

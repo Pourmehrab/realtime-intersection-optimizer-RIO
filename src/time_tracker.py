@@ -1,8 +1,6 @@
-import os
-import csv
 from datetime import datetime
-import time
 from src.util import periodic_sleep
+
 
 class Timer:
 
@@ -19,20 +17,20 @@ class Timer:
 
     def step(self):
         raise NotImplementedError
-    
+
     def get_elapsed_time(self, timestamp):
         raise NotImplementedError
 
 
 class RealTimeTimer(Timer):
-    
+
     def __init__(self, start_time, resolution):
         """
         :param start_time: the UTC timestamp at start up
         :param resolution: the time (in sec) to sleep every step
         """
         super(RealTimeTimer, self).__init__(start_time, resolution)
-        
+
     def step(self):
         periodic_sleep(self.resolution)
 
@@ -42,12 +40,13 @@ class RealTimeTimer(Timer):
         else:
             return (datetime.utcnow() - self.start_time).total_seconds()
 
+
 class SimTimer(Timer):
 
     def __init__(self, start_time, resolution):
         super(SimTimer, self).__init__(start_time, resolution)
         self.curr_time = start_time
-    
+
     def step(self):
         self.curr_time += self.resolution
 
