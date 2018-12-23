@@ -1,0 +1,827 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>8. Trajectory &mdash; AVIAN 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="9. Signal Controller Interface" href="[7].signal.ctrl.interface.html" />
+    <link rel="prev" title="7. Signal Phase and Timing (SPaT)" href="[5].signal.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/uf_logo_AVIAN.jpg" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="[0].overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1].config.html">2. Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[2].time.html">3. Time Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[3].traffic.html">4. Traffic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[3].traffic.html#module-src.traffic_io">5. Traffic i/o</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[4].intersection.html">6. Intersection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[5].signal.html">7. Signal Phase and Timing (SPaT)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">8. Trajectory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[7].signal.ctrl.interface.html">9. Signal Controller Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[8].util.html">10. Util</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">AVIAN</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>8. Trajectory</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-src.trajectory">
+<span id="trajectory"></span><h1>8. Trajectory<a class="headerlink" href="#module-src.trajectory" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="src.trajectory.Trajectory">
+<em class="property">class </em><code class="descclassname">src.trajectory.</code><code class="descname">Trajectory</code><span class="sig-paren">(</span><em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.Trajectory" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Is the abstract class for computing the trajectory points. Four subclasses inherited from this parent class:</dt>
+<dd><ul class="first last simple">
+<li><a class="reference internal" href="#src.trajectory.LeadConventional" title="src.trajectory.LeadConventional"><code class="xref any py py-class docutils literal notranslate"><span class="pre">LeadConventional</span></code></a></li>
+<li><a class="reference internal" href="#src.trajectory.FollowerConnected" title="src.trajectory.FollowerConnected"><code class="xref any py py-class docutils literal notranslate"><span class="pre">FollowerConnected</span></code></a></li>
+<li><a class="reference internal" href="#src.trajectory.LeadConnected" title="src.trajectory.LeadConnected"><code class="xref any py py-class docutils literal notranslate"><span class="pre">LeadConnected</span></code></a></li>
+<li><a class="reference internal" href="#src.trajectory.FollowerConventional" title="src.trajectory.FollowerConventional"><code class="xref any py py-class docutils literal notranslate"><span class="pre">FollowerConventional</span></code></a></li>
+</ul>
+</dd>
+</dl>
+<p>Any solve method under each class shall invoke <a class="reference internal" href="#src.trajectory.Trajectory.set_trajectory" title="src.trajectory.Trajectory.set_trajectory"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">set_trajectory</span></code></a> method at the end or does the assignment in-place.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If want to limit the trajectory planning, there are two options:
+- If a particular vehicle is intended to be skipped, simply set <code class="docutils literal notranslate"><span class="pre">vehicle.reschedule_departure</span></code> to <code class="docutils literal notranslate"><span class="pre">False</span></code>
+- If the whole simulation is intended to be run without trajectory planer, set <code class="docutils literal notranslate"><span class="pre">vehicle.reschedule_departure</span></code> in <code class="docutils literal notranslate"><span class="pre">sim_main.py</span></code> to False.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="src.trajectory.Trajectory.discretize_time_interval">
+<code class="descname">discretize_time_interval</code><span class="sig-paren">(</span><em>start_time</em>, <em>end_time</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.Trajectory.discretize_time_interval" title="Permalink to this definition">¶</a></dt>
+<dd><p>Discretizes the given time interval at the granularity level of <cite>trj_time_resolution</cite> to an array of time stamps.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">It is inclusion-wise of the beginning and end of the interval.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="src.trajectory.Trajectory.set_trajectory">
+<em class="property">static </em><code class="descname">set_trajectory</code><span class="sig-paren">(</span><em>veh</em>, <em>t</em>, <em>d</em>, <em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.Trajectory.set_trajectory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets trajectory of the vehicle and updates the first and last trajectory point index.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>t,d,s should keep the whole trajectory incusion-wise of the first and the last points because we areseting the first trajectory point index here.</li>
+<li>An assigned trajectory always is indexed from zero as the <code class="docutils literal notranslate"><span class="pre">veh.set_first_trj_pt_indx</span></code>.</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>veh</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Vehicle" title="src.intersection.Vehicle"><em>Vehicle</em></a>) – the vehicle object that is owns the trajectory</li>
+<li><strong>t</strong> – time stamps (seconds from the reference time)</li>
+<li><strong>d</strong> – distances at each time stamp (in meters from the stop bar)</li>
+<li><strong>s</strong> – speed at each time stamp (in <span class="math notranslate nohighlight">\(m/s\)</span>)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body"><p class="first last">April-2018</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="src.trajectory.LeadConventional">
+<em class="property">class </em><code class="descclassname">src.trajectory.</code><code class="descname">LeadConventional</code><span class="sig-paren">(</span><em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.LeadConventional" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the trajectory for a lead conventional vehicle assuming the vehicle tends to maintain its arrival speed.</p>
+<p>Use Case:</p>
+<p>Instantiate like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">lead_conventional_trj_estimator</span> <span class="o">=</span> <span class="n">LeadConventional</span><span class="p">(</span><span class="n">intersection</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Perform trajectory computation by:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">lead_conventional_trj_estimator</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">veh</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="src.trajectory.LeadConventional.solve">
+<code class="descname">solve</code><span class="sig-paren">(</span><em>veh</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.LeadConventional.solve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs the trajectory of a lead conventional vehicle assuming the driver maintains its speed</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>veh</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Vehicle" title="src.intersection.Vehicle"><em>Vehicle</em></a>) – the lead conventional vehicle</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Make sure the assumptions here are compatible with those in <a class="reference internal" href="[4].intersection.html#src.intersection.Vehicle.earliest_arr_cnv" title="src.intersection.Vehicle.earliest_arr_cnv"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">earliest_arr_cnv</span></code></a></p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="src.trajectory.FollowerConventional">
+<em class="property">class </em><code class="descclassname">src.trajectory.</code><code class="descname">FollowerConventional</code><span class="sig-paren">(</span><em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.FollowerConventional" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimates the trajectory for a follower conventional vehicle assuming a car following model. In the current implementation, Gipps car-following model <a class="footnote-reference" href="#id2" id="id1">[1]</a> is used.</p>
+<p>Use Case:</p>
+<p>Instantiate like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">follower_conventional_trj_estimator</span> <span class="o">=</span> <span class="n">FollowerConventional</span><span class="p">(</span><span class="n">intersection</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Perform trajectory computation by:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">follower_conventional_trj_estimator</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">veh</span><span class="p">,</span> <span class="n">lead_veh</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Gipps, Peter G. <em>A behavioural car-following model for computer simulation</em>. Transportation Research Part B: Methodological 15.2 (1981): 105-111 (<a class="reference external" href="https://www.sciencedirect.com/science/article/pii/0191261581900370">link</a>).</td></tr>
+</tbody>
+</table>
+<dl class="staticmethod">
+<dt id="src.trajectory.FollowerConventional.wiedemann99">
+<em class="property">static </em><code class="descname">wiedemann99</code><span class="sig-paren">(</span><em>lead_d</em>, <em>lead_s</em>, <em>lead_a</em>, <em>lead_l</em>, <em>foll_d</em>, <em>foll_s</em>, <em>foll_s_des</em>, <em>cc0=1.35</em>, <em>cc1=1.1700000000000002</em>, <em>cc2=8.0</em>, <em>cc3=-12.0</em>, <em>cc4=-1.5</em>, <em>cc5=2.0999999999999996</em>, <em>cc6=0.0006</em>, <em>cc7=0.25</em>, <em>cc8=2.0</em>, <em>cc9=1.5</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.FollowerConventional.wiedemann99" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lead_d</strong> – lead vehicle distance to stop bar</li>
+<li><strong>lead_s</strong> – lead vehicle speed</li>
+<li><strong>lead_a</strong> – lead vehicle acceleration rate</li>
+<li><strong>lead_l</strong> – length of lead vehicle</li>
+<li><strong>foll_d</strong> – follower vehicle distance to stop bar</li>
+<li><strong>foll_s</strong> – follower vehicle speed</li>
+<li><strong>foll_s_des</strong> – follower vehicle desired speed</li>
+<li><strong>cc0</strong> – Standstill Distance in <span class="math notranslate nohighlight">\(m\)</span></li>
+<li><strong>cc1</strong> – Spacing Time in <span class="math notranslate nohighlight">\(s\)</span></li>
+<li><strong>cc2</strong> – Following Variation (<em>max drift</em>) in <span class="math notranslate nohighlight">\(m\)</span></li>
+<li><strong>cc3</strong> – Threshold for Entering ‘Following’ in <span class="math notranslate nohighlight">\(s\)</span></li>
+<li><strong>cc4</strong> – Negative <em>Following</em> Threshold in <span class="math notranslate nohighlight">\(m/s\)</span></li>
+<li><strong>cc5</strong> – Positive <em>Following</em> Threshold in <span class="math notranslate nohighlight">\(m/s\)</span></li>
+<li><strong>cc6</strong> – Speed Dependency of Oscillation in <span class="math notranslate nohighlight">\(10^-4 rad/s\)</span></li>
+<li><strong>cc7</strong> – Oscillation Acceleration in <span class="math notranslate nohighlight">\(m/s^2\)</span></li>
+<li><strong>cc8</strong> – Standstill Acceleration in <span class="math notranslate nohighlight">\(m/s^2\)</span></li>
+<li><strong>cc9</strong> – Acceleration at 80 <span class="math notranslate nohighlight">\(km/h\)</span> in <span class="math notranslate nohighlight">\(m/s^2\)</span></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">follower next acceleration rate</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body"><p class="first last">May-2018</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.trajectory.FollowerConventional.gipps">
+<code class="descname">gipps</code><span class="sig-paren">(</span><em>lead_d</em>, <em>lead_s</em>, <em>lead_l</em>, <em>foll_d</em>, <em>foll_s</em>, <em>foll_s_des</em>, <em>foll_a_min</em>, <em>foll_a_max</em>, <em>lead_a_min</em>, <em>dt</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.FollowerConventional.gipps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gipps car following model is implemented. It is written in-place (does not call <a class="reference internal" href="#src.trajectory.Trajectory.set_trajectory" title="src.trajectory.Trajectory.set_trajectory"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">set_trajectory</span></code></a>)</p>
+<div class="figure align-center" id="id3">
+<img alt="map to buried treasure" src="_images/Gipps_formula.JPG" />
+<p class="caption"><span class="caption-text">Gipps car following formula.</span></p>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Theoretically, caution needed to address the cases where either the term under the square root or one of the speed values in the model becomes negative.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lead_d</strong> – lead vehicle distance to stop bar</li>
+<li><strong>lead_s</strong> – lead vehicle speed</li>
+<li><strong>lead_l</strong> – lead vehicle length</li>
+<li><strong>foll_d</strong> – follower vehicle distance to stop bar</li>
+<li><strong>foll_s</strong> – follower vehicle speed</li>
+<li><strong>foll_s_des</strong> – follower desired speed</li>
+<li><strong>foll_a_min</strong> – follower maximum deceleration rate</li>
+<li><strong>foll_a_max</strong> – follower maximum acceleration rate</li>
+<li><strong>lead_a_min</strong> – lead maximum deceleration rare</li>
+<li><strong>dt</strong> – length of time interval the acceleration shall be calculated</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">follower next acceleration rate</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body"><p class="first last">April-2018</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.trajectory.FollowerConventional.solve">
+<code class="descname">solve</code><span class="sig-paren">(</span><em>veh</em>, <em>lead_veh</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.FollowerConventional.solve" title="Permalink to this definition">¶</a></dt>
+<dd><div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>The only trajectory point index that changes is follower’s last one.</li>
+<li>This method relies on the fact that lead vehicle’s first trajectory point is current.</li>
+<li>Assumed the gap to lead vehicle cannot get lower than a full length of the lead vehicle.</li>
+<li>Compared to W99 requires acc/dec on follower, dec on lead, dt, and does not need lead acc.</li>
+<li>to compute acceleration for lead, we need at least two points to take speed over time difference</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>veh</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Vehicle" title="src.intersection.Vehicle"><em>Vehicle</em></a>) – The follower conventional vehicle</li>
+<li><strong>lead_veh</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Vehicle" title="src.intersection.Vehicle"><em>Vehicle</em></a>) – The vehicle in front of subject conventional vehicle</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body"><p class="first last">April-2018</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="src.trajectory.FollowerConventional.comp_speed_distance">
+<em class="property">static </em><code class="descname">comp_speed_distance</code><span class="sig-paren">(</span><em>t0</em>, <em>d0</em>, <em>v0</em>, <em>a</em>, <em>t</em>, <em>foll_a_min</em>, <em>foll_a_max</em>, <em>next_lead_d</em>, <em>lead_l</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.FollowerConventional.comp_speed_distance" title="Permalink to this definition">¶</a></dt>
+<dd><p>If car-following models yielded unreasonable acceleration, fixes it.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Checks for:
+- Speed should be positive
+- Acceleration/deceleration constraints should be met
+- Enforce a gap of equal to length of lead to the lead vehicle</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>t0</strong> – the time at the beginning of the small interval that acceleration is constant</li>
+<li><strong>d0</strong> – the distance at the beginning of the interval</li>
+<li><strong>v0</strong> – the speed at the beginning of the interval</li>
+<li><strong>a</strong> – the constant acceleration rate within the interval</li>
+<li><strong>t</strong> – the end time of the interval</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the distance to stop bar and speed at the end of the interval</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body"><p class="first last">April-2018</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="src.trajectory.LeadConnected">
+<em class="property">class </em><code class="descclassname">src.trajectory.</code><code class="descname">LeadConnected</code><span class="sig-paren">(</span><em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.LeadConnected" title="Permalink to this definition">¶</a></dt>
+<dd><div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>Trajectory function: <span class="math notranslate nohighlight">\(f(t)   = \sum_{n=0}^{k-1} b_n \times (t/t_0)^n\)</span></li>
+<li>Negative of speed profile: <span class="math notranslate nohighlight">\(f'(t)  = \sum_{n=1}^{k-1} n \times b_n \times (t/t_0)^{n-1}\)</span></li>
+<li>Negative of acceleration profile: <span class="math notranslate nohighlight">\(f''(t) = \sum_{n=2}^{k-1} n \times (n-1) \times  b_n \times (t/t_0)^{n-2}\)</span></li>
+</ul>
+</div>
+<p>Use Case:</p>
+<blockquote>
+<div><p>Instantiate like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">lead_connected_trj_optimizer</span> <span class="o">=</span> <span class="n">LeadConnected</span><span class="p">(</span><span class="o">.</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Perform trajectory computation by:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">lead_conventional_trj_estimator</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">veh</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="src.trajectory.LeadConnected.set_model">
+<code class="descname">set_model</code><span class="sig-paren">(</span><em>veh</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.LeadConnected.set_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overrides the generic coefficients to build the specific <a class="reference internal" href="[0].overview.html#term-lp"><span class="xref std std-term">LP</span></a> model for the AV trajectory.</p>
+<p>This model solves an <a class="reference internal" href="[0].overview.html#term-lp"><span class="xref std std-term">LP</span></a> model to compute trajectory of AVs.</p>
+<div class="figure align-center" id="id4">
+<a class="reference internal image-reference" href="_images/model.JPG"><img alt="map to buried treasure" src="_images/model.JPG" style="width: 10cm;" /></a>
+<p class="caption"><span class="caption-text">Part of a sample CPLEX model.</span></p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>veh</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Vehicle" title="src.intersection.Vehicle"><em>Vehicle</em></a>) – vehicle object that its trajectory is meant to be computed</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">CPLEX LP model. Should return the model since the follower optimizer adds constraints to this model</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.trajectory.LeadConnected.solve">
+<code class="descname">solve</code><span class="sig-paren">(</span><em>veh</em>, <em>lead_veh</em>, <em>model</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.LeadConnected.solve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solves an <a class="reference internal" href="[0].overview.html#term-lp"><span class="xref std std-term">LP</span></a> model for connected vehicle (both lead and follower)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>veh</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Vehicle" title="src.intersection.Vehicle"><em>Vehicle</em></a>) – subject vehicle</li>
+<li><strong>lead_veh</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Vehicle" title="src.intersection.Vehicle"><em>Vehicle</em></a>) – lead vehicle which could be <cite>None</cite> if no vehicle is in front.</li>
+<li><strong>model</strong> (<em>CPLEX</em>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">coefficients of the polynomial for the <code class="docutils literal notranslate"><span class="pre">veh</span></code> object and trajectory points to the trajectory attribute of it</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body"><p class="first last">April-2018</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.trajectory.LeadConnected.compute_trj_points">
+<code class="descname">compute_trj_points</code><span class="sig-paren">(</span><em>f</em>, <em>f_prime</em>, <em>departure_time_relative</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.LeadConnected.compute_trj_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the polynomial trajectory to the trajectory points.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>f</strong> – the coefficients to define trajectory polynomial</li>
+<li><strong>f_prime</strong> – the coefficients to define the speed polynomial</li>
+<li><strong>departure_time_relative</strong> – span of the trajectory</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">t, d, s</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body"><p class="first last">April-2018</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.trajectory.LeadConnected.optimize_lead_connected_trj">
+<code class="descname">optimize_lead_connected_trj</code><span class="sig-paren">(</span><em>veh</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.LeadConnected.optimize_lead_connected_trj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes a linear trajectory for the vehicle. This case should not happen except for the case the LP has no solution.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>veh</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Vehicle" title="src.intersection.Vehicle"><em>Vehicle</em></a>) – subject vehicle</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">trajectory of subject lead CAV</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="src.trajectory.FollowerConnected">
+<em class="property">class </em><code class="descclassname">src.trajectory.</code><code class="descname">FollowerConnected</code><span class="sig-paren">(</span><em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.FollowerConnected" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optimizes the trajectory of a follower CAV.</p>
+<p>Use Case:</p>
+<blockquote>
+<div><p>Instantiate like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">follower_connected_trj_optimizer</span> <span class="o">=</span> <span class="n">FollowerConnected</span><span class="p">(</span><span class="n">intersection</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Perform trajectory computation by:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">follower_connected_trj_optimizer</span><span class="o">.</span><span class="n">set_model</span><span class="p">(</span><span class="n">veh</span><span class="p">,</span> <span class="n">lead_veh</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">follower_connected_trj_optimizer</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">veh</span><span class="p">,</span> <span class="n">lead_veh</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>GAP_CTRL_STARTS</strong> – This is the relative time (in seconds) when gap control constraints get added</td>
+</tr>
+</tbody>
+</table>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="src.trajectory.FollowerConnected.set_model">
+<code class="descname">set_model</code><span class="sig-paren">(</span><em>veh</em>, <em>lead_veh</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.FollowerConnected.set_model" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Sets the LP model using the extra constraints to enforce the safe headway. Either three cases happen here:</dt>
+<dd><ul class="first last simple">
+<li><dl class="first docutils">
+<dt>The lead is a <a class="reference internal" href="[0].overview.html#term-cnv"><span class="xref std std-term">CNV</span></a> and its trajectory overlaps and it has enough trajectory points</dt>
+<dd><ul class="first last">
+<li>Enforce the constraint on last m trajectory points of the lead vehicle</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>The lead is a <a class="reference internal" href="[0].overview.html#term-cav"><span class="xref std std-term">CAV</span></a> and its trajectory overlaps</dt>
+<dd><ul class="first last">
+<li>Evaluate the polynomial over m points as defined in the paper</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Otherwise</dt>
+<dd><ul class="first last">
+<li>Relax the constraints (<span class="math notranslate nohighlight">\(0.0 \geq -1.0\)</span> is always true)</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>veh</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Vehicle" title="src.intersection.Vehicle"><em>Vehicle</em></a>) – follower connected vehicle that the trajectory model is constructed for</li>
+<li><strong>lead_veh</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Vehicle" title="src.intersection.Vehicle"><em>Vehicle</em></a>) – the vehicle in front</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the CPLEX LP model to be solved by solve() method</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body"><p class="first last">April-2018</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.trajectory.FollowerConnected.solve">
+<code class="descname">solve</code><span class="sig-paren">(</span><em>veh</em>, <em>lead_veh</em>, <em>model</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.FollowerConnected.solve" title="Permalink to this definition">¶</a></dt>
+<dd><p>The only reason this class method exists is to access <a class="reference internal" href="#src.trajectory.FollowerConnected.optimize_follower_connected_trj" title="src.trajectory.FollowerConnected.optimize_follower_connected_trj"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">optimize_follower_connected_trj</span></code></a> method.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>veh</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Vehicle" title="src.intersection.Vehicle"><em>Vehicle</em></a>) – subject vehicle</li>
+<li><strong>lead_veh</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Vehicle" title="src.intersection.Vehicle"><em>Vehicle</em></a>) – the vehicle in front of the subject</li>
+<li><strong>model</strong> – the follower CPLEX model</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body"><p class="first last">April-2018</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.trajectory.FollowerConnected.optimize_follower_connected_trj">
+<code class="descname">optimize_follower_connected_trj</code><span class="sig-paren">(</span><em>veh</em>, <em>lead_veh</em><span class="sig-paren">)</span><a class="headerlink" href="#src.trajectory.FollowerConnected.optimize_follower_connected_trj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Works based on the concept of hypothetical trajectory.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>veh</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Vehicle" title="src.intersection.Vehicle"><em>Vehicle</em></a>) – subject vehicle</li>
+<li><strong>lead_veh</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Vehicle" title="src.intersection.Vehicle"><em>Vehicle</em></a>) – lead vehicle which could be <cite>None</cite> if no vehicle is in front.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">trajectory of the subject follower AV in case the LP has no solution.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body"><p class="first last">April-2018</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="[7].signal.ctrl.interface.html" class="btn btn-neutral float-right" title="9. Signal Controller Interface" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="[5].signal.html" class="btn btn-neutral" title="7. Signal Phase and Timing (SPaT)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Mahmoud Pourmehrab
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/copybutton.js"></script>
+    
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

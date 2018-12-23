@@ -1,7 +1,12 @@
 * Visit [here](https://pourmehrab.github.io/RIO/) for the documentation
 * Visit [here](http://avian.essie.ufl.edu/) for project website
-* Questions/Comments: [pourmehrab@gmail.com](mailto:pourmehrab@gmail.com)
+* Questions/Comments:
 
-### Installation notes
+Mahmoud Pourmehrab
+[pourmehrab@gmail.com](mailto:pourmehrab@gmail.com)
 
-You need python 3.6 to install `cplex`.
+Ash Omidvar
+[aschkan@ufl.edu](mailto:aschkan@ufl.edu)
+
+Patrick Emami
+[pemami@ufl.edu](mailto:pemami@ufl.edu)

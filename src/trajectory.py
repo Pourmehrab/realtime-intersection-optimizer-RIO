@@ -1,12 +1,4 @@
-####################################
-# File name: trajectory.py         #
-# Author: Mahmoud Pourmehrab       #
-# Email: pourmehrab@gmail.com      #
-# Last Modified: May/30/2018       #
-####################################
-
 import operator
-
 import numpy as np
 
 
@@ -254,7 +246,6 @@ class FollowerConventional(Trajectory):
 
         :param lead_d: lead vehicle distance to stop bar
         :param lead_s: lead vehicle speed
-        :param lead_a: lead vehicle acceleration
         :param lead_l: lead vehicle length
         :param foll_d: follower vehicle distance to stop bar
         :param foll_s: follower vehicle speed
