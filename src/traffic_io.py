@@ -1,6 +1,7 @@
 import threading
 import socket
 from collections import deque, namedtuple
+import datetime
 
 vehicle_msg = namedtuple('VehicleMsg', 
         ['timestamp', 
@@ -103,11 +104,14 @@ class TrafficListener(SocketThread):
         timestamp = msg_chunks[0].split(":")
         hour = int(timestamp[0])
         minute = int(timestamp[1])
-        micros = int(timestamp[2])
+        second = float(timestamp[2]) # {second}.{microsecond}
+        time_obj = datetime.time(hour, minute, second, microsecond)
+        date_obj = datetime.today().date()
         parsed_vehicle_msgs = []
         def parse_vehicle_msg(msg_):
             data = msg_.split(",")
             vm = vehicle_msg(
+                    timestamp=datetime.combine(date_obj, time_obj),
                     track_id=data[0],
                     dsrc_id=data[1],
                     pos=[float(data[2]), float(data[3])],

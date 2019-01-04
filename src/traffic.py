@@ -39,26 +39,28 @@ class RealTimeTraffic:
         else:
             self.full_traj_csv_file = None
 
-    def get_traffic_info(self, lanes):
+    def get_traffic_info(self, lanes, time_tracker):
         """
         Objectives
             - Appends arrived vehicles from the CSV file to :any:`Lanes`
             - Assigns their earliest arrival time
 
         :param lanes: vehicles are added to this data structure
+        :param time_tracker: Timer object for grabbing elapsed time since start
         :type lanes: Lanes
         """
-        # Read latest msgs from queues
+        # Read latest msg from track split/merge queue
         if self._track_split_merge_queue.count() != 0:
             self._track_split_merge_queue.pop()
             # Handle track split/merge msgs - TODO
-
+    
+        # Read latest msg from vehicle data queue
         if self._vehicle_data_queue.count() != 0:
             vehicle_data_msgs = self._vehicle_data_queue.pop()
             # Lane detection
             for vm in vehicle_data_msgs:
                 lane = self.intersection.detect_lane(vm)
-                if lane < 0:
+                if lane == -1:
                     continue
                 # check if the vehicle is already in this lane
                 veh_id = vm.track_id + ":" + vm.dsrc_id
@@ -67,21 +69,20 @@ class RealTimeTraffic:
                     # in the optimization zone?
                     if self.intersection.in_optimization_zone(vm):
                         # convert vehicle message to Vehicle
-                        det_id = vm.track_id + ":" + vm.dsrc_id
+                        det_id = veh_id
                         det_type = vm.veh_type
-                        # det_time = # ?
+                        det_time = time_tracker.get_elapsed_time(vm.timestamp)
                         dist = self.intersection.UTM_to_distance_from_stopbar(vm.pos[0], vm.pos[1], lane)
                         speed = np.sqrt(vm.speed[0] ** 2 + vm.speed[1] ** 2)
-                        # des_speed = ? intersection speed limit?
+                        des_speed = self.intersection._inter_config_params["max_speed"]
                         # dest = "" # ?
                         length = vm.veh_len
                         amin = vm.max_decel
                         amax = vm.max_accel
 
-                        # indx?
+                        indx = None
                         veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax,
-                                      indx,
-                                      self.intersection)
+                                      indx, self.intersection)
 
                         self._print_commandline and print(
                             r'\\\ ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane).zfill(
