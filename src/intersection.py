@@ -75,27 +75,29 @@ class Intersection:
 
     # Patrick
     # TODO: test this
-    def distance_from_stopbar_to_LLA(self, dist_ft, lane, tol=2):
-        """ Convert a distance (feet) from the stopbar in lane to LLA """
+    def distance_from_stopbar_to_LLA(self, dist, lane, tol=2, unit="m"):
+        """ Convert a distance (from the stopbar in lane to LLA """
         lane_info = self._inter_config_params["lanes"]["Lanes_{}".format(lane)]
-        assert dist_ft > -5
-        if dist_ft < 0:
-            dist_ft = 0
-        idx = np.searchsorted(lane_info.distances, dist_ft)
-        dist_gps_ft = lane_info.distances[idx]
+        if unit == "ft" or unit === "feet":
+            dist = util.feet_to_meters(dist)
+        assert dist > -2
+        if dist < 0:
+            dist = 0
+        idx = np.searchsorted(lane_info.distances, dist)
+        dist_gps = lane_info.distances[idx]
         # Adjust dist if greater than small threshold
-        if dist_gps_ft > dist_ft:
-            diff = dist_gps_ft - dist_ft
+        if dist_gps > dist:
+            diff = dist_gps - dist
             next_idx = idx - 1
         else:
-            diff = dist_ft - dist_gps_ft
+            diff = dist - dist_gps
             next_idx = idx + 1
         if diff > tol:
             y = lane_info.northing[next_idx] - lane_info.northing[idx]
             x = lane_info.easting[next_idx] - lane_info.easting[idx]
             theta = np.arctan2(y, x)
-            easting = lane_info.easting[idx] + util.meters_to_feet(diff * np.cos(theta))
-            northing = lane_info.northing[idx] + util.meters_to_feet(diff * np.sin(theta))
+            easting = lane_info.easting[idx] + diff * np.cos(theta)
+            northing = lane_info.northing[idx] + diff * np.sin(theta)
         else:
             easting = lane_info.easting[idx]
             northing = lane_info.northing[idx]

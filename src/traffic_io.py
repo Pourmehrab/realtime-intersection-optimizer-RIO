@@ -1,6 +1,7 @@
 import threading
 import socket
 from collections import deque, namedtuple
+import datetime
 
 vehicle_msg = namedtuple('VehicleMsg', 
         ['timestamp', 
@@ -103,11 +104,14 @@ class TrafficListener(SocketThread):
         timestamp = msg_chunks[0].split(":")
         hour = int(timestamp[0])
         minute = int(timestamp[1])
-        micros = int(timestamp[2])
+        second = float(timestamp[2]) # {second}.{microsecond}
+        time_obj = datetime.time(hour, minute, second, microsecond)
+        date_obj = datetime.today().date()
         parsed_vehicle_msgs = []
         def parse_vehicle_msg(msg_):
             data = msg_.split(",")
             vm = vehicle_msg(
+                    timestamp=datetime.combine(date_obj, time_obj),
                     track_id=data[0],
                     dsrc_id=data[1],
                     pos=[float(data[2]), float(data[3])],
@@ -129,21 +133,62 @@ class TrafficListener(SocketThread):
 
 class TrafficPublisher(StoppableThread):
     """ """
-    def __init__(self, ip, port, name="TrafficPublisher"):
+    def __init__(self, intersection, ip, port, name="TrafficPublisher"):
         super(TrafficPublisher, self).__init__(name)
         self._cav_traj_queue = deque()
         self._IAM_publisher = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._IAM_publisher.setblocking(0)
+        self._intersection = intersection
         self.ip = ip
         self.port = port
         
     def get_cav_traj_queue(self):
         return self._cav_traj_queue
 
-    def veh_to_IAM(self, veh):
-        """TODO"""
-        raise NotImplementedError
-
+    def veh_to_IAM(self, veh, lane):
+        """
+        The IAM message is a string consisting of:
+            - IAM message ID
+            - Hour (added by RSU)
+            - Minute (added by RSU)
+            - Millisecond (added by RSU)
+            - vehicle DSRC ID
+            - 4 byte latitutde of first trajectory
+            - 4 byte longitude of first trajectory point
+            - Minute when the first trajectory point occurs
+            - Millisecond when first trajectory point occurs
+            - Signal color (e.g., red if vehicle trajectory is to stop at stopbar and wait for green)
+            - Point count (# of trajectory point - 1)
+            - Repeat for point count
+                - Latitutde offset (3 bytes), unsigned int16
+                - Longitude offset (3 bytes), unsigned int16
+                - Time offset (milliseconds)
+        """
+        max_num_traj_points = self._intersection._inter_config_params["max_num_traj_points"]
+        IAM_msg_ID = "18"
+        dsrc_ID = veh.ID.split(":")[1]
+        traj_len = min(veh.last_trj_point_indx - veh.first_trj_point_indx + 1,
+            max_num_traj_points) 
+        point_count = traj_len - 1
+        traj_point_ctr = 0
+        traj_point_idx = veh.first_trj_point_indx
+        trajectory = []
+        while traj_point_ctr < traj_len:
+            x = veh.trajectory[:, traj_point_idx]
+            trj_t, trj_dist, trj_spd = x[0], x[1], x[2]
+            lat, lon = self._intersection.distance_from_stopbar_to_LLA(trj_dist, lane)
+            traj_point_idx = 1 + traj_point_idx % max_num_traj_points
+            traj_point_ctr += 1
+            trajectory.append(np.array([trj_t, lat, lon]))
+        x = np.array(trajectory)
+        # compute deltas
+        deltas = x - np.concatenate(np.array([0,0,0.]), x[1:])
+        first_lat = deltas[0,1]
+        first_lon = deltas[0,2]
+        signal_color = 2 # TODO: green always currently
+        first_min = deltas[0,0].minute
+        first_sec = deltas[0,0].second
+        IAM_string = "{}{}"
     def run(self):
         """Main method for Stoppable thread"""
         while not self.stopped():

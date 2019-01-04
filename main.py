@@ -88,7 +88,7 @@ def run_rio(args):
             if args.mode == "sim":
                 traffic.get_traffic_info(lanes, run_time, intersection)
             else:
-                traffic.get_traffic_info(lanes)
+                traffic.get_traffic_info(lanes, time_tracker)
 
             # update earliest departure time
             lanes.reset_earliest_departure_times(lanes, intersection)

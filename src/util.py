@@ -6,6 +6,10 @@ def meters_to_feet(m):
     """Converts a measurement in meters to feet."""
     return m * 3.2808399
 
+def feet_to_meters(ft):
+    """Converts a measurement in feet to meters."""
+    return ft * 0.3047999
+
 def euclidean_dist(x1,y1,x2,y2):
     return np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
