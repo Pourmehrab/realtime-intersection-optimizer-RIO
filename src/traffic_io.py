@@ -147,14 +147,16 @@ class TrafficPublisher(StoppableThread):
 
     def veh_to_IAM(self, veh, lane):
         """
+        TODO: Test
+
         The IAM message is a string consisting of:
             - IAM message ID
             - Hour (added by RSU)
             - Minute (added by RSU)
             - Millisecond (added by RSU)
             - vehicle DSRC ID
-            - 4 byte latitutde of first trajectory
-            - 4 byte longitude of first trajectory point
+            - 4 byte latitutde of first trajectory (unsigned long/int32)
+            - 4 byte longitude of first trajectory point (unsigned long/int32)
             - Minute when the first trajectory point occurs
             - Millisecond when first trajectory point occurs
             - Signal color (e.g., red if vehicle trajectory is to stop at stopbar and wait for green)
@@ -163,9 +165,9 @@ class TrafficPublisher(StoppableThread):
                 - Latitutde offset (3 bytes), unsigned int16
                 - Longitude offset (3 bytes), unsigned int16
                 - Time offset (milliseconds)
+        https://github.com/pemami4911/FDOT-Intersection-Controller/blob/master/traffic-intersection-comms/interface/EncodeIAMasString.m
         """
         max_num_traj_points = self._intersection._inter_config_params["max_num_traj_points"]
-        IAM_msg_ID = "18"
         dsrc_ID = veh.ID.split(":")[1]
         traj_len = min(veh.last_trj_point_indx - veh.first_trj_point_indx + 1,
             max_num_traj_points) 
@@ -183,12 +185,28 @@ class TrafficPublisher(StoppableThread):
         x = np.array(trajectory)
         # compute deltas
         deltas = x - np.concatenate(np.array([0,0,0.]), x[1:])
-        first_lat = deltas[0,1]
-        first_lon = deltas[0,2]
+        first_lat = int(round(deltas[0,1] * 1e7))
+        first_lon = int(round(deltas[0,2] * 1e7))
         signal_color = 2 # TODO: green always currently
         first_min = deltas[0,0].minute
-        first_sec = deltas[0,0].second
-        IAM_string = "{}{}"
+        first_sec = int(round(deltas[0,0].second * 1e3))
+        # 18 is the IAM msg ID (fixed), 0 is the MsgCount variable (fixed)
+        IAM_blob = "18,0,"
+        IAM_blob += "%d," % dsrc_ID
+        IAM_blob += "%d," % first_lat
+        IAM_blob += "%d," % first_lon
+        IAM_blob += "%d," % first_min
+        IAM_blob += "%d," % first_sec
+        IAM_blob += "%d," % signal_color
+        IAM_blob += "%d," % point_count
+        for i in range(1,traj_len): 
+            # This has to be representable in less than 3 bytes, in (-2^23 to 2^23-1)
+            lat_offset = int(round(deltas[i,1] * 1e7))
+            lon_offset = int(round(deltas[i,2] * 1e7))
+            time_offset = int(round(deltas[i,0] * 1e3))
+            IAM_blob += "%d,%d,%d" % lat_offset,lon_offset,time_offset
+        return IAM_blob
+
     def run(self):
         """Main method for Stoppable thread"""
         while not self.stopped():

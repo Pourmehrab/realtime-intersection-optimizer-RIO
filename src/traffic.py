@@ -67,7 +67,7 @@ class RealTimeTraffic:
                 v = lanes.find_and_return_vehicle_by_id(lane, veh_id)
                 if v is None:
                     # in the optimization zone?
-                    if self.intersection.in_optimization_zone(vm):
+                    if self.intersection.in_optimization_zone(vm, lane):
                         # convert vehicle message to Vehicle
                         det_id = veh_id
                         det_type = vm.veh_type
@@ -202,12 +202,12 @@ class RealTimeTraffic:
                 for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
                     det_time, _, _ = veh.get_arr_sched()
                     dep_time, _, _ = veh.get_dep_sched()
-                    assert dep_time > 0, "no departure is set"
-                    if dep_time < elapsed_time:  # record/remove departure
-                        last_veh_indx_to_remove += 1
-                        intersection._inter_config_params.get('print_commandline') and print(
-                            '/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID + '@({:>4.1f} s)'.format(
-                                dep_time))
+                    if dep_time != 0:
+                        if dep_time < elapsed_time:  # record/remove departure
+                            last_veh_indx_to_remove += 1
+                            intersection._inter_config_params.get('print_commandline') and print(
+                                '/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID + '@({:>4.1f} s)'.format(
+                                    dep_time))
                         # self._log_csv and self.set_row_vehicle_level_csv(dep_time, veh)
                     elif det_time < elapsed_time:  # record/remove expired points
                         veh.reset_trj_pts(self.scenario_num, lane, elapsed_time, self.full_traj_csv_file)
