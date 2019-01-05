@@ -8,45 +8,74 @@ import src.util as util
 # Vehicle and Intersection Configuration Parameters
 # -------------------------------------------------------
 Lane = namedtuple("Lane", ["utmzone", "utmletter", "easting", "northing", "distances", "lane_length", "is_straight"])
+OptZone = namedtuple("Zone", ["utmzone", "utmletter", "easting", "northing", "orientation"])
 
-
+# TODO: Test
 def load_optimization_zone_constraints(inter_name):
-    """TODO"""
-    return {"heading": [], "speed": [], "poly": []}
+    zones = {}
+    opt_file = os.path.join(inter_name, "opt_zones.csv")
+    prev_lane = None
+    with open(opt_file, 'r') as f:
+       f.readline() # throw away header
+       next_line = f.readline()
+       while next_line:
+            name, lat, lon, orientation = next_line.split(",")
+            lane = name.split(".")[0]
+            lane_number = int(lane.split("_")[1])
+            if lane != prev_lane:
+                if o:
+                    zones[lane_number] = o
+                o = OptZone(utmzone="", utmletter="", easting=[], northing=[], orientation=-1)
+                prev_lane = lane
+            e, n, zone_num, zone_letter = utm.from_latlon(lat, lon)
+            o.utmzone = zone_num
+            o.utmletter = zone_letter
+            o.easting.append(e)
+            o.northing.append(n)
+            if orientation != "-":
+                o.orientation = float(orientation)
+            next_line = f.readline()
+    return zones
 
-
-def read_and_process_gps(inter_name):
-    """TODO: add scipy.linregress to test whether GPS points form straight line, to set is_straight"""
-    gps_file_names = os.path.join(inter_name, "GPS", "*.csv")
-    lane_gps_csvs = glob.glob(gps_file_names)
+## TODO: Test
+def load_lane_geom(inter_name):
+    #gps_file_names = os.path.join(inter_name, "GPS", "*.csv")
+    #lane_gps_csvs = glob.glob(gps_file_names)
+    lane_file = os.path.join(inter_name, "lanes.csv" )
     lanes = {}
-    for lane in lane_gps_csvs:
-        l = Lane(utmzone="", easting=[], northing=[], distances=[], lane_length=0, is_straight=True)
-        lane_id = os.path.splitext(lane)[0]
-        with open(lane, 'r') as f:
-            f.readline()  # throw away header
-            gps_line = f.readline()
-            while gps_line:
-                lat, lon = gps_line.split(",")
-                e, n, zone_num, zone_letter = utm.from_latlon(lat, lon)
-                l.utmzone = zone_num
-                l.utmletter = zone_letter
-                l.easting.append(e)
-                l.northing.append(n)
-            total_length = 0.
-            # l.distances[0] = util.meters_to_feet(total_length)
-            l.distances[0] = total_length
-            for i in range(len(l.easting) - 1):
-                total_length += util.euclidean_distance(l.easting[i], l.northing[i], l.easting[i + 1],
-                                                        l.northing[i + 1])
-                # l.distances[i+1] = util.meters_to_feet(total_length)
-                l.distances[i + 1] = total_length
-            # l.lane_length = util.meters_to_feet(total_length)
-            l.lane_length = total_length
-            # l.is_straight = ? TODO:
-        lanes[lane_id] = l
+    prev_lane = None
+    with open(lane_file, 'r') as f:
+        f.readline()  # throw away header
+        next_line = f.readline()
+        while next_line:
+            name, lat, lon = next_line.split(",")
+            if not prev_lane:
+                prev_lane = name
+            lane_id = int(name.split("_")[1])
+            if name != prev_lane 
+                if l:
+                    # l.distances[0] = util.meters_to_feet(total_length)
+                    total_length = 0.
+                    l.distances[0] = total_length
+                    for i in range(len(l.easting) - 1):
+                        total_length += util.euclidean_distance(l.easting[i], l.northing[i], l.easting[i + 1],
+                                                                l.northing[i + 1])
+                        # l.distances[i+1] = util.meters_to_feet(total_length)
+                        l.distances[i + 1] = total_length
+                    # l.lane_length = util.meters_to_feet(total_length)
+                    l.lane_length = total_length
+                    # l.is_straight = ? TODO:
+                    lanes[lane_id] = l
+                """TODO: add scipy.linregress to test whether GPS points form straight line, to set is_straight"""
+                l = Lane(utmzone="", easting=[], northing=[], distances=[], lane_length=0, is_straight=True)
+                prev_lane = name
+            e, n, zone_num, zone_letter = utm.from_latlon(lat, lon)
+            l.utmzone = zone_num
+            l.utmletter = zone_letter
+            l.easting.append(e)
+            l.northing.append(n)
+            next_line = f.readline()
     return lanes
-
 
 def load_inter_params(inter_name):
     """
@@ -124,7 +153,7 @@ def load_inter_params(inter_name):
         April-2018
         Dec-2018
     """
-    lane_info = read_and_process_gps(inter_name)
+    lane_info = load_lane_geom(inter_name)
     opt_zone_info = load_optimization_zone_constraints(inter_name)
 
     if inter_name == "13th16th":
@@ -325,7 +354,7 @@ def load_inter_params(inter_name):
 
             "print_commandline": True,
             "lane_estimation": "gps",  # gps/video todo: pls append these to the docstring above and explain briefly
-            "optimization_zone_constraints": opt_zone_info,
+            "opt_zones": opt_zone_info,
             "lanes": lane_info
             # FIXME @ Pat: Please import GPS points here. In order to avoid mapping and its
             # FIXME: confusing consequences, it would be tight if you could follow the lane numbers in accordance

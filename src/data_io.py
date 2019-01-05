@@ -8,9 +8,9 @@ vehicle_msg = namedtuple('VehicleMsg',
          'track_id', # string
          'dsrc_id', # string
          'pos', # List [UTM easting (float), UTM northing (float)]
-         'speed', # List [UTM easting dot (float), UTM northing dot (float)]
+         'vel', # List [UTM easting dot (float), UTM northing dot (float)]
          'pos_rms', # List [UtM easting (float), UTM northing (float)]
-         'speed_rms', # List [UTM easting dot (float), UTM northing dot (float)]
+         'vel_rms', # List [UTM easting dot (float), UTM northing dot (float)]
          'veh_type', # 0 or 1
          'veh_len', # float
          'max_accel', # float
@@ -115,9 +115,9 @@ class TrafficListener(SocketThread):
                     track_id=data[0],
                     dsrc_id=data[1],
                     pos=[float(data[2]), float(data[3])],
-                    speed=[float(data[4]), float(data[5])],
+                    vel=[float(data[4]), float(data[5])],
                     pos_rms=[float(data[6]), float(data[7])],
-                    speed_rms=[float(data[8]), float(data[9])],
+                    vel_rms=[float(data[8]), float(data[9])],
                     veh_type=int(data[10]),
                     max_accel=float(data[11]),
                     max_decel=float(data[12]),

@@ -4,9 +4,10 @@ import os
 import argparse
 from time import perf_counter
 from src.time_tracker import Timer
-from src.intersection import Intersection, Lanes, TrajectoryPlanner
+from src.intersection import Intersection, Lanes
+from src.trajectory import TrajectoryPlanner
 from src.traffic import SimTraffic, RealTimeTraffic
-from src.traffic_io import TrafficListener, TrafficPublisher
+from src.data_io import TrafficListener, TrafficPublisher
 from src.signal import MCF_SPaT
 from src.util import *
 
@@ -134,7 +135,7 @@ if __name__ == "__main__":
                         help="Run with traffic from CSV (sim) or sensor fusion (realtime)")
     parser.add_argument("--run-duration", type=int, default=300,
                         help="Seconds to run until termination.")
-    parser.add_argument("--loop-freq", type=float, default=0.5,
+    parser.add_argument("--loop-freq", type=float, default=2,
                         help="Frequency (Hz) to run the main loop")
     parser.add_argument("--solve-freq", type=float, default=0.5,
                         help="Frequency (Hz) to call the optimizer")

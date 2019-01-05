@@ -64,16 +64,19 @@ class RealTimeTraffic:
                     continue
                 # check if the vehicle is already in this lane
                 veh_id = vm.track_id + ":" + vm.dsrc_id
+                det_id = veh_id
+                det_type = vm.veh_type
+                det_time = time_tracker.get_elapsed_time(vm.timestamp)
+                # Convert vehicle state to lane-centric coordinates; essentially, 
+                # a 1D coordinate system where the origin is the stopbar of the detected lane.
+                dist = self.intersection.UTM_to_distance_from_stopbar(vm.pos[0], vm.pos[1], lane)
+                speed = np.sqrt(vm.vel[0] ** 2 + vm.vel[1] ** 2)
+
                 v = lanes.find_and_return_vehicle_by_id(lane, veh_id)
                 if v is None:
                     # in the optimization zone?
                     if self.intersection.in_optimization_zone(vm, lane):
                         # convert vehicle message to Vehicle
-                        det_id = veh_id
-                        det_type = vm.veh_type
-                        det_time = time_tracker.get_elapsed_time(vm.timestamp)
-                        dist = self.intersection.UTM_to_distance_from_stopbar(vm.pos[0], vm.pos[1], lane)
-                        speed = np.sqrt(vm.speed[0] ** 2 + vm.speed[1] ** 2)
                         des_speed = self.intersection._inter_config_params["max_speed"]
                         # dest = "" # ?
                         length = vm.veh_len
@@ -93,9 +96,8 @@ class RealTimeTraffic:
                         lanes.inc_last_veh_pos(lane)
                         indx += 1
                 else:
-                    # TODO
                     # update v with latest data
-                    v.update(vm)
+                    v.update(det_type, det_time, dist, speed)
 
         # N.b. eventually, add a flagging system so only vehicles with changes made to them 
         #   get new trajectories, to save on computation

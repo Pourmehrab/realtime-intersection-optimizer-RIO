@@ -19,6 +19,23 @@ def str_to_bool(any_string):
     else:
         return False
 
+def heading_from_velocity(vel):
+    """
+    Args:
+        vel: [easting, northing]
+    """
+    # signed angle in radians between ray ending at origin and passing
+    # through the point (0,1) and the ray ending at origin and passing
+    # throw point (x2,x1)
+    t = np.arctan2(*vel) 
+    if t < 0:
+        t += 2*np.pi
+    # convert to angle in radians from true north (up axis)
+    t -= np.pi/2
+    if t < 0:
+        t += 2*np.pi
+    return np.rad2deg(t)
+    
 def periodic_sleep(period):
     """
     Will sleep a thread until the next period'th of a second. I.e., 
