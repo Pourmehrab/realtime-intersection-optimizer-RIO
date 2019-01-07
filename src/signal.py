@@ -370,8 +370,7 @@ class MCF_SPaT(Signal):
                             _, det_dist, _ = veh.get_arr_sched()
                             flag = False
                             if det_dist >= min_dist_to_stop_bar:
-                                veh.set_sched_dep(t_scheduled, 0, veh.desired_speed, lane, veh_indx,
-                                                  intersection)
+                                veh.set_sched_dep(t_scheduled, 0, veh.desired_speed, lane, veh_indx)
                                 trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, '#')
                                 veh.got_trajectory = True
 

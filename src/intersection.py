@@ -1,7 +1,7 @@
 import csv
 import operator
 import numpy as np
-import geom
+import src.geom as geom
 from src.config import *
 import src.util as util  # Patrick
 
@@ -22,9 +22,17 @@ class Intersection:
         """
         self._inter_config_params = load_inter_params(inter_name)
 
-    # Patrick
     def detect_lane(self, vehicle_msg):
-        """ Implements video or GPS (UTM) based lane detection. """
+        """ 
+        Video or GPS (UTM) based lane detection. Video 
+        lane estimation not yet supported. GPS based detection
+        simply computes the best estimate by the smallest
+        Euclidean distance to the query point from any lane.
+
+        :param vehicle_msg: a query vehicle message
+        :type VehicleMsg: namedtuple
+        
+        """
         veh_utm_easting = vehicle_msg.pos[0]
         veh_utm_northing = vehicle_msg.pos[1]
 
@@ -32,29 +40,55 @@ class Intersection:
             lane = -1
             best_dist = self._inter_config_params["large_positive_num"]
             for i in range(self._inter_config_params["num_lanes"]):
-                lane_info = self._inter_config_params["lanes"]["Lane_{}".format(i)]
+                lane_info = self._inter_config_params["lanes"][i+1]
                 for j in range(len(lane_info.easting)):
                     e = lane_info.easting[j]
                     n = lane_info.northing[j]
-                    d = util.euclidean_distance(vehicle_utm_easting, vehicle_utm_northing, e, n)
+                    d = util.euclidean_dist(veh_utm_easting, veh_utm_northing, e, n)
                     if d < best_dist:
                         best_dist = d
-                        lane = i
+                        lane = i+1
         elif self._inter_config_params["lane_estimation"] == "video":
             raise NotImplementedError
-
         return lane
 
-    # Patrick
     def LLA_to_distance_from_stopbar(self, lat, lon, lane):
+        """
+        Convert a point in latitude, longitude on the provided lane
+        to the distance from that lane's stopbar.
+
+        About +- 0.5 m accuracy.
+
+        :param lat: Latitude
+        :type float:
+        :param lon: Longitude
+        :type float:
+        :param lane: Lane number
+        :type int:
+        """
         easting, northing, _, _ = utm.from_latlon(lat, lon)
-        return UTM_to_distance_from_stopbar(easting, northing, lane)
+        return self.UTM_to_distance_from_stopbar(easting, northing, lane)
 
     def UTM_to_distance_from_stopbar(self, easting, northing, lane, units="m"):
+        """
+        Convert a point in easting, northing on the provided lane
+        to the distance from that lane's stopbar.
+
+        About +- 0.5 m accuracy.
+
+        :param easting:
+        :type float:
+        :param northing:
+        type float:
+        :param lane: Lane number
+        :type int:
+        :param units: [optional], "m" or "ft"
+        :type string:
+        """
         # starting from stopbar, find closest point, then compute
-        lane_info = self._inter_config_params["lanes"]["Lane_{}".format(lane)]
+        lane_info = self._inter_config_params["lanes"][lane]
         if lane_info.is_straight:
-            d = util.euclidean_distance(lane_info.easting[0], lane_info.northing[0], easting, northing)
+            d = util.euclidean_dist(lane_info.easting[0], lane_info.northing[0], easting, northing)
             if units == "ft":
                 return util.meters_to_feet(d)
             else:
@@ -63,7 +97,7 @@ class Intersection:
             best = self._inter_config_params["large_positive_num"]
             best_idx = -1
             for i in range(len(lane_info.easting)):
-                d = util.euclidean_distance(lane_info.easting[0], lane_info.northing[0], easting, northing)
+                d = util.euclidean_dist(lane_info.easting[0], lane_info.northing[0], easting, northing)
                 if d < best:
                     best = d
                     best_idx = i
@@ -72,10 +106,20 @@ class Intersection:
             else:
                 return lane_info.distances[best_idx]
 
-    # Patrick
-    # TODO: test this
     def distance_from_stopbar_to_LLA(self, dist, lane, tol=2, unit="m"):
-        """ Convert a distance (from the stopbar in lane to LLA """
+        """ 
+        Convert a distance from the stopbar in lane to lat, lon.
+
+        :param dist: Distance from the stopbar.
+        :type float: 
+        :param lane: Lane number
+        :type int:
+        :param tol: Number of meters passed 0 tolerated. Negative distances
+        from the stopbar will result in 0. Beyond tol, an assertion is triggered.
+        :type int:
+        :param unit: meters or feet.
+        :type string:
+        """
         lane_info = self._inter_config_params["lanes"][lane]
         if unit == "ft" or unit == "feet":
             dist = util.feet_to_meters(dist)
@@ -115,7 +159,7 @@ class Intersection:
         a = opt_zone_info.orientation - h_cone
         b = opt_zone_info.orientation + h_cone
         if a >= 0:
-            orientation_constraint = True if a <= veh_heading <= b, else False
+            orientation_constraint = True if a <= veh_heading <= b else False
         else: # Test these cases
             b2 = b; b1 = 0
             a2 = 360; a1 = a + 360
@@ -337,16 +381,16 @@ class Vehicle:
         :param self.resched_dep: True if a vehicle is available to receive a new departure time,
         False if want to keep the previous trajectory
         :type self.resched_dep: bool
-        :param self.get_sched: True if a vehicle is just scheduled a **different** departure and is ready to be
-        assigned a new trajectory #TODO: Patrick - refactor to got_trajectory
-        :type self.get_sched: bool
+        :param self.got_trajectory: True if a vehicle is just scheduled a **different** departure and is 
+        assigned a new trajectory. Set within signal.py's ``solve`` method.
+        :type self.got_trajectory: bool
         :param self._call_reps_traj_planner: number of times a vehicle object trajectory is updated.
 
         .. note::
             - By definition ``scheduled_departure`` is always greater than or equal to ``earliest_arrival``.
             - It is important that user sets an ideal size of trajectory array by ``max_num_traj_points``.
             - A vehicle may be available to be rescheduled but gets the same departure time;
-            in that case, ``get_sched``  should hold False.
+            in that case, ``self.got_trajectory``  should hold False.
 
         """
         self.ID = det_id
@@ -389,7 +433,7 @@ class Vehicle:
         .. note::
             - When a new vehicle is scheduled, it has two trajectory points: one for the current state and the other for the final state.
             - If the vehicle is closer than ``min_dist_to_stop_bar``, avoids appending the schedule.
-            - Set the ``get_sched`` to ``True`` only if vehicle is getting a new schedule and trajectory planning might become relevant.
+            - Set the ``got_trajectory`` to ``True`` only if vehicle is getting a new schedule and trajectory planning might become relevant.
             - Moves back the first trajectory point to make best use of limited size to store trajectory points
 
         :param t_scheduled: scheduled departure time (:math:`s`)
@@ -405,7 +449,6 @@ class Vehicle:
 
         det_time, det_dist, det_speed = self.get_arr_sched()
         if det_dist >= self.min_dist_to_stop_bar:
-            # self.get_sched = True
 
             self.set_first_trj_pt_indx(0)
             self.trajectory[:, 0] = [det_time, det_dist, det_speed]

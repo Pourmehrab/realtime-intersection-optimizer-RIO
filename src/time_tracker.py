@@ -18,7 +18,7 @@ class Timer:
     def step(self):
         raise NotImplementedError
 
-    def get_elapsed_time(self, timestamp):
+    def get_time(self, timestamp):
         raise NotImplementedError
 
 
@@ -34,11 +34,10 @@ class RealTimeTimer(Timer):
     def step(self):
         periodic_sleep(self.resolution)
 
-    def get_elapsed_time(self, timestamp=None):
-        if timestamp:
-            return (timestamp - self.start_time).total_seconds()
-        else:
-            return (datetime.utcnow() - self.start_time).total_seconds()
+    def get_time(self, timestamp=None):
+        if not timestamp:
+            timestamp = datetime.utcnow() 
+        return (timestamp - self.start_time).total_seconds(), timestamp
 
 
 class SimTimer(Timer):
@@ -50,11 +49,10 @@ class SimTimer(Timer):
     def step(self):
         self.curr_time += self.resolution
 
-    def get_elapsed_time(self, timestamp=None):
-        if timestamp:
-            return timestamp - self.start_time
-        else:
-            return self.curr_time - self.start_time
+    def get_time(self, timestamp=None):
+        if not timestamp:
+            timestamp = self.curr_time
+        return timestamp - self.start_time, timestamp
 
 # class Timer:
 #     """

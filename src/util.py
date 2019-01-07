@@ -1,5 +1,6 @@
 import numpy as np
-from datetime import datetime
+import datetime
+from datetime import datetime as dt
 import time
 
 def meters_to_feet(m):
@@ -21,8 +22,14 @@ def str_to_bool(any_string):
 
 def heading_from_velocity(vel):
     """
-    Args:
-        vel: [easting, northing]
+    Given a velocity vector, compute the heading in degrees
+    counter-clockwise from true north. The velocity is assumed
+    to be a list of floats, where vel[0] is speed in Northing direction and
+    vel[1] is speed in Easting direction (UTM coordinates).
+    Units of speed are irrelevant, but will normally be m/s.
+
+    :param vel: the velocity vector
+    :type List: [northing_spd, easting_spd]
     """
     # signed angle in radians between ray ending at origin and passing
     # through the point (0,1) and the ray ending at origin and passing
@@ -38,21 +45,33 @@ def heading_from_velocity(vel):
     
 def periodic_sleep(period):
     """
-    Will sleep a thread until the next period'th of a second. I.e., 
+    Will sleep a thread until the next desired time interval. i.e., 
     if you want a function to be called at intervals of 0.1 seconds.
-    This will compute the amount to sleep necessary to achieve this rate.
+    This will compute the amount of ms needed to sleep 
+    until the next tenth of a second.
 
+    N.b. the first call to periodic_sleep will only sleep the thread for
+    fraction of the period needed to wake the thread 
+    at the next interval. 
+
+    Example:
     ```
     while True:
         do_func()
         periodic_sleep(0.1)
     ```
-
-    :param period: time between calls in seconds
+    will call do_func() at
+        12:00:00.0
+        12:00:00.1
+        12:00:00.2
+        ...
+        
+    :param period: time between calls (seconds)
+    :type float:
     """
     time_dt = datetime.timedelta(milliseconds=1000*period)
-    timenow = datetime.utcnow()
-    t = datetime(timenow.year, timenow.month, timenow.day,
+    timenow = dt.utcnow()
+    t = dt(timenow.year, timenow.month, timenow.day,
             timenow.hour, timenow.minute, timenow.second, 0)
     splits = [t]
     for _ in range(int(1./period)):

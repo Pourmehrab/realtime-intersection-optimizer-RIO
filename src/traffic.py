@@ -219,7 +219,7 @@ class RealTimeTraffic:
 
                 last_veh_indx_to_remove > -1 and lanes.remove_srv_vehs(lane, last_veh_indx_to_remove)
 
-    def publish(self, lanes):
+    def publish(self, lanes, curr_time):
         # Push vehicles with a DSRC id out to the TrafficPublisher
         num_lanes = self.intersection._inter_config_params.get('num_lanes')
         for lane in range(num_lanes):
@@ -227,7 +227,7 @@ class RealTimeTraffic:
                 for veh in lanes.vehlist.get(lane):
                     dsrc_id = veh.det_id.split(":")[1]
                     if dsrc_id != "" and veh.got_trajectory:
-                        self._cav_traj_queue.append(veh)
+                        self._cav_traj_queue.append((veh, lane, curr_time))
 
 
 class SimTraffic:
@@ -465,6 +465,9 @@ class SimTraffic:
 
                 last_veh_indx_to_remove > -1 and lanes.remove_srv_vehs(lane, last_veh_indx_to_remove)
 
-    def publish(self, lanes):
+    def publish(self, lanes, curr_time):
         """TODO: incrementally write to CSV """
+        #mport pickle
+        #import pdb; pdb.set_trace()
+        #print("save here")
         pass

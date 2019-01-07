@@ -7,27 +7,50 @@ import src.util as util
 # -------------------------------------------------------
 # Vehicle and Intersection Configuration Parameters
 # -------------------------------------------------------
-Lane = namedtuple("Lane", ["utmzone", "utmletter", "easting", "northing", "distances", "lane_length", "is_straight"])
-OptZone = namedtuple("Zone", ["utmzone", "utmletter", "easting", "northing", "orientation"])
+class Lane:
+    def __init__(self):
+        self.utmzone = ""
+        self.utmletter = ""
+        self.easting = []
+        self.northing = []
+        self.distances = []
+        self.lane_length = 0
+        self.is_straight = True
 
-# TODO: Test
+class OptZone:
+    def __init__(self):
+        self.utmzone = ""
+        self.utmletter = ""
+        self.easting = []
+        self.northing = []
+        self.orientation = -1
+
 def load_optimization_zone_constraints(inter_name):
+    """
+    Parse and store optimization zone information as a dictionary 
+    of OptZone objects, indexed by lane number.
+
+    :param inter_name: the name of the intersection, must match the
+    folder name containing opt_zones.csv
+    :type string:
+    """
     zones = {}
-    opt_file = os.path.join(inter_name, "opt_zones.csv")
-    prev_lane = None
+    opt_file = os.path.join("data", inter_name, "opt_zones.csv")
+    prev_lane_number = None
+    o = None
     with open(opt_file, 'r') as f:
-       f.readline() # throw away header
-       next_line = f.readline()
-       while next_line:
-            name, lat, lon, orientation = next_line.split(",")
+        f.readline() # throw away header
+        next_line = f.readline()
+        while next_line:
+            name, lat, lon, orientation = next_line.strip().split(",")
             lane = name.split(".")[0]
             lane_number = int(lane.split("_")[1])
-            if lane != prev_lane:
+            if lane_number != prev_lane_number:
                 if o:
-                    zones[lane_number] = o
-                o = OptZone(utmzone="", utmletter="", easting=[], northing=[], orientation=-1)
-                prev_lane = lane
-            e, n, zone_num, zone_letter = utm.from_latlon(lat, lon)
+                    zones[prev_lane_number] = o
+                o = OptZone()
+                prev_lane_number = lane_number
+            e, n, zone_num, zone_letter = utm.from_latlon(float(lat), float(lon))
             o.utmzone = zone_num
             o.utmletter = zone_letter
             o.easting.append(e)
@@ -35,46 +58,51 @@ def load_optimization_zone_constraints(inter_name):
             if orientation != "-":
                 o.orientation = float(orientation)
             next_line = f.readline()
+        zones[prev_lane_number] = o
     return zones
 
-## TODO: Test
 def load_lane_geom(inter_name):
-    #gps_file_names = os.path.join(inter_name, "GPS", "*.csv")
-    #lane_gps_csvs = glob.glob(gps_file_names)
-    lane_file = os.path.join(inter_name, "lanes.csv" )
+    """
+    Parse and load lane geometry information into Lane objects and
+    store in a dictionary indexed by lane number.
+
+       TODO:
+        - add scipy.linregress to test whether GPS points form straight line, to set is_straight
+    
+    :param inter_name: the name of the intersection, must match the
+    folder name containing opt_zones.csv
+    :type string:
+    """
+    lane_file = os.path.join("data", inter_name, "lanes.csv" )
     lanes = {}
-    prev_lane = None
+    prev_lane_id = None
+    l = None
     with open(lane_file, 'r') as f:
         f.readline()  # throw away header
         next_line = f.readline()
         while next_line:
             name, lat, lon = next_line.split(",")
-            if not prev_lane:
-                prev_lane = name
             lane_id = int(name.split("_")[1])
-            if name != prev_lane 
-                if l:
-                    # l.distances[0] = util.meters_to_feet(total_length)
+            if lane_id != prev_lane_id: 
+                if l :
                     total_length = 0.
-                    l.distances[0] = total_length
+                    l.distances.append(total_length)
                     for i in range(len(l.easting) - 1):
-                        total_length += util.euclidean_distance(l.easting[i], l.northing[i], l.easting[i + 1],
+                        total_length += util.euclidean_dist(l.easting[i], l.northing[i], l.easting[i + 1],
                                                                 l.northing[i + 1])
-                        # l.distances[i+1] = util.meters_to_feet(total_length)
-                        l.distances[i + 1] = total_length
-                    # l.lane_length = util.meters_to_feet(total_length)
+                        l.distances.append(total_length)
                     l.lane_length = total_length
-                    # l.is_straight = ? TODO:
-                    lanes[lane_id] = l
-                """TODO: add scipy.linregress to test whether GPS points form straight line, to set is_straight"""
-                l = Lane(utmzone="", easting=[], northing=[], distances=[], lane_length=0, is_straight=True)
-                prev_lane = name
-            e, n, zone_num, zone_letter = utm.from_latlon(lat, lon)
+                    l.is_straight = True
+                    lanes[prev_lane_id] = l
+                l = Lane()
+                prev_lane_id = lane_id
+            e, n, zone_num, zone_letter = utm.from_latlon(float(lat), float(lon))
             l.utmzone = zone_num
             l.utmletter = zone_letter
             l.easting.append(e)
             l.northing.append(n)
             next_line = f.readline()
+        lanes[prev_lane_id] = l
     return lanes
 
 def load_inter_params(inter_name):
@@ -103,7 +131,9 @@ def load_inter_params(inter_name):
         - trj_time_resolution: time difference between two consecutive trajectory points in seconds used in :any:`discretize_time_interval()` (be careful not to exceed max size of trajectory)
         - log_csv: if set `True`, makes CSV files of the outputs
         - print_commandline:
-
+        - opt_zones: [optional] for running at real intersections. Geometric information about zones within
+          which vehicles can receive trajectories.
+        - lanes: [optional] for running at real intersections. Geometric information about each lane.
 
     .. note::
         - The distance to stop bar will be input from either CSV file or fusion. However, the number provided here is used for generic computations.
@@ -143,7 +173,8 @@ def load_inter_params(inter_name):
        :align: center
        :alt: map to buried treasure
 
-    .. warning:: All the parameters defined here are required for running the program.
+    .. warning:: All the parameters defined here are required for running the program
+       unless otherwise indicated.
 
 
     :Authors:

@@ -2,6 +2,7 @@ import threading
 import socket
 from collections import deque, namedtuple
 import datetime
+import numpy as np
 
 vehicle_msg = namedtuple('VehicleMsg', 
         ['timestamp', 
@@ -19,13 +20,8 @@ vehicle_msg = namedtuple('VehicleMsg',
          ])
 
 class StoppableThread(threading.Thread):
-    """Thread class with a stop() method. The thread itself has to check
-    regularly for the stopped() condition.
-    
-    :Author:
-        Patrick Emami <pemami@ufl.edu>
-    :Date:
-        Dec 2018
+    """Thread class with a ``stop()`` method. The thread itself has to check
+    regularly by calling the `stopped()`` method.
     """
 
     def __init__(self, name):
@@ -47,7 +43,10 @@ class StoppableThread(threading.Thread):
 
 
 class SocketThread(StoppableThread):
-    """Used for receiving data over a UDP socket."""
+    """
+    Used for receiving data over a UDP socket. Provides
+    a hook, ``handle(msg)``, that should be extended via subclassing.
+    """
 
     def __init__(self, ip_address, port, msg_len, name):
         super(SocketThread, self).__init__(name)
@@ -63,7 +62,6 @@ class SocketThread(StoppableThread):
         self._msg_len = msg_len
 
     def run(self):
-        """Main method for Stoppable thread"""
         while not self.stopped():
             try:
                 msg, address = self._sock.recvfrom(self._msg_len)
@@ -78,26 +76,48 @@ class SocketThread(StoppableThread):
 
     def handle(self, msg):
         """
-        Push the msg through the processing pipeline.
-
+        Hook method for processing a new msg.
         Needs to be defined by the subclass
         """
         raise NotImplementedError
 
 class TrafficListener(SocketThread):
+    """
+    Extension of the SocketThread class that defines how
+    new traffic messages should be parsed.
 
+    Creates and provides access to synchronized queues for sharing
+    the most recent batch of traffic messages. Currently, behavior 
+    is to only maintain the most recent batch of messages in the queues
+    and to throw away the next oldest.
+
+    Track split/merge messages are not yet supported. 
+    """
     def __init__(self, ip_address, port, msg_len=500, name="TrafficListener"):
         super(TrafficListener, self).__init__(ip_address, port, msg_len, name)
         self._vehicle_data_queue = deque(maxlen=1)
         self._track_split_merge_queue = deque(maxlen=1)
 
     def get_vehicle_data_queue(self):
+        """
+        Used to access the synchronized vehicle data queue externally.
+        """
         return self._vehicle_data_queue
 
     def get_track_split_merge_queue(self):
+        """
+        Used to access the synchronized track split/merge queue externally.
+        """
         return self._track_split_merge_queue
 
     def handle(self, msg):
+        """
+        Parse incoming traffic messages. See TODO for a specification
+        of traffic message types.
+
+        :param msg: The incoming message. 
+        :type string:
+        """
         # parse the msg
         msg_chunks = msg.split("-")
         # timestamp is first
@@ -132,7 +152,13 @@ class TrafficListener(SocketThread):
         self._vehicle_data_queue.append(parsed_vehicle_msgs)
 
 class TrafficPublisher(StoppableThread):
-    """ """
+    """
+    Thread class for sending out intersection approach messages (IAMs) via UDP socket
+    to the RSU.
+
+    Operates by maintaining a synchronized queue and sending out queued up trajectories 
+    as soon as they are added to the queue.
+    """
     def __init__(self, intersection, ip, port, name="TrafficPublisher"):
         super(TrafficPublisher, self).__init__(name)
         self._cav_traj_queue = deque()
@@ -143,11 +169,17 @@ class TrafficPublisher(StoppableThread):
         self.port = port
         
     def get_cav_traj_queue(self):
+        """
+        Used to access the synchronized cav traje queue externally.
+        """
         return self._cav_traj_queue
 
-    def veh_to_IAM(self, veh, lane):
+    def veh_to_IAM(self, veh, lane, timestamp):
         """
-        TODO: Test
+        Given a Vehicle object, extracts the trajectory and populates an IAM
+        for sending out to the RSU.
+
+        TODO: move this somewhere in the docs
 
         The IAM message is a string consisting of:
             - IAM message ID
@@ -168,7 +200,7 @@ class TrafficPublisher(StoppableThread):
         https://github.com/pemami4911/FDOT-Intersection-Controller/blob/master/traffic-intersection-comms/interface/EncodeIAMasString.m
         """
         max_num_traj_points = self._intersection._inter_config_params["max_num_traj_points"]
-        dsrc_ID = veh.ID.split(":")[1]
+        dsrc_ID = int(veh.ID.split(":")[1])
         traj_len = min(veh.last_trj_point_indx - veh.first_trj_point_indx + 1,
             max_num_traj_points) 
         point_count = traj_len - 1
@@ -184,12 +216,14 @@ class TrafficPublisher(StoppableThread):
             trajectory.append(np.array([trj_t, lat, lon]))
         x = np.array(trajectory)
         # compute deltas
-        deltas = x - np.concatenate(np.array([0,0,0.]), x[1:])
+        deltas = x - np.concatenate([np.array([[0,0,0.]]), x[:-1,:]])
+        first_time_offset_sec = datetime.timedelta(seconds=deltas[0,0])
+        timestamp += first_time_offset_sec
         first_lat = int(round(deltas[0,1] * 1e7))
         first_lon = int(round(deltas[0,2] * 1e7))
         signal_color = 2 # TODO: green always currently
-        first_min = deltas[0,0].minute
-        first_sec = int(round(deltas[0,0].second * 1e3))
+        first_min = timestamp.minute
+        first_sec = int(round(1e3 * (timestamp.second + (1e-6 * timestamp.microsecond))))
         # 18 is the IAM msg ID (fixed), 0 is the MsgCount variable (fixed)
         IAM_blob = "18,0,"
         IAM_blob += "%d," % dsrc_ID
@@ -204,15 +238,17 @@ class TrafficPublisher(StoppableThread):
             lat_offset = int(round(deltas[i,1] * 1e7))
             lon_offset = int(round(deltas[i,2] * 1e7))
             time_offset = int(round(deltas[i,0] * 1e3))
-            IAM_blob += "%d,%d,%d" % lat_offset,lon_offset,time_offset
+            IAM_blob += "%d,%d,%d" % (lat_offset,lon_offset,time_offset)
         return IAM_blob
 
+    def close(self):
+        self._IAM_publisher.close()
+    
     def run(self):
-        """Main method for Stoppable thread"""
         while not self.stopped():
             while self._cav_traj_queue.count() > 0:
-                next_veh = self._cav_traj_queue.pop()
-                next_IAM = self.veh_to_IAM(next_veh)
+                next_veh, lane, timestamp = self._cav_traj_queue.pop()
+                next_IAM = self.veh_to_IAM(next_veh, lane, timestamp)
                 self._IAM_publisher.send(next_IAM, (self.ip, self.port))    
         self._IAM_publisher.close()
 

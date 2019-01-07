@@ -111,3 +111,6 @@ optional/
 
 #vscode
 .vscode
+
+#pytest
+.pytest_cache
