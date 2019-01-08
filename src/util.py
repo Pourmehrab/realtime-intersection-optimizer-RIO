@@ -24,13 +24,14 @@ def heading_from_velocity(vel):
     """
     Given a velocity vector, compute the heading in degrees
     counter-clockwise from true north. The velocity is assumed
-    to be a list of floats, where vel[0] is speed in Northing direction and
-    vel[1] is speed in Easting direction (UTM coordinates).
+    to be a list of floats, where vel[0] is easting spd and
+    vel[1] is northing spd (UTM coordinates).
     Units of speed are irrelevant, but will normally be m/s.
 
     :param vel: the velocity vector
-    :type List: [northing_spd, easting_spd]
+    :type List: [easting_spd, northing_spd]
     """
+    vel = [vel[1], vel[0]] # swap 
     # signed angle in radians between ray ending at origin and passing
     # through the point (0,1) and the ray ending at origin and passing
     # throw point (x2,x1)

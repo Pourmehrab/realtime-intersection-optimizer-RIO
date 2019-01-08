@@ -57,10 +57,10 @@ def do_intersect(p1, q1, p2, q2):
     Returns true if line segment p1q1 and 
     p2q2 intersect.
     """
-    o1 = LaneEstimator.orientation(p1, q1, p2)
-    o2 = LaneEstimator.orientation(p1, q1, q2)
-    o3 = LaneEstimator.orientation(p2, q2, p1)
-    o4 = LaneEstimator.orientation(p2, q2, q1)
+    o1 = orientation(p1, q1, p2)
+    o2 = orientation(p1, q1, q2)
+    o3 = orientation(p2, q2, p1)
+    o4 = orientation(p2, q2, q1)
 
     # General case
     if o1 != o2 and o3 != o4:
@@ -68,19 +68,19 @@ def do_intersect(p1, q1, p2, q2):
 
     # Special Cases
     # p1, q1, and p2 are colinear and p2 lies on segment p1q1
-    if o1 == 0 and LaneEstimator.on_segment(p1, p2, q1):
+    if o1 == 0 and on_segment(p1, p2, q1):
         return True
     
     # p1, q1, and p2 are colinear and q2 lies on segment p1q1
-    if o2 == 0 and LaneEstimator.on_segment(p1, q2, q1):
+    if o2 == 0 and on_segment(p1, q2, q1):
         return True
     
     # p2, q2, and p1 are colinear and p1 lies on segment p2q2
-    if o3 == 0 and LaneEstimator.on_segment(p2, p1, q2):
+    if o3 == 0 and on_segment(p2, p1, q2):
         return True
 
     # p2, q2, and q1 are colinear and q1 lies on segment p2q2
-    if o4 == 0 and LaneEstimator.on_segment(p2, q1, q2):
+    if o4 == 0 and on_segment(p2, q1, q2):
         return True
 
     return False
@@ -103,11 +103,11 @@ def point_in_polygon(query, polygon):
         # Check if the line segment from query to extreme
         # intersects with the line segment from polygon[i-1] to 
         # polygon[i]
-        if LaneEstimator.do_intersect(polygon[i-1], polygon[i], query, extreme):
+        if do_intersect(polygon[i-1], polygon[i], query, extreme):
             # If the point query is colinear with line segment 
             # polygon[i-1]-polygon[i]
-            if LaneEstimator.orientation(polygon[i-1], query, polygon[i]) == 0:
-                return LaneEstimator.on_segment(polygon[i-1], query, polygon[i])
+            if orientation(polygon[i-1], query, polygon[i]) == 0:
+                return on_segment(polygon[i-1], query, polygon[i])
             count += 1
     return (count % 2 == 1)
 

@@ -15,6 +15,3 @@ def test_publisher_veh_to_IAM():
     tp = data_io.TrafficPublisher(inter, "localhost", 4200)
     IAM = tp.veh_to_IAM(veh, lane=1, timestamp=datetime.utcnow())
     tp.close()
-
-def test_listener_handle():
-    raise NotImplementedError

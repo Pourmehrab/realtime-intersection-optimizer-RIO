@@ -27,8 +27,11 @@ class OptZone:
 
 def load_optimization_zone_constraints(inter_name):
     """
-    Parse and store optimization zone information as a dictionary 
-    of OptZone objects, indexed by lane number.
+    Parse and store optimization zone information as
+    a dictionary of OptZone objects, indexed by lane number.
+    TODO: in the future, index these by road, not lane, 
+    since for multi-lane roads, the opt zone is shared across
+    lanes for a single road.
 
     :param inter_name: the name of the intersection, must match the
     folder name containing opt_zones.csv

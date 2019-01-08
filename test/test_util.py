@@ -11,10 +11,10 @@ def test_euclidean_dist():
 def test_heading_from_velocity():
     easting_spd = 0
     northing_spd = -5
-    assert util.heading_from_velocity([northing_spd, easting_spd]) == 180.
+    assert util.heading_from_velocity([easting_spd, northing_spd]) == 180.
     easting_spd = -2
     northing_spd = 2
-    assert util.heading_from_velocity([northing_spd, easting_spd]) == 45.
+    assert util.heading_from_velocity([easting_spd, northing_spd]) == 45.
 
 def test_periodic_sleep():
     period = 0.05

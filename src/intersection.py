@@ -146,15 +146,34 @@ class Intersection:
             northing = lane_info.northing[idx]
         return utm.to_latlon(easting, northing, lane_info.utmzone, lane_info.utmletter)
 
-    # Patrick
-    # TODO: Test this
     def in_optimization_zone(self, vm, lane):
+        """
+        Checks spatial and orientiation constraints 
+        to verify whether a vehicle is within a polygonal
+        zone that allows for it to be processed
+        by the optimization.
+
+        Uses a +-45 cone about the roading orientation.
+        If speed is near 0, returns False.
+    
+        N.b. in the future, for multi-lane roads,
+        change lane to road name 
+
+        :param vm: a parsed vehicle message
+        :type VehicleMsg: namedtuple
+        :param lane: the detected lane of the vehicle
+        :type int:
+        """
         cone = 90 # cone angle
         h_cone = cone/2 # half cone angle
         opt_zone_info = self._inter_config_params["opt_zones"][lane]
         query = geom.Point(vm.pos[0], vm.pos[1])
-        polygon = [geom.Point(x,y) for x,y in zip(opt_zone_info.easting, opt.zone_info.northing)]
+        polygon = [geom.Point(x,y) for x,y in zip(opt_zone_info.easting, opt_zone_info.northing)]
         spatial_constraint = geom.point_in_polygon(query, polygon)
+        # check for 0 speed
+        spd = np.sqrt((vm.vel[0] ** 2) + (vm.vel[1] ** 2))
+        if np.isclose(spd, 0, 0.1):
+            return False  # don't optimize when spd is approx 0
         veh_heading = util.heading_from_velocity(vm.vel)
         a = opt_zone_info.orientation - h_cone
         b = opt_zone_info.orientation + h_cone
@@ -163,7 +182,7 @@ class Intersection:
         else: # Test these cases
             b2 = b; b1 = 0
             a2 = 360; a1 = a + 360
-            if b1 <= veh_heading <= b or a1 <= veh_heading <= a2:
+            if b1 <= veh_heading <= b2 or a1 <= veh_heading <= a2:
                 orientation_constraint = True
             else:
                 orientation_constraint = False
@@ -205,10 +224,14 @@ class Lanes:
         self.reset_first_unsrv_indx(num_lanes)
         self.last_veh_indx = np.zeros(num_lanes, dtype=np.int) - 1
 
-    # Patrick
     def find_and_return_vehicle_by_id(self, lane, veh_id):
         """Finds and returns the vehicle in the lane with
-        the query id.
+        the query id. If not present, returns None.
+
+        :param lane: the lane number for indexing into the vehlist
+        :type int:
+        :param veh_id: the detection id associated with the desired vehicle
+        :type string:
         """
         for v in self.vehlist[lane]:
             if v.det_id == veh_id:

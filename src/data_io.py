@@ -4,7 +4,7 @@ from collections import deque, namedtuple
 import datetime
 import numpy as np
 
-vehicle_msg = namedtuple('VehicleMsg', 
+VehicleMsg = namedtuple('VehicleMsg', 
         ['timestamp', 
          'track_id', # string
          'dsrc_id', # string
@@ -130,7 +130,7 @@ class TrafficListener(SocketThread):
         parsed_vehicle_msgs = []
         def parse_vehicle_msg(msg_):
             data = msg_.split(",")
-            vm = vehicle_msg(
+            vm = VehicleMsg(
                     timestamp=datetime.combine(date_obj, time_obj),
                     track_id=data[0],
                     dsrc_id=data[1],
