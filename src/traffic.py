@@ -11,18 +11,17 @@ class RealTimeTraffic:
     TODO
     """
 
-    def __init__(self, vehicle_data_queue, track_split_merge_queue, cav_traj_queue, intersection, sc, args):
+    def __init__(self, vehicle_data_queue, track_split_merge_queue, cav_traj_queue, intersection, sc, do_logging):
         """
         """
         self.intersection = intersection
-        inter_name = args.intersection
         # set the scenario number
         self.scenario_num = sc
         self._print_commandline = intersection._inter_config_params.get('print_commandline')
         self._vehicle_data_queue = vehicle_data_queue
         self._track_split_merge_queue = track_split_merge_queue
         self._cav_traj_queue = cav_traj_queue
-        if args.do_logging:
+        if do_logging:
             pass
             # df_size = len(self.__all_vehicles)
             # self._auxilary_departure_times = np.zeros(df_size, dtype=np.float)
@@ -50,12 +49,12 @@ class RealTimeTraffic:
         :type lanes: Lanes
         """
         # Read latest msg from track split/merge queue
-        if self._track_split_merge_queue.count() != 0:
+        if len(self._track_split_merge_queue) != 0:
             self._track_split_merge_queue.pop()
             # Handle track split/merge msgs - TODO
     
         # Read latest msg from vehicle data queue
-        if self._vehicle_data_queue.count() != 0:
+        if len(self._vehicle_data_queue) != 0:
             vehicle_data_msgs = self._vehicle_data_queue.pop()
             # Lane detection
             for vm in vehicle_data_msgs:

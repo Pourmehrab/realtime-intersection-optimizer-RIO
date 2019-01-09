@@ -9,11 +9,11 @@ class Timer:
         self.resolution = resolution
 
     @staticmethod
-    def get_timer(mode, start_time, resolution):
+    def get_timer(mode, resolution):
         if mode == "realtime" or mode == "RealTime":
-            return RealTimeTimer(start_time, resolution)
+            return RealTimeTimer(resolution)
         elif mode == "sim" or mode == "Sim":
-            return SimTimer(start_time, resolution)
+            return SimTimer(resolution)
 
     def step(self):
         raise NotImplementedError
@@ -24,11 +24,12 @@ class Timer:
 
 class RealTimeTimer(Timer):
 
-    def __init__(self, start_time, resolution):
+    def __init__(self, resolution):
         """
         :param start_time: the UTC timestamp at start up
         :param resolution: the time (in sec) to sleep every step
         """
+        start_time = datetime.utcnow()
         super(RealTimeTimer, self).__init__(start_time, resolution)
 
     def step(self):
@@ -42,9 +43,9 @@ class RealTimeTimer(Timer):
 
 class SimTimer(Timer):
 
-    def __init__(self, start_time, resolution):
-        super(SimTimer, self).__init__(start_time, resolution)
-        self.curr_time = start_time
+    def __init__(self, resolution):
+        super(SimTimer, self).__init__(0, resolution)
+        self.curr_time = self.start_time
 
     def step(self):
         self.curr_time += self.resolution

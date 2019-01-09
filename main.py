@@ -54,16 +54,12 @@ def run_rio(args):
     start_time_stamp_name = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")  # only for naming the CSV files
     if args.mode == "sim":
         traffic = SimTraffic(intersection, args.sc, start_time_stamp_name, args)
-        initial_time_stamp = 0
-        resolution = 1. / args.loop_freq
     else:
         tl = TrafficListener(args.traffic_listener_ip, args.traffic_listener_port)
-        tp = TrafficPublisher(args.traffic_publisher_ip, args.traffic_publisher_port)
+        tp = TrafficPublisher(intersection, args.traffic_publisher_ip, args.traffic_publisher_port)
         traffic = RealTimeTraffic(tl.get_vehicle_data_queue(), tl.get_track_split_merge_queue(),
                                   tp.get_cav_traj_queue(), intersection, args.sc, args.do_logging)
-        initial_time_stamp = datetime.utcnow()
-        resolution = dt.timedelta(seconds=(1. / args.loop_freq))
-    time_tracker = Timer.get_timer(args.mode, initial_time_stamp, resolution)
+    resolution = 1. / args.loop_freq
     num_lanes = intersection._inter_config_params.get("num_lanes")
 
     # Load MCF_SPaT optimization module for initial SPat
@@ -74,14 +70,16 @@ def run_rio(args):
     # to measure the total RIO run time for performance measure (Different from RIO clock)
     if args.do_logging:
         t_start = perf_counter()
+    
     try:
         optimizer_call_ctr = 0
         solve_freq = int(args.loop_freq / args.solve_freq)
+        time_tracker = Timer.get_timer(args.mode, resolution)
         while True:  # stop when pandas gets empty in offline mode, and when run duration has been reached in online mode.
             elapsed_time, absolute_time = time_tracker.get_time()  # get current RIO clock
             intersection._inter_config_params.get("print_commandline") and print(
-                "\n################################# CLOCK: {:>5.1f} SEC #################################".format(
-                    elapsed_time))
+                "\n################################# CLOCK: {} SEC #################################".format(
+                    absolute_time))
 
             # update the assigned trajectories
             traffic.serve_update_at_stop_bar(lanes, elapsed_time, intersection)

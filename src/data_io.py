@@ -246,7 +246,7 @@ class TrafficPublisher(StoppableThread):
     
     def run(self):
         while not self.stopped():
-            while self._cav_traj_queue.count() > 0:
+            while len(self._cav_traj_queue) > 0:
                 next_veh, lane, timestamp = self._cav_traj_queue.pop()
                 next_IAM = self.veh_to_IAM(next_veh, lane, timestamp)
                 self._IAM_publisher.send(next_IAM, (self.ip, self.port))    

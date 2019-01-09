@@ -135,12 +135,18 @@ class Signal:
         :Date:
             April-2018
         """
-        assert self.SPaT_end[-1] >= simulation_time, "If all phases get purged, SPaT becomes empty"
+        # TODO: Hack, @Mahmoud fix this please with pre-timed
+        if self.SPaT_end[-1] < simulation_time:
+            max_green = intersection._inter_config_params.get("max_green")
+            self._append_extend_phase(self.SPaT_sequence[-1], max_green, intersection)
+        #assert self.SPaT_end[-1] >= simulation_time, \
+        #        "If all phases get purged, SPaT becomes empty. SPaT end: {}, elapsed time: {}"\
+        #        .format(self.SPaT_end[-1], simulation_time)
 
         phase_indx, any_phase_to_purge = 0, False
 
         if self.__sig_csv_file is None:
-            while simulation_time > self.SPaT_end[phase_indx]:
+            if simulation_time > self.SPaT_end[phase_indx]:
                 any_phase_to_purge = True
                 phase_indx += 1
         else:

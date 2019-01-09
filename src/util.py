@@ -1,6 +1,6 @@
 import numpy as np
-import datetime
-from datetime import datetime as dt
+import datetime as dt
+from datetime import datetime
 import time
 
 def meters_to_feet(m):
@@ -70,9 +70,9 @@ def periodic_sleep(period):
     :param period: time between calls (seconds)
     :type float:
     """
-    time_dt = datetime.timedelta(milliseconds=1000*period)
-    timenow = dt.utcnow()
-    t = dt(timenow.year, timenow.month, timenow.day,
+    time_dt = dt.timedelta(milliseconds=1000*period)
+    timenow = datetime.utcnow()
+    t = datetime(timenow.year, timenow.month, timenow.day,
             timenow.hour, timenow.minute, timenow.second, 0)
     splits = [t]
     for _ in range(int(1./period)):
