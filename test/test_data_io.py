@@ -15,3 +15,13 @@ def test_publisher_veh_to_IAM():
     tp = data_io.TrafficPublisher(inter, "localhost", 4200)
     IAM = tp.veh_to_IAM(veh, lane=1, timestamp=datetime.utcnow())
     tp.close()
+
+def test_listener_handle():
+    listener = data_io.TrafficListener("localhost", 4200)
+    data_queue = listener.get_vehicle_data_queue()
+    with open(os.path.join(TEST_DIR, "test_vehicle_data_msg.txt"), "r") as f:
+        msg = f.readline()
+        listener.handle(msg)
+
+        parsed_msg = data_queue.pop()
+        assert parsed_msg
