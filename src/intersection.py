@@ -87,8 +87,17 @@ class Intersection:
         """
         # starting from stopbar, find closest point, then compute
         lane_info = self._inter_config_params["lanes"][lane]
+        stop_bar_easting = lane_info.easting[0]
+        stop_bar_northing = lane_info.northing[0]
+        lane_anchor_easting = lane_info.easting[-1]
+        lane_anchor_northing = lane_info.northing[-1]
+        
         if lane_info.is_straight:
-            d = util.euclidean_dist(lane_info.easting[0], lane_info.northing[0], easting, northing)
+            d = util.euclidean_dist(stop_bar_easting, stop_bar_northing, easting, northing)
+            anchor_dist = util.euclidean_dist(lane_anchor_easting, lane_anchor_northing,
+                    easting, northing)
+            if anchor_dist > lane_info.lane_length:
+                d = -d # passed the stop bar
             if units == "ft":
                 return util.meters_to_feet(d)
             else:
@@ -96,8 +105,12 @@ class Intersection:
         else:
             best = self._inter_config_params["large_positive_num"]
             best_idx = -1
+            # N.b. distance should be 0 if vehicle has passed the stop bar since
+            # the stop bar will be the closest point.
+            # However, this will remove vehicles from the lane slightly *before*
+            # they cross the stop bar in realtime mode
             for i in range(len(lane_info.easting)):
-                d = util.euclidean_dist(lane_info.easting[0], lane_info.northing[0], easting, northing)
+                d = util.euclidean_dist(lane_info.easting[i], lane_info.northing[i], easting, northing)
                 if d < best:
                     best = d
                     best_idx = i
@@ -234,7 +247,7 @@ class Lanes:
         :type string:
         """
         for v in self.vehlist[lane]:
-            if v.det_id == veh_id:
+            if v.ID == veh_id:
                 return v
         return None
 
@@ -676,13 +689,24 @@ class Vehicle:
             trj[0, i] = curr_foll_t + scale_factor * (trj[0, i] - curr_foll_t)
             trj[2, i] /= scale_factor
 
-    # Patrick
     def update(self, veh_type, det_time, dist_from_stopbar, speed):
-        """ Update vehicle type, current state, and trajectory with latest vehicle data from real-time sensing"""
+        """ 
+        Update vehicle type, current state, and trajectory
+        with latest vehicle data from real-time sensing
+        
+        :param veh_type: the level of connectivity (CNV or CAV)
+        :type int:
+        :param det_time: the relative time in seconds when this message
+        was received
+        :type float:
+        :dist_from_stopbar: distance in meters from the stop bar of the lane
+        :type float:
+        :param speed: vehicle speed
+        :type float:
+        """
         self.veh_type = veh_type
         self.current_state = np.array([det_time, dist_from_stopbar, speed])
         # Update the first trj point so a new trajectory is computed based on latest info
         if dist_from_stopbar > self.min_dist_to_stop_bar:
             # TODO: Do i need to call self.reset_trj_points?
-            # TODO: Test this
             self.trajectory[:, self.first_trj_point_indx] = [det_time, dist_from_stopbar, speed]

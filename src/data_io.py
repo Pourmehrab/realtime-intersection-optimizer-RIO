@@ -119,37 +119,43 @@ class TrafficListener(SocketThread):
         :type string:
         """
         # parse the msg
-        msg_chunks = msg.split("-")
+        msg_chunks = msg.split("^^^^")
         # timestamp is first
         timestamp = msg_chunks[0].split(":")
         hour = int(timestamp[0])
         minute = int(timestamp[1])
-        second = float(timestamp[2]) # {second}.{microsecond}
-        time_obj = datetime.time(hour, minute, second, microsecond)
-        date_obj = datetime.today().date()
+        second, microsecond = timestamp[2].split(".") # {second}.{microsecond}
+        time_obj = datetime.time(hour, minute, int(second), int(microsecond))
+        date_obj = datetime.date.today()
         parsed_vehicle_msgs = []
+        parsed_track_split_merge_msgs = []
         def parse_vehicle_msg(msg_):
             data = msg_.split(",")
             vm = VehicleMsg(
-                    timestamp=datetime.combine(date_obj, time_obj),
-                    track_id=data[0],
-                    dsrc_id=data[1],
-                    pos=[float(data[2]), float(data[3])],
-                    vel=[float(data[4]), float(data[5])],
-                    pos_rms=[float(data[6]), float(data[7])],
-                    vel_rms=[float(data[8]), float(data[9])],
-                    veh_type=int(data[10]),
-                    max_accel=float(data[11]),
-                    max_decel=float(data[12]),
-                    road=data[13])
+                    timestamp=datetime.datetime.combine(date_obj, time_obj),
+                    track_id=data[1],
+                    dsrc_id=data[2],
+                    pos=[float(data[3]), float(data[4])],
+                    vel=[float(data[5]), float(data[6])],
+                    pos_rms=[float(data[7]), float(data[8])],
+                    vel_rms=[float(data[9]), float(data[10])],
+                    veh_type=int(data[11]), veh_len=float(data[12]),
+                    max_accel=float(data[13]),
+                    max_decel=float(data[14]),
+                    road=data[15])
             return vm
         for m in msg_chunks[1:]:
-            parsed_vehicle_msgs.append(parse_vehicle_msg(m))
+            if m.split(",")[0] == "0":
+                parsed_vehicle_msgs.append(parse_vehicle_msg(m))
+            elif m.split(",")[0] == "1":
+                parsed_track_split_merge_msgs.append(parse_track_split_merge_msg(m))
 
         # Log incoming data + timestamp? 
 
-        # push it onto the queue
-        self._vehicle_data_queue.append(parsed_vehicle_msgs)
+        if len(parsed_vehicle_msgs) > 0:
+            self._vehicle_data_queue.append(parsed_vehicle_msgs)
+        if len(parsed_track_split_merge_msgs) > 0:
+            self._track_split_merge_queue.append(parsed_track_split_merge_msgs)
 
 class TrafficPublisher(StoppableThread):
     """

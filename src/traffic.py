@@ -8,19 +8,18 @@ from src.intersection import Vehicle
 
 class RealTimeTraffic:
     """
-    TODO
+    This class provides methods for processing the data received from the sensor fusion module 
+    in real-time. It extracts vehicle data and updates the necessary data structures.
     """
 
     def __init__(self, vehicle_data_queue, track_split_merge_queue, cav_traj_queue, intersection, sc, do_logging):
-        """
-        """
         self.intersection = intersection
-        # set the scenario number
         self.scenario_num = sc
         self._print_commandline = intersection._inter_config_params.get('print_commandline')
         self._vehicle_data_queue = vehicle_data_queue
         self._track_split_merge_queue = track_split_merge_queue
         self._cav_traj_queue = cav_traj_queue
+        # TODO
         if do_logging:
             pass
             # df_size = len(self.__all_vehicles)
@@ -40,13 +39,12 @@ class RealTimeTraffic:
 
     def get_traffic_info(self, lanes, time_tracker):
         """
-        Objectives
-            - Appends arrived vehicles from the CSV file to :any:`Lanes`
-            - Assigns their earliest arrival time
+        Reads any new data from shared queues and processes it
+        appropriately.
 
         :param lanes: vehicles are added to this data structure
-        :param time_tracker: Timer object for grabbing elapsed time since start
         :type lanes: Lanes
+        :param time_tracker: Timer object for grabbing elapsed time since start
         """
         # Read latest msg from track split/merge queue
         if len(self._track_split_merge_queue) != 0:
@@ -65,7 +63,7 @@ class RealTimeTraffic:
                 veh_id = vm.track_id + ":" + vm.dsrc_id
                 det_id = veh_id
                 det_type = vm.veh_type
-                det_time = time_tracker.get_elapsed_time(vm.timestamp)
+                det_time, _ = time_tracker.get_time(vm.timestamp)
                 # Convert vehicle state to lane-centric coordinates; essentially, 
                 # a 1D coordinate system where the origin is the stopbar of the detected lane.
                 dist = self.intersection.UTM_to_distance_from_stopbar(vm.pos[0], vm.pos[1], lane)
@@ -77,14 +75,14 @@ class RealTimeTraffic:
                     if self.intersection.in_optimization_zone(vm, lane):
                         # convert vehicle message to Vehicle
                         des_speed = self.intersection._inter_config_params["max_speed"]
-                        # dest = "" # ?
+                        #TODO dest = "" # ?
+                        dest = 0
                         length = vm.veh_len
                         amin = vm.max_decel
                         amax = vm.max_accel
 
-                        indx = None
                         veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax,
-                                      indx, self.intersection)
+                                      None, self.intersection)
 
                         self._print_commandline and print(
                             r'\\\ ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane).zfill(
@@ -93,7 +91,9 @@ class RealTimeTraffic:
                         # append it to its lane
                         lanes.vehlist[lane] += [veh]  # recall it is an array
                         lanes.inc_last_veh_pos(lane)
-                        indx += 1
+                    else:
+                        # TODO: when debugging, print or log here
+                        pass
                 else:
                     # update v with latest data
                     v.update(det_type, det_time, dist, speed)
@@ -188,6 +188,9 @@ class RealTimeTraffic:
     def serve_update_at_stop_bar(self, lanes, elapsed_time, intersection):
         """
         To remove the served vehicles and print proper notification.
+        In realtime mode, vehicles are removed based on whether
+        the most recent position as provided by the sensor fusion
+        has them currently crossing the stop bar.
 
         :param lanes: includes all the vehicles in all lanes
         :type lanes: Lanes
@@ -201,30 +204,38 @@ class RealTimeTraffic:
             if bool(lanes.vehlist.get(lane)):  # not an empty lane
                 last_veh_indx_to_remove = -1
                 for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
-                    det_time, _, _ = veh.get_arr_sched()
-                    dep_time, _, _ = veh.get_dep_sched()
-                    if dep_time != 0:
-                        if dep_time < elapsed_time:  # record/remove departure
-                            last_veh_indx_to_remove += 1
-                            intersection._inter_config_params.get('print_commandline') and print(
-                                '/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID + '@({:>4.1f} s)'.format(
-                                    dep_time))
+                    if veh.current_state[1] <= 0.:# distance from stop bar (m)
+                        #det_time, _, _ = veh.get_arr_sched()
+                        dep_time, _, _ = veh.get_dep_sched()
+                        #if dep_time != 0:
+                        #    if dep_time < elapsed_time:  # record/remove departure
+                        last_veh_indx_to_remove += 1
+                        intersection._inter_config_params.get('print_commandline') and print(
+                            '/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID + '@({:>4.1f} s)'.format(
+                                dep_time))
                         # self._log_csv and self.set_row_vehicle_level_csv(dep_time, veh)
-                    elif det_time < elapsed_time:  # record/remove expired points
-                        veh.reset_trj_pts(self.scenario_num, lane, elapsed_time, self.full_traj_csv_file)
-
-                    else:  # det_time of all behind this vehicle is larger, so we can stop.
+                    #elif det_time < elapsed_time:  # record/remove expired points
+                    #    veh.reset_trj_pts(self.scenario_num, lane, elapsed_time, self.full_traj_csv_file)
+                    #
+                    else:  # distance from stop bar of all behind this vehicle is larger, so we can stop.
                         break
 
                 last_veh_indx_to_remove > -1 and lanes.remove_srv_vehs(lane, last_veh_indx_to_remove)
 
     def publish(self, lanes, curr_time):
-        # Push vehicles with a DSRC id out to the TrafficPublisher
+        """
+        Push vehicles with a DSRC id out to the TrafficPublisher,
+        which will parse the trajectories into an IAM
+        message and relay it via DSRC.
+
+        :param lanes: the Lane data structure
+        :curr_time: the absolute time stamp
+        """
         num_lanes = self.intersection._inter_config_params.get('num_lanes')
         for lane in range(num_lanes):
             if bool(lanes.vehlist.get(lane)):  # not an empty lane
                 for veh in lanes.vehlist.get(lane):
-                    dsrc_id = veh.det_id.split(":")[1]
+                    dsrc_id = veh.ID.split(":")[1]
                     if dsrc_id != "" and veh.got_trajectory:
                         self._cav_traj_queue.append((veh, lane, curr_time))
 
