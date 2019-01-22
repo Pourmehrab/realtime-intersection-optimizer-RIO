@@ -32,9 +32,9 @@ class Trajectory:
         :param max_speed: Trajectories are designed to respect the this speed limit (in :math:`m/s`).
         :param min_headway: This is the minimum headway that vehicles in a lane can be served (in :math:`sec/veh`)
         """
-        self._max_speed, self._min_headway, self._small_positive_num, self._trj_time_resolution = map(
+        self._max_speed, self._min_headway, self._small_positive_num, self._trj_time_resolution, self._det_range = map(
             intersection._inter_config_params.get,
-            ['max_speed', 'min_headway', 'small_positive_num', 'trj_time_resolution'])
+            ['max_speed', 'min_headway', 'small_positive_num', 'trj_time_resolution', 'det_range'])
 
     def discretize_time_interval(self, start_time, end_time):
         """
@@ -621,7 +621,7 @@ class LeadConnected(Trajectory):
         t_e = t_dep - 0.5
         x_e = x + v * 0.5
         N = (veh.scheduled_departure - det_time) // self._trj_time_resolution
-        det_range = 100  # todo: don't hardcode
+        det_range = max(self._det_range)  # todo: feed lane
 
         time = [t_0, t_1] + list(np.linspace((t_dep - t_0) / 4, 3 * (t_dep - t_0) / 4, 2)) + [t_e, t_dep]
         dist = [x_0, x_1] + list(np.linspace(3 * (x_0 - x) / 4, (x_0 - x) / 4, 2)) + [x_e, x]
