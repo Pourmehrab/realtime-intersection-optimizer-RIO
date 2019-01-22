@@ -357,7 +357,7 @@ def load_inter_params(inter_name):
 
     elif inter_name == "RTS":
         return {
-            "max_speed": 6.7,  # 15 mph
+            "max_speed": 6.7,  # mps (24 kph)
             "min_CAV_headway": 1.5,
             "min_CNV_headway": 2.0,
             "det_range": (240, 300, 80, 100,),

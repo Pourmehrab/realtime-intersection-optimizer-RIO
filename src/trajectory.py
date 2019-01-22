@@ -1,5 +1,6 @@
 import operator
 import numpy as np
+from scipy.interpolate import UnivariateSpline
 
 # -------------------------------------------------------
 # TRAJECTORY SUPER CLASS
@@ -30,8 +31,9 @@ class Trajectory:
         :param max_speed: Trajectories are designed to respect the this speed limit (in :math:`m/s`).
         :param min_headway: This is the minimum headway that vehicles in a lane can be served (in :math:`sec/veh`)
         """
-        self._max_speed, self._min_headway, self._small_positive_num, self._trj_time_resolution = map(
-            intersection._inter_config_params.get, ['max_speed', 'min_headway', 'small_positive_num', 'trj_time_resolution'])
+        self._max_speed, self._min_headway, self._small_positive_num, self._trj_time_resolution, self._det_range = map(
+            intersection._inter_config_params.get,
+            ['max_speed', 'min_headway', 'small_positive_num', 'trj_time_resolution', 'det_range'])
 
     def discretize_time_interval(self, start_time, end_time):
         """
@@ -523,7 +525,7 @@ class LeadConnected(Trajectory):
 
         return self._lp_model
 
-    def solve(self, veh, lead_veh, model):
+    def solve(self, veh, lead_veh, model, penalty=True):
         """
         Solves an :term:`LP` model for connected vehicle (both lead and follower)
 
@@ -554,11 +556,13 @@ class LeadConnected(Trajectory):
                                   / np.array([departure_time_relative ** n for n in range(self.k)], dtype=float), 0))
             f_prime = np.polyder(f)
 
-            t, d, s = self.compute_trj_points(f, f_prime, dep_time - det_time)
+            # t, d, s = self.compute_trj_points(f, f_prime, dep_time - det_time) # Area Under Curve Minimization
+            t, d, s = self.optimize_lead_connected_trj(veh)  # penalty function
             t += det_time
             veh.set_poly(f, t[0])
+
         elif lead_veh is None:
-            t, d, s = self.optimize_lead_connected_trj(veh)
+            t, d, s = self.optimize_lead_connected_trj(veh)  # penalty function
         else:
             t, d, s = self.optimize_follower_connected_trj(veh, lead_veh)  # is defined/used in the child class
 
@@ -597,14 +601,38 @@ class LeadConnected(Trajectory):
         :Date:
             April-2018
         """
-        det_time, det_dist, _ = veh.get_arr_sched()
-        v = det_dist / (veh.scheduled_departure - det_time)
 
-        t = self.discretize_time_interval(det_time, veh.scheduled_departure)
-        s = np.array([v] * len(t))
-        d = np.array([det_dist - v * (t_i - det_time) for t_i in t])
+        det_time, det_dist, det_speed = veh.get_arr_sched()
 
-        return t, d, s
+        # v = det_dist / (veh.scheduled_departure - det_time)
+        # t = self.discretize_time_interval(det_time, veh.scheduled_departure)
+        # s = np.array([v] * len(t))
+        # d = np.array([det_dist - v * (t_i - det_time) for t_i in t])
+
+        t_0 = det_time
+        v_0 = det_speed
+        x_0 = det_dist
+        t_1 = t_0 + 0.5
+        x_1 = x_0 - v_0 * 0.5
+        t_dep = veh.scheduled_departure
+        v = self._max_speed
+        x = 0.0
+        t_e = t_dep - 0.5
+        x_e = x + v * 0.5
+        N = (veh.scheduled_departure - det_time) // self._trj_time_resolution
+        det_range = max(self._det_range)  # todo: feed lane
+
+        time = [t_0, t_1] + list(np.linspace((t_dep - t_0) / 4, 3 * (t_dep - t_0) / 4, 2)) + [t_e, t_dep]
+        dist = [x_0, x_1] + list(np.linspace(3 * (x_0 - x) / 4, (x_0 - x) / 4, 2)) + [x_e, x]
+
+        roughness_penalty = ((x_0 - x) / det_range) * 0.9586
+        spl = UnivariateSpline(time, dist, s=1)
+        spl.set_smoothing_factor(roughness_penalty)
+        t = np.linspace(t_0, t_dep, N)
+        d = spl(t)
+        s = np.diff(d) / np.diff(t)
+
+        return t, d, np.append(-s, [self._max_speed, ])
 
 
 # -------------------------------------------------------
