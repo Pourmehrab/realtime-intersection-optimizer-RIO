@@ -142,7 +142,7 @@ class Signal:
         phase_indx, any_phase_to_purge = 0, False
 
         if self.__sig_csv_file is None:
-            if simulation_time > self.SPaT_end[phase_indx]:
+            while simulation_time > self.SPaT_end[phase_indx]:
                 any_phase_to_purge = True
                 phase_indx += 1
         else:

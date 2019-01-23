@@ -116,7 +116,7 @@ def run_rio(args):
                     traffic.close_trj_csv()
                     signal.close_sig_csv()
                     intersection._inter_config_params.get("print_commandline") and print(
-                        "\n### Elapsed Process Time: {:>5d} ms ###".format(int(1_000 * run_time)),
+                        "\n### Elapsed Process Time: {:>5d} ms ###".format(int(1_000 * elapsed_time)),
                         "\n### Actual RIO run start time: {:>5d} micro sec. ###".format(int(1_000_000 * t_start)))
                 break
             time_tracker.step()
