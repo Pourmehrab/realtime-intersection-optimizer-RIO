@@ -382,7 +382,7 @@ def load_inter_params(inter_name):
             "max_green": 20.0,
             "lag_on_green": 1.0,
             "max_num_traj_points": int(1_000),
-            "min_dist_to_stop_bar": 20,
+            "min_dist_to_stop_bar": 5,
             "do_traj_computation": True,
             "trj_time_resolution": 1.0,
 
