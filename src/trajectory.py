@@ -622,14 +622,16 @@ class LeadConnected(Trajectory):
         N = (veh.scheduled_departure - det_time) // self._trj_time_resolution
         det_range = max(self._det_range)  # todo: feed lane
 
-        time = [t_0, t_1] + list(np.linspace((t_dep - t_0) / 4, 3 * (t_dep - t_0) / 4, 2)) + [t_e, t_dep]
+        time = [t_0, t_1] + list(np.linspace(t_0 + (t_dep - t_0) / 4), (t_0 + 3 * (t_dep - t_0) / 4), 2)) + [t_e, t_dep]
         dist = [x_0, x_1] + list(np.linspace(3 * (x_0 - x) / 4, (x_0 - x) / 4, 2)) + [x_e, x]
 
-        roughness_penalty = ((x_0 - x) / det_range) * 0.9586
+        roughness_penalty = 1+((x_0 - x) / det_range) * 0.9586
         spl = UnivariateSpline(time, dist, s=1)
         spl.set_smoothing_factor(roughness_penalty)
         t = np.linspace(t_0, t_dep, N)
         d = spl(t)
+        d[0] = x_0
+        d[-1] = x
         s = np.diff(d) / np.diff(t)
 
         return t, d, np.append(-s, [self._max_speed, ])
