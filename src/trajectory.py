@@ -2,6 +2,7 @@ import operator
 import numpy as np
 from scipy.interpolate import UnivariateSpline
 
+
 # -------------------------------------------------------
 # TRAJECTORY SUPER CLASS
 # -------------------------------------------------------
@@ -556,8 +557,8 @@ class LeadConnected(Trajectory):
                                   / np.array([departure_time_relative ** n for n in range(self.k)], dtype=float), 0))
             f_prime = np.polyder(f)
 
-            # t, d, s = self.compute_trj_points(f, f_prime, dep_time - det_time) # Area Under Curve Minimization
-            t, d, s = self.optimize_lead_connected_trj(veh)  # penalty function
+            t, d, s = self.compute_trj_points(f, f_prime, dep_time - det_time) # Area Under Curve Minimization
+            # t, d, s = self.optimize_lead_connected_trj(veh)  # penalty function
             t += det_time
             veh.set_poly(f, t[0])
 
@@ -604,37 +605,37 @@ class LeadConnected(Trajectory):
 
         det_time, det_dist, det_speed = veh.get_arr_sched()
 
-        # v = det_dist / (veh.scheduled_departure - det_time)
-        # t = self.discretize_time_interval(det_time, veh.scheduled_departure)
-        # s = np.array([v] * len(t))
-        # d = np.array([det_dist - v * (t_i - det_time) for t_i in t])
+        v = det_dist / (veh.scheduled_departure - det_time)
+        t = self.discretize_time_interval(det_time, veh.scheduled_departure)
+        s = np.array([v] * len(t))
+        d = np.array([det_dist - v * (t_i - det_time) for t_i in t])
 
-        t_0 = det_time
-        v_0 = det_speed
-        x_0 = det_dist
-        t_1 = t_0 + 0.5
-        x_1 = x_0 - v_0 * 0.5
-        t_dep = veh.scheduled_departure
-        v = self._max_speed
-        x = 0.0
-        t_e = t_dep - 0.5
-        x_e = x + v * 0.5
-        N = (veh.scheduled_departure - det_time) // self._trj_time_resolution
-        det_range = max(self._det_range)  # todo: feed lane
+        # t_0 = det_time
+        # v_0 = det_speed
+        # x_0 = det_dist
+        # t_1 = t_0 + 0.5
+        # x_1 = x_0 - v_0 * 0.5
+        # t_dep = veh.scheduled_departure
+        # v = self._max_speed
+        # x = 0.0
+        # t_e = t_dep - 0.5
+        # x_e = x + v * 0.5
+        # N = (veh.scheduled_departure - det_time) // self._trj_time_resolution
+        # det_range = max(self._det_range)  # todo: feed lane
+        #
+        # time = [t_0, t_1] + list(np.linspace(t_0 + (t_dep - t_0) / 4, (t_0 + 3 * (t_dep - t_0) / 4), 2)) + [t_e, t_dep]
+        # dist = [x_0, x_1] + list(np.linspace(3 * (x_0 - x) / 4, (x_0 - x) / 4, 2)) + [x_e, x]
+        #
+        # roughness_penalty = 1+((x_0 - x) / det_range) * 0.9586
+        # spl = UnivariateSpline(time, dist, s=1)
+        # spl.set_smoothing_factor(roughness_penalty)
+        # t = np.linspace(t_0, t_dep, N)
+        # d = spl(t)
+        # d[0] = x_0
+        # d[-1] = x
+        # s = np.diff(d) / np.diff(t)
 
-        time = [t_0, t_1] + list(np.linspace(t_0 + (t_dep - t_0) / 4), (t_0 + 3 * (t_dep - t_0) / 4), 2)) + [t_e, t_dep]
-        dist = [x_0, x_1] + list(np.linspace(3 * (x_0 - x) / 4, (x_0 - x) / 4, 2)) + [x_e, x]
-
-        roughness_penalty = 1+((x_0 - x) / det_range) * 0.9586
-        spl = UnivariateSpline(time, dist, s=1)
-        spl.set_smoothing_factor(roughness_penalty)
-        t = np.linspace(t_0, t_dep, N)
-        d = spl(t)
-        d[0] = x_0
-        d[-1] = x
-        s = np.diff(d) / np.diff(t)
-
-        return t, d, np.append(-s, [self._max_speed, ])
+        return t, d, s  # np.append(-s, [self._max_speed, ])
 
 
 # -------------------------------------------------------
