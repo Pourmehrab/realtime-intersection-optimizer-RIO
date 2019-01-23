@@ -135,12 +135,14 @@ class Signal:
         :Date:
             April-2018
         """
-        assert self.SPaT_end[-1] >= simulation_time, "If all phases get purged, SPaT becomes empty"
+        assert self.SPaT_end[-1] >= simulation_time, \
+                "If all phases get purged, SPaT becomes empty. SPaT end: {}, elapsed time: {}"\
+                .format(self.SPaT_end[-1], simulation_time)
 
         phase_indx, any_phase_to_purge = 0, False
 
         if self.__sig_csv_file is None:
-            while simulation_time > self.SPaT_end[phase_indx]:
+            if simulation_time > self.SPaT_end[phase_indx]:
                 any_phase_to_purge = True
                 phase_indx += 1
         else:
@@ -370,8 +372,7 @@ class MCF_SPaT(Signal):
                             _, det_dist, _ = veh.get_arr_sched()
                             flag = False
                             if det_dist >= min_dist_to_stop_bar:
-                                veh.set_sched_dep(t_scheduled, 0, veh.desired_speed, lane, veh_indx,
-                                                  intersection)
+                                veh.set_sched_dep(t_scheduled, 0, veh.desired_speed, lane, veh_indx)
                                 trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, '#')
                                 veh.got_trajectory = True
 

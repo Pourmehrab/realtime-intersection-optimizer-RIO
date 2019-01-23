@@ -2,7 +2,6 @@ import operator
 import numpy as np
 from scipy.interpolate import UnivariateSpline
 
-
 # -------------------------------------------------------
 # TRAJECTORY SUPER CLASS
 # -------------------------------------------------------
@@ -787,3 +786,59 @@ class FollowerConnected(LeadConnected):
         t_augment += foll_det_time
 
         return map(np.concatenate, [[t_augment[:-1], t], [d_augment[:-1], d], [s_augment[:-1], s]])
+
+
+class TrajectoryPlanner:
+    """
+    Plans trajectories of all type. This makes calls to **trajectory** classes.
+    # Todo: @Ash: explain planner and 4 optimizers briefly.
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        Ash Omidvar <aschkan@ufl.edu>
+    :Date:
+        April-2018
+        Nov-2018
+    """
+
+    def __init__(self, intersection):
+        """Instantiates the **trajectory** classes"""
+
+        self.lead_conventional_trj_estimator = LeadConventional(intersection)
+        self.lead_connected_trj_optimizer = LeadConnected(intersection)
+        self.follower_conventional_trj_estimator = FollowerConventional(intersection)
+        self.follower_connected_trj_optimizer = FollowerConnected(intersection)
+
+        self._max_speed = intersection._inter_config_params.get('max_speed')
+
+    def plan_trajectory(self, lanes, veh, lane, veh_indx, intersection, identifier):
+        """
+        :param lanes:
+        :type lanes: Lanes
+        :param veh:
+        :type veh: Vehicle
+        :param lane:
+        :param veh_indx:
+        :param intersection:
+        :param identifier: Shows type of assigned trajectory
+
+        """
+
+        veh.inc_traj_planner_calls()
+        veh_type, departure_time = veh.veh_type, veh.scheduled_departure
+        if veh_indx > 0 and veh_type == 1:  # Follower CAV
+            lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
+            model = self.follower_connected_trj_optimizer.set_model(veh, lead_veh)
+            self.follower_connected_trj_optimizer.solve(veh, lead_veh, model)
+        elif veh_indx > 0 and veh_type == 0:  # Follower Conventional
+            lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
+            self.follower_conventional_trj_estimator.solve(veh, lead_veh)
+        elif veh_indx == 0 and veh_type == 1:  # Lead CAV
+            model = self.lead_connected_trj_optimizer.set_model(veh)
+            self.lead_connected_trj_optimizer.solve(veh, None, model)
+        elif veh_indx == 0 and veh_type == 0:  # Lead Conventional
+            self.lead_conventional_trj_estimator.solve(veh)
+        else:
+            raise Exception('One of lead/follower conventional/connected should have occurred.')
+
+        # ToDo @Ash: distinguish the tracks.
+        intersection._inter_config_params.get("print_commandline") and veh.print_trj_points(lane, veh_indx, identifier)

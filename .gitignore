@@ -103,9 +103,14 @@ ENV/
 # pycharm
 .idea/
 *.svg
-*.csv
 *.lp
 *.xlsx
 log/
 sphinx/
 optional/
+
+#vscode
+.vscode
+
+#pytest
+.pytest_cache
