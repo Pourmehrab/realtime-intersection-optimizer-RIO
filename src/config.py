@@ -361,7 +361,7 @@ def load_inter_params(inter_name):
             "min_CAV_headway": 1.5,
             "min_CNV_headway": 2.0,
             "det_range": (240, 300, 80, 100,),
-            "k": int(20),  # LeadConnected Trajectory method params
+            "k": int(4),  # LeadConnected Trajectory method params
             "m": int(40),
             "num_lanes": int(4),
             "phase_cover_set": (0, 1,),
