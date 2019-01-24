@@ -11,6 +11,10 @@ from collections import deque
 
 TEST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
+class Args:
+    do_logging = False
+    sc = 1
+
 def test_get_traffic_info_and_vehicle_update():
     listener = data_io.TrafficListener("localhost", 4200)
     data_queue = listener.get_vehicle_data_queue()
@@ -20,7 +24,7 @@ def test_get_traffic_info_and_vehicle_update():
     lanes = Lanes(inter)
     time_tracker = Timer.get_timer("realtime", 0.1)
 
-    rt_traffic = RealTimeTraffic(data_queue, tsm_queue, cav_traj_queue, inter, 1, False)
+    rt_traffic = RealTimeTraffic(data_queue, tsm_queue, cav_traj_queue, inter, Args())
     
     # new vehicle, in zone
     with open(os.path.join(TEST_DIR, "test_vehicle_data_RTS_lane_1_in_zone.txt"), "r") as f:
@@ -62,7 +66,7 @@ def test_serve_update_at_stopbar():
     lanes = Lanes(inter)
     time_tracker = Timer.get_timer("realtime", 0.1)
 
-    rt_traffic = RealTimeTraffic(data_queue, tsm_queue, cav_traj_queue, inter, 1, False)
+    rt_traffic = RealTimeTraffic(data_queue, tsm_queue, cav_traj_queue, inter, Args())
     
     # new vehicle, in zone
     with open(os.path.join(TEST_DIR, "test_vehicle_data_RTS_lane_1_in_zone.txt"), "r") as f:
@@ -90,7 +94,7 @@ def test_traffic_publish():
     test_vehicle = pickle.load(open(os.path.join(TEST_DIR, "test_vehicle.pkl"), "rb"))
     lanes = Lanes(inter)
     time_tracker = Timer.get_timer("realtime", 0.1)
-    rt_traffic = RealTimeTraffic(data_queue, tsm_queue, cav_traj_queue, inter, 1, False)
+    rt_traffic = RealTimeTraffic(data_queue, tsm_queue, cav_traj_queue, inter, Args())
 
     test_vehicle.got_trajectory = True
     test_vehicle.ID = "0:12340"

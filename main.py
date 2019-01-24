@@ -58,7 +58,7 @@ def run_rio(args):
         tl = TrafficListener(args.traffic_listener_ip, args.traffic_listener_port)
         tp = TrafficPublisher(intersection, args.traffic_publisher_ip, args.traffic_publisher_port)
         traffic = RealTimeTraffic(tl.get_vehicle_data_queue(), tl.get_track_split_merge_queue(),
-                                  tp.get_cav_traj_queue(), intersection, args.sc, args.do_logging)
+                                  tp.get_cav_traj_queue(), intersection, args)
     resolution = 1. / args.loop_freq
     num_lanes = intersection._inter_config_params.get("num_lanes")
 
@@ -83,7 +83,7 @@ def run_rio(args):
 
             # update the assigned trajectories
             traffic.serve_update_at_stop_bar(lanes, elapsed_time, intersection)
-
+    
             # add/update the vehicles
             if args.mode == "sim":
                 traffic.get_traffic_info(lanes, elapsed_time, intersection)
@@ -95,7 +95,7 @@ def run_rio(args):
 
             if optimizer_call_ctr % solve_freq == 0:
                 # update SPaT
-                signal.update_SPaT(intersection, elapsed_time, args.sc)
+                signal.update_SPaT(intersection, elapsed_time, args.sc, absolute_time)
                 # perform signal optimization
                 signal.solve(lanes, intersection, trajectory_generator)
                 # Send out IAMs to all CAVs

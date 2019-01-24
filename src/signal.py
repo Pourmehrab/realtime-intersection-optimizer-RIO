@@ -34,7 +34,7 @@ class Signal:
         April-2018
     """
 
-    def __init__(self, intersection, sc, start_time_stamp):
+    def __init__(self, args, intersection, sc, start_time_stamp):
         """
         Elements:
             - Sequence keeps the sequence of phases to be executed from 0
@@ -50,19 +50,23 @@ class Signal:
        """
         self._inter_name, num_lanes = map(intersection._inter_config_params.get, ["inter_name", "num_lanes"])
 
+        self.mode = args.mode
         self._set_lane_lane_incidence(intersection)
         self._set_phase_lane_incidence(intersection)
 
-        if intersection._inter_config_params.get("log_csv"):
-            filepath_sig = os.path.join(
-                "log/" + self._inter_name + "/" + start_time_stamp + "_" + str(sc) + "_sig_level.csv")
+        if args.do_logging:
+            filepath_sig = os.path.join(args.log_dir, "sig_level.csv")
             self.__sig_csv_file = open(filepath_sig, "w", newline="")
             writer = csv.writer(self.__sig_csv_file, delimiter=",")
-            writer.writerow(["sc", "phase", "start", "end"])
+            header = ["sc", "phase", "start", "end"]
+            if self.mode == "realtime":
+                header += ["timestamp"]
+            writer.writerow(header)
             self.__sig_csv_file.flush()
         else:
             self.__sig_csv_file = None
 
+        
     def _set_lane_lane_incidence(self, intersection):
         """
         This converts a dictionary of the form:
@@ -118,7 +122,7 @@ class Signal:
             intersection._inter_config_params.get("print_commandline") and print(
                 '>>> Phase {:d} appended (ends @ {:>5.1f} sec)'.format(phase, self.SPaT_end[-1]))
 
-    def update_SPaT(self, intersection, simulation_time, sc):
+    def update_SPaT(self, intersection, simulation_time, sc, time_stamp=None):
         """
         Performs two tasks to update SPaT based on the given opt_clock:
             - Removes terminated phase (happens when the all-red is passed)
@@ -129,6 +133,7 @@ class Signal:
 
         :param simulation_time: Normally the current opt_clock of simulation or real-time in :math:`s`
         :param sc: scenario number to be recorded in CSV
+        :param time_stamp: the current Datetime timestamp, for recording in the CSV
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
@@ -149,8 +154,10 @@ class Signal:
             writer = csv.writer(self.__sig_csv_file, delimiter=',')
             while simulation_time > self.SPaT_end[phase_indx]:
                 any_phase_to_purge = True
-                writer.writerows(
-                    [[sc, self.SPaT_sequence[phase_indx], self.SPaT_start[phase_indx], self.SPaT_end[phase_indx]]])
+                row = [sc, self.SPaT_sequence[phase_indx], self.SPaT_start[phase_indx], self.SPaT_end[phase_indx]]
+                if self.mode == "realtime":
+                    row += [str(timestamp)]
+                writer.writerows([row])
                 self.__sig_csv_file.flush()
                 phase_indx += 1
 
@@ -209,7 +216,7 @@ class MCF_SPaT(Signal):
         April-2018
     """
 
-    def __init__(self, first_detection_time, intersection, sc, start_time_stamp):
+    def __init__(self, args, first_detection_time, intersection, sc, start_time_stamp):
         import cplex
         """
 
@@ -226,7 +233,7 @@ class MCF_SPaT(Signal):
             July-2018
         """
 
-        super().__init__(intersection, sc, start_time_stamp)
+        super().__init__(args, intersection, sc, start_time_stamp)
         num_lanes, print_commandline, self._y, self._ar, self.min_green, self.max_green, self._allowable_phases = map(
             intersection._inter_config_params.get,
             ["num_lanes", "print_commandline", "yellow", "allred", "min_green", "max_green", "allowable_phases"])

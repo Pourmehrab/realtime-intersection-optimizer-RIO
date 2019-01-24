@@ -575,7 +575,7 @@ class Vehicle:
         else:  # get full info and write trajectory points to the CSV file
             writer = csv.writer(file, delimiter=',')
             while time < time_threshold and trj_indx <= max_trj_indx:
-                writer.writerows([[sc, self.ID, self.veh_type, lane + 1, time, distance, speed]])
+                writer.writerows([[sc, self.ID, self.veh_type, lane + 1, time, distance, speed, self._call_reps_traj_planner]])
                 file.flush()
                 trj_indx += 1
                 time, distance, speed = self.trajectory[:, trj_indx]

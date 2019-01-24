@@ -12,28 +12,20 @@ class RealTimeTraffic:
     in real-time. It extracts vehicle data and updates the necessary data structures.
     """
 
-    def __init__(self, vehicle_data_queue, track_split_merge_queue, cav_traj_queue, intersection, sc, do_logging):
+    def __init__(self, vehicle_data_queue, track_split_merge_queue, cav_traj_queue, intersection, args):
         self.intersection = intersection
-        self.scenario_num = sc
+        self.scenario_num = args.sc
         self._print_commandline = intersection._inter_config_params.get('print_commandline')
         self._vehicle_data_queue = vehicle_data_queue
         self._track_split_merge_queue = track_split_merge_queue
         self._cav_traj_queue = cav_traj_queue
-        # TODO
-        if do_logging:
-            pass
-            # df_size = len(self.__all_vehicles)
-            # self._auxilary_departure_times = np.zeros(df_size, dtype=np.float)
-            # self._auxilary_ID = ['' for i in range(df_size)]
-            # self._auxilary_num_sent_to_trj_planner = np.zeros(df_size, dtype=np.int8)
-
-            # # open a file to store trajectory points
-            # filepath_trj = os.path.join('log/' + inter_name + '/' + start_time_stamp + '_' + str(
-            #     self.scenario_num) + '_trj_point_level.csv')
-            # self.full_traj_csv_file = open(filepath_trj, 'w', newline='')
-            # writer = csv.writer(self.full_traj_csv_file, delimiter=',')
-            # writer.writerow(['sc', 'VehID', 'type', 'lane', 'time', 'distance', 'speed'])
-            # self.full_traj_csv_file.flush()
+        if args.do_logging:
+            # open a file to store trajectory points
+            filepath_trj = os.path.join(args.log_dir, 'trj_point_level.csv')
+            self.full_traj_csv_file = open(filepath_trj, 'w', newline='')
+            writer = csv.writer(self.full_traj_csv_file, delimiter=',')
+            writer.writerow(['sc', 'VehID', 'type', 'lane', 'time', 'distance', 'speed', 'calls to traj planner'])
+            self.full_traj_csv_file.flush()
         else:
             self.full_traj_csv_file = None
 
@@ -76,7 +68,7 @@ class RealTimeTraffic:
                         # convert vehicle message to Vehicle
                         des_speed = self.intersection._inter_config_params["max_speed"]
                         #TODO dest = "" # ?
-                        dest = 0
+                        dest = 1
                         length = vm.veh_len
                         amin = vm.max_decel
                         amax = vm.max_accel
@@ -101,58 +93,9 @@ class RealTimeTraffic:
         # N.b. eventually, add a flagging system so only vehicles with changes made to them 
         #   get new trajectories, to save on computation
 
-    # TODO: This is all logging stuff that needs to be re-done for real time
-    # Need to store all trajectories when before and after update
-    # def set_row_vehicle_level_csv(self, dep_time, veh):
-    #     """
-    #     Sets the departure time of an individual vehicle that is just served.
-    #
-    #     :param dep_time: departure time in seconds
-    #     :param veh: subject vehicle to be recorder
-    #     :type veh: Vehicle
-    #     """
-    #     indx = veh.csv_indx
-    #     self._auxilary_departure_times[indx] = dep_time
-    #     self._auxilary_ID[indx] = veh.ID
-    #     self._auxilary_num_sent_to_trj_planner[indx] = veh._call_reps_traj_planner
-
-    # def save_veh_level_csv(self, inter_name, start_time_stamp):
-    #     """
-    #     Set the recorded values and save the  CSV at vehicle level.
-    #
-    #     :param inter_name: intersection name
-    #     :param start_time_stamp: local time stamp to include in the CSV filename
-    #     """
-    #     self.__all_vehicles['departure time'] = self._auxilary_departure_times
-    #     self.__all_vehicles['ID'] = self._auxilary_ID
-    #     self.__all_vehicles['times_sent_to_trj_planner'] = self._auxilary_num_sent_to_trj_planner
-    #
-    #     filepath = os.path.join(
-    #         'log/' + inter_name + '/' + start_time_stamp + '_' + str(self.scenario_num) + '_trj_veh_level.csv')
-    #     self.__all_vehicles.to_csv(filepath, index=False)
-
-    # def close_trj_csv(self):
-    #     """Closes trajectory CSV file."""
-    #     self.full_traj_csv_file.close()
-    #
-    # def last_veh_arr(self):
-    #     """
-    #     :return: True if all vehicles from the input CSV have been added at some point.
-    #
-    #     .. note::
-    #         The fact that all vehicles are *added* does not equal to all *served*. Thus, we check if any vehicle is in
-    #          any of the incoming lanes before halting the program.
-    #     """
-    #     if self._current_row_indx + 1 >= self.__all_vehicles.shape[0]:
-    #         return True
-    #     else:
-    #         return False
-    #
-    # def get_first_det_time(self):
-    #     """
-    #     :return: The time when the first vehicle in current scenario shows up. Assumes the CSV file is not sorted in arrival time.
-    #     """
-    #     return np.nanmin(self.__all_vehicles['arrival time'].values)
+    def close_trj_csv(self):
+         """Closes trajectory CSV file."""
+         self.full_traj_csv_file.close()
 
     @staticmethod
     def get_volumes(lanes, intersection):
@@ -214,8 +157,8 @@ class RealTimeTraffic:
                             '/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID + '@({:>4.1f} s)'.format(
                                 dep_time))
                         # self._log_csv and self.set_row_vehicle_level_csv(dep_time, veh)
-                    #elif det_time < elapsed_time:  # record/remove expired points
-                    #    veh.reset_trj_pts(self.scenario_num, lane, elapsed_time, self.full_traj_csv_file)
+                    elif det_time < elapsed_time:  # record/remove expired points
+                        veh.reset_trj_pts(self.scenario_num, lane, elapsed_time, self.full_traj_csv_file)
                     #
                     else:  # distance from stop bar of all behind this vehicle is larger, so we can stop.
                         break

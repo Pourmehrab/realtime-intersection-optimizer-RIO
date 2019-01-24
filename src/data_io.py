@@ -165,7 +165,7 @@ class TrafficPublisher(StoppableThread):
     Operates by maintaining a synchronized queue and sending out queued up trajectories 
     as soon as they are added to the queue.
     """
-    def __init__(self, intersection, ip, port, name="TrafficPublisher"):
+    def __init__(self, intersection, ip, port, args, name="TrafficPublisher"):
         super(TrafficPublisher, self).__init__(name)
         self._cav_traj_queue = deque()
         self._IAM_publisher = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -173,7 +173,10 @@ class TrafficPublisher(StoppableThread):
         self._intersection = intersection
         self.ip = ip
         self.port = port
-        
+        self.do_logging = args.do_logging
+        if self.do_logging:
+            self.log_file = open(os.path.join(args.log_dir, "IAM.txt"), "w")
+
     def get_cav_traj_queue(self):
         """
         Used to access the synchronized cav traje queue externally.
@@ -255,6 +258,9 @@ class TrafficPublisher(StoppableThread):
             while len(self._cav_traj_queue) > 0:
                 next_veh, lane, timestamp = self._cav_traj_queue.pop()
                 next_IAM = self.veh_to_IAM(next_veh, lane, timestamp)
-                self._IAM_publisher.send(next_IAM, (self.ip, self.port))    
+                self._IAM_publisher.send(next_IAM, (self.ip, self.port))
+                if self.do_logging:
+                    self.log_file.write(str(timestamp) + " " + next_IAM + "\n")
         self._IAM_publisher.close()
-
+        if self.do_logging:
+            self.log_file.close()
