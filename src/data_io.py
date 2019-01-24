@@ -262,7 +262,8 @@ class TrafficPublisher(StoppableThread):
             while len(self._cav_traj_queue) > 0:
                 next_veh, lane, timestamp = self._cav_traj_queue.pop()
                 next_IAM = self.veh_to_IAM(next_veh, lane, timestamp)
-                self._IAM_publisher.send(next_IAM, (self.ip, self.port))
+                next_IAM = next_IAM.encode('utf-8')
+                self._IAM_publisher.sendto(next_IAM, (self.ip, self.port))
                 if self.do_logging:
                     self.log_file.write(str(timestamp) + " " + next_IAM + "\n")
         self._IAM_publisher.close()

@@ -2,6 +2,7 @@
 import sys
 import os
 import argparse
+import time
 from time import perf_counter
 import datetime as dt
 from src.time_tracker import Timer
@@ -106,7 +107,9 @@ def run_rio(args):
 
             # call the proper phase on ATC Controller 
             if args.run_with_signal_control:
+                start = time.time()
                 snmp_phase_ctrl(signal.SPaT_sequence[0], args.intersection)
+                print("diff: {}".format(time.time() - start))
 
             # Wrap up and log
             if (args.mode == "sim" and (traffic.last_veh_arr() and lanes.all_served(num_lanes))) or \
@@ -135,9 +138,9 @@ if __name__ == "__main__":
                         help="The name of the intersection")
     parser.add_argument("--mode", type=str, default="sim",
                         help="Run with traffic from CSV (sim) or sensor fusion (realtime)")
-    parser.add_argument("--run-duration", type=int, default=300,
+    parser.add_argument("--run-duration", type=int, default=900,
                         help="Seconds to run until termination.")
-    parser.add_argument("--loop-freq", type=float, default=2,
+    parser.add_argument("--loop-freq", type=float, default=10,
                         help="Frequency (Hz) to run the main loop")
     parser.add_argument("--solve-freq", type=float, default=0.5,
                         help="Frequency (Hz) to call the optimizer")

@@ -24,6 +24,12 @@ Pipenv will create a virtualenv that can be activated by `pipenv shell` containi
 
 TODO: Instructions here. 
 
+### Network instructions
+
+The RSU uses a wired Link-Local connection. Set the local ip address to be something like 169.254.X.X. The signal controller needs an
+
+TODO: Add SNMP IP and Port to main.py argparse
+
 ## Tests
 
 Run all unit tests with `pytest test`.

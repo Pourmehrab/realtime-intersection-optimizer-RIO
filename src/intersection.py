@@ -246,7 +246,7 @@ class Lanes:
         :param veh_id: the detection id associated with the desired vehicle
         :type string:
         """
-        for v in self.vehlist[lane]:
+        for v in self.vehlist[lane-1]:
             if v.ID == veh_id:
                 return v
         return None

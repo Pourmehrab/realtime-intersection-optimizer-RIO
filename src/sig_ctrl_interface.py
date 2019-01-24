@@ -10,7 +10,7 @@
 # @author: aschkan
 
 from pysnmp.hlapi import *
-
+from src.config import get_sig_ctrl_interface_params
 
 def snmpSet(OID, Value):
     """
@@ -23,7 +23,7 @@ def snmpSet(OID, Value):
     errorIndication, errorStatus, errorIndex, varBinds = next(
         setCmd(SnmpEngine(),
                CommunityData('public', mpModel=0),  # snmp v1. delete mpModel for v2c),
-               UdpTransportTarget(('169.254.91.71', 161)),
+               UdpTransportTarget(('192.168.0.2', 161)),
                ContextData(),
                ObjectType(ObjectIdentity(str(OID)), Integer(Value))))
 

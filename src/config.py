@@ -378,8 +378,8 @@ def load_inter_params(inter_name):
             "allowable_phases": (0, 1,),
             "yellow": 3.0,
             "allred": 1.5,
-            "min_green": 5,
-            "max_green": 20.0,
+            "min_green": 20.0, # 5
+            "max_green": 40.0, # 20
             "lag_on_green": 1.0,
             "max_num_traj_points": int(1_000),
             "min_dist_to_stop_bar": 5,

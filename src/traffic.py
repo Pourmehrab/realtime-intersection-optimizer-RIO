@@ -87,9 +87,10 @@ class RealTimeTraffic:
                         # TODO: when debugging, print or log here
                         pass
                 else:
+                    # TODO: vehicle gets purged bc current state is 0 before this ever gts called
                     # update v with latest data
-                    v.update(det_type, det_time, dist, speed)
-
+                    #v.update(det_type, det_time, dist, speed)
+                   pass
         # N.b. eventually, add a flagging system so only vehicles with changes made to them 
         #   get new trajectories, to save on computation
 
@@ -147,7 +148,7 @@ class RealTimeTraffic:
             if bool(lanes.vehlist.get(lane)):  # not an empty lane
                 last_veh_indx_to_remove = -1
                 for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
-                    if veh.current_state[1] <= 0.:# distance from stop bar (m)
+                    if veh.current_state[1] <= -1.:# distance from stop bar (m)
                         #det_time, _, _ = veh.get_arr_sched()
                         dep_time, _, _ = veh.get_dep_sched()
                         #if dep_time != 0:
@@ -157,6 +158,7 @@ class RealTimeTraffic:
                             '/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID + '@({:>4.1f} s)'.format(
                                 dep_time))
                         # self._log_csv and self.set_row_vehicle_level_csv(dep_time, veh)
+                    # TODO: det_time is not defined
                     elif det_time < elapsed_time:  # record/remove expired points
                         veh.reset_trj_pts(self.scenario_num, lane, elapsed_time, self.full_traj_csv_file)
                     #
