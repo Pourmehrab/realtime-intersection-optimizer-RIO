@@ -56,14 +56,16 @@ def run_rio(args):
         traffic = SimTraffic(intersection, args.sc, start_time_stamp_name, args)
     else:
         tl = TrafficListener(args.traffic_listener_ip, args.traffic_listener_port)
-        tp = TrafficPublisher(intersection, args.traffic_publisher_ip, args.traffic_publisher_port)
+        tp = TrafficPublisher(intersection, args.traffic_publisher_ip, args.traffic_publisher_port, args)
         traffic = RealTimeTraffic(tl.get_vehicle_data_queue(), tl.get_track_split_merge_queue(),
                                   tp.get_cav_traj_queue(), intersection, args)
+        tl.start()
+        tp.start()
     resolution = 1. / args.loop_freq
     num_lanes = intersection._inter_config_params.get("num_lanes")
 
     # Load MCF_SPaT optimization module for initial SPat
-    signal = MCF_SPaT(0, intersection, args.sc, start_time_stamp_name)
+    signal = MCF_SPaT(args, 0, intersection, args.sc, start_time_stamp_name)
     # Load trajectory optimization sub-models and planner
     trajectory_generator = TrajectoryPlanner(intersection)
 
@@ -123,8 +125,9 @@ def run_rio(args):
 
     except KeyboardInterrupt:
         print("RIO got KeyboardInterrupt, shutting down threads")
-        # close TrafficListener
-
+        # close
+        tl.stop()
+        tp.stop()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Runtime arguments for RIO")

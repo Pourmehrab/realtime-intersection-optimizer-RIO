@@ -3,6 +3,7 @@ import socket
 from collections import deque, namedtuple
 import datetime
 import numpy as np
+import os
 
 VehicleMsg = namedtuple('VehicleMsg', 
         ['timestamp', 
@@ -119,6 +120,9 @@ class TrafficListener(SocketThread):
         :type string:
         """
         # parse the msg
+        if type(msg) == bytes:
+            msg = msg.decode("utf-8")
+
         msg_chunks = msg.split("^^^^")
         # timestamp is first
         timestamp = msg_chunks[0].split(":")
