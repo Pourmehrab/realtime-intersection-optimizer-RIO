@@ -122,7 +122,7 @@ class Signal:
             intersection._inter_config_params.get("print_commandline") and print(
                 '>>> Phase {:d} appended (ends @ {:>5.1f} sec)'.format(phase, self.SPaT_end[-1]))
 
-    def update_SPaT(self, intersection, simulation_time, sc, time_stamp=None):
+    def update_SPaT(self, intersection, simulation_time, sc, time_since_last_arrival, timestamp):
         """
         Performs two tasks to update SPaT based on the given opt_clock:
             - Removes terminated phase (happens when the all-red is passed)
@@ -131,15 +131,21 @@ class Signal:
         .. attention::
             - If all phases are getting purged, either make longer SPaT decisions or reduce the simulation steps.
 
-        :param simulation_time: Normally the current opt_clock of simulation or real-time in :math:`s`
+        TODO: rename simulation_time to elapsed_time
+
+        :param simulation_time: Elapsed time from start in :math:`s`
         :param sc: scenario number to be recorded in CSV
-        :param time_stamp: the current Datetime timestamp, for recording in the CSV
+        :param time_since_last_arrival: in realtime, the absolute Datetime timestamp or in sim mode,
+        the number of seconds since start from the last vehicle message received
+        :param timestamp: the current Datetime timestamp, for recording in the CSV
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
             April-2018
         """
+        # TODO: use time_since_last_arrival to fix Signal bug
+
         assert self.SPaT_end[-1] >= simulation_time, \
                 "If all phases get purged, SPaT becomes empty. SPaT end: {}, elapsed time: {}"\
                 .format(self.SPaT_end[-1], simulation_time)
