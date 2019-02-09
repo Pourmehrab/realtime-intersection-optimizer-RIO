@@ -73,7 +73,7 @@ def run_rio(args):
     # to measure the total RIO run time for performance measure (Different from RIO clock)
     if args.do_logging:
         t_start = perf_counter()
-    
+
     try:
         optimizer_call_ctr = 0
         solve_freq = int(args.loop_freq / args.solve_freq)
@@ -86,7 +86,7 @@ def run_rio(args):
 
             # update the assigned trajectories
             traffic.serve_update_at_stop_bar(lanes, elapsed_time, intersection)
-    
+
             # add/update the vehicles
             if args.mode == "sim":
                 traffic.get_traffic_info(lanes, elapsed_time, intersection)
@@ -105,7 +105,7 @@ def run_rio(args):
                 traffic.publish(lanes, absolute_time)
             optimizer_call_ctr += 1
 
-            # call the proper phase on ATC Controller 
+            # call the proper phase on ATC Controller
             if args.run_with_signal_control:
                 start = time.time()
                 snmp_phase_ctrl(signal.SPaT_sequence[0], args.intersection)
@@ -131,6 +131,7 @@ def run_rio(args):
         # close
         tl.stop()
         tp.stop()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Runtime arguments for RIO")

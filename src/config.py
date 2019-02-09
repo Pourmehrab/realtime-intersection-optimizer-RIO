@@ -4,6 +4,7 @@ import utm
 from collections import namedtuple
 import src.util as util
 
+
 # -------------------------------------------------------
 # Vehicle and Intersection Configuration Parameters
 # -------------------------------------------------------
@@ -17,6 +18,7 @@ class Lane:
         self.lane_length = 0
         self.is_straight = True
 
+
 class OptZone:
     def __init__(self):
         self.utmzone = ""
@@ -24,6 +26,7 @@ class OptZone:
         self.easting = []
         self.northing = []
         self.orientation = -1
+
 
 def load_optimization_zone_constraints(inter_name):
     """
@@ -42,7 +45,7 @@ def load_optimization_zone_constraints(inter_name):
     prev_lane_number = None
     o = None
     with open(opt_file, 'r') as f:
-        f.readline() # throw away header
+        f.readline()  # throw away header
         next_line = f.readline()
         while next_line:
             name, lat, lon, orientation = next_line.strip().split(",")
@@ -64,6 +67,7 @@ def load_optimization_zone_constraints(inter_name):
         zones[prev_lane_number] = o
     return zones
 
+
 def load_lane_geom(inter_name):
     """
     Parse and load lane geometry information into Lane objects and
@@ -71,12 +75,12 @@ def load_lane_geom(inter_name):
 
        TODO:
         - add scipy.linregress to test whether GPS points form straight line, to set is_straight
-    
+
     :param inter_name: the name of the intersection, must match the
     folder name containing opt_zones.csv
     :type string:
     """
-    lane_file = os.path.join("data", inter_name, "lanes.csv" )
+    lane_file = os.path.join("data", inter_name, "lanes.csv")
     lanes = {}
     prev_lane_id = None
     l = None
@@ -86,13 +90,13 @@ def load_lane_geom(inter_name):
         while next_line:
             name, lat, lon = next_line.split(",")
             lane_id = int(name.split("_")[1])
-            if lane_id != prev_lane_id: 
-                if l :
+            if lane_id != prev_lane_id:
+                if l:
                     total_length = 0.
                     l.distances.append(total_length)
                     for i in range(len(l.easting) - 1):
                         total_length += util.euclidean_dist(l.easting[i], l.northing[i], l.easting[i + 1],
-                                                                l.northing[i + 1])
+                                                            l.northing[i + 1])
                         l.distances.append(total_length)
                     l.lane_length = total_length
                     l.is_straight = True
@@ -107,6 +111,7 @@ def load_lane_geom(inter_name):
             next_line = f.readline()
         lanes[prev_lane_id] = l
     return lanes
+
 
 def load_inter_params(inter_name):
     """
@@ -378,11 +383,11 @@ def load_inter_params(inter_name):
             "allowable_phases": (0, 1,),
             "yellow": 3.0,
             "allred": 1.5,
-            "min_green": 20.0, # 5
-            "max_green": 40.0, # 20
+            "min_green": 20.0,  # 5
+            "max_green": 40.0,  # 20
             "lag_on_green": 1.0,
             "max_num_traj_points": int(1_000),
-            "min_dist_to_stop_bar": 5,
+            "min_dist_to_stop_bar": 20,
             "do_traj_computation": True,
             "trj_time_resolution": 1.0,
 

@@ -66,7 +66,6 @@ class Signal:
         else:
             self.__sig_csv_file = None
 
-        
     def _set_lane_lane_incidence(self, intersection):
         """
         This converts a dictionary of the form:
@@ -141,7 +140,7 @@ class Signal:
             April-2018
         """
         assert self.SPaT_end[-1] >= simulation_time, \
-                "If all phases get purged, SPaT becomes empty. SPaT end: {}, elapsed time: {}"\
+            "If all phases get purged, SPaT becomes empty. SPaT end: {}, elapsed time: {}" \
                 .format(self.SPaT_end[-1], simulation_time)
 
         phase_indx, any_phase_to_purge = 0, False
@@ -173,33 +172,58 @@ class Signal:
         """Closes the signal CSV file"""
         self.__sig_csv_file.close()
 
-    def _flush_upcoming_SPaTs(self, intersection):
+    def protect_SPaT(self, lanes, intersection):
         """
-        Just leaves the first SPaT and removes the rest.
 
-        .. note:: One more severe variant to this is to even reduce the the green time of the first phase.
+        - Finds the latest departure time assigned to a vehicle closer than `min_dist_to_stop_bar`,
+        - If no vehicle is close, then just reserve the minimum green for the front phase,
+        - Otherwise, reserve the latest assigned green for vehicles closer than `min_dist_to_stop_bar`.
+
+        .. note:: Those vehicles that are closer than the min distance should not be counted as demand when solving MCF.
+
+        :returns array of count of close vehicles in lanes to protect (since they are closer than `min_dist_to_stop_bar`)
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
             April-2018
         """
-        if len(self.SPaT_sequence) > 1:
+
+        num_lanes, min_dist_to_stop_bar = map(intersection._inter_config_params.get,
+                                              ["num_lanes", "min_dist_to_stop_bar", ])
+
+        latest_departure_to_protect = 0
+        count_of_close_vehs = np.zeros(num_lanes, dtype=np.int)
+
+        for lane in range(num_lanes):
+            for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
+                _, curr_dist, _ = veh.get_arr_sched()
+                if curr_dist < min_dist_to_stop_bar:
+                    count_of_close_vehs[lane] += 1
+                    dep_time = veh.scheduled_departure
+                    if dep_time > latest_departure_to_protect:
+                        latest_departure_to_protect = dep_time
+                else:
+                    break
+
+        locked_SPaT_indx, max_SPaT_indx = 0, len(self.SPaT_sequence) - 1
+
+        while locked_SPaT_indx < max_SPaT_indx and latest_departure_to_protect > self.SPaT_end[locked_SPaT_indx]:
+            locked_SPaT_indx += 1
+
+        if locked_SPaT_indx < max_SPaT_indx:
             intersection._inter_config_params.get("print_commandline") and print(
-                '<<< Phase(s) ' + ','.join(str(p) for p in self.SPaT_sequence[1:]) + ' flushed')
+                '<<< Phase(s) ' + ','.join(str(p) for p in self.SPaT_sequence[locked_SPaT_indx + 1:]) + ' flushed')
 
-            del self.SPaT_sequence[1:]
-            del self.SPaT_green_dur[1:]
-            del self.SPaT_start[1:]
-            del self.SPaT_end[1:]
+            del self.SPaT_sequence[locked_SPaT_indx + 1:]
+            del self.SPaT_green_dur[locked_SPaT_indx + 1:]
+            del self.SPaT_start[locked_SPaT_indx + 1:]
+            del self.SPaT_end[locked_SPaT_indx + 1:]
 
-            extra_green = self.SPaT_green_dur[0] - self.min_green
-            if extra_green > 0:
-                self.SPaT_green_dur[0] -= extra_green
-                self.SPaT_end[0] -= extra_green
+        return count_of_close_vehs
+    # -------------------------------------------------------
 
 
-# -------------------------------------------------------
 # MIN COST FLOW SPaT
 # -------------------------------------------------------
 class MCF_SPaT(Signal):
@@ -246,11 +270,9 @@ class MCF_SPaT(Signal):
         self.SPaT_green_dur = [self.min_green]
         self.SPaT_start = [first_detection_time]
         self.SPaT_end = [first_detection_time + self.SPaT_green_dur[0] + self._y + self._ar]
-        # todo: Ashkan, call controller for this first given green here
 
-        if print_commandline:
-            print(">>> Phase {:d} initializes SPaT (ends @ {:2.1f} sec)".format(self.SPaT_sequence[-1],
-                                                                                self.SPaT_end[-1]))
+        print_commandline and print(
+            ">>> Phase {:d} initializes SPaT (ends @ {:2.1f} sec)".format(self.SPaT_sequence[-1], self.SPaT_end[-1]))
 
         self._mcf_model = cplex.Cplex()
         self._mcf_model.objective.set_sense(self._mcf_model.objective.sense.minimize)
@@ -292,10 +314,10 @@ class MCF_SPaT(Signal):
 
     def solve(self, lanes, intersection, trajectory_planner):
         """
+        The minimum cost flow problem that yields the optimal departure times and SPaT is coded as a CPLEX model.
 
         :param lanes:
         :param intersection:
-        :param critical_volume_ratio:
         :param trajectory_planner:
         :return:
 
@@ -304,13 +326,14 @@ class MCF_SPaT(Signal):
         :Date:
             July-2018
         """
+
         num_lanes, min_CAV_headway, min_CNV_headway, lag_on_green, min_dist_to_stop_bar = map(
             intersection._inter_config_params.get,
             ["num_lanes", "min_CAV_headway", "min_CNV_headway", "lag_on_green", "min_dist_to_stop_bar"])
         num_phases = len(self._phase_lane_incidence)
-        self._flush_upcoming_SPaTs(intersection)
+        count_of_close_vehs = self.protect_SPaT(lanes, intersection)
 
-        demand = [float(len(lanes.vehlist.get(lane))) for lane in range(num_lanes)]
+        demand = [float(len(lanes.vehlist.get(lane)) - count_of_close_vehs[lane]) for lane in range(num_lanes)]
         total_demand = sum(demand)
         if total_demand > 0:
             self._mcf_model.linear_constraints.set_rhs(
@@ -328,8 +351,7 @@ class MCF_SPaT(Signal):
                 1, }, "MCF CPLEX model did not end up with optimal solution"
 
             phase_veh_incidence = np.array(self._mcf_model.solution.get_values(
-                ["p" + str(phase_indx) + "p" + str(phase_indx) for phase_indx in range(num_phases)]),
-                dtype=np.int)
+                ["p" + str(phase_indx) + "p" + str(phase_indx) for phase_indx in range(num_phases)]), dtype=np.int)
 
             phase_early_first = SortedDict({})
             for phase_indx, phase in self._phase_lane_incidence.items():
