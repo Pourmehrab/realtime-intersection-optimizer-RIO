@@ -26,7 +26,6 @@ class RealTimeTimer(Timer):
 
     def __init__(self, resolution):
         """
-        :param start_time: the UTC timestamp at start up
         :param resolution: the time (in sec) to sleep every step
         """
         start_time = datetime.utcnow()
@@ -48,7 +47,7 @@ class SimTimer(Timer):
         self.curr_time = self.start_time
 
     def step(self):
-        self.curr_time += self.resolution
+         self.curr_time += self.resolution
 
     def get_time(self, timestamp=None):
         if not timestamp:

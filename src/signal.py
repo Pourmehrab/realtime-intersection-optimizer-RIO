@@ -193,13 +193,13 @@ class Signal:
                                               ["num_lanes", "min_dist_to_stop_bar", ])
 
         latest_departure_to_protect = 0
-        count_of_close_vehs = np.zeros(num_lanes, dtype=np.int)
+        last_locked_veh_indx = np.zeros(num_lanes, dtype=np.int)
 
         for lane in range(num_lanes):
             for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
                 _, curr_dist, _ = veh.get_arr_sched()
                 if curr_dist < min_dist_to_stop_bar:
-                    count_of_close_vehs[lane] += 1
+                    last_locked_veh_indx[lane] += 1
                     dep_time = veh.scheduled_departure
                     if dep_time > latest_departure_to_protect:
                         latest_departure_to_protect = dep_time
@@ -220,7 +220,7 @@ class Signal:
             del self.SPaT_start[locked_SPaT_indx + 1:]
             del self.SPaT_end[locked_SPaT_indx + 1:]
 
-        return count_of_close_vehs
+        return last_locked_veh_indx
     # -------------------------------------------------------
 
 
@@ -331,9 +331,11 @@ class MCF_SPaT(Signal):
             intersection._inter_config_params.get,
             ["num_lanes", "min_CAV_headway", "min_CNV_headway", "lag_on_green", "min_dist_to_stop_bar"])
         num_phases = len(self._phase_lane_incidence)
-        count_of_close_vehs = self.protect_SPaT(lanes, intersection)
+        last_locked_veh_indx = self.protect_SPaT(lanes, intersection)
+        intersection._inter_config_params.get("print_commandline") and print(
+            '   Trajectory and SPaT of ' + str(sum(last_locked_veh_indx)) + ' vehicle(s) are not being updated')
 
-        demand = [float(len(lanes.vehlist.get(lane)) - count_of_close_vehs[lane]) for lane in range(num_lanes)]
+        demand = [float(len(lanes.vehlist.get(lane)) - last_locked_veh_indx[lane]) for lane in range(num_lanes)]
         total_demand = sum(demand)
         if total_demand > 0:
             self._mcf_model.linear_constraints.set_rhs(
@@ -356,8 +358,9 @@ class MCF_SPaT(Signal):
             phase_early_first = SortedDict({})
             for phase_indx, phase in self._phase_lane_incidence.items():
                 if phase_veh_incidence[phase_indx] > 0:
-                    min_dep_time = min([lanes.vehlist.get(lane)[0].earliest_departure for lane in phase if
-                                        bool(lanes.vehlist.get(lane))])
+                    min_dep_time = min(
+                        [lanes.vehlist.get(lane)[last_locked_veh_indx[lane]].earliest_departure for lane in phase if
+                         bool(lanes.vehlist.get(lane))])
                     key = min_dep_time + 0.01 if min_dep_time in phase_early_first else min_dep_time
                     phase_early_first[key] = phase_indx
 
