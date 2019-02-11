@@ -14,6 +14,7 @@ from src.signal import MCF_SPaT
 from src.util import *
 from datetime import datetime
 
+
 def run_rio(args):
     """
     .. note:: Assumptions for trajectory generation:
@@ -100,7 +101,7 @@ def run_rio(args):
                 # update SPaT
                 signal.update_SPaT(intersection, elapsed_time, args.sc, absolute_time)
                 # perform signal optimization
-                signal.solve(lanes, intersection, trajectory_generator)
+                signal.solve(lanes, intersection, trajectory_generator, absolute_time)
                 # Send out IAMs to all CAVs
                 traffic.publish(lanes, absolute_time)
             optimizer_call_ctr += 1

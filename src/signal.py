@@ -121,7 +121,7 @@ class Signal:
             intersection._inter_config_params.get("print_commandline") and print(
                 '>>> Phase {:d} appended (ends @ {:>5.1f} sec)'.format(phase, self.SPaT_end[-1]))
 
-    def update_SPaT(self, intersection, simulation_time, sc, time_stamp=None):
+    def update_SPaT(self, intersection, absolute_time, sc, time_stamp=None):
         """
         Performs two tasks to update SPaT based on the given opt_clock:
             - Removes terminated phase (happens when the all-red is passed)
@@ -130,7 +130,7 @@ class Signal:
         .. attention::
             - If all phases are getting purged, either make longer SPaT decisions or reduce the simulation steps.
 
-        :param simulation_time: Normally the current opt_clock of simulation or real-time in :math:`s`
+        :param absolute_time: Normally the current opt_clock of simulation or real-time in :math:`s`
         :param sc: scenario number to be recorded in CSV
         :param time_stamp: the current Datetime timestamp, for recording in the CSV
 
@@ -139,19 +139,23 @@ class Signal:
         :Date:
             April-2018
         """
-        assert self.SPaT_end[-1] >= simulation_time, \
+        SPaT_expiration = self.SPaT_end[-1] - absolute_time
+        if SPaT_expiration <= 0:  # continue the last phase util 1 sec after absolute time
+            self._append_extend_phase(self.SPaT_sequence[-1], 1 - SPaT_expiration + self._y + self._ar, intersection)
+
+        assert self.SPaT_end[-1] >= absolute_time, \
             "If all phases get purged, SPaT becomes empty. SPaT end: {}, elapsed time: {}" \
-                .format(self.SPaT_end[-1], simulation_time)
+                .format(self.SPaT_end[-1], absolute_time)
 
         phase_indx, any_phase_to_purge = 0, False
 
         if self.__sig_csv_file is None:
-            while simulation_time > self.SPaT_end[phase_indx]:
+            while absolute_time > self.SPaT_end[phase_indx]:
                 any_phase_to_purge = True
                 phase_indx += 1
         else:
             writer = csv.writer(self.__sig_csv_file, delimiter=',')
-            while simulation_time > self.SPaT_end[phase_indx]:
+            while absolute_time > self.SPaT_end[phase_indx]:
                 any_phase_to_purge = True
                 row = [sc, self.SPaT_sequence[phase_indx], self.SPaT_start[phase_indx], self.SPaT_end[phase_indx]]
                 if self.mode == "realtime":
@@ -312,13 +316,14 @@ class MCF_SPaT(Signal):
             lin_expr=[[["p" + str(phase_indx) + "s" for phase_indx in self._phase_lane_incidence.keys()],
                        [1.0] * len(self._phase_lane_incidence)]], senses=["E"], rhs=[0.0], names=["sink"], )
 
-    def solve(self, lanes, intersection, trajectory_planner):
+    def solve(self, lanes, intersection, trajectory_planner, absolute_time):
         """
         The minimum cost flow problem that yields the optimal departure times and SPaT is coded as a CPLEX model.
 
         :param lanes:
         :param intersection:
         :param trajectory_planner:
+        :param absolute_time:
         :return:
 
         :Author:
@@ -412,5 +417,3 @@ class MCF_SPaT(Signal):
                     print("done")
                 self._append_extend_phase(int(phase), phase_green_end_time - phase_start_time, intersection)
                 phase_start_time = self.SPaT_end[-1]
-        else:
-            pass  # check if a dummy phase is needed
