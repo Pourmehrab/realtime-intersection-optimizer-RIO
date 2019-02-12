@@ -14,6 +14,27 @@ class RealTimeTraffic:
 
     def __init__(self, vehicle_data_queue, track_split_merge_queue, cav_traj_queue,
             init_time_stamp, intersection, args):
+        """
+        Initializes the RealTimeTraffic object. Stores a timestamp, time_since_last_arrival,
+        which can be used to get the elapsed time since the last vehicle message has been received.
+
+        :param vehicle_data_queue: The shared queue that gets populated with new traffic data 
+        msgs from the sensor fusion
+        :type vehicle_data_queue: deque
+        :param track_split_merge_queue: The shared queue that gets populated with 
+        track split/merge messages from the sensor fusion
+        :type track_split_merge_queue: deque
+        :param cav_traj_queue: The shared queue that this class populates with outgoing messages
+        to be sent via DSRC
+        :type cav_traj_queue: deque
+        :param init_time_stamp: datetime timestamp, used for initializing the
+        time_of_last_arrival member
+        :type init_time_stamp: Datetime
+        :param intersection: the global intersection object
+        :type intersection: Intersection
+        :param args: the runtime args
+        :type args: Namespace
+        """
         self.intersection = intersection
         self.scenario_num = args.sc
         self._print_commandline = intersection._inter_config_params.get('print_commandline')
