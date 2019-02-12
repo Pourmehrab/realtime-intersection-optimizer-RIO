@@ -14,6 +14,7 @@ from src.signal import MCF_SPaT
 from src.util import *
 from datetime import datetime
 
+
 def run_rio(args):
     """
     .. note:: Assumptions for trajectory generation:
@@ -85,7 +86,7 @@ def run_rio(args):
 
             # update the assigned trajectories
             traffic.serve_update_at_stop_bar(lanes, elapsed_time, intersection)
-    
+
             # add/update the vehicles
             if args.mode == "sim":
                 traffic.get_traffic_info(lanes, elapsed_time, intersection)
@@ -100,12 +101,12 @@ def run_rio(args):
                 time_since_last_arrival, _ = time_tracker.get_time(traffic.time_of_last_arrival)
                 signal.update_SPaT(intersection, elapsed_time, args.sc, time_since_last_arrival, absolute_time)
                 # perform signal optimization
-                signal.solve(lanes, intersection, trajectory_generator)
+                signal.solve(lanes, intersection, trajectory_generator, absolute_time)
                 # Send out IAMs to all CAVs
                 traffic.publish(lanes, absolute_time)
             optimizer_call_ctr += 1
 
-            # call the proper phase on ATC Controller 
+            # call the proper phase on ATC Controller
             if args.run_with_signal_control:
                 start = time.time()
                 snmp_phase_ctrl(signal.SPaT_sequence[0], args.intersection)
@@ -131,6 +132,7 @@ def run_rio(args):
         # close
         tl.stop()
         tp.stop()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Runtime arguments for RIO")
