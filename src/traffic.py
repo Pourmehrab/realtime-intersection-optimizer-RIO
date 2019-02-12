@@ -12,13 +12,36 @@ class RealTimeTraffic:
     in real-time. It extracts vehicle data and updates the necessary data structures.
     """
 
-    def __init__(self, vehicle_data_queue, track_split_merge_queue, cav_traj_queue, intersection, args):
+    def __init__(self, vehicle_data_queue, track_split_merge_queue, cav_traj_queue,
+            init_time_stamp, intersection, args):
+        """
+        Initializes the RealTimeTraffic object. Stores a timestamp, time_since_last_arrival,
+        which can be used to get the elapsed time since the last vehicle message has been received.
+
+        :param vehicle_data_queue: The shared queue that gets populated with new traffic data 
+        msgs from the sensor fusion
+        :type vehicle_data_queue: deque
+        :param track_split_merge_queue: The shared queue that gets populated with 
+        track split/merge messages from the sensor fusion
+        :type track_split_merge_queue: deque
+        :param cav_traj_queue: The shared queue that this class populates with outgoing messages
+        to be sent via DSRC
+        :type cav_traj_queue: deque
+        :param init_time_stamp: datetime timestamp, used for initializing the
+        time_of_last_arrival member
+        :type init_time_stamp: Datetime
+        :param intersection: the global intersection object
+        :type intersection: Intersection
+        :param args: the runtime args
+        :type args: Namespace
+        """
         self.intersection = intersection
         self.scenario_num = args.sc
         self._print_commandline = intersection._inter_config_params.get('print_commandline')
         self._vehicle_data_queue = vehicle_data_queue
         self._track_split_merge_queue = track_split_merge_queue
         self._cav_traj_queue = cav_traj_queue
+        self.time_of_last_arrival = init_time_stamp
         if args.do_logging:
             # open a file to store trajectory points
             filepath_trj = os.path.join(args.log_dir, 'trj_point_level.csv')
@@ -42,12 +65,14 @@ class RealTimeTraffic:
         if len(self._track_split_merge_queue) != 0:
             self._track_split_merge_queue.pop()
             # Handle track split/merge msgs - TODO
-    
+
         # Read latest msg from vehicle data queue
         if len(self._vehicle_data_queue) != 0:
+            _, self.time_of_last_arrival = time_tracker.get_time()
             vehicle_data_msgs = self._vehicle_data_queue.pop()
             # Lane detection
             for vm in vehicle_data_msgs:
+                # 1-based indexing
                 lane = self.intersection.detect_lane(vm)
                 if lane == -1:
                     continue
@@ -61,7 +86,10 @@ class RealTimeTraffic:
                 dist = self.intersection.UTM_to_distance_from_stopbar(vm.pos[0], vm.pos[1], lane)
                 speed = np.sqrt(vm.vel[0] ** 2 + vm.vel[1] ** 2)
 
+                # vehlist is 0-based and find_and.. automatically 
+                # computes lane-1.
                 v = lanes.find_and_return_vehicle_by_id(lane, veh_id)
+
                 if v is None:
                     # in the optimization zone?
                     if self.intersection.in_optimization_zone(vm, lane):
@@ -81,16 +109,15 @@ class RealTimeTraffic:
                                 2) + ':' + '({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s)'.format(det_time, dist, speed))
 
                         # append it to its lane
-                        lanes.vehlist[lane] += [veh]  # recall it is an array
-                        lanes.inc_last_veh_pos(lane)
+                        lanes.vehlist[lane-1] += [veh]  # recall it is an array
+                        lanes.inc_last_veh_pos(lane-1)
                     else:
                         # TODO: when debugging, print or log here
                         pass
                 else:
                     # TODO: vehicle gets purged bc current state is 0 before this ever gts called
                     # update v with latest data
-                    #v.update(det_type, det_time, dist, speed)
-                   pass
+                    v.update(det_type, det_time, dist, speed)
         # N.b. eventually, add a flagging system so only vehicles with changes made to them 
         #   get new trajectories, to save on computation
 
@@ -144,12 +171,12 @@ class RealTimeTraffic:
 
         """
         num_lanes = intersection._inter_config_params.get('num_lanes')
-        for lane in range(num_lanes):
+        for lane in range(num_lanes): # 0-based indexing for lanes internally
             if bool(lanes.vehlist.get(lane)):  # not an empty lane
                 last_veh_indx_to_remove = -1
                 for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
-                    if veh.current_state[1] <= -1.:# distance from stop bar (m)
-                        #det_time, _, _ = veh.get_arr_sched()
+                    det_time, _, _ = veh.get_arr_sched()
+                    if veh.current_state[1] <= 0.:# distance from stop bar (m)
                         dep_time, _, _ = veh.get_dep_sched()
                         #if dep_time != 0:
                         #    if dep_time < elapsed_time:  # record/remove departure
@@ -254,6 +281,8 @@ class SimTraffic:
             self.full_traj_csv_file.flush()
         else:
             self.full_traj_csv_file = None
+        
+        self.time_of_last_arrival = 0
 
     def get_traffic_info(self, lanes, simulation_time, intersection):
         """
@@ -297,6 +326,7 @@ class SimTraffic:
             lanes.vehlist[lane] += [veh]  # recall it is an array
             lanes.inc_last_veh_pos(lane)
             indx += 1
+            self.time_of_last_arrival = simulation_time
 
         # to keep track of how much of CSV is processed
         self._current_row_indx = indx - 1

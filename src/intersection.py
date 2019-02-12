@@ -449,9 +449,9 @@ class Vehicle:
         # computed trajectory
         self.trajectory[:, self.first_trj_point_indx] = [det_time, dist, speed, ]
         
-        # Patrick: Most recent position and speed
-        self.current_state = np.zeros(3) # timestamp, distance from stopbar in meters, speed in m/s
-
+        # timestamp, distance from stopbar in meters, speed in m/s
+        self.current_state = np.array([float(det_time), dist, speed])
+        
         if det_type == 1:
             self.poly = {'ref. time': 0.0, 'coeffs': np.zeros(intersection._inter_config_params.get('k'))}
 

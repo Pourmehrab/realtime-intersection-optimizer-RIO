@@ -35,6 +35,10 @@ class RealTimeTimer(Timer):
         periodic_sleep(self.resolution)
 
     def get_time(self, timestamp=None):
+        """
+        Computes elapsed time if timestamp is not None,
+        otherwise returns current absolute time.
+        """
         if not timestamp:
             timestamp = datetime.utcnow() 
         return (timestamp - self.start_time).total_seconds(), timestamp

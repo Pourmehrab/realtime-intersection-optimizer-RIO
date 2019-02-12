@@ -60,7 +60,7 @@ def run_rio(args):
         tl = TrafficListener(args.traffic_listener_ip, args.traffic_listener_port)
         tp = TrafficPublisher(intersection, args.traffic_publisher_ip, args.traffic_publisher_port, args)
         traffic = RealTimeTraffic(tl.get_vehicle_data_queue(), tl.get_track_split_merge_queue(),
-                                  tp.get_cav_traj_queue(), intersection, args)
+                                  tp.get_cav_traj_queue(), datetime.utcnow(), intersection, args)
         tl.start()
         tp.start()
     resolution = 1. / args.loop_freq
@@ -74,7 +74,6 @@ def run_rio(args):
     # to measure the total RIO run time for performance measure (Different from RIO clock)
     if args.do_logging:
         t_start = perf_counter()
-
     try:
         optimizer_call_ctr = 0
         solve_freq = int(args.loop_freq / args.solve_freq)
@@ -99,7 +98,8 @@ def run_rio(args):
 
             if optimizer_call_ctr % solve_freq == 0:
                 # update SPaT
-                signal.update_SPaT(intersection, elapsed_time, args.sc, absolute_time)
+                time_since_last_arrival, _ = time_tracker.get_time(traffic.time_of_last_arrival)
+                signal.update_SPaT(intersection, elapsed_time, args.sc, time_since_last_arrival, absolute_time)
                 # perform signal optimization
                 signal.solve(lanes, intersection, trajectory_generator, absolute_time)
                 # Send out IAMs to all CAVs

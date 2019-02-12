@@ -24,17 +24,20 @@ def test_get_traffic_info_and_vehicle_update():
     lanes = Lanes(inter)
     time_tracker = Timer.get_timer("realtime", 0.1)
 
-    rt_traffic = RealTimeTraffic(data_queue, tsm_queue, cav_traj_queue, inter, Args())
+    rt_traffic = RealTimeTraffic(data_queue, tsm_queue, cav_traj_queue,
+            time_tracker.get_time()[1], inter, Args())
     
     # new vehicle, in zone
     with open(os.path.join(TEST_DIR, "test_vehicle_data_RTS_lane_1_in_zone.txt"), "r") as f:
         msg = f.readline()
         listener.handle(msg)
         rt_traffic.get_traffic_info(lanes, time_tracker)
+        # automatically decrements lane idx - pass lane 1 here
         assert lanes.find_and_return_vehicle_by_id(1, "0:6234496") is not None
 
     # remove vehicle from lane
-    lanes.remove_srv_vehs(1, 0)
+    # vehlist is 0-based
+    lanes.remove_srv_vehs(0, 0)
 
     # new vehicle, not in zone
     with open(os.path.join(TEST_DIR, "test_vehicle_data_RTS_lane_1_no_zone.txt"), "r") as f:
@@ -66,7 +69,8 @@ def test_serve_update_at_stopbar():
     lanes = Lanes(inter)
     time_tracker = Timer.get_timer("realtime", 0.1)
 
-    rt_traffic = RealTimeTraffic(data_queue, tsm_queue, cav_traj_queue, inter, Args())
+    rt_traffic = RealTimeTraffic(data_queue, tsm_queue, cav_traj_queue,
+            time_tracker.get_time()[1], inter, Args())
     
     # new vehicle, in zone
     with open(os.path.join(TEST_DIR, "test_vehicle_data_RTS_lane_1_in_zone.txt"), "r") as f:
@@ -82,7 +86,7 @@ def test_serve_update_at_stopbar():
         listener.handle(msg)
         rt_traffic.get_traffic_info(lanes, time_tracker)
 
-    rt_traffic.serve_update_at_stop_bar(lanes, None, inter)
+    rt_traffic.serve_update_at_stop_bar(lanes, time_tracker.get_time()[0], inter)
     assert lanes.find_and_return_vehicle_by_id(1, "0:6234496") is None
 
 def test_traffic_publish():
@@ -94,7 +98,8 @@ def test_traffic_publish():
     test_vehicle = pickle.load(open(os.path.join(TEST_DIR, "test_vehicle.pkl"), "rb"))
     lanes = Lanes(inter)
     time_tracker = Timer.get_timer("realtime", 0.1)
-    rt_traffic = RealTimeTraffic(data_queue, tsm_queue, cav_traj_queue, inter, Args())
+    rt_traffic = RealTimeTraffic(data_queue, tsm_queue, cav_traj_queue,
+            time_tracker.get_time()[1], inter, Args())
 
     test_vehicle.got_trajectory = True
     test_vehicle.ID = "0:12340"
