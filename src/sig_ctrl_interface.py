@@ -198,4 +198,4 @@ def snmp_phase_ctrl(Phase, inter_name):
             snmpOmit([i for i in al if i not in nonConflict[p]])
 
 # Quickstart Test
-snmp_phase_ctrl(4, "RTS")
+# snmp_phase_ctrl(4, "RTS")
