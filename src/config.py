@@ -32,7 +32,7 @@ def load_optimization_zone_constraints(inter_name):
     """
     Parse and store optimization zone information as
     a dictionary of OptZone objects, indexed by lane number.
-    TODO: in the future, index these by road, not lane, 
+    TODO: in the future, index these by road, not lane,
     since for multi-lane roads, the opt zone is shared across
     lanes for a single road.
 
@@ -394,7 +394,7 @@ def load_inter_params(inter_name):
             "print_commandline": True,
             "lane_estimation": "gps",  # gps/video todo: pls append these to the docstring above and explain briefly
             "opt_zones": opt_zone_info,
-            "lanes": lane_info
+            "lanes": lane_info,
             # FIXME @ Pat: Please import GPS points here. In order to avoid mapping and its
             # FIXME: confusing consequences, it would be tight if you could follow the lane numbers in accordance
             # FIXME: with what you see above and the schematic map I sent you. I believe for UTC demo you used the
@@ -425,13 +425,15 @@ def get_sig_ctrl_interface_params(inter_name):
         num_phase = 8  # Total Number of phases at the TERL
         al = range(1, num_phase + 1)
         non = [0]
-        non_conflict = [[2], [3, 8], [4, 7], [6]]  # Conflict monitor phases
+        nonConflict = [[2], [3, 8], [4, 7], [6]]  # Conflict monitor phases
+
     elif inter_name == "RTS":
+        #
         num_phase = 4  # Total Number of phases at RTS
         al = range(1, num_phase + 1)
         non = [0]
-        non_conflict = [[1, 2], [4, 3]]  # Conflict monitor phases
+        nonConflict = [[1, 2], [4, 3]]  # Conflict monitor phases
     else:
         raise Exception("Controller parameters are not known for this intersection.")
 
-    return num_phase, al, non, non_conflict
+    return num_phase, al, non, nonConflict

@@ -3,7 +3,7 @@
 
 # Copyright pending (c) 2017, Aschkan Omidvar <aschkan@ufl.edu>
 # Created on Jan. 2017
-# Updated on May 2018
+# Updated on Feb. 2019
 # University of Florida
 # UF Transportation Institute
 # Dept. of Civil and Coastal Engineering
@@ -23,7 +23,7 @@ def snmpSet(OID, Value):
     errorIndication, errorStatus, errorIndex, varBinds = next(
         setCmd(SnmpEngine(),
                CommunityData('public', mpModel=0),  # snmp v1. delete mpModel for v2c),
-               UdpTransportTarget(('192.168.0.2', 161)),
+               UdpTransportTarget(('169.254.91.71', 161)), # Target IP + UPD port (hard coded)
                ContextData(),
                ObjectType(ObjectIdentity(str(OID)), Integer(Value))))
 
@@ -187,15 +187,15 @@ def snmp_phase_ctrl(Phase, inter_name):
     .. note::
         Send command to ASC
     """
-    num_phase, al, non, non_conflict = get_sig_ctrl_interface_params(inter_name)
+    num_phase, al, non, nonConflict = get_sig_ctrl_interface_params(inter_name)
 
     snmpHold(list(al))
     snmpHold(list(non))
 
-    for p in range(len(non_conflict)):
-        if Phase in non_conflict[p]:
-            snmpVehCall(non_conflict[p])
-            snmpOmit([i for i in al if i not in non_conflict[p]])
+    for p in range(len(nonConflict)):
+        if Phase in nonConflict[p]:
+            snmpVehCall(nonConflict[p])
+            snmpOmit([i for i in al if i not in nonConflict[p]])
 
 # Quickstart Test
-# snmp_phase_ctrl(4)
+snmp_phase_ctrl(4, "RTS")
