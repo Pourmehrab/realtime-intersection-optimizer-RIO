@@ -9,52 +9,54 @@ class Timer:
         self.resolution = resolution
 
     @staticmethod
-    def get_timer(mode, start_time, resolution):
+    def get_timer(mode, resolution):
         if mode == "realtime" or mode == "RealTime":
-            return RealTimeTimer(start_time, resolution)
+            return RealTimeTimer(resolution)
         elif mode == "sim" or mode == "Sim":
-            return SimTimer(start_time, resolution)
+            return SimTimer(resolution)
 
     def step(self):
         raise NotImplementedError
 
-    def get_elapsed_time(self, timestamp):
+    def get_time(self, timestamp):
         raise NotImplementedError
 
 
 class RealTimeTimer(Timer):
 
-    def __init__(self, start_time, resolution):
+    def __init__(self, resolution):
         """
-        :param start_time: the UTC timestamp at start up
         :param resolution: the time (in sec) to sleep every step
         """
+        start_time = datetime.utcnow()
         super(RealTimeTimer, self).__init__(start_time, resolution)
 
     def step(self):
         periodic_sleep(self.resolution)
 
-    def get_elapsed_time(self, timestamp=None):
-        if timestamp:
-            return (timestamp - self.start_time).total_seconds()
-        else:
-            return (datetime.utcnow() - self.start_time).total_seconds()
+    def get_time(self, timestamp=None):
+        """
+        Computes elapsed time if timestamp is not None,
+        otherwise returns current absolute time.
+        """
+        if not timestamp:
+            timestamp = datetime.utcnow() 
+        return (timestamp - self.start_time).total_seconds(), timestamp
 
 
 class SimTimer(Timer):
 
-    def __init__(self, start_time, resolution):
-        super(SimTimer, self).__init__(start_time, resolution)
-        self.curr_time = start_time
+    def __init__(self, resolution):
+        super(SimTimer, self).__init__(0, resolution)
+        self.curr_time = self.start_time
 
     def step(self):
-        self.curr_time += self.resolution
+         self.curr_time += self.resolution
 
-    def get_elapsed_time(self, timestamp=None):
-        if timestamp:
-            return timestamp - self.start_time
-        else:
-            return self.curr_time - self.start_time
+    def get_time(self, timestamp=None):
+        if not timestamp:
+            timestamp = self.curr_time
+        return timestamp - self.start_time, timestamp
 
 # class Timer:
 #     """

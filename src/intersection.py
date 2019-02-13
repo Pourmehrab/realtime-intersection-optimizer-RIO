@@ -1,9 +1,8 @@
 import csv
 import operator
 import numpy as np
-
+import src.geom as geom
 from src.config import *
-from src.trajectory import LeadConventional, LeadConnected, FollowerConventional, FollowerConnected
 import src.util as util  # Patrick
 
 
@@ -23,9 +22,17 @@ class Intersection:
         """
         self._inter_config_params = load_inter_params(inter_name)
 
-    # Patrick
     def detect_lane(self, vehicle_msg):
-        """ Implements video or GPS (UTM) based lane detection. """
+        """ 
+        Video or GPS (UTM) based lane detection. Video 
+        lane estimation not yet supported. GPS based detection
+        simply computes the best estimate by the smallest
+        Euclidean distance to the query point from any lane.
+
+        :param vehicle_msg: a query vehicle message
+        :type VehicleMsg: namedtuple
+        
+        """
         veh_utm_easting = vehicle_msg.pos[0]
         veh_utm_northing = vehicle_msg.pos[1]
 
@@ -33,29 +40,64 @@ class Intersection:
             lane = -1
             best_dist = self._inter_config_params["large_positive_num"]
             for i in range(self._inter_config_params["num_lanes"]):
-                lane_info = self._inter_config_params["lanes"]["Lane_{}".format(i)]
+                lane_info = self._inter_config_params["lanes"][i+1]
                 for j in range(len(lane_info.easting)):
                     e = lane_info.easting[j]
                     n = lane_info.northing[j]
-                    d = util.euclidean_distance(vehicle_utm_easting, vehicle_utm_northing, e, n)
+                    d = util.euclidean_dist(veh_utm_easting, veh_utm_northing, e, n)
                     if d < best_dist:
                         best_dist = d
-                        lane = i
+                        lane = i+1
         elif self._inter_config_params["lane_estimation"] == "video":
             raise NotImplementedError
-
         return lane
 
-    # Patrick
     def LLA_to_distance_from_stopbar(self, lat, lon, lane):
+        """
+        Convert a point in latitude, longitude on the provided lane
+        to the distance from that lane's stopbar.
+
+        About +- 0.5 m accuracy.
+
+        :param lat: Latitude
+        :type float:
+        :param lon: Longitude
+        :type float:
+        :param lane: Lane number
+        :type int:
+        """
         easting, northing, _, _ = utm.from_latlon(lat, lon)
-        return UTM_to_distance_from_stopbar(easting, northing, lane)
+        return self.UTM_to_distance_from_stopbar(easting, northing, lane)
 
     def UTM_to_distance_from_stopbar(self, easting, northing, lane, units="m"):
+        """
+        Convert a point in easting, northing on the provided lane
+        to the distance from that lane's stopbar.
+
+        About +- 0.5 m accuracy.
+
+        :param easting:
+        :type float:
+        :param northing:
+        type float:
+        :param lane: Lane number
+        :type int:
+        :param units: [optional], "m" or "ft"
+        :type string:
+        """
         # starting from stopbar, find closest point, then compute
-        lane_info = self._inter_config_params["lanes"]["Lane_{}".format(lane)]
+        lane_info = self._inter_config_params["lanes"][lane]
+        stop_bar_easting = lane_info.easting[0]
+        stop_bar_northing = lane_info.northing[0]
+        lane_anchor_easting = lane_info.easting[-1]
+        lane_anchor_northing = lane_info.northing[-1]
+        
         if lane_info.is_straight:
-            d = util.euclidean_distance(lane_info.easting[0], lane_info.northing[0], easting, northing)
+            d = util.euclidean_dist(stop_bar_easting, stop_bar_northing, easting, northing)
+            anchor_dist = util.euclidean_dist(lane_anchor_easting, lane_anchor_northing,
+                    easting, northing)
+            if anchor_dist > lane_info.lane_length:
+                d = -d # passed the stop bar
             if units == "ft":
                 return util.meters_to_feet(d)
             else:
@@ -63,8 +105,12 @@ class Intersection:
         else:
             best = self._inter_config_params["large_positive_num"]
             best_idx = -1
+            # N.b. distance should be 0 if vehicle has passed the stop bar since
+            # the stop bar will be the closest point.
+            # However, this will remove vehicles from the lane slightly *before*
+            # they cross the stop bar in realtime mode
             for i in range(len(lane_info.easting)):
-                d = util.euclidean_distance(lane_info.easting[0], lane_info.northing[0], easting, northing)
+                d = util.euclidean_dist(lane_info.easting[i], lane_info.northing[i], easting, northing)
                 if d < best:
                     best = d
                     best_idx = i
@@ -73,39 +119,87 @@ class Intersection:
             else:
                 return lane_info.distances[best_idx]
 
-    # Patrick
-    # TODO: test this
-    def distance_from_stopbar_to_LLA(self, dist_ft, lane, tol=2):
-        """ Convert a distance (feet) from the stopbar in lane to LLA """
-        lane_info = self._inter_config_params["lanes"]["Lanes_{}".format(lane)]
-        assert dist_ft > -5
-        if dist_ft < 0:
-            dist_ft = 0
-        idx = np.searchsorted(lane_info.distances, dist_ft)
-        dist_gps_ft = lane_info.distances[idx]
+    def distance_from_stopbar_to_LLA(self, dist, lane, tol=2, unit="m"):
+        """ 
+        Convert a distance from the stopbar in lane to lat, lon.
+
+        :param dist: Distance from the stopbar.
+        :type float: 
+        :param lane: Lane number
+        :type int:
+        :param tol: Number of meters passed 0 tolerated. Negative distances
+        from the stopbar will result in 0. Beyond tol, an assertion is triggered.
+        :type int:
+        :param unit: meters or feet.
+        :type string:
+        """
+        lane_info = self._inter_config_params["lanes"][lane]
+        if unit == "ft" or unit == "feet":
+            dist = util.feet_to_meters(dist)
+        assert dist > -2
+        if dist < 0:
+            dist = 0
+        idx = np.searchsorted(lane_info.distances, dist)
+        dist_gps = lane_info.distances[idx]
         # Adjust dist if greater than small threshold
-        if dist_gps_ft > dist_ft:
-            diff = dist_gps_ft - dist_ft
+        if dist_gps > dist:
+            diff = dist_gps - dist
             next_idx = idx - 1
         else:
-            diff = dist_ft - dist_gps_ft
+            diff = dist - dist_gps
             next_idx = idx + 1
         if diff > tol:
             y = lane_info.northing[next_idx] - lane_info.northing[idx]
             x = lane_info.easting[next_idx] - lane_info.easting[idx]
             theta = np.arctan2(y, x)
-            easting = lane_info.easting[idx] + util.meters_to_feet(diff * np.cos(theta))
-            northing = lane_info.northing[idx] + util.meters_to_feet(diff * np.sin(theta))
+            easting = lane_info.easting[idx] + diff * np.cos(theta)
+            northing = lane_info.northing[idx] + diff * np.sin(theta)
         else:
             easting = lane_info.easting[idx]
             northing = lane_info.northing[idx]
         return utm.to_latlon(easting, northing, lane_info.utmzone, lane_info.utmletter)
 
-    # Patrick
-    def in_optimization_zone(self, vm):
-        # TODO:
-        return True
+    def in_optimization_zone(self, vm, lane):
+        """
+        Checks spatial and orientiation constraints 
+        to verify whether a vehicle is within a polygonal
+        zone that allows for it to be processed
+        by the optimization.
 
+        Uses a +-45 cone about the roading orientation.
+        If speed is near 0, returns False.
+    
+        N.b. in the future, for multi-lane roads,
+        change lane to road name 
+
+        :param vm: a parsed vehicle message
+        :type VehicleMsg: namedtuple
+        :param lane: the detected lane of the vehicle
+        :type int:
+        """
+        cone = 90 # cone angle
+        h_cone = cone/2 # half cone angle
+        opt_zone_info = self._inter_config_params["opt_zones"][lane]
+        query = geom.Point(vm.pos[0], vm.pos[1])
+        polygon = [geom.Point(x,y) for x,y in zip(opt_zone_info.easting, opt_zone_info.northing)]
+        spatial_constraint = geom.point_in_polygon(query, polygon)
+        # check for 0 speed
+        spd = np.sqrt((vm.vel[0] ** 2) + (vm.vel[1] ** 2))
+        if np.isclose(spd, 0, 0.1):
+            return False  # don't optimize when spd is approx 0
+        veh_heading = util.heading_from_velocity(vm.vel)
+        a = opt_zone_info.orientation - h_cone
+        b = opt_zone_info.orientation + h_cone
+        if a >= 0:
+            orientation_constraint = True if a <= veh_heading <= b else False
+        else: # Test these cases
+            b2 = b; b1 = 0
+            a2 = 360; a1 = a + 360
+            if b1 <= veh_heading <= b2 or a1 <= veh_heading <= a2:
+                orientation_constraint = True
+            else:
+                orientation_constraint = False
+        return spatial_constraint and orientation_constraint
 
 class Lanes:
     """
@@ -143,13 +237,17 @@ class Lanes:
         self.reset_first_unsrv_indx(num_lanes)
         self.last_veh_indx = np.zeros(num_lanes, dtype=np.int) - 1
 
-    # Patrick
     def find_and_return_vehicle_by_id(self, lane, veh_id):
         """Finds and returns the vehicle in the lane with
-        the query id.
+        the query id. If not present, returns None.
+
+        :param lane: the lane number for indexing into the vehlist
+        :type int:
+        :param veh_id: the detection id associated with the desired vehicle
+        :type string:
         """
-        for v in self.vehlist[lane]:
-            if v.det_id == veh_id:
+        for v in self.vehlist[lane-1]:
+            if v.ID == veh_id:
                 return v
         return None
 
@@ -319,20 +417,21 @@ class Vehicle:
         :param self.resched_dep: True if a vehicle is available to receive a new departure time,
         False if want to keep the previous trajectory
         :type self.resched_dep: bool
-        :param self.get_sched: True if a vehicle is just scheduled a **different** departure and is ready to be
-        assigned a new trajectory #TODO: Patrick - refactor to got_trajectory
-        :type self.get_sched: bool
+        :param self.got_trajectory: True if a vehicle is just scheduled a **different** departure and is 
+        assigned a new trajectory. Set within signal.py's ``solve`` method.
+        :type self.got_trajectory: bool
         :param self._call_reps_traj_planner: number of times a vehicle object trajectory is updated.
 
         .. note::
             - By definition ``scheduled_departure`` is always greater than or equal to ``earliest_arrival``.
             - It is important that user sets an ideal size of trajectory array by ``max_num_traj_points``.
             - A vehicle may be available to be rescheduled but gets the same departure time;
-            in that case, ``get_sched``  should hold False.
+            in that case, ``self.got_trajectory``  should hold False.
 
         """
         self.ID = det_id
         self.veh_type = det_type
+        # TODO: Where is this used?
         self.init_time = det_time
         self.length = length
         self.max_decel_rate = a_min
@@ -343,12 +442,16 @@ class Vehicle:
 
         self.trajectory = np.zeros((3, intersection._inter_config_params.get('max_num_traj_points')),
                                    dtype=np.float)
+        self.min_dist_to_stop_bar = intersection._inter_config_params.get("min_dist_to_stop_bar")
+        self.verbose = intersection._inter_config_params.get("print_commandline")
+        
         self.first_trj_point_indx, self.last_trj_point_indx = 0, -1
         # computed trajectory
         self.trajectory[:, self.first_trj_point_indx] = [det_time, dist, speed, ]
-        # Most recent position and speed
-        self.last_pos, self.last_speed = None, None
-
+        
+        # timestamp, distance from stopbar in meters, speed in m/s
+        self.current_state = np.array([float(det_time), dist, speed])
+        
         if det_type == 1:
             self.poly = {'ref. time': 0.0, 'coeffs': np.zeros(intersection._inter_config_params.get('k'))}
 
@@ -356,18 +459,17 @@ class Vehicle:
         self.scheduled_departure = 0.0
         self.resched_dep, self.got_trajectory = True, False
         self._call_reps_traj_planner = 0
-        # Patrick: Test
         # This is for grouping trajectories together during logging
         self._logging_id = id(self)
-
-    def set_sched_dep(self, t_scheduled, d_scheduled, s_scheduled, lane, veh_indx, intersection):
+            
+    def set_sched_dep(self, t_scheduled, d_scheduled, s_scheduled, lane, veh_indx):
         """
         It only schedules if the new departure time is different and vehicle is far enough for trajectory assignment
 
         .. note::
             - When a new vehicle is scheduled, it has two trajectory points: one for the current state and the other for the final state.
             - If the vehicle is closer than ``min_dist_to_stop_bar``, avoids appending the schedule.
-            - Set the ``get_sched`` to ``True`` only if vehicle is getting a new schedule and trajectory planning might become relevant.
+            - Set the ``got_trajectory`` to ``True`` only if vehicle is getting a new schedule and trajectory planning might become relevant.
             - Moves back the first trajectory point to make best use of limited size to store trajectory points
 
         :param t_scheduled: scheduled departure time (:math:`s`)
@@ -381,12 +483,8 @@ class Vehicle:
         assert all(map(operator.not_, np.isinf(
             [t_scheduled, d_scheduled, s_scheduled]))), "infinity found in the schedule"
 
-        min_dist_to_stop_bar = intersection._inter_config_params.get("min_dist_to_stop_bar")
-        # small_positive_num = intersection._inter_config_params.get("small_positive_num")
-
         det_time, det_dist, det_speed = self.get_arr_sched()
-        if det_dist >= min_dist_to_stop_bar:
-            # self.get_sched = True
+        if det_dist >= self.min_dist_to_stop_bar:
 
             self.set_first_trj_pt_indx(0)
             self.trajectory[:, 0] = [det_time, det_dist, det_speed]
@@ -394,7 +492,7 @@ class Vehicle:
             self.trajectory[:, 1] = [t_scheduled, d_scheduled, s_scheduled]
             self.scheduled_departure = t_scheduled
 
-            intersection._inter_config_params.get("print_commandline") and self.print_trj_points(lane, veh_indx, "@")
+            self.verbose and self.print_trj_points(lane, veh_indx, "@")
 
     def earliest_arr_cnv(self, max_speed, min_headway=0.0, t_earliest=0.0):
         """
@@ -477,7 +575,7 @@ class Vehicle:
         else:  # get full info and write trajectory points to the CSV file
             writer = csv.writer(file, delimiter=',')
             while time < time_threshold and trj_indx <= max_trj_indx:
-                writer.writerows([[sc, self.ID, self.veh_type, lane + 1, time, distance, speed]])
+                writer.writerows([[sc, self.ID, self.veh_type, lane + 1, time, distance, speed, self._call_reps_traj_planner]])
                 file.flush()
                 trj_indx += 1
                 time, distance, speed = self.trajectory[:, trj_indx]
@@ -591,65 +689,24 @@ class Vehicle:
             trj[0, i] = curr_foll_t + scale_factor * (trj[0, i] - curr_foll_t)
             trj[2, i] /= scale_factor
 
-    # Patrick
-    def update(self, vehicle_msg):
-        """TODO update information with latest vehicle data"""
-        # every .1 s we update the arrival position and speed (and delete the old trajectory)
-        # every 2 sec we get a new trajectory (and log it and send the IAM)
-        raise NotImplementedError
-
-
-class TrajectoryPlanner:
-    """
-    Plans trajectories of all type. This makes calls to **trajectory** classes.
-    # Todo: @Ash: explain planner and 4 optimizers briefly.
-    :Author:
-        Mahmoud Pourmehrab <pourmehrab@gmail.com>
-        Ash Omidvar <aschkan@ufl.edu>
-    :Date:
-        April-2018
-        Nov-2018
-    """
-
-    def __init__(self, intersection):
-        """Instantiates the **trajectory** classes"""
-
-        self.lead_conventional_trj_estimator = LeadConventional(intersection)
-        self.lead_connected_trj_optimizer = LeadConnected(intersection)
-        self.follower_conventional_trj_estimator = FollowerConventional(intersection)
-        self.follower_connected_trj_optimizer = FollowerConnected(intersection)
-
-        self._max_speed = intersection._inter_config_params.get('max_speed')
-
-    def plan_trajectory(self, lanes, veh, lane, veh_indx, intersection, identifier):
+    def update(self, veh_type, det_time, dist_from_stopbar, speed):
+        """ 
+        Update vehicle type, current state, and trajectory
+        with latest vehicle data from real-time sensing
+        
+        :param veh_type: the level of connectivity (CNV or CAV)
+        :type int:
+        :param det_time: the relative time in seconds when this message
+        was received
+        :type float:
+        :dist_from_stopbar: distance in meters from the stop bar of the lane
+        :type float:
+        :param speed: vehicle speed
+        :type float:
         """
-        :param lanes:
-        :type lanes: Lanes
-        :param veh:
-        :type veh: Vehicle
-        :param lane:
-        :param veh_indx:
-        :param intersection:
-        :param identifier: Shows type of assigned trajectory
-
-        """
-
-        veh.inc_traj_planner_calls()
-        veh_type, departure_time = veh.veh_type, veh.scheduled_departure
-        if veh_indx > 0 and veh_type == 1:  # Follower CAV
-            lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
-            model = self.follower_connected_trj_optimizer.set_model(veh, lead_veh)
-            self.follower_connected_trj_optimizer.solve(veh, lead_veh, model)
-        elif veh_indx > 0 and veh_type == 0:  # Follower Conventional
-            lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
-            self.follower_conventional_trj_estimator.solve(veh, lead_veh)
-        elif veh_indx == 0 and veh_type == 1:  # Lead CAV
-            model = self.lead_connected_trj_optimizer.set_model(veh)
-            self.lead_connected_trj_optimizer.solve(veh, None, model)
-        elif veh_indx == 0 and veh_type == 0:  # Lead Conventional
-            self.lead_conventional_trj_estimator.solve(veh)
-        else:
-            raise Exception('One of lead/follower conventional/connected should have occurred.')
-
-        # ToDo @Ash: distinguish the tracks.
-        intersection._inter_config_params.get("print_commandline") and veh.print_trj_points(lane, veh_indx, identifier)
+        self.veh_type = veh_type
+        self.current_state = np.array([det_time, dist_from_stopbar, speed])
+        # Update the first trj point so a new trajectory is computed based on latest info
+        if dist_from_stopbar > self.min_dist_to_stop_bar:
+            # TODO: Do i need to call self.reset_trj_points?
+            self.trajectory[:, self.first_trj_point_indx] = [det_time, dist_from_stopbar, speed]

@@ -8,149 +8,122 @@ from src.intersection import Vehicle
 
 class RealTimeTraffic:
     """
-    TODO
+    This class provides methods for processing the data received from the sensor fusion module 
+    in real-time. It extracts vehicle data and updates the necessary data structures.
     """
 
-    def __init__(self, vehicle_data_queue, track_split_merge_queue, cav_traj_queue, intersection, sc, args):
+    def __init__(self, vehicle_data_queue, track_split_merge_queue, cav_traj_queue,
+            init_time_stamp, intersection, args):
         """
+        Initializes the RealTimeTraffic object. Stores a timestamp, time_since_last_arrival,
+        which can be used to get the elapsed time since the last vehicle message has been received.
+
+        :param vehicle_data_queue: The shared queue that gets populated with new traffic data 
+        msgs from the sensor fusion
+        :type vehicle_data_queue: deque
+        :param track_split_merge_queue: The shared queue that gets populated with 
+        track split/merge messages from the sensor fusion
+        :type track_split_merge_queue: deque
+        :param cav_traj_queue: The shared queue that this class populates with outgoing messages
+        to be sent via DSRC
+        :type cav_traj_queue: deque
+        :param init_time_stamp: datetime timestamp, used for initializing the
+        time_of_last_arrival member
+        :type init_time_stamp: Datetime
+        :param intersection: the global intersection object
+        :type intersection: Intersection
+        :param args: the runtime args
+        :type args: Namespace
         """
         self.intersection = intersection
-        inter_name = args.intersection
-        # set the scenario number
-        self.scenario_num = sc
+        self.scenario_num = args.sc
         self._print_commandline = intersection._inter_config_params.get('print_commandline')
         self._vehicle_data_queue = vehicle_data_queue
         self._track_split_merge_queue = track_split_merge_queue
         self._cav_traj_queue = cav_traj_queue
+        self.time_of_last_arrival = init_time_stamp
         if args.do_logging:
-            pass
-            # df_size = len(self.__all_vehicles)
-            # self._auxilary_departure_times = np.zeros(df_size, dtype=np.float)
-            # self._auxilary_ID = ['' for i in range(df_size)]
-            # self._auxilary_num_sent_to_trj_planner = np.zeros(df_size, dtype=np.int8)
-
-            # # open a file to store trajectory points
-            # filepath_trj = os.path.join('log/' + inter_name + '/' + start_time_stamp + '_' + str(
-            #     self.scenario_num) + '_trj_point_level.csv')
-            # self.full_traj_csv_file = open(filepath_trj, 'w', newline='')
-            # writer = csv.writer(self.full_traj_csv_file, delimiter=',')
-            # writer.writerow(['sc', 'VehID', 'type', 'lane', 'time', 'distance', 'speed'])
-            # self.full_traj_csv_file.flush()
+            # open a file to store trajectory points
+            filepath_trj = os.path.join(args.log_dir, 'trj_point_level.csv')
+            self.full_traj_csv_file = open(filepath_trj, 'w', newline='')
+            writer = csv.writer(self.full_traj_csv_file, delimiter=',')
+            writer.writerow(['sc', 'VehID', 'type', 'lane', 'time', 'distance', 'speed', 'calls to traj planner'])
+            self.full_traj_csv_file.flush()
         else:
             self.full_traj_csv_file = None
 
-    def get_traffic_info(self, lanes):
+    def get_traffic_info(self, lanes, time_tracker):
         """
-        Objectives
-            - Appends arrived vehicles from the CSV file to :any:`Lanes`
-            - Assigns their earliest arrival time
+        Reads any new data from shared queues and processes it
+        appropriately.
 
         :param lanes: vehicles are added to this data structure
         :type lanes: Lanes
+        :param time_tracker: Timer object for grabbing elapsed time since start
         """
-        # Read latest msgs from queues
-        if self._track_split_merge_queue.count() != 0:
+        # Read latest msg from track split/merge queue
+        if len(self._track_split_merge_queue) != 0:
             self._track_split_merge_queue.pop()
             # Handle track split/merge msgs - TODO
 
-        if self._vehicle_data_queue.count() != 0:
+        # Read latest msg from vehicle data queue
+        if len(self._vehicle_data_queue) != 0:
+            _, self.time_of_last_arrival = time_tracker.get_time()
             vehicle_data_msgs = self._vehicle_data_queue.pop()
             # Lane detection
             for vm in vehicle_data_msgs:
+                # 1-based indexing
                 lane = self.intersection.detect_lane(vm)
-                if lane < 0:
+                if lane == -1:
                     continue
                 # check if the vehicle is already in this lane
                 veh_id = vm.track_id + ":" + vm.dsrc_id
+                det_id = veh_id
+                det_type = vm.veh_type
+                det_time, _ = time_tracker.get_time(vm.timestamp)
+                # Convert vehicle state to lane-centric coordinates; essentially, 
+                # a 1D coordinate system where the origin is the stopbar of the detected lane.
+                dist = self.intersection.UTM_to_distance_from_stopbar(vm.pos[0], vm.pos[1], lane)
+                speed = np.sqrt(vm.vel[0] ** 2 + vm.vel[1] ** 2)
+
+                # vehlist is 0-based and find_and.. automatically 
+                # computes lane-1.
                 v = lanes.find_and_return_vehicle_by_id(lane, veh_id)
+
                 if v is None:
                     # in the optimization zone?
-                    if self.intersection.in_optimization_zone(vm):
+                    if self.intersection.in_optimization_zone(vm, lane):
                         # convert vehicle message to Vehicle
-                        det_id = vm.track_id + ":" + vm.dsrc_id
-                        det_type = vm.veh_type
-                        # det_time = # ?
-                        dist = self.intersection.UTM_to_distance_from_stopbar(vm.pos[0], vm.pos[1], lane)
-                        speed = np.sqrt(vm.speed[0] ** 2 + vm.speed[1] ** 2)
-                        # des_speed = ? intersection speed limit?
-                        # dest = "" # ?
+                        des_speed = self.intersection._inter_config_params["max_speed"]
+                        #TODO dest = "" # ?
+                        dest = 1
                         length = vm.veh_len
                         amin = vm.max_decel
                         amax = vm.max_accel
 
-                        # indx?
                         veh = Vehicle(det_id, det_type, det_time, speed, dist, des_speed, dest, length, amin, amax,
-                                      indx,
-                                      self.intersection)
+                                      None, self.intersection)
 
                         self._print_commandline and print(
                             r'\\\ ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane).zfill(
                                 2) + ':' + '({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s)'.format(det_time, dist, speed))
 
                         # append it to its lane
-                        lanes.vehlist[lane] += [veh]  # recall it is an array
-                        lanes.inc_last_veh_pos(lane)
-                        indx += 1
+                        lanes.vehlist[lane-1] += [veh]  # recall it is an array
+                        lanes.inc_last_veh_pos(lane-1)
+                    else:
+                        # TODO: when debugging, print or log here
+                        pass
                 else:
-                    # TODO
+                    # TODO: vehicle gets purged bc current state is 0 before this ever gts called
                     # update v with latest data
-                    v.update(vm)
-
+                    v.update(det_type, det_time, dist, speed)
         # N.b. eventually, add a flagging system so only vehicles with changes made to them 
         #   get new trajectories, to save on computation
 
-    # TODO: This is all logging stuff that needs to be re-done for real time
-    # Need to store all trajectories when before and after update
-    # def set_row_vehicle_level_csv(self, dep_time, veh):
-    #     """
-    #     Sets the departure time of an individual vehicle that is just served.
-    #
-    #     :param dep_time: departure time in seconds
-    #     :param veh: subject vehicle to be recorder
-    #     :type veh: Vehicle
-    #     """
-    #     indx = veh.csv_indx
-    #     self._auxilary_departure_times[indx] = dep_time
-    #     self._auxilary_ID[indx] = veh.ID
-    #     self._auxilary_num_sent_to_trj_planner[indx] = veh._call_reps_traj_planner
-
-    # def save_veh_level_csv(self, inter_name, start_time_stamp):
-    #     """
-    #     Set the recorded values and save the  CSV at vehicle level.
-    #
-    #     :param inter_name: intersection name
-    #     :param start_time_stamp: local time stamp to include in the CSV filename
-    #     """
-    #     self.__all_vehicles['departure time'] = self._auxilary_departure_times
-    #     self.__all_vehicles['ID'] = self._auxilary_ID
-    #     self.__all_vehicles['times_sent_to_trj_planner'] = self._auxilary_num_sent_to_trj_planner
-    #
-    #     filepath = os.path.join(
-    #         'log/' + inter_name + '/' + start_time_stamp + '_' + str(self.scenario_num) + '_trj_veh_level.csv')
-    #     self.__all_vehicles.to_csv(filepath, index=False)
-
-    # def close_trj_csv(self):
-    #     """Closes trajectory CSV file."""
-    #     self.full_traj_csv_file.close()
-    #
-    # def last_veh_arr(self):
-    #     """
-    #     :return: True if all vehicles from the input CSV have been added at some point.
-    #
-    #     .. note::
-    #         The fact that all vehicles are *added* does not equal to all *served*. Thus, we check if any vehicle is in
-    #          any of the incoming lanes before halting the program.
-    #     """
-    #     if self._current_row_indx + 1 >= self.__all_vehicles.shape[0]:
-    #         return True
-    #     else:
-    #         return False
-    #
-    # def get_first_det_time(self):
-    #     """
-    #     :return: The time when the first vehicle in current scenario shows up. Assumes the CSV file is not sorted in arrival time.
-    #     """
-    #     return np.nanmin(self.__all_vehicles['arrival time'].values)
+    def close_trj_csv(self):
+         """Closes trajectory CSV file."""
+         self.full_traj_csv_file.close()
 
     @staticmethod
     def get_volumes(lanes, intersection):
@@ -186,6 +159,9 @@ class RealTimeTraffic:
     def serve_update_at_stop_bar(self, lanes, elapsed_time, intersection):
         """
         To remove the served vehicles and print proper notification.
+        In realtime mode, vehicles are removed based on whether
+        the most recent position as provided by the sensor fusion
+        has them currently crossing the stop bar.
 
         :param lanes: includes all the vehicles in all lanes
         :type lanes: Lanes
@@ -195,36 +171,45 @@ class RealTimeTraffic:
 
         """
         num_lanes = intersection._inter_config_params.get('num_lanes')
-        for lane in range(num_lanes):
+        for lane in range(num_lanes): # 0-based indexing for lanes internally
             if bool(lanes.vehlist.get(lane)):  # not an empty lane
                 last_veh_indx_to_remove = -1
                 for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
                     det_time, _, _ = veh.get_arr_sched()
-                    dep_time, _, _ = veh.get_dep_sched()
-                    assert dep_time > 0, "no departure is set"
-                    if dep_time < elapsed_time:  # record/remove departure
+                    if veh.current_state[1] <= 0.:# distance from stop bar (m)
+                        dep_time, _, _ = veh.get_dep_sched()
+                        #if dep_time != 0:
+                        #    if dep_time < elapsed_time:  # record/remove departure
                         last_veh_indx_to_remove += 1
                         intersection._inter_config_params.get('print_commandline') and print(
                             '/// ' + veh.map_veh_type2str(veh.veh_type) + ':' + veh.ID + '@({:>4.1f} s)'.format(
                                 dep_time))
                         # self._log_csv and self.set_row_vehicle_level_csv(dep_time, veh)
+                    # TODO: det_time is not defined
                     elif det_time < elapsed_time:  # record/remove expired points
                         veh.reset_trj_pts(self.scenario_num, lane, elapsed_time, self.full_traj_csv_file)
-
-                    else:  # det_time of all behind this vehicle is larger, so we can stop.
+                    #
+                    else:  # distance from stop bar of all behind this vehicle is larger, so we can stop.
                         break
 
                 last_veh_indx_to_remove > -1 and lanes.remove_srv_vehs(lane, last_veh_indx_to_remove)
 
-    def publish(self, lanes):
-        # Push vehicles with a DSRC id out to the TrafficPublisher
+    def publish(self, lanes, curr_time):
+        """
+        Push vehicles with a DSRC id out to the TrafficPublisher,
+        which will parse the trajectories into an IAM
+        message and relay it via DSRC.
+
+        :param lanes: the Lane data structure
+        :curr_time: the absolute time stamp
+        """
         num_lanes = self.intersection._inter_config_params.get('num_lanes')
         for lane in range(num_lanes):
             if bool(lanes.vehlist.get(lane)):  # not an empty lane
                 for veh in lanes.vehlist.get(lane):
-                    dsrc_id = veh.det_id.split(":")[1]
+                    dsrc_id = veh.ID.split(":")[1]
                     if dsrc_id != "" and veh.got_trajectory:
-                        self._cav_traj_queue.append(veh)
+                        self._cav_traj_queue.append((veh, lane, curr_time))
 
 
 class SimTraffic:
@@ -296,6 +281,8 @@ class SimTraffic:
             self.full_traj_csv_file.flush()
         else:
             self.full_traj_csv_file = None
+        
+        self.time_of_last_arrival = 0
 
     def get_traffic_info(self, lanes, simulation_time, intersection):
         """
@@ -339,6 +326,7 @@ class SimTraffic:
             lanes.vehlist[lane] += [veh]  # recall it is an array
             lanes.inc_last_veh_pos(lane)
             indx += 1
+            self.time_of_last_arrival = simulation_time
 
         # to keep track of how much of CSV is processed
         self._current_row_indx = indx - 1
@@ -462,6 +450,9 @@ class SimTraffic:
 
                 last_veh_indx_to_remove > -1 and lanes.remove_srv_vehs(lane, last_veh_indx_to_remove)
 
-    def publish(self, lanes):
+    def publish(self, lanes, curr_time):
         """TODO: incrementally write to CSV """
+        #mport pickle
+        #import pdb; pdb.set_trace()
+        #print("save here")
         pass
