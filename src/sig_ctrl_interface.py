@@ -32,10 +32,9 @@ def snmpSet(OID, Value):
     elif errorStatus:
         print('%s at %s' % (errorStatus.prettyPrint(),
                             errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
-    else:
-        for varBind in varBinds:
-            print(' = '.join([x.prettyPrint() for x in varBind]))
-
+    #else:
+    #    for varBind in varBinds:
+    #        print(' = '.join([x.prettyPrint() for x in varBind]))
 
 def snmpTranslate(List):
     """
@@ -188,6 +187,10 @@ def snmp_phase_ctrl(Phase, inter_name):
         Send command to ASC
     """
     num_phase, al, non, nonConflict = get_sig_ctrl_interface_params(inter_name)
+    #num_phase = 4
+    #al = range(1, num_phase + 1)
+    #non = [0]
+    #nonConflict = [[1,2], [4, 3]]
 
     snmpHold(list(al))
     snmpHold(list(non))
@@ -198,4 +201,4 @@ def snmp_phase_ctrl(Phase, inter_name):
             snmpOmit([i for i in al if i not in nonConflict[p]])
 
 # Quickstart Test
-# snmp_phase_ctrl(4, "RTS")
+#snmp_phase_ctrl(4, "RTS")

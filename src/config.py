@@ -407,7 +407,7 @@ def load_inter_params(inter_name):
 # -------------------------------------------------------
 # SIGNAL CONTROLLER PARAMETERS
 # -------------------------------------------------------
-# TODO add intersection-specific inputs above, under `load_inter_params(inter_name)`
+# add intersection-specific inputs above, under `load_inter_params(inter_name)`
 def get_sig_ctrl_interface_params(inter_name):
     """
     :return:
