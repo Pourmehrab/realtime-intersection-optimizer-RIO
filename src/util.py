@@ -75,9 +75,12 @@ def periodic_sleep(period):
     t = datetime(timenow.year, timenow.month, timenow.day,
             timenow.hour, timenow.minute, timenow.second, 0)
     splits = [t]
-    for _ in range(int(1./period)):
-        t = t + time_dt
-        splits.append(t)
+    if period < 1.:
+        for _ in range(int(1./period)):
+            t = t + time_dt
+            splits.append(t)
+    else:
+        splits.append(t + time_dt)
     # get next largest
     next_time_split = splits[0]
     for sp in splits:

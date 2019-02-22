@@ -104,18 +104,20 @@ def run_rio(args):
                 signal.solve(lanes, intersection, trajectory_generator, absolute_time)
                 # Send out IAMs to all CAVs
                 traffic.publish(lanes, absolute_time)
-            optimizer_call_ctr += 1
+                
+                # call the proper phase on ATC Controller
+                if args.run_with_signal_control:
+                    snmp_phase_ctrl(signal.SPaT_sequence[0]+1, args.intersection)
 
-            # call the proper phase on ATC Controller
-            if args.run_with_signal_control:
-                start = time.time()
-                snmp_phase_ctrl(signal.SPaT_sequence[0], args.intersection)
-                print("diff: {}".format(time.time() - start))
+            optimizer_call_ctr += 1
 
             # Wrap up and log
             if (args.mode == "sim" and (traffic.last_veh_arr() and lanes.all_served(num_lanes))) or \
                     (args.mode == "realtime" and (args.run_duration < elapsed_time)):
                 if args.do_logging:
+                    
+                    # TODO: FIX REALTIME LOGGING
+
                     # elapsed_process_time = perf_counter() - t_start
                     # timer.log_time_stats(sc, inter_name, start_time_stamp, elapsed_process_time, )  # log timings
                     traffic.save_veh_level_csv(args.intersection, start_time_stamp_name)
@@ -124,14 +126,19 @@ def run_rio(args):
                     intersection._inter_config_params.get("print_commandline") and print(
                         "\n### Elapsed Process Time: {:>5d} ms ###".format(int(1_000 * elapsed_time)),
                         "\n### Actual RIO run start time: {:>5d} micro sec. ###".format(int(1_000_000 * t_start)))
+                if args.mode == "realtime":
+                    tl.stop()
+                    tp.stop()
                 break
             time_tracker.step()
 
     except KeyboardInterrupt:
         print("RIO got KeyboardInterrupt, shutting down threads")
         # close
-        tl.stop()
-        tp.stop()
+
+        if args.mode == "realtime":
+            tl.stop()
+            tp.stop()
 
 
 if __name__ == "__main__":

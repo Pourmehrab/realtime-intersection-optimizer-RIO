@@ -4,6 +4,7 @@ from collections import deque, namedtuple
 import datetime
 import numpy as np
 import os
+import time
 
 VehicleMsg = namedtuple('VehicleMsg', 
         ['timestamp', 
@@ -266,6 +267,7 @@ class TrafficPublisher(StoppableThread):
                 self._IAM_publisher.sendto(next_IAM, (self.ip, self.port))
                 if self.do_logging:
                     self.log_file.write(str(timestamp) + " " + next_IAM + "\n")
+            time.sleep(0.1)
         self._IAM_publisher.close()
         if self.do_logging:
             self.log_file.close()
