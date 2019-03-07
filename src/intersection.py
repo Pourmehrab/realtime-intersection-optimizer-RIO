@@ -236,6 +236,7 @@ class Lanes:
         self.vehlist = {l: [] for l in range(num_lanes)}
         self.reset_first_unsrv_indx(num_lanes)
         self.last_veh_indx = np.zeros(num_lanes, dtype=np.int) - 1
+        self.count = {l: 0 for l in range(num_lanes)}
 
     def find_and_return_vehicle_by_id(self, lane, veh_id):
         """Finds and returns the vehicle in the lane with
@@ -309,6 +310,7 @@ class Lanes:
         """
         del self.vehlist.get(lane)[0:indx + 1]
         num_served = indx + 1
+        self.count[lane] += indx+1
         self.dec_first_unsrvd_pos(lane, num_served)
         self.dec_last_veh_pos(lane, num_served)
 
@@ -447,11 +449,12 @@ class Vehicle:
         
         self.first_trj_point_indx, self.last_trj_point_indx = 0, -1
         # computed trajectory
-        self.trajectory[:, self.first_trj_point_indx] = [det_time, dist, speed, ]
+        self.trajectory[:, self.first_trj_point_indx] = [float(det_time), dist, speed] 
         
         # timestamp, distance from stopbar in meters, speed in m/s
         self.current_state = np.array([float(det_time), dist, speed])
-        
+        self.arrival_info = self.current_state
+
         if det_type == 1:
             self.poly = {'ref. time': 0.0, 'coeffs': np.zeros(intersection._inter_config_params.get('k'))}
 
@@ -549,7 +552,7 @@ class Vehicle:
         assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
         self.earliest_departure = t
 
-    def reset_trj_pts(self, sc, lane, time_threshold, file):
+    def update_trj_pts(self, sc, lane, time_threshold, file):
         """
         Writes the trajectory points in the log file if the time stamp is before the ``time_threshold``
         and then removes those points by updating the pointer to the first trajectory point.
@@ -566,7 +569,7 @@ class Vehicle:
         """
         trj_indx, max_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx
         time, distance, speed = self.get_arr_sched()
-
+        
         if file is None:  # don't have to write CSV
             while time < time_threshold and trj_indx <= max_trj_indx:
                 trj_indx += 1
@@ -575,7 +578,7 @@ class Vehicle:
         else:  # get full info and write trajectory points to the CSV file
             writer = csv.writer(file, delimiter=',')
             while time < time_threshold and trj_indx <= max_trj_indx:
-                writer.writerows([[sc, self.ID, self.veh_type, lane + 1, time, distance, speed, self._call_reps_traj_planner]])
+                writer.writerows([[sc, self.ID, self.veh_type, lane+1, time, distance, speed, self._call_reps_traj_planner]])
                 file.flush()
                 trj_indx += 1
                 time, distance, speed = self.trajectory[:, trj_indx]

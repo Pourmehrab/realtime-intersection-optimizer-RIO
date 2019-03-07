@@ -85,7 +85,7 @@ def run_rio(args):
                     absolute_time))
 
             # update the assigned trajectories
-            traffic.serve_update_at_stop_bar(lanes, elapsed_time, intersection)
+            traffic.update_trj_or_serve_at_stop_bar(lanes, elapsed_time, intersection)
 
             # add/update the vehicles
             if args.mode == "sim":
@@ -98,7 +98,7 @@ def run_rio(args):
 
             if optimizer_call_ctr % solve_freq == 0:
                 # update SPaT
-                time_since_last_arrival, _ = time_tracker.get_time(traffic.time_of_last_arrival)
+                time_since_last_arrival = traffic.get_time_since_last_arrival()
                 signal.update_SPaT(intersection, elapsed_time, args.sc, time_since_last_arrival, absolute_time)
                 # perform signal optimization
                 signal.solve(lanes, intersection, trajectory_generator, absolute_time)
