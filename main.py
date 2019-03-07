@@ -116,11 +116,12 @@ def run_rio(args):
                     (args.mode == "realtime" and (args.run_duration < elapsed_time)):
                 if args.do_logging:
                     
-                    # TODO: FIX REALTIME LOGGING
-
                     # elapsed_process_time = perf_counter() - t_start
                     # timer.log_time_stats(sc, inter_name, start_time_stamp, elapsed_process_time, )  # log timings
-                    traffic.save_veh_level_csv(args.intersection, start_time_stamp_name)
+                    if args.mode == "sim":
+                        traffic.save_veh_level_csv(args.intersection, start_time_stamp_name)
+                    if args.mode == "realtime":
+                        traffic.close_arrs_deps_csv()
                     traffic.close_trj_csv()
                     signal.close_sig_csv()
                     intersection._inter_config_params.get("print_commandline") and print(
