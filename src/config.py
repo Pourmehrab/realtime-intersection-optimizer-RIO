@@ -234,6 +234,79 @@ def load_inter_params(inter_name):
             # FIXME: with what you see above and the schematic map I sent you. I believe for UTC demo you used the
             # FIXME: lane number as annotated on the map I sent you. Alternatively, let me know and I'll change phasing according to your lane numbers.
         }
+    elif inter_name == "TERL":
+        return {
+            "max_speed": 17.8816,  # 40 mph
+            "min_CAV_headway": 1.5,
+            "min_CNV_headway": 2.0,
+            "det_range": tuple([500.0] * 6),
+            "k": int(20),
+            "m": int(40),
+            "num_lanes": int(6),
+            "phase_cover_set": (0, 1, 2, 3,),
+            "small_positive_num": 0.01,
+            "large_positive_num": 999_999_999,
+            "lli": {0: {1, 2, 3, 4, 5, },
+                    1: {0, 3, 5, },
+                    2: {0, 3, 4, },
+                    3: {0, 1, 2, 4, 5},
+                    4: {0, 2, 3, },
+                    5: {0, 1, 3, }, },
+            "pli": {0: {0, },  # Southbound (signal controller: phase 2)
+                    1: {4, 5, },  # Eastbound (signal controller: phase 3)
+                    2: {1, 2, },  # Westbound (signal controller: phase 4)
+                    3: {3, },  # Northbound (signal controller: phase 6)
+                    4: {1, 4, },  # dual opposite throughs
+                    5: {2, 5, },  # dual left turns
+                    },
+            "allowable_phases": (0, 1, 2, 3,),
+            "yellow": 1.5,
+            "allred": 1.5,
+            "min_green": 4.6,
+            "max_green": 25.0,
+            "lag_on_green": 1.0,
+            "max_num_traj_points": int(1_000),
+            "min_dist_to_stop_bar": 50,
+            "do_traj_computation": True,
+            "trj_time_resolution": 1.0,
+
+            "print_commandline": True,
+        }
+    elif inter_name == "Gale&Std":
+        return {
+            "max_speed": 15.0,
+            "min_CAV_headway": 1.5,
+            "min_CNV_headway": 2.0,
+            "det_range": tuple([500.0] * 8),
+            "k": int(20),
+            "m": int(40),
+            "num_lanes": int(8),
+            "phase_cover_set": (0, 1, 2, 3,),
+            "small_positive_num": 0.01,
+            "large_positive_num": 999_999_999,
+            "lli": None,  # todo add
+            "pli": {0: {0, 1},  # South Bound
+                    1: {2, 3},  # West Bound
+                    2: {4, 5},  # North Bound
+                    3: {6, 7},  # East Bound
+                    4: {0, 4},  # D th
+                    5: {2, 6},  # D th
+                    6: {1, 5},  # D l
+                    7: {3, 7},  # D l
+                    },
+            "allowable_phases": (0, 1, 2, 3,),
+            "yellow": 3.0,
+            "allred": 1.5,
+            "min_green": 5.0,
+            "max_green": 25.0,
+            "lag_on_green": 1.0,
+            "max_num_traj_points": int(1_000),
+            "min_dist_to_stop_bar": 50,
+            "do_traj_computation": True,
+            "trj_time_resolution": 1.0,
+
+            "print_commandline": True,
+        }
     else:
         raise Exception("Simulation parameters are not known for this intersection.")
 
