@@ -132,8 +132,7 @@ class Signal:
 
         :param absolute_time: Normally the current opt_clock of simulation or real-time in :math:`s`
         :param sc: scenario number to be recorded in CSV
-        :param time_since_last_arrival: in realtime, the absolute Datetime timestamp or in sim mode,
-        the number of seconds since start from the last vehicle message received
+        :param time_since_last_arrival: the number of seconds since the last vehicle message received
         :param timestamp: the current Datetime timestamp, for recording in the CSV
 
         :Author:

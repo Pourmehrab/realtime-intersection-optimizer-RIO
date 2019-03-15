@@ -86,7 +86,7 @@ def test_serve_update_at_stopbar():
         listener.handle(msg)
         rt_traffic.get_traffic_info(lanes, time_tracker)
 
-    rt_traffic.serve_update_at_stop_bar(lanes, time_tracker.get_time()[0], inter)
+    rt_traffic.update_trj_or_serve_at_stop_bar(lanes, time_tracker.get_time()[0], inter)
     assert lanes.find_and_return_vehicle_by_id(1, "0:6234496") is None
 
 def test_traffic_publish():

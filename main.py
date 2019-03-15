@@ -85,7 +85,7 @@ def run_rio(args):
                     absolute_time))
 
             # update the assigned trajectories
-            traffic.serve_update_at_stop_bar(lanes, elapsed_time, intersection)
+            traffic.update_trj_or_serve_at_stop_bar(lanes, elapsed_time, intersection)
 
             # add/update the vehicles
             if args.mode == "sim":
@@ -98,7 +98,7 @@ def run_rio(args):
 
             if optimizer_call_ctr % solve_freq == 0:
                 # update SPaT
-                time_since_last_arrival, _ = time_tracker.get_time(traffic.time_of_last_arrival)
+                time_since_last_arrival = traffic.get_time_since_last_arrival(absolute_time)
                 signal.update_SPaT(intersection, elapsed_time, args.sc, time_since_last_arrival, absolute_time)
                 # perform signal optimization
                 signal.solve(lanes, intersection, trajectory_generator, absolute_time)
@@ -116,11 +116,12 @@ def run_rio(args):
                     (args.mode == "realtime" and (args.run_duration < elapsed_time)):
                 if args.do_logging:
                     
-                    # TODO: FIX REALTIME LOGGING
-
                     # elapsed_process_time = perf_counter() - t_start
                     # timer.log_time_stats(sc, inter_name, start_time_stamp, elapsed_process_time, )  # log timings
-                    traffic.save_veh_level_csv(args.intersection, start_time_stamp_name)
+                    if args.mode == "sim":
+                        traffic.save_veh_level_csv(args.intersection, start_time_stamp_name)
+                    if args.mode == "realtime":
+                        traffic.close_arrs_deps_csv()
                     traffic.close_trj_csv()
                     signal.close_sig_csv()
                     intersection._inter_config_params.get("print_commandline") and print(
