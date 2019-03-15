@@ -358,7 +358,6 @@ class MCF_SPaT(Signal):
             self._mcf_model.variables.set_upper_bounds([("p" + str(phase_indx) + "p" + str(phase_indx),
                                                          sum([demand[lane] for lane in phase])) for
                                                         phase_indx, phase in self._phase_lane_incidence.items()])
-            self._mcf_model.write("mcf.lp")
 
             try:
                 self._mcf_model.solve()
