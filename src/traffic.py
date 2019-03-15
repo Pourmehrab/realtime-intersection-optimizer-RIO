@@ -13,7 +13,7 @@ class RealTimeTraffic:
     """
 
     def __init__(self, vehicle_data_queue, track_split_merge_queue, cav_traj_queue,
-            init_time_stamp, intersection, args):
+                 init_time_stamp, intersection, args):
         """
         Initializes the RealTimeTraffic object. Stores a float, time_since_last_arrival,
         which can be used to get the elapsed time since the last vehicle message has been received.
@@ -109,7 +109,7 @@ class RealTimeTraffic:
                     if self.intersection.in_optimization_zone(vm, lane):
                         # convert vehicle message to Vehicle
                         des_speed = self.intersection._inter_config_params["max_speed"]
-                        #TODO dest = "" # ?
+                        # TODO dest = "" # ?
                         dest = 1
                         length = vm.veh_len
                         amin = vm.max_decel
@@ -123,8 +123,8 @@ class RealTimeTraffic:
                                 2) + ':' + '({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s)'.format(det_time, dist, speed))
 
                         # append it to its lane
-                        lanes.vehlist[lane-1] += [veh]  # recall it is an array
-                        lanes.inc_last_veh_pos(lane-1)
+                        lanes.vehlist[lane - 1] += [veh]  # recall it is an array
+                        lanes.inc_last_veh_pos(lane - 1)
                     else:
                         # TODO: when debugging, print or log here
                         pass
@@ -136,8 +136,8 @@ class RealTimeTraffic:
         #   get new trajectories, to save on computation
 
     def close_trj_csv(self):
-         """Closes trajectory CSV file."""
-         self.full_traj_csv_file.close()
+        """Closes trajectory CSV file."""
+        self.full_traj_csv_file.close()
 
     def close_arrs_deps_csv(self):
         """Closes arrivals and deps csv file"""
@@ -203,12 +203,12 @@ class RealTimeTraffic:
 
         """
         num_lanes = intersection._inter_config_params.get('num_lanes')
-        for lane in range(num_lanes): # 0-based indexing for lanes internally
+        for lane in range(num_lanes):  # 0-based indexing for lanes internally
             if bool(lanes.vehlist.get(lane)):  # not an empty lane
                 last_veh_indx_to_remove = -1
                 for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
                     det_time, _, _ = veh.get_arr_sched()
-                    if veh.current_state[1] <= 0.:# distance from stop bar (m)
+                    if veh.current_state[1] <= 0.:  # distance from stop bar (m)
                         dep_time, _, _ = veh.get_dep_sched()
                         last_veh_indx_to_remove += 1
                         intersection._inter_config_params.get('print_commandline') and print(
@@ -352,11 +352,11 @@ class SimTraffic:
                           intersection)
 
             self._print_commandline and print(
-                r'\\\ ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane).zfill(
+                r'\\\ ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane + 1).zfill(
                     2) + ':' + '({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s)'.format(det_time, dist, speed))
 
             # append it to its lane
-            lanes.vehlist[lane] += [veh]  # recall it is an array
+            lanes.vehlist[lane] += [veh]  # recall it is a list
             lanes.inc_last_veh_pos(lane)
             indx += 1
             self.time_since_last_arrival = simulation_time
@@ -485,7 +485,7 @@ class SimTraffic:
 
     def publish(self, lanes, curr_time):
         """TODO: incrementally write to CSV """
-        #mport pickle
-        #import pdb; pdb.set_trace()
-        #print("save here")
+        # mport pickle
+        # import pdb; pdb.set_trace()
+        # print("save here")
         pass

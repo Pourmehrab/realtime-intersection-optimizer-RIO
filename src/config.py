@@ -195,54 +195,44 @@ def load_inter_params(inter_name):
     lane_info = load_lane_geom(inter_name)
     opt_zone_info = load_optimization_zone_constraints(inter_name)
 
-    if inter_name == "13th16th":
+    if inter_name == "RTS":
         return {
-            "max_speed": 15.0,
-            "min_CAV_headway": 2.0,
-            "min_CNV_headway": 3.0,
-            "det_range": tuple([500.0] * 16),
-            "k": int(10),
-            "m": int(20),
-            "num_lanes": int(16),
-            "phase_cover_set": (17, 9, 8, 15,),
+            "max_speed": 6.7,  # m/s (24 kph)
+            "min_CAV_headway": 1.5,
+            "min_CNV_headway": 2.0,
+            "det_range": (240, 300, 80, 100,),
+            "k": int(4),
+            "m": int(40),
+            "num_lanes": int(4),
+            "phase_cover_set": (0, 1,),
             "small_positive_num": 0.01,
             "large_positive_num": 999_999_999,
-            "lli": {0: {6},
-                    1: {6, 7, 11, 12, 13, 14, 15},
-                    2: {6, 7, 8, 11, 13, 14, 15},
-                    3: {6, 7, 8, 9, 10, 14, 15},
-                    4: {6, 7, 8, 9, 10, 13, 14, 15},
-                    5: {9},
-                    6: {0, 1, 2, 3, 4, 9, 10, 14, 15},
-                    7: {1, 2, 3, 4, 9, 10, 11, 14, 15},
-                    8: {2, 3, 4, 9, 10, 11, 12, 13},
-                    9: {3, 4, 5, 6, 7, 8, 12, 13, 14},
-                    10: {3, 4, 6, 7, 8, 12, 13, 14, 15},
-                    11: {1, 2, 7, 8, 12, 13, 14, 15},
-                    12: {1, 2, 3, 8, 9, 10, 11},
-                    13: {1, 2, 3, 4, 8, 9, 10, 11},
-                    14: {1, 2, 3, 4, 5, 6, 7, 10, 11},
-                    15: {1, 2, 3, 4, 6, 7, 10, 11}, },
-            "pli": {
-                0: {15, 0, 8, 14},
-                1: {0, 9, 10, 11},
-                2: {7, 8, 5, 6},
-                3: {0, 1, 2, 9, 10},
-                4: {0, 3, 4, 5, 11},
-                5: {0, 12, 13, 14, 15},
-                6: {5, 6, 7, 12, 13},
-                7: {0, 1, 2, 3, 4, 5}, },
-            "allowable_phases": (0, 4, 5, 7,),
-            "yellow": 1.5,
-            "allred": 1.0,
+            "pli": {0: {0, 1, },  # North/South bounds throughs
+                    1: {2, 3, },  # East/West bounds throughs
+                    },
+            "lli": {0: {1, 3, },  # Northeast (ATC: 1) - Lane: 1
+                    1: {0, 2, },  # Southwest (ATC: 2) - Lane: 2
+                    2: {1, 3, },  # Southeast (ATC: 3) - Lane: 3
+                    3: {0, 2, },  # Northwest (ATC: 4) - Lane: 4
+                    },
+            "allowable_phases": (0, 1,),
+            "yellow": 3.0,
+            "allred": 1.5,
             "min_green": 5.0,
-            "max_green": 25.0,
+            "max_green": 20.0,
             "lag_on_green": 1.0,
             "max_num_traj_points": int(1_000),
-            "min_dist_to_stop_bar": 50,
+            "min_dist_to_stop_bar": 20,
             "do_traj_computation": True,
             "trj_time_resolution": 1.0,
             "print_commandline": True,
+            "lane_estimation": "gps",  # gps/video todo: pls append these to the docstring above and explain briefly
+            "opt_zones": opt_zone_info,
+            "lanes": lane_info,
+            # FIXME @ Pat: Please import GPS points here. In order to avoid mapping and its
+            # FIXME: confusing consequences, it would be tight if you could follow the lane numbers in accordance
+            # FIXME: with what you see above and the schematic map I sent you. I believe for UTC demo you used the
+            # FIXME: lane number as annotated on the map I sent you. Alternatively, let me know and I'll change phasing according to your lane numbers.
         }
     elif inter_name == "TERL":
         return {
@@ -282,48 +272,6 @@ def load_inter_params(inter_name):
 
             "print_commandline": True,
         }
-    elif inter_name == "reserv":
-        return {
-            "max_speed": 15.0,
-            "min_CAV_headway": 2.0,
-            "min_CNV_headway": 3.0,
-            "det_range": tuple([500.0] * 12),
-            "k": int(20),
-            "m": int(40),
-            "num_lanes": int(12),
-            "phase_cover_set": (0, 1, 2, 3,),
-            "small_positive_num": 0.01,
-            "large_positive_num": 999_999_999,
-            "lli": {0: {3, 4, 5, 6, 7, 8, 9, 10, 11},
-                    1: {3, 4, 5, 6, 7, 8, 9, 10, 11},
-                    2: {3, 4, 5, 6, 7, 8, 9, 10, 11},
-                    3: {0, 1, 2, 6, 7, 8, 9, 10, 11},
-                    4: {0, 1, 2, 6, 7, 8, 9, 10, 11},
-                    5: {0, 1, 2, 6, 7, 8, 9, 10, 11},
-                    6: {0, 1, 2, 3, 4, 5, 9, 10, 11},
-                    7: {0, 1, 2, 3, 4, 5, 9, 10, 11},
-                    8: {0, 1, 2, 3, 4, 5, 9, 10, 11},
-                    9: {0, 1, 2, 3, 4, 5, 6, 7, 8},
-                    10: {0, 1, 2, 3, 4, 5, 6, 7, 8},
-                    11: {0, 1, 2, 3, 4, 5, 6, 7, 8}, },
-            "pli": {0: {0, 1, 2},
-                    1: {3, 4, 5},
-                    2: {7, 8, 6},
-                    3: {9, 10, 11}, },
-            "allowable_phases": (0, 1, 2, 3,),
-            "yellow": 3.0,
-            "allred": 1.5,
-            "min_green": 5.0,
-            "max_green": 40.0,
-            "lag_on_green": 1.0,
-            "max_num_traj_points": int(1_0000),
-            "min_dist_to_stop_bar": 50,
-            "do_traj_computation": False,
-            "trj_time_resolution": 1.0,
-
-            "print_commandline": True,
-
-        }
     elif inter_name == "Gale&Std":
         return {
             "max_speed": 15.0,
@@ -358,47 +306,6 @@ def load_inter_params(inter_name):
             "trj_time_resolution": 1.0,
 
             "print_commandline": True,
-        }
-
-    elif inter_name == "RTS":
-        return {
-            "max_speed": 6.7,  # mps (24 kph)
-            "min_CAV_headway": 1.5,
-            "min_CNV_headway": 2.0,
-            "det_range": (240, 300, 80, 100,),
-            "k": int(4),  # LeadConnected Trajectory method params
-            "m": int(40),
-            "num_lanes": int(4),
-            "phase_cover_set": (0, 1,),
-            "small_positive_num": 0.01,
-            "large_positive_num": 999_999_999,
-            "pli": {0: {0, 1, },  # North/South bounds throughs
-                    1: {2, 3, },  # East/West bounds throughs
-                    },  # TODO: once we want to add turning movements, pli & lli shall be modified
-            "lli": {0: {1, 3, },  # Northeast (ATC: 1) - Lane: 1
-                    1: {0, 2, },  # Southwest (ATC: 2) - Lane: 2
-                    2: {1, 3, },  # Southeast (ATC: 3) - Lane: 3
-                    3: {0, 2, },  # Northwest (ATC: 4) - Lane: 4
-                    },
-            "allowable_phases": (0, 1,),
-            "yellow": 3.0,
-            "allred": 1.5,
-            "min_green": 20.0,  # 5
-            "max_green": 40.0,  # 20
-            "lag_on_green": 1.0,
-            "max_num_traj_points": int(1_000),
-            "min_dist_to_stop_bar": 20,
-            "do_traj_computation": True,
-            "trj_time_resolution": 1.0,
-
-            "print_commandline": True,
-            "lane_estimation": "gps",  # gps/video todo: pls append these to the docstring above and explain briefly
-            "opt_zones": opt_zone_info,
-            "lanes": lane_info,
-            # FIXME @ Pat: Please import GPS points here. In order to avoid mapping and its
-            # FIXME: confusing consequences, it would be tight if you could follow the lane numbers in accordance
-            # FIXME: with what you see above and the schematic map I sent you. I believe for UTC demo you used the
-            # FIXME: lane number as annotated on the map I sent you. Alternatively, let me know and I'll change phasing according to your lane numbers.
         }
     else:
         raise Exception("Simulation parameters are not known for this intersection.")

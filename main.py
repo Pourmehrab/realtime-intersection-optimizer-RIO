@@ -81,7 +81,7 @@ def run_rio(args):
         while True:  # stop when pandas gets empty in offline mode, and when run duration has been reached in online mode.
             elapsed_time, absolute_time = time_tracker.get_time()  # get current RIO clock
             intersection._inter_config_params.get("print_commandline") and print(
-                "\n################################# CLOCK: {} SEC #################################".format(
+                "\n################################# CLOCK: {:>5.1f} SEC #################################".format(
                     absolute_time))
 
             # update the assigned trajectories
@@ -104,10 +104,10 @@ def run_rio(args):
                 signal.solve(lanes, intersection, trajectory_generator, absolute_time)
                 # Send out IAMs to all CAVs
                 traffic.publish(lanes, absolute_time)
-                
+
                 # call the proper phase on ATC Controller
                 if args.run_with_signal_control:
-                    snmp_phase_ctrl(signal.SPaT_sequence[0]+1, args.intersection)
+                    snmp_phase_ctrl(signal.SPaT_sequence[0] + 1, args.intersection)
 
             optimizer_call_ctr += 1
 
@@ -115,7 +115,6 @@ def run_rio(args):
             if (args.mode == "sim" and (traffic.last_veh_arr() and lanes.all_served(num_lanes))) or \
                     (args.mode == "realtime" and (args.run_duration < elapsed_time)):
                 if args.do_logging:
-                    
                     # elapsed_process_time = perf_counter() - t_start
                     # timer.log_time_stats(sc, inter_name, start_time_stamp, elapsed_process_time, )  # log timings
                     if args.mode == "sim":
@@ -150,9 +149,9 @@ if __name__ == "__main__":
                         help="Run with traffic from CSV (sim) or sensor fusion (realtime)")
     parser.add_argument("--run-duration", type=int, default=900,
                         help="Seconds to run until termination.")
-    parser.add_argument("--loop-freq", type=float, default=10,
+    parser.add_argument("--loop-freq", type=float, default=1.0,
                         help="Frequency (Hz) to run the main loop")
-    parser.add_argument("--solve-freq", type=float, default=0.5,
+    parser.add_argument("--solve-freq", type=float, default=1.0,
                         help="Frequency (Hz) to call the optimizer")
     parser.add_argument("--sc", type=int, default=1, help="Scenario code number")
     parser.add_argument("--traffic-listener-ip", type=str, default="localhost",
