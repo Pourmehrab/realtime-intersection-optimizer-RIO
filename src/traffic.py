@@ -40,7 +40,7 @@ class RealTimeTraffic:
         self._track_split_merge_queue = track_split_merge_queue
         self._cav_traj_queue = cav_traj_queue
         self._total_count = 0
-        self.time_since_last_arrival = (init_time_stamp, 0)
+        self.time_of_last_arrival = init_time_stamp
         if args.do_logging:
             # open a file to store trajectory points
             filepath_trj = os.path.join(args.log_dir, 'trajectories.csv')
@@ -61,8 +61,8 @@ class RealTimeTraffic:
             self.full_traj_csv_file = None
             self.arrs_deps_csv = None
 
-    def get_time_since_last_arrival(self):
-        return self.time_since_last_arrival[1]
+    def get_time_since_last_arrival(self, current_time):
+        return (current_time - self.time_since_last_arrival).total_seconds()
 
     def get_traffic_info(self, lanes, time_tracker):
         """
@@ -81,9 +81,7 @@ class RealTimeTraffic:
         # Read latest msg from vehicle data queue
         if len(self._vehicle_data_queue) != 0:
             
-            _, absolute_time_stamp = time_tracker.get_time()
-            self.time_since_last_arrival = (absolute_time_stamp,
-                    (absolute_time_stamp - self.time_since_last_arrival[0]).total_seconds())
+            self.time_since_last_arrival = time_tracker.get_time()[1]
 
             vehicle_data_msgs = self._vehicle_data_queue.pop()
             # Lane detection
@@ -314,10 +312,10 @@ class SimTraffic:
         else:
             self.full_traj_csv_file = None
         
-        self.time_since_last_arrival = (0,0)
+        self.time_since_last_arrival = 0
     
-    def get_time_since_last_arrival(self):
-        return self.time_since_last_arrival[1]
+    def get_time_since_last_arrival(self, current_time):
+        return current_time - self.time_since_last_arrival
 
     def get_traffic_info(self, lanes, simulation_time, intersection):
         """
@@ -361,7 +359,7 @@ class SimTraffic:
             lanes.vehlist[lane] += [veh]  # recall it is an array
             lanes.inc_last_veh_pos(lane)
             indx += 1
-            self.time_since_last_arrival = (simulation_time, (simulation_time - self.time_since_last_arrival[0]))
+            self.time_since_last_arrival = simulation_time
 
         # to keep track of how much of CSV is processed
         self._current_row_indx = indx - 1

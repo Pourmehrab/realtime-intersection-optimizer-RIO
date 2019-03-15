@@ -98,7 +98,7 @@ def run_rio(args):
 
             if optimizer_call_ctr % solve_freq == 0:
                 # update SPaT
-                time_since_last_arrival = traffic.get_time_since_last_arrival()
+                time_since_last_arrival = traffic.get_time_since_last_arrival(absolute_time)
                 signal.update_SPaT(intersection, elapsed_time, args.sc, time_since_last_arrival, absolute_time)
                 # perform signal optimization
                 signal.solve(lanes, intersection, trajectory_generator, absolute_time)
