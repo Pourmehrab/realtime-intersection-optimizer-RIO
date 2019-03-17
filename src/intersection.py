@@ -40,14 +40,14 @@ class Intersection:
             lane = -1
             best_dist = self._inter_config_params["large_positive_num"]
             for i in range(self._inter_config_params["num_lanes"]):
-                lane_info = self._inter_config_params["lanes"][i+1]
+                lane_info = self._inter_config_params["lanes"][i + 1]
                 for j in range(len(lane_info.easting)):
                     e = lane_info.easting[j]
                     n = lane_info.northing[j]
                     d = util.euclidean_dist(veh_utm_easting, veh_utm_northing, e, n)
                     if d < best_dist:
                         best_dist = d
-                        lane = i+1
+                        lane = i + 1
         elif self._inter_config_params["lane_estimation"] == "video":
             raise NotImplementedError
         return lane
@@ -91,13 +91,13 @@ class Intersection:
         stop_bar_northing = lane_info.northing[0]
         lane_anchor_easting = lane_info.easting[-1]
         lane_anchor_northing = lane_info.northing[-1]
-        
+
         if lane_info.is_straight:
             d = util.euclidean_dist(stop_bar_easting, stop_bar_northing, easting, northing)
             anchor_dist = util.euclidean_dist(lane_anchor_easting, lane_anchor_northing,
-                    easting, northing)
+                                              easting, northing)
             if anchor_dist > lane_info.lane_length:
-                d = -d # passed the stop bar
+                d = -d  # passed the stop bar
             if units == "ft":
                 return util.meters_to_feet(d)
             else:
@@ -177,11 +177,11 @@ class Intersection:
         :param lane: the detected lane of the vehicle
         :type int:
         """
-        cone = 90 # cone angle
-        h_cone = cone/2 # half cone angle
+        cone = 90  # cone angle
+        h_cone = cone / 2  # half cone angle
         opt_zone_info = self._inter_config_params["opt_zones"][lane]
         query = geom.Point(vm.pos[0], vm.pos[1])
-        polygon = [geom.Point(x,y) for x,y in zip(opt_zone_info.easting, opt_zone_info.northing)]
+        polygon = [geom.Point(x, y) for x, y in zip(opt_zone_info.easting, opt_zone_info.northing)]
         spatial_constraint = geom.point_in_polygon(query, polygon)
         # check for 0 speed
         spd = np.sqrt((vm.vel[0] ** 2) + (vm.vel[1] ** 2))
@@ -192,14 +192,17 @@ class Intersection:
         b = opt_zone_info.orientation + h_cone
         if a >= 0:
             orientation_constraint = True if a <= veh_heading <= b else False
-        else: # Test these cases
-            b2 = b; b1 = 0
-            a2 = 360; a1 = a + 360
+        else:  # Test these cases
+            b2 = b;
+            b1 = 0
+            a2 = 360;
+            a1 = a + 360
             if b1 <= veh_heading <= b2 or a1 <= veh_heading <= a2:
                 orientation_constraint = True
             else:
                 orientation_constraint = False
         return spatial_constraint and orientation_constraint
+
 
 class Lanes:
     """
@@ -247,7 +250,7 @@ class Lanes:
         :param veh_id: the detection id associated with the desired vehicle
         :type string:
         """
-        for v in self.vehlist[lane-1]:
+        for v in self.vehlist[lane - 1]:
             if v.ID == veh_id:
                 return v
         return None
@@ -269,6 +272,9 @@ class Lanes:
         for lane in range(num_lanes):
             if bool(lanes.vehlist[lane]):
                 for vehIndx, veh in enumerate(lanes.vehlist[lane]):
+                    if veh.earliest_departure > 0.0:
+                        continue
+
                     if veh.veh_type == 1:
                         # For CAVs, the earliest departure time is computed by actuating the following:
                         if len(lanes.vehlist.get(lane)) == 1:
@@ -310,7 +316,7 @@ class Lanes:
         """
         del self.vehlist.get(lane)[0:indx + 1]
         num_served = indx + 1
-        self.count[lane] += indx+1
+        self.count[lane] += indx + 1
         self.dec_first_unsrvd_pos(lane, num_served)
         self.dec_last_veh_pos(lane, num_served)
 
@@ -446,11 +452,11 @@ class Vehicle:
                                    dtype=np.float)
         self.min_dist_to_stop_bar = intersection._inter_config_params.get("min_dist_to_stop_bar")
         self.verbose = intersection._inter_config_params.get("print_commandline")
-        
+
         self.first_trj_point_indx, self.last_trj_point_indx = 0, -1
         # computed trajectory
-        self.trajectory[:, self.first_trj_point_indx] = [float(det_time), dist, speed] 
-        
+        self.trajectory[:, self.first_trj_point_indx] = [float(det_time), dist, speed]
+
         # timestamp, distance from stopbar in meters, speed in m/s
         self.current_state = np.array([float(det_time), dist, speed])
         self.arrival_info = self.current_state
@@ -464,7 +470,7 @@ class Vehicle:
         self._call_reps_traj_planner = 0
         # This is for grouping trajectories together during logging
         self._logging_id = id(self)
-            
+
     def set_sched_dep(self, t_scheduled, d_scheduled, s_scheduled, lane, veh_indx):
         """
         It only schedules if the new departure time is different and vehicle is far enough for trajectory assignment
@@ -488,7 +494,6 @@ class Vehicle:
 
         det_time, det_dist, det_speed = self.get_arr_sched()
         if det_dist >= self.min_dist_to_stop_bar:
-
             self.set_first_trj_pt_indx(0)
             self.trajectory[:, 0] = [det_time, det_dist, det_speed]
             self.set_last_trj_pt_indx(1)
@@ -569,7 +574,7 @@ class Vehicle:
         """
         trj_indx, max_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx
         time, distance, speed = self.get_arr_sched()
-        
+
         if file is None:  # don't have to write CSV
             while time < time_threshold and trj_indx <= max_trj_indx:
                 trj_indx += 1
@@ -578,7 +583,8 @@ class Vehicle:
         else:  # get full info and write trajectory points to the CSV file
             writer = csv.writer(file, delimiter=',')
             while time < time_threshold and trj_indx <= max_trj_indx:
-                writer.writerows([[sc, self.ID, self.veh_type, lane+1, time, distance, speed, self._call_reps_traj_planner]])
+                writer.writerows(
+                    [[sc, self.ID, self.veh_type, lane + 1, time, distance, speed, self._call_reps_traj_planner]])
                 file.flush()
                 trj_indx += 1
                 time, distance, speed = self.trajectory[:, trj_indx]

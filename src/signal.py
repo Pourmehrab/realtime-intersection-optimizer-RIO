@@ -193,12 +193,10 @@ class Signal:
         :Date:
             April-2018
         """
-
         num_lanes, min_dist_to_stop_bar = map(intersection._inter_config_params.get,
                                               ["num_lanes", "min_dist_to_stop_bar", ])
-
-        latest_departure_to_protect = 0
         last_locked_veh_indx = np.zeros(num_lanes, dtype=np.int) - 1
+        latest_departure_to_protect = 0
 
         for lane in range(num_lanes):
             for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
@@ -340,16 +338,10 @@ class MCF_SPaT(Signal):
 
         last_locked_veh_indx = self.protect_SPaT(lanes, intersection)
 
-        first_veh_indx_to_serve = np.array(
-            [min(len(lanes.vehlist.get(lane)) - 1, last_locked_veh_indx[lane] + 1) for lane in
-             range(num_lanes)], dtype=int)
+        first_veh_indx_to_serve = last_locked_veh_indx + 1
 
-        protected_veh_count = sum(last_locked_veh_indx)
-        intersection._inter_config_params.get("print_commandline") and protected_veh_count > 0 and print(
-            '   Trajectory and SPaT of ' + str(protected_veh_count) + ' vehicles are protected')
-
-        demand = first_veh_indx_to_serve - last_locked_veh_indx
-        demand = demand.astype(float, copy=False)
+        demand = np.array([max(len(lanes.vehlist[l]) - 1, last_locked_veh_indx[l]) - last_locked_veh_indx[l] for l in
+                           range(num_lanes)], dtype=float)
         total_demand = demand.sum()
         if total_demand > 0:
             self._mcf_model.linear_constraints.set_rhs(
@@ -372,9 +364,13 @@ class MCF_SPaT(Signal):
             phase_early_first = SortedDict({})
             for phase_indx, phase in self._phase_lane_incidence.items():
                 if phase_veh_incidence[phase_indx] > 0:
-                    min_dep_time = min(
-                        [lanes.vehlist.get(lane)[first_veh_indx_to_serve[lane]].earliest_departure for lane in phase if
-                         first_veh_indx_to_serve[lane] != -1])
+                    min_dep_time = np.infty
+                    for lane in phase:
+                        if first_veh_indx_to_serve[lane] != -1 and first_veh_indx_to_serve[lane] < len(
+                                lanes.vehlist[lane]):
+                            min_dep_time = min(min_dep_time, lanes.vehlist.get(lane)[
+                                first_veh_indx_to_serve[lane]].earliest_departure)
+
                     key = min_dep_time + 0.01 if min_dep_time in phase_early_first else min_dep_time
                     phase_early_first[key] = phase_indx
 
@@ -384,9 +380,8 @@ class MCF_SPaT(Signal):
                 phase = np.random.randint(0, len(self._phase_lane_incidence))
                 while phase == phase_ordered[0]:
                     phase = np.random.randint(0, len(self._phase_lane_incidence))
-                self._append_extend_phase(phase,
-                                          time_ordered[0] - self.SPaT_end[-1] - self._y - self._ar - lag_on_green,
-                                          intersection)
+                self._append_extend_phase(phase, max(0, time_ordered[0] - self.SPaT_end[
+                    -1] - self._y - self._ar - lag_on_green), intersection)
 
             veh_indx_vec = np.copy(first_veh_indx_to_serve)
             vehicle_counter, num_vehicles = 0, int(total_demand)
@@ -398,14 +393,13 @@ class MCF_SPaT(Signal):
                 phase_circular_indx = (phase_circular_indx + 1) % mod
                 phase = phase_ordered[phase_circular_indx]
                 served_veh_phase_counter = 0
-                flag = True
                 for lane in self._phase_lane_incidence.get(phase):
 
-                    if last_locked_veh_indx[lane] == first_veh_indx_to_serve[lane]:
-                        continue
-
                     start_indx = veh_indx_vec[lane]
-                    for veh_indx, veh in enumerate(lanes.vehlist.get(lane)[start_indx:], start_indx):
+                    for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
+                        if veh_indx_vec[lane] > veh_indx:
+                            continue
+
                         t_scheduled = max(veh.earliest_departure, phase_start_time + lag_on_green)
                         veh.got_trajectory = False
                         if veh_indx > 0:
@@ -420,13 +414,11 @@ class MCF_SPaT(Signal):
                             served_veh_phase_counter += 1
                             phase_green_end_time = max(t_scheduled, phase_green_end_time)
                             _, det_dist, _ = veh.get_arr_sched()
-                            flag = False
-                            if det_dist >= min_dist_to_stop_bar:
-                                veh.set_sched_dep(t_scheduled, 0, veh.desired_speed, lane, veh_indx)
-                                trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, '#')
-                                veh.got_trajectory = True
+                            veh.set_sched_dep(t_scheduled, 0, veh.desired_speed, lane, veh_indx)
+                            trajectory_planner.plan_trajectory(lanes, veh, lane, veh_indx, intersection, '#')
+                            veh.got_trajectory = True
 
-                if flag:
-                    print("done")
                 self._append_extend_phase(int(phase), phase_green_end_time - phase_start_time, intersection)
                 phase_start_time = self.SPaT_end[-1]
+        elif False:
+            pass  # demand is s=zero but check spat end
