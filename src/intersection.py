@@ -256,7 +256,7 @@ class Lanes:
         return None
 
     @staticmethod
-    def reset_earliest_departure_times(lanes, intersection):
+    def set_earliest_departure_times(lanes, intersection):
         """"
         To compute the earliest departure time for all vehicles.
 

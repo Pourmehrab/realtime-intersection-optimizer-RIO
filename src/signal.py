@@ -420,5 +420,3 @@ class MCF_SPaT(Signal):
 
                 self._append_extend_phase(int(phase), phase_green_end_time - phase_start_time, intersection)
                 phase_start_time = self.SPaT_end[-1]
-        elif False:
-            pass  # demand is s=zero but check spat end

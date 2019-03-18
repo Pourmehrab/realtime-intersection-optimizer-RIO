@@ -94,7 +94,7 @@ def run_rio(args):
                 traffic.get_traffic_info(lanes, time_tracker)
 
             # update earliest departure time
-            lanes.reset_earliest_departure_times(lanes, intersection)
+            lanes.set_earliest_departure_times(lanes, intersection)
 
             if optimizer_call_ctr % solve_freq == 0:
                 # update SPaT
