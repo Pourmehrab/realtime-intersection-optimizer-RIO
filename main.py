@@ -49,6 +49,9 @@ def run_rio(args):
         University of Florida
     """
     if args.run_with_signal_control:
+        import src.sig_ctrl_interface
+        src.sig_ctrl_interface.IP = args.signal_controller_ip
+        src.sig_ctrl_interface.PORT = args.signal_controller_port
         from src.sig_ctrl_interface import snmp_phase_ctrl
 
     intersection = Intersection(args.intersection)
@@ -154,6 +157,7 @@ if __name__ == "__main__":
     parser.add_argument("--solve-freq", type=float, default=1.0,
                         help="Frequency (Hz) to call the optimizer")
     parser.add_argument("--sc", type=int, default=1, help="Scenario code number")
+
     parser.add_argument("--traffic-listener-ip", type=str, default="localhost",
                         help="The IP address to connect via UDP to receive incoming traffic messages")
     parser.add_argument("--traffic-listener-port", type=int, default=7000,
@@ -162,6 +166,11 @@ if __name__ == "__main__":
                         help="The IP address to connect via UDP to publish outgoing traffic messages")
     parser.add_argument("--traffic-publisher-port", type=int, default=7001,
                         help="The port number to connect via UDP to publish outgoing traffic messages")
+    parser.add_argument("--signal-controller-ip", type=str, default="169.254.91.71",
+                        help="The IP address for the signal controller snmp conn")
+    parser.add_argument("--signal-controller-port", type=int, default=161,
+                        help="The port number for the signal controller snmp conn")
+    
     parser.add_argument("--do-logging", type=str_to_bool, default="False",
                         help="Toggle logging")
     parser.add_argument("--run-with-signal-control", type=str_to_bool, default="False")

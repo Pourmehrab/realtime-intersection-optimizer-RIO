@@ -12,6 +12,9 @@
 from pysnmp.hlapi import *
 from src.config import get_sig_ctrl_interface_params
 
+IP = '169.254.91.71'
+PORT = 161
+
 def snmpSet(OID, Value):
     """
     :Author:
@@ -23,7 +26,7 @@ def snmpSet(OID, Value):
     errorIndication, errorStatus, errorIndex, varBinds = next(
         setCmd(SnmpEngine(),
                CommunityData('public', mpModel=0),  # snmp v1. delete mpModel for v2c),
-               UdpTransportTarget(('169.254.91.71', 161)), # Target IP + UPD port (hard coded)
+               UdpTransportTarget((IP, PORT)), # Target IP + UPD port (hard coded)
                ContextData(),
                ObjectType(ObjectIdentity(str(OID)), Integer(Value))))
 
@@ -187,10 +190,11 @@ def snmp_phase_ctrl(Phase, inter_name):
         Send command to ASC
     """
     num_phase, al, non, nonConflict = get_sig_ctrl_interface_params(inter_name)
-    #num_phase = 4
-    #al = range(1, num_phase + 1)
-    #non = [0]
-    #nonConflict = [[1,2], [4, 3]]
+    # For debugging
+    # num_phase = 4
+    # al = range(1, num_phase + 1)
+    # non = [0]
+    # nonConflict = [[1,2], [4, 3]]
 
     snmpHold(list(al))
     snmpHold(list(non))
