@@ -13,12 +13,12 @@ Patrick Emami
 
 ## Installation
 
-Using Python 3.6, first run
-    pip install --user pipenv
-then in the base directory of this repository, run
-    pipenv install
+### Anaconda
 
-Pipenv will create a virtualenv that can be activated by `pipenv shell` containing the dependencies needed to run this code.
+1. If needed, download and setup [Anaconda](https://docs.anaconda.com/anaconda/install/)
+2. In the base directory of this repository, do `conda env create -f RIO.yml`
+
+This will create a conda env that can be activated with `source activate RIO`. All dependencies needed to run the code will be installed.
 
 ## Documentation
 
