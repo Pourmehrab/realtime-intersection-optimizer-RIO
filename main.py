@@ -85,7 +85,7 @@ def run_rio(args):
             elapsed_time, absolute_time = time_tracker.get_time()  # get current RIO clock
             intersection._inter_config_params.get("print_commandline") and print(
                 "\n################################# CLOCK: {:>5.1f} SEC #################################".format(
-                    absolute_time))
+                    elapsed_time))
 
             # update the assigned trajectories
             traffic.update_trj_or_serve_at_stop_bar(lanes, elapsed_time, intersection)
@@ -186,6 +186,5 @@ if __name__ == "__main__":
         os.makedirs(args.log_dir)
         print("creating log dir {}...".format(args.log_dir))
 
-    print("\nProgram Started ################# CLOCK: {:>5.1f} SEC #################################".format(0.0))
     run_rio(args)
     print("\nProgram Terminated.")
