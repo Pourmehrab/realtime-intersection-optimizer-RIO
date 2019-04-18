@@ -26,10 +26,10 @@ TODO: Instructions here.
 
 ### Network instructions
 
-The RSU uses a wired Link-Local connection. Set the local ip address to be something like 169.254.X.X. The signal controller needs an
-
-TODO: Add SNMP IP and Port to main.py argparse
+The RSU uses a wired Link-Local connection. Set the local ip address to be something like 169.254.X.X. By default, it is set to 169.154.117.41.
+The signal controller and other sensors are connected on ip addresses starting with 192.168.X.X. By default, the signal controller's IP
+is set to 192.168.91.71.
 
 ## Tests
 
-Run all unit tests with `pytest test`.
+Run all unit tests with `pytest -v test`.

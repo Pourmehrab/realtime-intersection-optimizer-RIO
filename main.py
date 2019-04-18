@@ -181,7 +181,7 @@ if __name__ == "__main__":
                         help="The IP address to connect via UDP to publish outgoing traffic messages")
     parser.add_argument("--traffic-publisher-port", type=int, default=7001,
                         help="The port number to connect via UDP to publish outgoing traffic messages")
-    parser.add_argument("--signal-controller-ip", type=str, default="169.254.91.71",
+    parser.add_argument("--signal-controller-ip", type=str, default="192.168.91.71",
                         help="The IP address for the signal controller snmp conn")
     parser.add_argument("--signal-controller-port", type=int, default=161,
                         help="The port number for the signal controller snmp conn")
