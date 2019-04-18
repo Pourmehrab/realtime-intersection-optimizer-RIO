@@ -40,7 +40,7 @@ class RealTimeTraffic:
         self._track_split_merge_queue = track_split_merge_queue
         self._cav_traj_queue = cav_traj_queue
         self._total_count = 0
-        self.time_of_last_arrival = init_time_stamp
+        self.time_since_last_arrival = init_time_stamp
         if args.do_logging:
             # open a file to store trajectory points
             filepath_trj = os.path.join(args.log_dir, 'trajectories.csv')
@@ -81,7 +81,6 @@ class RealTimeTraffic:
         # Read latest msg from vehicle data queue
         if len(self._vehicle_data_queue) != 0:
             
-            self.time_since_last_arrival = time_tracker.get_time()[1]
 
             vehicle_data_msgs = self._vehicle_data_queue.pop()
             # Lane detection
@@ -107,6 +106,7 @@ class RealTimeTraffic:
                 if v is None:
                     # in the optimization zone?
                     if self.intersection.in_optimization_zone(vm, lane):
+                        self.time_since_last_arrival = time_tracker.get_time()[1]
                         # convert vehicle message to Vehicle
                         des_speed = self.intersection._inter_config_params["max_speed"]
                         # TODO dest = "" # ?
@@ -293,7 +293,7 @@ class SimTraffic:
         # _current_row_indx points to the row of last vehicle added (-1 if none has been yet)
         self._current_row_indx = -1
 
-        self._log_csv = intersection._inter_config_params.get('log_csv')
+        self._log_csv = args.do_logging 
         self._print_commandline = intersection._inter_config_params.get('print_commandline')
 
         if self._log_csv:
@@ -303,9 +303,9 @@ class SimTraffic:
             self._auxilary_num_sent_to_trj_planner = np.zeros(df_size, dtype=np.int8)
 
             # open a file to store trajectory points
-            filepath_trj = os.path.join(args.log_dir, start_time_stamp + '_' + str(
-                self.scenario_num) + '_trj_point_level.csv')
+            filepath_trj = os.path.join(args.log_dir, 'trj_point_level.csv')
             self.full_traj_csv_file = open(filepath_trj, 'w', newline='')
+            self.veh_level_csv_file = os.path.join(args.log_dir, 'trj_veh_level.csv')
             writer = csv.writer(self.full_traj_csv_file, delimiter=',')
             writer.writerow(['sc', 'VehID', 'type', 'lane', 'time', 'distance', 'speed'])
             self.full_traj_csv_file.flush()
@@ -388,9 +388,7 @@ class SimTraffic:
         self.__all_vehicles['ID'] = self._auxilary_ID
         self.__all_vehicles['times_sent_to_trj_planner'] = self._auxilary_num_sent_to_trj_planner
 
-        filepath = os.path.join(
-            'log/' + inter_name + '/' + start_time_stamp + '_' + str(self.scenario_num) + '_trj_veh_level.csv')
-        self.__all_vehicles.to_csv(filepath, index=False)
+        self.__all_vehicles.to_csv(self.veh_level_csv_file, index=False)
 
     def close_trj_csv(self):
         """Closes trajectory CSV file."""

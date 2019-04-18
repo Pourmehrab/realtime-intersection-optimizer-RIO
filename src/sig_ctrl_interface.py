@@ -9,8 +9,12 @@
 # Dept. of Civil and Coastal Engineering
 # @author: aschkan
 
+from multiprocessing import current_process
 from pysnmp.hlapi import *
 from src.config import get_sig_ctrl_interface_params
+
+IP = '169.254.91.71'
+PORT = 161
 
 def snmpSet(OID, Value):
     """
@@ -19,11 +23,14 @@ def snmpSet(OID, Value):
     :Date:
         Jan-2017
     """
+    global IP
+    global PORT
+
     assert type(OID) == str
     errorIndication, errorStatus, errorIndex, varBinds = next(
         setCmd(SnmpEngine(),
                CommunityData('public', mpModel=0),  # snmp v1. delete mpModel for v2c),
-               UdpTransportTarget(('169.254.91.71', 161)), # Target IP + UPD port (hard coded)
+               UdpTransportTarget((IP, PORT)), # Target IP + UPD port (hard coded)
                ContextData(),
                ObjectType(ObjectIdentity(str(OID)), Integer(Value))))
 
@@ -118,7 +125,7 @@ def snmpForceOff(List):
         Aschkan Omidvar <aschkan@ufl.edu>
     :Date:
         Jan-2017
-  
+
     .. note::
         This module transforms the bit matrix values for OID
         enterprise::1206.4.2.1.1.5.1.5.1 to the corresponding phase number and
@@ -187,10 +194,11 @@ def snmp_phase_ctrl(Phase, inter_name):
         Send command to ASC
     """
     num_phase, al, non, nonConflict = get_sig_ctrl_interface_params(inter_name)
-    #num_phase = 4
-    #al = range(1, num_phase + 1)
-    #non = [0]
-    #nonConflict = [[1,2], [4, 3]]
+    # For debugging
+    # num_phase = 4
+    # al = range(1, num_phase + 1)
+    # non = [0]
+    # nonConflict = [[1,2], [4, 3]]
 
     snmpHold(list(al))
     snmpHold(list(non))
@@ -199,6 +207,39 @@ def snmp_phase_ctrl(Phase, inter_name):
         if Phase in nonConflict[p]:
             snmpVehCall(nonConflict[p])
             snmpOmit([i for i in al if i not in nonConflict[p]])
+
+def main(intersection, ip_, port_, parent_proc_conn, proc_conn):
+    """
+    Main function for real-time communication with the signal
+    controller.
+
+    Communication between main RIO process and this process is handled
+    with Pipes (see https://docs.python.org/3.6/library/multiprocessing.html#pipes-and-queues).
+
+    Communication between this process and the signal controller
+    is handled by the SNMP lib.
+    """
+    # set SNMP conn info
+    global IP
+    global PORT
+    IP = ip_
+    PORT = port_
+
+    # prepare Pipes
+    parent_proc_conn.close()
+    p = current_process()
+    print("Signal controller interface running on proc {}".format(p.pid))
+
+    # Loop continuously until KeyboardInterrupt,
+    # reading incoming msgs from Pipe conn
+    try:
+        while True:
+            cmd, data = proc_conn.recv()
+            if cmd == "SPaT":
+                snmp_phase_ctrl(data, intersection)
+    except KeyboardInterrupt:
+        print("Signal controller interface got KeyboardInterrupt, exiting")
+        proc_conn.close()
 
 # Quickstart Test
 #snmp_phase_ctrl(4, "RTS")

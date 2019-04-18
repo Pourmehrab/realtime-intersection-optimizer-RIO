@@ -140,6 +140,9 @@ class Intersection:
         if dist < 0:
             dist = 0
         idx = np.searchsorted(lane_info.distances, dist)
+        # clamp to farthest distance if beyond
+        if idx == len(lane_info.distances):
+            idx -= 1
         dist_gps = lane_info.distances[idx]
         # Adjust dist if greater than small threshold
         if dist_gps > dist:
@@ -589,8 +592,11 @@ class Vehicle:
                 trj_indx += 1
                 time, distance, speed = self.trajectory[:, trj_indx]
 
-        assert trj_indx <= max_trj_indx, "The vehicle should be removed, not  getting updated for trajectory points!"
-        self.set_first_trj_pt_indx(trj_indx)
+        # PE: remove this assertion and replace with this conditional
+        # otherwise the assertion gets thrown when vehicle enters the intersection in realtime mode
+        #assert trj_indx <= max_trj_indx, "The vehicle should be removed, not  getting updated for trajectory points!"
+        if trj_indx <= max_trj_indx:
+            self.set_first_trj_pt_indx(trj_indx)
 
     def print_trj_points(self, lane, veh_indx, identifier):
         """
