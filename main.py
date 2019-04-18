@@ -75,6 +75,7 @@ def run_rio(args):
         t_start = perf_counter()
     # Start the signal controller
     if args.run_with_signal_control:
+        print("Initializing signal controller...")
         from src.sig_ctrl_interface import main as sig_ctrl_main
         parent, child = Pipe()
         ps = Process(target=sig_ctrl_main, args=(args.intersection,
@@ -83,6 +84,7 @@ def run_rio(args):
         ps.daemon = True # if this proc crashes, dont cause things to hang
         ps.start()
         child.close()
+        print("Done initiailizing signal controller...")
 
     try:
         optimizer_call_ctr = 0
@@ -140,11 +142,6 @@ def run_rio(args):
                 if args.mode == "realtime":
                     tl.stop()
                     tp.stop()
-                # Clean up signal control interface
-                if args.run_with_signal_control:
-                    parent.send(("done", None))
-                    parent.close()
-                    ps.join()
                 break
             time_tracker.step()
 
@@ -159,7 +156,6 @@ def run_rio(args):
 
         # Clean up signal control interface
         if args.run_with_signal_control:
-            parent.send(("done", None))
             parent.close()
             ps.join()
 

@@ -237,12 +237,9 @@ def main(intersection, ip_, port_, parent_proc_conn, proc_conn):
             cmd, data = proc_conn.recv()
             if cmd == "SPaT":
                 snmp_phase_ctrl(data, intersection)
-            elif cmd == "done":
-                proc_conn.close()
-                break
     except KeyboardInterrupt:
         print("Signal controller interface got KeyboardInterrupt, exiting")
-
+        proc_conn.close()
 
 # Quickstart Test
 #snmp_phase_ctrl(4, "RTS")
