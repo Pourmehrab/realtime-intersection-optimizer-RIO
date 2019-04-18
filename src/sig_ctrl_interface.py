@@ -9,6 +9,7 @@
 # Dept. of Civil and Coastal Engineering
 # @author: aschkan
 
+from multiprocessing import current_process
 from pysnmp.hlapi import *
 from src.config import get_sig_ctrl_interface_params
 
@@ -22,6 +23,9 @@ def snmpSet(OID, Value):
     :Date:
         Jan-2017
     """
+    global IP
+    global PORT
+
     assert type(OID) == str
     errorIndication, errorStatus, errorIndex, varBinds = next(
         setCmd(SnmpEngine(),
@@ -121,7 +125,7 @@ def snmpForceOff(List):
         Aschkan Omidvar <aschkan@ufl.edu>
     :Date:
         Jan-2017
-  
+
     .. note::
         This module transforms the bit matrix values for OID
         enterprise::1206.4.2.1.1.5.1.5.1 to the corresponding phase number and
@@ -203,6 +207,42 @@ def snmp_phase_ctrl(Phase, inter_name):
         if Phase in nonConflict[p]:
             snmpVehCall(nonConflict[p])
             snmpOmit([i for i in al if i not in nonConflict[p]])
+
+def main(intersection, ip_, port_, parent_proc_conn, proc_conn):
+    """
+    Main function for real-time communication with the signal
+    controller.
+
+    Communication between main RIO process and this process is handled
+    with Pipes (see https://docs.python.org/3.6/library/multiprocessing.html#pipes-and-queues).
+
+    Communication between this process and the signal controller
+    is handled by the SNMP lib.
+    """
+    # set SNMP conn info
+    global IP
+    global PORT
+    IP = ip_
+    PORT = port_
+
+    # prepare Pipes
+    parent_proc_conn.close()
+    p = current_process()
+    print("Signal controller interface running on proc {}".format(p.pid))
+
+    # Loop continuously until KeyboardInterrupt,
+    # reading incoming msgs from Pipe conn
+    try:
+        while True:
+            cmd, data = proc_conn.recv()
+            if cmd == "SPaT":
+                snmp_phase_ctrl(data, intersection)
+            elif cmd == "done":
+                proc_conn.close()
+                break
+    except KeyboardInterrupt:
+        print("Signal controller interface got KeyboardInterrupt, exiting")
+
 
 # Quickstart Test
 #snmp_phase_ctrl(4, "RTS")

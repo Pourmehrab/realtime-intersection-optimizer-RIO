@@ -13,6 +13,7 @@ from src.data_io import TrafficListener, TrafficPublisher
 from src.signal import MCF_SPaT
 from src.util import *
 from datetime import datetime
+from multiprocessing import Process, Pipe
 
 
 def run_rio(args):
@@ -48,11 +49,6 @@ def run_rio(args):
     :Organization:
         University of Florida
     """
-    if args.run_with_signal_control:
-        import src.sig_ctrl_interface
-        src.sig_ctrl_interface.IP = args.signal_controller_ip
-        src.sig_ctrl_interface.PORT = args.signal_controller_port
-        from src.sig_ctrl_interface import snmp_phase_ctrl
 
     intersection = Intersection(args.intersection)
     lanes = Lanes(intersection)
@@ -77,6 +73,17 @@ def run_rio(args):
     # to measure the total RIO run time for performance measure (Different from RIO clock)
     if args.do_logging:
         t_start = perf_counter()
+    # Start the signal controller
+    if args.run_with_signal_control:
+        from src.sig_ctrl_interface import main as sig_ctrl_main
+        parent, child = Pipe()
+        ps = Process(target=sig_ctrl_main, args=(args.intersection,
+                     args.signal_controller_ip, args.signal_controller_port,
+                     parent, child))
+        ps.daemon = True # if this proc crashes, dont cause things to hang
+        ps.start()
+        child.close()
+
     try:
         optimizer_call_ctr = 0
         solve_freq = int(args.loop_freq / args.solve_freq)
@@ -110,7 +117,8 @@ def run_rio(args):
 
                 # call the proper phase on ATC Controller
                 if args.run_with_signal_control:
-                    snmp_phase_ctrl(signal.SPaT_sequence[0] + 1, args.intersection)
+                    #snmp_phase_ctrl(signal.SPaT_sequence[0] + 1, args.intersection)
+                    parent.send(("SPaT", signal.SPaT_sequence[0] + 1))
 
             optimizer_call_ctr += 1
 
@@ -132,17 +140,28 @@ def run_rio(args):
                 if args.mode == "realtime":
                     tl.stop()
                     tp.stop()
+                # Clean up signal control interface
+                if args.run_with_signal_control:
+                    parent.send(("done", None))
+                    parent.close()
+                    ps.join()
                 break
             time_tracker.step()
 
     except KeyboardInterrupt:
-        print("RIO got KeyboardInterrupt, shutting down threads")
+        print("RIO got KeyboardInterrupt, exiting")
         # close
 
+        # Clean up data IO
         if args.mode == "realtime":
             tl.stop()
             tp.stop()
 
+        # Clean up signal control interface
+        if args.run_with_signal_control:
+            parent.send(("done", None))
+            parent.close()
+            ps.join()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Runtime arguments for RIO")
@@ -170,7 +189,7 @@ if __name__ == "__main__":
                         help="The IP address for the signal controller snmp conn")
     parser.add_argument("--signal-controller-port", type=int, default=161,
                         help="The port number for the signal controller snmp conn")
-    
+
     parser.add_argument("--do-logging", type=str_to_bool, default="False",
                         help="Toggle logging")
     parser.add_argument("--run-with-signal-control", type=str_to_bool, default="False")

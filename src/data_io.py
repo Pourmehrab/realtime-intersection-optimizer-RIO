@@ -267,7 +267,7 @@ class TrafficPublisher(StoppableThread):
                 self._IAM_publisher.sendto(next_IAM, (self.ip, self.port))
                 if self.do_logging:
                     self.log_file.write(str(timestamp) + " " + next_IAM + "\n")
-            time.sleep(0.1)
+            #time.sleep(0.1)
         self._IAM_publisher.close()
         if self.do_logging:
             self.log_file.close()
