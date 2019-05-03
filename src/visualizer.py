@@ -9,17 +9,16 @@ params = {
     'ytick.labelsize': 4}
 pylab.rcParams.update(params)
 import matplotlib.pyplot as plt
-
 import numpy as np
-
+import os
 
 def find_pannel_matplot(lane, _num_cols):
     return lane // _num_cols, lane % _num_cols
 
 
-def plotSPaTandTrajs(lanes, signal, intersection, absolute_time):
+def plot_SPaT_and_trajs(lanes, signal, intersection, absolute_time, show=False, save_dir=''):
     num_lanes, min_dist_to_stop_bar = map(intersection._inter_config_params.get,
-                                          ["num_lanes", "min_dist_to_stop_bar", ])
+                                          ['num_lanes', 'min_dist_to_stop_bar', ])
 
     # Initialize MatPlotLip
     root = np.sqrt(num_lanes)
@@ -57,16 +56,20 @@ def plotSPaTandTrajs(lanes, signal, intersection, absolute_time):
             _ax_matplotlib[i, j].plot(veh.trajectory[0, s:e], veh.trajectory[1, s:e], color=color, linewidth=1)
             arr_time, arr_dist, dep_time, dep_dist = veh.trajectory[0, s], veh.trajectory[1, s], veh.trajectory[
                 0, e - 1], veh.trajectory[1, e - 1]
-            ax.text(arr_time, arr_dist, "{:2.1f}m{:2.1f}s".format(arr_dist, dep_time)
+            ax.text(arr_time, arr_dist, '{:2.1f}m{:2.1f}s'.format(arr_dist, dep_time)
                     , horizontalalignment='center', fontsize=8)  # distance/departure time
             # traj = get_veh_traj(lanes.vehlist, lane, 0)
 
         ax.tick_params(axis='both', which='major', labelsize=6)
 
-    plt.suptitle("time: {:2.1f} sec".format(absolute_time))
+    plt.suptitle('time: {:2.1f} sec'.format(absolute_time))
     plt.xticks([t for t in signal.SPaT_start] + [signal.SPaT_end[-1]], rotation=270)
-    plt.show()
-    print("new figure populated")
+    if save_dir != '':
+        plt.savefig(os.path.join(save_dir, '{}.png'.format(int(1000 * absolute_time))))
+    if show:
+        plt.show()
+    plt.close()
+    #print('new figure populated')
 
 
 def get_veh_traj(vehlist, lane, veh_indx):
@@ -133,3 +136,26 @@ class VisualizeSpaceTime:
         plt.draw()
         plt.show()
         self._fig_matplotlib.savefig('matplot_trjs_sc_' + str(sc) + '.' + format, format=format)
+
+if __name__ == '__main__':
+    from moviepy.editor import ImageSequenceClip
+    import glob
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--img-dir', default='', type=str)
+    parser.add_argument('--format', default='*.png', type=str)
+    parser.add_argument('--name', default='out.gif', type=str)
+
+    args = parser.parse_args()
+
+    files = glob.glob(os.path.join(args.img_dir, args.format))
+    
+    def get_name(x):
+        bn = os.path.basename(x)
+        return int(bn.split('.')[0])
+    files = sorted(files, key = lambda x: get_name(x))
+
+    out_name = os.path.join(args.img_dir, args.name)
+    clip = ImageSequenceClip(files, fps=1)
+    clip.write_gif("{}".format(out_name), fps=1)

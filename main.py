@@ -12,6 +12,7 @@ from src.traffic import SimTraffic, RealTimeTraffic
 from src.data_io import TrafficListener, TrafficPublisher
 from src.signal import MCF_SPaT
 from src.util import *
+from src.visualizer import plot_SPaT_and_trajs
 from datetime import datetime
 from multiprocessing import Process, Pipe
 
@@ -121,6 +122,15 @@ def run_rio(args):
                 if args.run_with_signal_control:
                     #snmp_phase_ctrl(signal.SPaT_sequence[0] + 1, args.intersection)
                     parent.send(("SPaT", signal.SPaT_sequence[0] + 1))
+                
+                if args.show_viz or args.save_viz:
+                    if args.save_viz:
+                        save_loc = os.path.join(args.log_dir, 'imgs')
+                        if not os.path.exists(save_loc):
+                            os.makedirs(save_loc)
+                    else:
+                        save_loc = ''
+                    plot_SPaT_and_trajs(lanes, signal, intersection, elapsed_time, args.show_viz, save_loc)
 
             optimizer_call_ctr += 1
 
@@ -189,6 +199,10 @@ if __name__ == "__main__":
     parser.add_argument("--do-logging", type=str_to_bool, default="False",
                         help="Toggle logging")
     parser.add_argument("--run-with-signal-control", type=str_to_bool, default="False")
+    parser.add_argument("--show-viz", type=str_to_bool, default="False",
+                        help="Display the Matplotlib plot of traffic after each solve call")
+    parser.add_argument("--save-viz", type=str_to_bool, default="False",
+                        help="Save traffic viz plots to the log dir")
 
     args = parser.parse_args()
     print("Interpreter Information")
