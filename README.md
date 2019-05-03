@@ -38,15 +38,14 @@ Run all unit tests with `pytest -v test`.
 
 ## Visualizations
 
-Use the argument `--show-viz=True` during `sim` mode to have the system plot the current state of the traffic after every iteration. Use the argument `--save-viz=True` to save the plots to a file. Plots are automatically saved in `log/LOG_DIRNAME/imgs/`. 
+Use the argument `--show-viz=True` during `sim` mode to have the system plot the current state of the traffic after every iteration. Use the argument `--save-viz=True` to save the plots to a file. Plots are automatically saved in `log/LOG_DIRNAME/imgs/` as .pngs.
 
-To create a .gif out of the images, do 
-    `python src/visualizer.py --img-dir log/LOG_DIRNAME/imgs`
+To create a .gif out of the images, do `python src/visualizer.py --img-dir log/LOG_DIRNAME/imgs`
 
 which produces `out.gif` in the image directory.
 
 ### Example for RTS intersection
 
-[RTS](examples/out.gif)
+![RTS](examples/out.gif)
 
 
