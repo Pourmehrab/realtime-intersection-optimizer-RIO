@@ -4,9 +4,8 @@
 
 ## Lanes
 
-Lanes are represented by a sequence of GPS points, stored in a CSV file. The CSV header is ```Latitude,Longitude```. The first data line contains the GPS point corresponding to the center of the stop bar. Subsequent lines contain the GPS points leading away from the stop bar towards the far end of the lane. Files are named ```Lane_X.csv``` where X is the pre-determined unique lane number for the intersection.
+Lanes are represented by a sequence of GPS points, stored in a CSV file. The CSV header is ```name,latitude,longitude```. The first data line contains the GPS point corresponding to the center of the stop bar. Subsequent lines contain the GPS points leading away from the stop bar towards the far end of the lane. File is `lanes.csv`.
 
 ## Optimization Zones
 
-Zones are described by 4 GPS points for straight lanes forming a polygon. The front of the zone is approximately ```min_dist_to_stop_bar``` meters from the stop bar for the particular lane. They are stored in a CSV file under INTERSECTION_NAME/opt_zones.csv.
-The 
+Zones are described by 4 GPS points for straight lanes forming a polygon. The front of the zone is approximately ```min_dist_to_stop_bar``` meters from the stop bar for the particular lane. They are stored in a CSV file under INTERSECTION_NAME/opt_zones.csv. Orientation is degrees counterclockwise from true north. 
