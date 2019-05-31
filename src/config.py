@@ -284,16 +284,12 @@ def load_inter_params(inter_name):
             "phase_cover_set": (0, 1, 2, 3,),
             "small_positive_num": 0.01,
             "large_positive_num": 999_999_999,
-            "lli": None,  # todo add
-            "pli": {0: {0, 1},  # South Bound
-                    1: {2, 3},  # West Bound
-                    2: {4, 5},  # North Bound
-                    3: {6, 7},  # East Bound
-                    4: {0, 4},  # D th
-                    5: {2, 6},  # D th
-                    6: {1, 5},  # D l
-                    7: {3, 7},  # D l
-                    },
+            "pli": {0: {0, 5, }, # North bounds all
+                    1: {1, 4, }, # South bounds all
+                    2: {2, 7, }, # East bounds all
+                    3: {3, 6, }, # West bounds all
+                   },
+            "lli": None,  # Ash: no need for lli in this phasing config.
             "allowable_phases": (0, 1, 2, 3,),
             "yellow": 3.0,
             "allred": 1.5,
@@ -339,6 +335,13 @@ def get_sig_ctrl_interface_params(inter_name):
         al = range(1, num_phase + 1)
         non = [0]
         nonConflict = [[1, 2], [4, 3]]  # Conflict monitor phases
+        
+    elif inter_name == "GaleStadium":
+        #
+        num_phase = 4  # Total Number of phases at GaleStadium
+        al = range(1, num_phase + 1)
+        non = [0]
+        nonConflict = [[1], [2], [4], [3]]  # Conflict monitor phases
     else:
         raise Exception("Controller parameters are not known for this intersection.")
 
