@@ -120,7 +120,7 @@ def load_inter_params(inter_name):
         - max_speed: maximum speed in :math:`m/s`
         - min_headway: the lowest headway at the stop bar in :math:`s` (corresponds to the highest flow)
         - det_range: detection range in :math:`m`
-        - k, m: refer to :any:`LeadConnected` for the definitions
+        - k, m: Lead vehicle dynamics polynomial parameters
         - num_lanes: total number of incoming lanes
         - phase_cover_set: a subset of phases that cover all lanes
         - small_positive_num: small number that lower than that is approximated by zero
@@ -272,28 +272,24 @@ def load_inter_params(inter_name):
 
             "print_commandline": True,
         }
-    elif inter_name == "Gale&Std":
+    elif inter_name == "GaleStadium":
         return {
-            "max_speed": 15.0,
+            "max_speed": 8.94 # 20 mph in m/s,
             "min_CAV_headway": 1.5,
             "min_CNV_headway": 2.0,
-            "det_range": tuple([500.0] * 8),
-            "k": int(20),
+            "det_range": (38, 59, 11, 190, 20, 156, 49, 14)
+            "k": int(4),
             "m": int(40),
             "num_lanes": int(8),
             "phase_cover_set": (0, 1, 2, 3,),
             "small_positive_num": 0.01,
             "large_positive_num": 999_999_999,
-            "lli": None,  # todo add
-            "pli": {0: {0, 1},  # South Bound
-                    1: {2, 3},  # West Bound
-                    2: {4, 5},  # North Bound
-                    3: {6, 7},  # East Bound
-                    4: {0, 4},  # D th
-                    5: {2, 6},  # D th
-                    6: {1, 5},  # D l
-                    7: {3, 7},  # D l
-                    },
+            "pli": {0: {0, 5, }, # North bounds all
+                    1: {1, 4, }, # South bounds all
+                    2: {2, 7, }, # East bounds all
+                    3: {3, 6, }, # West bounds all
+                   },
+            "lli": None,  # Ash: no need for lli in this phasing config.
             "allowable_phases": (0, 1, 2, 3,),
             "yellow": 3.0,
             "allred": 1.5,
@@ -301,10 +297,9 @@ def load_inter_params(inter_name):
             "max_green": 25.0,
             "lag_on_green": 1.0,
             "max_num_traj_points": int(1_000),
-            "min_dist_to_stop_bar": 50,
+            "min_dist_to_stop_bar": 25,
             "do_traj_computation": True,
             "trj_time_resolution": 1.0,
-
             "print_commandline": True,
         }
     else:
@@ -340,6 +335,13 @@ def get_sig_ctrl_interface_params(inter_name):
         al = range(1, num_phase + 1)
         non = [0]
         nonConflict = [[1, 2], [4, 3]]  # Conflict monitor phases
+        
+    elif inter_name == "GaleStadium":
+        #
+        num_phase = 4  # Total Number of phases at GaleStadium
+        al = range(1, num_phase + 1)
+        non = [0]
+        nonConflict = [[1], [2], [4], [3]]  # Conflict monitor phases
     else:
         raise Exception("Controller parameters are not known for this intersection.")
 
