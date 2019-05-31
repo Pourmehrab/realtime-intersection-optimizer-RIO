@@ -120,7 +120,7 @@ def load_inter_params(inter_name):
         - max_speed: maximum speed in :math:`m/s`
         - min_headway: the lowest headway at the stop bar in :math:`s` (corresponds to the highest flow)
         - det_range: detection range in :math:`m`
-        - k, m: refer to :any:`LeadConnected` for the definitions
+        - k, m: Lead vehicle dynamics polynomial parameters
         - num_lanes: total number of incoming lanes
         - phase_cover_set: a subset of phases that cover all lanes
         - small_positive_num: small number that lower than that is approximated by zero
@@ -272,13 +272,13 @@ def load_inter_params(inter_name):
 
             "print_commandline": True,
         }
-    elif inter_name == "Gale&Std":
+    elif inter_name == "GaleStadium":
         return {
-            "max_speed": 15.0,
+            "max_speed": 8.94 # 20 mph in m/s,
             "min_CAV_headway": 1.5,
             "min_CNV_headway": 2.0,
-            "det_range": tuple([500.0] * 8),
-            "k": int(20),
+            "det_range": (156, 38, 59, 20, 14, 11. 190, 49),
+            "k": int(4),
             "m": int(40),
             "num_lanes": int(8),
             "phase_cover_set": (0, 1, 2, 3,),
@@ -301,10 +301,9 @@ def load_inter_params(inter_name):
             "max_green": 25.0,
             "lag_on_green": 1.0,
             "max_num_traj_points": int(1_000),
-            "min_dist_to_stop_bar": 50,
+            "min_dist_to_stop_bar": 25,
             "do_traj_computation": True,
             "trj_time_resolution": 1.0,
-
             "print_commandline": True,
         }
     else:
