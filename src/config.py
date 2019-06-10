@@ -72,10 +72,9 @@ def load_lane_geom(inter_name):
     """
     Parse and load lane geometry information into Lane objects and
     store in a dictionary indexed by lane number.
-
        TODO:
         - add scipy.linregress to test whether GPS points form straight line, to set is_straight
-
+    
     :param inter_name: the name of the intersection, must match the
     folder name containing opt_zones.csv
     :type string:
@@ -139,6 +138,7 @@ def load_inter_params(inter_name):
         - trj_time_resolution: time difference between two consecutive trajectory points in seconds used in :any:`discretize_time_interval()` (be careful not to exceed max size of trajectory)
         - log_csv: if set `True`, makes CSV files of the outputs
         - print_commandline:
+        - lane_estimation: the method to use to estimate a vehicle's lane upon receiving a detection. Either "gps" or "video" (video not yet supported).
         - opt_zones: [optional] for running at real intersections. Geometric information about zones within
           which vehicles can receive trajectories.
         - lanes: [optional] for running at real intersections. Geometric information about each lane.
@@ -210,10 +210,10 @@ def load_inter_params(inter_name):
             "pli": {0: {0, 1, },  # North/South bounds throughs
                     1: {2, 3, },  # East/West bounds throughs
                     },
-            "lli": {0: {1, 3, },  # Northeast (ATC: 1) - Lane: 1
-                    1: {0, 2, },  # Southwest (ATC: 2) - Lane: 2
-                    2: {1, 3, },  # Southeast (ATC: 3) - Lane: 3
-                    3: {0, 2, },  # Northwest (ATC: 4) - Lane: 4
+            "lli": {0: {1, 3, },  # Northeast (ATC: 1) - Lane: 0
+                    1: {0, 2, },  # Southwest (ATC: 2) - Lane: 1
+                    2: {1, 3, },  # Southeast (ATC: 3) - Lane: 2
+                    3: {0, 2, },  # Northwest (ATC: 4) - Lane: 3
                     },
             "allowable_phases": (0, 1,),
             "yellow": 3.0,
@@ -226,13 +226,9 @@ def load_inter_params(inter_name):
             "do_traj_computation": True,
             "trj_time_resolution": 1.0,
             "print_commandline": True,
-            "lane_estimation": "gps",  # gps/video todo: pls append these to the docstring above and explain briefly
+            "lane_estimation": "gps",
             "opt_zones": opt_zone_info,
-            "lanes": lane_info,
-            # FIXME @ Pat: Please import GPS points here. In order to avoid mapping and its
-            # FIXME: confusing consequences, it would be tight if you could follow the lane numbers in accordance
-            # FIXME: with what you see above and the schematic map I sent you. I believe for UTC demo you used the
-            # FIXME: lane number as annotated on the map I sent you. Alternatively, let me know and I'll change phasing according to your lane numbers.
+            "lanes": lane_info
         }
     elif inter_name == "TERL":
         return {
@@ -269,15 +265,14 @@ def load_inter_params(inter_name):
             "min_dist_to_stop_bar": 50,
             "do_traj_computation": True,
             "trj_time_resolution": 1.0,
-
             "print_commandline": True,
         }
     elif inter_name == "GaleStadium":
         return {
-            "max_speed": 8.94 # 20 mph in m/s,
+            "max_speed": 8.94, # 20 mph in m/s,
             "min_CAV_headway": 1.5,
             "min_CNV_headway": 2.0,
-            "det_range": (38, 59, 11, 190, 20, 156, 49, 14)
+            "det_range": (38, 59, 11, 190, 20, 156, 49, 14),
             "k": int(4),
             "m": int(40),
             "num_lanes": int(8),
@@ -301,6 +296,9 @@ def load_inter_params(inter_name):
             "do_traj_computation": True,
             "trj_time_resolution": 1.0,
             "print_commandline": True,
+            "lane_estimation": "gps",
+            "opt_zones": opt_zone_info,
+            "lanes": lane_info
         }
     else:
         raise Exception("Simulation parameters are not known for this intersection.")

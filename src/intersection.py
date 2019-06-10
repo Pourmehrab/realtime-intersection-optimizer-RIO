@@ -40,14 +40,14 @@ class Intersection:
             lane = -1
             best_dist = self._inter_config_params["large_positive_num"]
             for i in range(self._inter_config_params["num_lanes"]):
-                lane_info = self._inter_config_params["lanes"][i + 1]
+                lane_info = self._inter_config_params["lanes"][i]
                 for j in range(len(lane_info.easting)):
                     e = lane_info.easting[j]
                     n = lane_info.northing[j]
                     d = util.euclidean_dist(veh_utm_easting, veh_utm_northing, e, n)
                     if d < best_dist:
                         best_dist = d
-                        lane = i + 1
+                        lane = i
         elif self._inter_config_params["lane_estimation"] == "video":
             raise NotImplementedError
         return lane
@@ -180,6 +180,9 @@ class Intersection:
         :param lane: the detected lane of the vehicle
         :type int:
         """
+        if lane not in self._inter_config_params["opt_zones"]:
+            # N.b. not all lanes have an opt zone
+            return False
         cone = 90  # cone angle
         h_cone = cone / 2  # half cone angle
         opt_zone_info = self._inter_config_params["opt_zones"][lane]
@@ -195,7 +198,7 @@ class Intersection:
         b = opt_zone_info.orientation + h_cone
         if a >= 0:
             orientation_constraint = True if a <= veh_heading <= b else False
-        else:  # Test these cases
+        else:
             b2 = b;
             b1 = 0
             a2 = 360;
@@ -253,7 +256,7 @@ class Lanes:
         :param veh_id: the detection id associated with the desired vehicle
         :type string:
         """
-        for v in self.vehlist[lane - 1]:
+        for v in self.vehlist[lane]:
             if v.ID == veh_id:
                 return v
         return None
@@ -570,7 +573,7 @@ class Vehicle:
             threshold or such a call would be meaningless.
 
         :param sc: scenario number being simulated
-        :param lane: lane number that is zero-based  (it records it one-based)
+        :param lane: lane number that is zero-based
         :param time_threshold: any trajectory point before this is considered expired (normally its simulation time)
         :param file: The log file to be written. It is initialized in :any:`OffTraffic.__init__()` method, if ``None``,
         this does not record points in CSV.
@@ -587,7 +590,7 @@ class Vehicle:
             writer = csv.writer(file, delimiter=',')
             while time < time_threshold and trj_indx <= max_trj_indx:
                 writer.writerows(
-                    [[sc, self.ID, self.veh_type, lane + 1, time, distance, speed, self._call_reps_traj_planner]])
+                    [[sc, self.ID, self.veh_type, lane, time, distance, speed, self._call_reps_traj_planner]])
                 file.flush()
                 trj_indx += 1
                 time, distance, speed = self.trajectory[:, trj_indx]
@@ -619,7 +622,7 @@ class Vehicle:
         veh_type_str = self.map_veh_type2str(self.veh_type)
         rank = '1st' if veh_indx == 0 else (
             '2nd' if veh_indx == 1 else ('3rd' if veh_indx == 2 else str(veh_indx + 1) + 'th'))
-        lane_rank = rank + ' in L' + str(lane + 1).zfill(2)
+        lane_rank = rank + ' in L' + str(lane).zfill(2)
         det_t, det_d, det_s = self.get_arr_sched()
         dep_t, dep_d, dep_s = self.get_dep_sched()
         first_trj_indx, last_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx

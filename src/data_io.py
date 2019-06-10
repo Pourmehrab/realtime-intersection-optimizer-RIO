@@ -49,7 +49,6 @@ class SocketThread(StoppableThread):
     Used for receiving data over a UDP socket. Provides
     a hook, ``handle(msg)``, that should be extended via subclassing.
     """
-
     def __init__(self, ip_address, port, msg_len, name):
         super(SocketThread, self).__init__(name)
         self._ip_address = ip_address
@@ -193,8 +192,6 @@ class TrafficPublisher(StoppableThread):
         Given a Vehicle object, extracts the trajectory and populates an IAM
         for sending out to the RSU.
 
-        TODO: move this somewhere in the docs
-
         The IAM message is a string consisting of:
             - IAM message ID
             - Hour (added by RSU)
@@ -211,7 +208,6 @@ class TrafficPublisher(StoppableThread):
                 - Latitutde offset (3 bytes), unsigned int16
                 - Longitude offset (3 bytes), unsigned int16
                 - Time offset (milliseconds)
-        https://github.com/pemami4911/FDOT-Intersection-Controller/blob/master/traffic-intersection-comms/interface/EncodeIAMasString.m
         """
         max_num_traj_points = self._intersection._inter_config_params["max_num_traj_points"]
         dsrc_ID = int(veh.ID.split(":")[1])

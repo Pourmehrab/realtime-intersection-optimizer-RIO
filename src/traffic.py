@@ -80,12 +80,10 @@ class RealTimeTraffic:
 
         # Read latest msg from vehicle data queue
         if len(self._vehicle_data_queue) != 0:
-            
 
             vehicle_data_msgs = self._vehicle_data_queue.pop()
             # Lane detection
             for vm in vehicle_data_msgs:
-                # 1-based indexing
                 lane = self.intersection.detect_lane(vm)
                 if lane == -1:
                     continue
@@ -98,9 +96,6 @@ class RealTimeTraffic:
                 # a 1D coordinate system where the origin is the stopbar of the detected lane.
                 dist = self.intersection.UTM_to_distance_from_stopbar(vm.pos[0], vm.pos[1], lane)
                 speed = np.sqrt(vm.vel[0] ** 2 + vm.vel[1] ** 2)
-
-                # vehlist is 0-based and find_and.. automatically 
-                # computes lane-1.
                 v = lanes.find_and_return_vehicle_by_id(lane, veh_id)
 
                 if v is None:
@@ -109,8 +104,8 @@ class RealTimeTraffic:
                         self.time_since_last_arrival = time_tracker.get_time()[1]
                         # convert vehicle message to Vehicle
                         des_speed = self.intersection._inter_config_params["max_speed"]
-                        # TODO dest = "" # ?
-                        dest = 1
+                        # TODO dest = "" # ? - add lookup by lane number for now
+                        dest =  1
                         length = vm.veh_len
                         amin = vm.max_decel
                         amax = vm.max_accel
@@ -123,8 +118,8 @@ class RealTimeTraffic:
                                 2) + ':' + '({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s)'.format(det_time, dist, speed))
 
                         # append it to its lane
-                        lanes.vehlist[lane - 1] += [veh]  # recall it is an array
-                        lanes.inc_last_veh_pos(lane - 1)
+                        lanes.vehlist[lane] += [veh]  # recall it is an array
+                        lanes.inc_last_veh_pos(lane)
                     else:
                         # TODO: when debugging, print or log here
                         pass
@@ -335,7 +330,7 @@ class SimTraffic:
         max_indx = self.__all_vehicles.shape[0] - 1
         while indx <= max_indx and self.__all_vehicles['arrival time'][indx] <= simulation_time:
             # read the arrived vehicle's information
-            lane = int(self.__all_vehicles['lane'][indx]) - 1  # CSV file has lanes coded in one-based
+            lane = int(self.__all_vehicles['lane'][indx])
             det_id = 'xyz' + str(indx).zfill(3)  # pad zeros if necessary
             det_type = self.__all_vehicles['type'][indx]  # 0: CNV, 1: CAV
             det_time = float(self.__all_vehicles['arrival time'][indx])
@@ -352,7 +347,7 @@ class SimTraffic:
                           intersection)
 
             self._print_commandline and print(
-                r'\\\ ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane + 1).zfill(
+                r'\\\ ' + veh.map_veh_type2str(det_type) + ':' + det_id + ':' + 'L' + str(lane).zfill(
                     2) + ':' + '({:>4.1f} s, {:>4.1f} m, {:>4.1f} m/s)'.format(det_time, dist, speed))
 
             # append it to its lane
