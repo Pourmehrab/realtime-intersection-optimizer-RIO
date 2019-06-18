@@ -590,7 +590,7 @@ class Vehicle:
             writer = csv.writer(file, delimiter=',')
             while time < time_threshold and trj_indx <= max_trj_indx:
                 writer.writerows(
-                    [[sc, self.ID, self.veh_type, lane, time, distance, speed, self._call_reps_traj_planner]])
+                    [[sc, self.ID, self.veh_type, lane, round(time,3), round(distance,3), round(speed,3), self._call_reps_traj_planner]])
                 file.flush()
                 trj_indx += 1
                 time, distance, speed = self.trajectory[:, trj_indx]

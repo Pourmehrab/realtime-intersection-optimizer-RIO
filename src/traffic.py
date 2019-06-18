@@ -87,6 +87,7 @@ class RealTimeTraffic:
                 lane = self.intersection.detect_lane(vm)
                 if lane == -1:
                     continue
+                print("lane detected: {}".format(lane))
                 # check if the vehicle is already in this lane
                 veh_id = vm.track_id + ":" + vm.dsrc_id
                 det_id = veh_id
@@ -101,6 +102,7 @@ class RealTimeTraffic:
                 if v is None:
                     # in the optimization zone?
                     if self.intersection.in_optimization_zone(vm, lane):
+                        print("In Opt zone!")
                         self.time_since_last_arrival = time_tracker.get_time()[1]
                         # convert vehicle message to Vehicle
                         des_speed = self.intersection._inter_config_params["max_speed"]
@@ -122,10 +124,11 @@ class RealTimeTraffic:
                         lanes.inc_last_veh_pos(lane)
                     else:
                         # TODO: when debugging, print or log here
-                        pass
+                        print("Not in opt zone!")
                 else:
                     # TODO: vehicle gets purged bc current state is 0 before this ever gts called
                     # update v with latest data
+                    print("Updating existing vehicle")
                     v.update(det_type, det_time, dist, speed)
         # N.b. eventually, add a flagging system so only vehicles with changes made to them 
         #   get new trajectories, to save on computation
@@ -142,12 +145,12 @@ class RealTimeTraffic:
         """Once a veh enters the intersection, log its arrival/departure info """
         if self.arrs_deps_csv is not None:
             writer = csv.writer(self.arrs_deps_csv, delimiter=',')
-            data = ['{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}'.format(
-                veh.ID, self.scenario_num , lane+1, veh.det_type, veh.arrival_info[0],
-                veh.arrival_info[0], veh.arrival_info[2], veh.arrival_info[1],
+            data = ['{},{},{},{},{:.3f},{:.3f},{:.3f},{},{},{},{},{},{},{},{}'.format(
+                veh.ID, self.scenario_num , lane, veh.veh_type, veh.arrival_info[0],
+                veh.arrival_info[2], veh.arrival_info[1],
                 veh.length, veh.max_accel_rate, veh.max_decel_rate, veh.destination,
                 veh.desired_speed, lanes.count[lane], self._total_count, dep_time
-                )]
+                ).strip("\"")]
             writer.writerow(data)
             self.arrs_deps_csv.flush()
 
