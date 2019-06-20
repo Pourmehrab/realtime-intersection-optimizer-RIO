@@ -41,7 +41,8 @@ def load_optimization_zone_constraints(inter_name):
     :type string:
     """
     zones = {}
-    opt_file = os.path.join("data", inter_name, "opt_zones.csv")
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    opt_file = os.path.join(dir_path, "..", "data", inter_name, "opt_zones.csv")
     prev_lane_number = None
     o = None
     with open(opt_file, 'r') as f:
@@ -79,7 +80,8 @@ def load_lane_geom(inter_name):
     folder name containing opt_zones.csv
     :type string:
     """
-    lane_file = os.path.join("data", inter_name, "lanes.csv")
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    lane_file = os.path.join(dir_path, "..", "data", inter_name, "lanes.csv")
     lanes = {}
     prev_lane_id = None
     l = None

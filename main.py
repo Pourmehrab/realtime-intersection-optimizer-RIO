@@ -97,13 +97,14 @@ def run_rio(args):
                 "\n################################# CLOCK: {:>5.1f} SEC #################################".format(
                     elapsed_time))
 
-            # update the assigned trajectories
-            traffic.update_trj_or_serve_at_stop_bar(lanes, elapsed_time, intersection)
-
             # add/update the vehicles
             if args.mode == "sim":
+                # update the assigned trajectories
+                traffic.update_trj_or_serve_at_stop_bar(lanes, elapsed_time, intersection)
                 traffic.get_traffic_info(lanes, elapsed_time, intersection)
             else:
+                traffic.update_trj_or_serve_at_stop_bar(lanes, elapsed_time, intersection,
+                    time_tracker.start_time)
                 traffic.get_traffic_info(lanes, time_tracker)
 
             # update earliest departure time

@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 from src.intersection import Vehicle
+import datetime as dt
 
 
 class RealTimeTraffic:
@@ -141,16 +142,18 @@ class RealTimeTraffic:
         """Closes arrivals and deps csv file"""
         self.arrs_deps_csv.close()
     
-    def log_arrival_departure(self, dep_time, lane, veh, lanes):
+    def log_arrival_departure(self, dep_time, lane, veh, lanes, start_time_stamp):
         """Once a veh enters the intersection, log its arrival/departure info """
         if self.arrs_deps_csv is not None:
             writer = csv.writer(self.arrs_deps_csv, delimiter=',')
-            data = ['{},{},{},{},{:.3f},{:.3f},{:.3f},{},{},{},{},{},{},{},{}'.format(
-                veh.ID, self.scenario_num , lane, veh.veh_type, veh.arrival_info[0],
+            abs_arrival_time = dt.timedelta(seconds=veh.arrival_info[0]) + start_time_stamp
+            abs_dep_time = dt.timedelta(seconds=dep_time) + start_time_stamp
+            data = ['{},{},{},{},{},{:.3f},{:.3f},{},{},{},{},{},{},{},{}'.format(
+                veh.ID, self.scenario_num , lane, veh.veh_type, abs_arrival_time,
                 veh.arrival_info[2], veh.arrival_info[1],
                 veh.length, veh.max_accel_rate, veh.max_decel_rate, veh.destination,
-                veh.desired_speed, lanes.count[lane], self._total_count, dep_time
-                ).strip("\"")]
+                veh.desired_speed, lanes.count[lane], self._total_count, abs_dep_time
+                )]
             writer.writerow(data)
             self.arrs_deps_csv.flush()
 
@@ -185,7 +188,8 @@ class RealTimeTraffic:
                 volumes[lane] = 0.0
         return volumes
 
-    def update_trj_or_serve_at_stop_bar(self, lanes, elapsed_time, intersection):
+    def update_trj_or_serve_at_stop_bar(self, lanes, elapsed_time, intersection,
+             start_time_stamp=None):
         """
         To remove the served vehicles and print proper notification.
         In realtime mode, vehicles are removed based on whether
@@ -198,7 +202,7 @@ class RealTimeTraffic:
         :param elapsed_time: time since start
         :param intersection:
         :type intersection: Intersection
-
+        :param start_time_stamp: DateTime timestamp for logging in real-time mode
         """
         num_lanes = intersection._inter_config_params.get('num_lanes')
         for lane in range(num_lanes):  # 0-based indexing for lanes internally
@@ -214,9 +218,10 @@ class RealTimeTraffic:
                                 dep_time))
                         self._total_count += 1
                         # log stuff
-                        self.log_arrival_departure(dep_time, lane, veh, lanes)
+                        self.log_arrival_departure(dep_time, lane, veh, lanes, start_time_stamp)
                     elif det_time < elapsed_time:  # record/remove expired points
-                        veh.update_trj_pts(self.scenario_num, lane, elapsed_time, self.full_traj_csv_file)
+                        veh.update_trj_pts(self.scenario_num, lane, elapsed_time,
+                             self.full_traj_csv_file, start_time_stamp)
                     else:  # distance from stop bar of all behind this vehicle is larger, so we can stop.
                         break
 

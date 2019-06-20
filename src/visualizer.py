@@ -22,7 +22,7 @@ def plot_SPaT_and_trajs(lanes, signal, intersection, absolute_time, show=False, 
 
     # Initialize MatPlotLip
     root = np.sqrt(num_lanes)
-    _num_rows = int(root)
+    _num_rows = int(np.floor(root))
     if root - _num_rows > 0.001:
         _num_rows = int(round(root, 0))
         _num_cols = num_lanes // _num_rows

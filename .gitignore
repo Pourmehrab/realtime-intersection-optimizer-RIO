@@ -114,3 +114,5 @@ optional/
 
 #pytest
 .pytest_cache
+
+notebooks/
