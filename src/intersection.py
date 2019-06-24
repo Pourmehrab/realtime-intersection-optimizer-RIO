@@ -3,7 +3,8 @@ import operator
 import numpy as np
 import src.geom as geom
 from src.config import *
-import src.util as util  # Patrick
+import src.util as util
+import datetime as dt
 
 
 class Intersection:
@@ -563,7 +564,7 @@ class Vehicle:
         assert t > 0 and not np.isinf(t) and not np.isnan(t), "check the earliest departure time computation"
         self.earliest_departure = t
 
-    def update_trj_pts(self, sc, lane, time_threshold, file):
+    def update_trj_pts(self, sc, lane, time_threshold, file, start_time_stamp=None):
         """
         Writes the trajectory points in the log file if the time stamp is before the ``time_threshold``
         and then removes those points by updating the pointer to the first trajectory point.
@@ -577,6 +578,7 @@ class Vehicle:
         :param time_threshold: any trajectory point before this is considered expired (normally its simulation time)
         :param file: The log file to be written. It is initialized in :any:`OffTraffic.__init__()` method, if ``None``,
         this does not record points in CSV.
+        :param start_time_stamp: The initial DateTime stamp used only in real-time mode
         """
         trj_indx, max_trj_indx = self.first_trj_point_indx, self.last_trj_point_indx
         time, distance, speed = self.get_arr_sched()
@@ -589,8 +591,12 @@ class Vehicle:
         else:  # get full info and write trajectory points to the CSV file
             writer = csv.writer(file, delimiter=',')
             while time < time_threshold and trj_indx <= max_trj_indx:
+                if start_time_stamp is not None:
+                    ts = start_time_stamp + dt.timedelta(seconds=round(time,3))
+                else:
+                    ts = round(time,3)
                 writer.writerows(
-                    [[sc, self.ID, self.veh_type, lane, round(time,3), round(distance,3), round(speed,3), self._call_reps_traj_planner]])
+                    [[sc, self.ID, self.veh_type, lane, ts, round(distance,3), round(speed,3), self._call_reps_traj_planner]])
                 file.flush()
                 trj_indx += 1
                 time, distance, speed = self.trajectory[:, trj_indx]
