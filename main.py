@@ -138,17 +138,15 @@ def run_rio(args):
             if (args.mode == "sim" and (traffic.last_veh_arr() and lanes.all_served(num_lanes))) or \
                     (args.mode == "realtime" and (args.run_duration < elapsed_time)):
                 if args.do_logging:
-                    # elapsed_process_time = perf_counter() - t_start
-                    # timer.log_time_stats(sc, inter_name, start_time_stamp, elapsed_process_time, )  # log timings
                     if args.mode == "sim":
                         traffic.save_veh_level_csv(args.intersection, start_time_stamp_name)
                     if args.mode == "realtime":
                         traffic.close_arrs_deps_csv()
                     traffic.close_trj_csv()
+                    signal.log_current_SPaT(args.sc, absolute_time)
                     signal.close_sig_csv()
                     intersection._inter_config_params.get("print_commandline") and print(
-                        "\n### Elapsed Process Time: {:>5d} ms ###".format(int(1_000 * elapsed_time)),
-                        "\n### Actual RIO run start time: {:>5d} micro sec. ###".format(int(1_000_000 * t_start)))
+                        "\n### Elapsed Process Time: {:>5d} s ###".format(elapsed_time))
                 if args.mode == "realtime":
                     tl.stop()
                     tp.stop()

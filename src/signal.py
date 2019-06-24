@@ -156,9 +156,11 @@ class Signal:
                 phase_indx += 1
         else:
             writer = csv.writer(self.__sig_csv_file, delimiter=',')
+            # N.b. only logs SPaT upon expiration
             while absolute_time > self.SPaT_end[phase_indx]:
                 any_phase_to_purge = True
-                row = [sc, self.SPaT_sequence[phase_indx], self.SPaT_start[phase_indx], self.SPaT_end[phase_indx]]
+                row = [sc, self.SPaT_sequence[phase_indx], round(self.SPaT_start[phase_indx],3),
+                        round(self.SPaT_end[phase_indx],3)]
                 if self.mode == "realtime":
                     row += [str(timestamp)]
                 writer.writerows([row])
@@ -172,6 +174,16 @@ class Signal:
             del self.SPaT_green_dur[:phase_indx]
             del self.SPaT_start[:phase_indx]
             del self.SPaT_end[:phase_indx]
+
+    def log_current_SPaT(self, sc, timestamp):
+        if self.__sig_csv_file is not None:
+            writer = csv.writer(self.__sig_csv_file, delimiter=',')
+            row = [sc, self.SPaT_sequence[0], round(self.SPaT_start[0],3),
+                    round(self.SPaT_end[0],3)]
+            if self.mode == "realtime":
+                row += [str(timestamp)]
+            writer.writerows([row])
+            self.__sig_csv_file.flush()
 
     def close_sig_csv(self):
         """Closes the signal CSV file"""
