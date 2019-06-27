@@ -17,10 +17,9 @@ def find_pannel_matplot(lane, _num_cols):
 
 
 def plot_SPaT_and_trajs(lanes, signal, intersection, absolute_time, show=False, save_dir=''):
-    num_lanes, min_dist_to_stop_bar = map(intersection._inter_config_params.get,
-                                          ['num_lanes', 'min_dist_to_stop_bar', ])
+    num_lanes = len(lanes.vehlist)
+    min_dist_to_stop_bar = intersection._inter_config_params.get('min_dist_to_stop_bar')
 
-    # Initialize MatPlotLip
     root = np.sqrt(num_lanes)
     _num_rows = int(np.floor(root))
     if root - _num_rows > 0.001:
@@ -30,12 +29,14 @@ def plot_SPaT_and_trajs(lanes, signal, intersection, absolute_time, show=False, 
             _num_cols += 1
     else:
         _num_cols = _num_rows
-
+    
     _fig_matplotlib, _ax_matplotlib = plt.subplots(nrows=_num_rows, ncols=_num_cols, sharex=True, sharey=True)
-
+    
     num_phases_in_SPaT = len(signal.SPaT_sequence)
 
     for lane, ax in enumerate(_fig_matplotlib.axes):
+        if lane == num_lanes:
+            break
         ax.set_title('Lane ' + str(lane + 1))
         i, j = find_pannel_matplot(lane, _num_cols)
         if i == _num_rows - 1:
@@ -68,9 +69,7 @@ def plot_SPaT_and_trajs(lanes, signal, intersection, absolute_time, show=False, 
         plt.savefig(os.path.join(save_dir, '{}.png'.format(int(1000 * absolute_time))))
     if show:
         plt.show()
-    plt.close()
-    #print('new figure populated')
-
+    plt.clf() # clear
 
 def get_veh_traj(vehlist, lane, veh_indx):
     veh = vehlist[lane][veh_indx]
