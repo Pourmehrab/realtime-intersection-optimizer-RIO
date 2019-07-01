@@ -1,13 +1,6 @@
-####################################
-# File name: trajectory.py         #
-# Author: Mahmoud Pourmehrab       #
-# Email: pourmehrab@gmail.com      #
-# Last Modified: May/30/2018       #
-####################################
-
 import operator
-
 import numpy as np
+from scipy.interpolate import UnivariateSpline
 
 
 # -------------------------------------------------------
@@ -39,8 +32,9 @@ class Trajectory:
         :param max_speed: Trajectories are designed to respect the this speed limit (in :math:`m/s`).
         :param min_headway: This is the minimum headway that vehicles in a lane can be served (in :math:`sec/veh`)
         """
-        self._max_speed, self._min_headway, self._small_positive_num, self._trj_time_resolution = map(
-            intersection._general_params.get, ['max_speed', 'min_headway', 'small_positive_num', 'trj_time_resolution'])
+        self._max_speed, self._min_headway, self._small_positive_num, self._trj_time_resolution, self._det_range = map(
+            intersection._inter_config_params.get,
+            ['max_speed', 'min_headway', 'small_positive_num', 'trj_time_resolution', 'det_range'])
 
     def discretize_time_interval(self, start_time, end_time):
         """
@@ -73,7 +67,7 @@ class Trajectory:
 
         .. note::
             - t,d,s should keep the whole trajectory incusion-wise of the first and the last points because we areseting the first trajectory point index here.
-            - An assigned trajectory always is indexed from zero as the ``veh.set_first_trj_point_indx``.
+            - An assigned trajectory always is indexed from zero as the ``veh.set_first_trj_pt_indx``.
 
 
         :param veh: the vehicle object that is owns the trajectory
@@ -90,8 +84,8 @@ class Trajectory:
         """
         n = len(t)
         veh.trajectory[:, 0:n] = [t, d, s]
-        veh.set_first_trj_point_indx(0)
-        veh.set_last_trj_point_indx(n - 1)
+        veh.set_first_trj_pt_indx(0)
+        veh.set_last_trj_pt_indx(n - 1)
 
 
 # -------------------------------------------------------
@@ -130,14 +124,14 @@ class LeadConventional(Trajectory):
         :type veh: Vehicle
 
         .. warning::
-            Make sure the assumptions here are compatible with those in :any:`earliest_arrival_conventional`
+            Make sure the assumptions here are compatible with those in :any:`earliest_arr_cnv`
 
         :Author:
             Mahmoud Pourmehrab <pourmehrab@gmail.com>
         :Date:
             April-2018
         """
-        det_time, det_dist, _ = veh.get_arrival_schedule()
+        det_time, det_dist, _ = veh.get_arr_sched()
         v = det_dist / (veh.scheduled_departure - det_time)
 
         t = self.discretize_time_interval(det_time, veh.scheduled_departure)
@@ -254,7 +248,6 @@ class FollowerConventional(Trajectory):
 
         :param lead_d: lead vehicle distance to stop bar
         :param lead_s: lead vehicle speed
-        :param lead_a: lead vehicle acceleration
         :param lead_l: lead vehicle length
         :param foll_d: follower vehicle distance to stop bar
         :param foll_s: follower vehicle speed
@@ -306,8 +299,8 @@ class FollowerConventional(Trajectory):
         """
         lead_l, foll_s_des = lead_veh.length, veh.desired_speed
         lead_trj_indx, foll_trj_indx, max_lead_traj_indx = lead_veh.first_trj_point_indx + 1, veh.first_trj_point_indx + 1, lead_veh.last_trj_point_indx
-        curr_foll_t, curr_foll_d, curr_foll_s = veh.get_arrival_schedule()
-        curr_lead_t, curr_lead_d, curr_lead_s = lead_veh.get_arrival_schedule()
+        curr_foll_t, curr_foll_d, curr_foll_s = veh.get_arr_sched()
+        curr_lead_t, curr_lead_d, curr_lead_s = lead_veh.get_arr_sched()
         next_lead_t, next_lead_d, next_lead_s = lead_veh.trajectory[:, lead_trj_indx]
 
         if curr_lead_t > curr_foll_t:
@@ -352,7 +345,7 @@ class FollowerConventional(Trajectory):
         dt_total = curr_foll_t - veh.scheduled_departure + curr_foll_d / self._max_speed
 
         if dt_total > 0:
-            veh.scale_traj_points(foll_trj_indx, curr_foll_t, dt_total)
+            veh.scale_traj_pts(foll_trj_indx, curr_foll_t, dt_total)
             curr_foll_t = veh.trajectory[0, foll_trj_indx - 1]
             t_departure_relative = veh.scheduled_departure - curr_foll_t
         else:
@@ -367,7 +360,7 @@ class FollowerConventional(Trajectory):
             t_augment, d_augment, v_augment = [t_departure_relative], [0.0], [v_departure_relative]
         last_index = foll_trj_indx + len(t_augment)
         veh.trajectory[:, foll_trj_indx:last_index] = t_augment + curr_foll_t, d_augment, v_augment
-        veh.set_last_trj_point_indx(last_index - 1)
+        veh.set_last_trj_pt_indx(last_index - 1)
 
     @staticmethod
     def comp_speed_distance(t0, d0, v0, a, t, foll_a_min, foll_a_max, next_lead_d, lead_l):
@@ -453,7 +446,7 @@ class LeadConnected(Trajectory):
         """
         super().__init__(intersection)
 
-        self.k, self.m = map(intersection._general_params.get, ['k', 'm'])
+        self.k, self.m = map(intersection._inter_config_params.get, ['k', 'm'])
 
         self._lp_model = cplex.Cplex()
         self._lp_model.objective.set_sense(self._lp_model.objective.sense.minimize)
@@ -472,7 +465,7 @@ class LeadConnected(Trajectory):
         self._lp_model.linear_constraints.add(
             lin_expr=[[["b_0"], [1.0]], [["b_1"], [1.0]]] + [constraint] * (2 + 4 * self.m),
             senses=["E"] * 4 + ["G"] * self.m + ["L"] * self.m + ["G"] * self.m + ["L"] * self.m,
-            rhs=[0.0] * 4 + [-intersection._general_params.get('max_speed')] * self.m + [0.0] * (3 * self.m),
+            rhs=[0.0] * 4 + [-intersection._inter_config_params.get('max_speed')] * self.m + [0.0] * (3 * self.m),
             names=["det_dist", "det_speed", "dep_dist", "dep_speed"] + ["ub_speed_" + str(j) for j in range(self.m)] + [
                 "lb_speed_" + str(j) for j in range(self.m)] + ["ub_acc_" + str(j) for j in range(self.m)] + [
                       "lb_acc_" + str(j) for j in range(self.m)])
@@ -501,8 +494,8 @@ class LeadConnected(Trajectory):
         """
 
         amin, amax = veh.max_decel_rate, veh.max_accel_rate
-        det_time, det_dist, det_speed = veh.get_arrival_schedule()
-        dep_time, dep_dist, dep_speed = veh.get_departure_schedule()
+        det_time, det_dist, det_speed = veh.get_arr_sched()
+        dep_time, dep_dist, dep_speed = veh.get_dep_sched()
         departure_time_relative = dep_time - det_time
 
         self._lp_model.objective.set_linear(zip(
@@ -533,7 +526,7 @@ class LeadConnected(Trajectory):
 
         return self._lp_model
 
-    def solve(self, veh, lead_veh, model):
+    def solve(self, veh, lead_veh, model, penalty=True):
         """
         Solves an :term:`LP` model for connected vehicle (both lead and follower)
 
@@ -550,8 +543,8 @@ class LeadConnected(Trajectory):
         :Date:
             April-2018
         """
-        det_time, det_dist, det_speed = veh.get_arrival_schedule()
-        dep_time, dep_dist, dep_speed = veh.get_departure_schedule()
+        det_time, det_dist, det_speed = veh.get_arr_sched()
+        dep_time, dep_dist, dep_speed = veh.get_dep_sched()
         departure_time_relative = dep_time - det_time
 
         try:
@@ -564,11 +557,13 @@ class LeadConnected(Trajectory):
                                   / np.array([departure_time_relative ** n for n in range(self.k)], dtype=float), 0))
             f_prime = np.polyder(f)
 
-            t, d, s = self.compute_trj_points(f, f_prime, dep_time - det_time)
+            t, d, s = self.compute_trj_points(f, f_prime, dep_time - det_time) # Area Under Curve Minimization
+            # t, d, s = self.optimize_lead_connected_trj(veh)  # penalty function
             t += det_time
             veh.set_poly(f, t[0])
+
         elif lead_veh is None:
-            t, d, s = self.optimize_lead_connected_trj(veh)
+            t, d, s = self.optimize_lead_connected_trj(veh)  # penalty function
         else:
             t, d, s = self.optimize_follower_connected_trj(veh, lead_veh)  # is defined/used in the child class
 
@@ -607,14 +602,40 @@ class LeadConnected(Trajectory):
         :Date:
             April-2018
         """
-        det_time, det_dist, _ = veh.get_arrival_schedule()
-        v = det_dist / (veh.scheduled_departure - det_time)
 
+        det_time, det_dist, det_speed = veh.get_arr_sched()
+
+        v = det_dist / (veh.scheduled_departure - det_time)
         t = self.discretize_time_interval(det_time, veh.scheduled_departure)
         s = np.array([v] * len(t))
         d = np.array([det_dist - v * (t_i - det_time) for t_i in t])
 
-        return t, d, s
+        # t_0 = det_time
+        # v_0 = det_speed
+        # x_0 = det_dist
+        # t_1 = t_0 + 0.5
+        # x_1 = x_0 - v_0 * 0.5
+        # t_dep = veh.scheduled_departure
+        # v = self._max_speed
+        # x = 0.0
+        # t_e = t_dep - 0.5
+        # x_e = x + v * 0.5
+        # N = (veh.scheduled_departure - det_time) // self._trj_time_resolution
+        # det_range = max(self._det_range)  # todo: feed lane
+        #
+        # time = [t_0, t_1] + list(np.linspace(t_0 + (t_dep - t_0) / 4, (t_0 + 3 * (t_dep - t_0) / 4), 2)) + [t_e, t_dep]
+        # dist = [x_0, x_1] + list(np.linspace(3 * (x_0 - x) / 4, (x_0 - x) / 4, 2)) + [x_e, x]
+        #
+        # roughness_penalty = 1+((x_0 - x) / det_range) * 0.9586
+        # spl = UnivariateSpline(time, dist, s=1)
+        # spl.set_smoothing_factor(roughness_penalty)
+        # t = np.linspace(t_0, t_dep, N)
+        # d = spl(t)
+        # d[0] = x_0
+        # d[-1] = x
+        # s = np.diff(d) / np.diff(t)
+
+        return t, d, s  # np.append(-s, [self._max_speed, ])
 
 
 # -------------------------------------------------------
@@ -691,11 +712,11 @@ class FollowerConnected(LeadConnected):
 
         self._lp_model = super().set_model(veh)
 
-        foll_det_time, _, _ = veh.get_arrival_schedule()
-        lead_dep_time, _, _ = lead_veh.get_departure_schedule()
+        foll_det_time, _, _ = veh.get_arr_sched()
+        lead_dep_time, _, _ = lead_veh.get_dep_sched()
         # start_rel_ctrl_time, end_rel_ctrl_time = self.GAP_CTRL_STARTS, lead_dep_time - foll_det_time
 
-        foll_dep_time, _, _ = veh.get_departure_schedule()
+        foll_dep_time, _, _ = veh.get_dep_sched()
         dep_time_rel = foll_dep_time - foll_det_time
 
         lead_num_traj_points = lead_veh.last_trj_point_indx - lead_veh.first_trj_point_indx + 1
@@ -752,9 +773,9 @@ class FollowerConnected(LeadConnected):
         :Date:
             April-2018
         """
-        lead_dep_time, _, _ = lead_veh.get_departure_schedule()
-        foll_det_time, foll_det_dist, _ = veh.get_arrival_schedule()
-        foll_dep_time, foll_dep_dist, _ = veh.get_departure_schedule()
+        lead_dep_time, _, _ = lead_veh.get_dep_sched()
+        foll_det_time, foll_det_dist, _ = veh.get_arr_sched()
+        foll_dep_time, foll_dep_dist, _ = veh.get_dep_sched()
         dep_headway = foll_dep_time - lead_dep_time
         t, d, s = np.copy(lead_veh.trajectory[:, lead_veh.first_trj_point_indx:lead_veh.last_trj_point_indx + 1])
         t += dep_headway  # to shift the trajectory
@@ -768,3 +789,59 @@ class FollowerConnected(LeadConnected):
         t_augment += foll_det_time
 
         return map(np.concatenate, [[t_augment[:-1], t], [d_augment[:-1], d], [s_augment[:-1], s]])
+
+
+class TrajectoryPlanner:
+    """
+    Plans trajectories of all type. This makes calls to **trajectory** classes.
+    # Todo: @Ash: explain planner and 4 optimizers briefly.
+    :Author:
+        Mahmoud Pourmehrab <pourmehrab@gmail.com>
+        Ash Omidvar <aschkan@ufl.edu>
+    :Date:
+        April-2018
+        Nov-2018
+    """
+
+    def __init__(self, intersection):
+        """Instantiates the **trajectory** classes"""
+
+        self.lead_conventional_trj_estimator = LeadConventional(intersection)
+        self.lead_connected_trj_optimizer = LeadConnected(intersection)
+        self.follower_conventional_trj_estimator = FollowerConventional(intersection)
+        self.follower_connected_trj_optimizer = FollowerConnected(intersection)
+
+        self._max_speed = intersection._inter_config_params.get('max_speed')
+
+    def plan_trajectory(self, lanes, veh, lane, veh_indx, intersection, identifier):
+        """
+        :param lanes:
+        :type lanes: Lanes
+        :param veh:
+        :type veh: Vehicle
+        :param lane:
+        :param veh_indx:
+        :param intersection:
+        :param identifier: Shows type of assigned trajectory
+
+        """
+
+        veh.inc_traj_planner_calls()
+        veh_type, departure_time = veh.veh_type, veh.scheduled_departure
+        if veh_indx > 0 and veh_type == 1:  # Follower CAV
+            lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
+            model = self.follower_connected_trj_optimizer.set_model(veh, lead_veh)
+            self.follower_connected_trj_optimizer.solve(veh, lead_veh, model)
+        elif veh_indx > 0 and veh_type == 0:  # Follower Conventional
+            lead_veh = lanes.vehlist.get(lane)[veh_indx - 1]
+            self.follower_conventional_trj_estimator.solve(veh, lead_veh)
+        elif veh_indx == 0 and veh_type == 1:  # Lead CAV
+            model = self.lead_connected_trj_optimizer.set_model(veh)
+            self.lead_connected_trj_optimizer.solve(veh, None, model)
+        elif veh_indx == 0 and veh_type == 0:  # Lead Conventional
+            self.lead_conventional_trj_estimator.solve(veh)
+        else:
+            raise Exception('One of lead/follower conventional/connected should have occurred.')
+
+        # ToDo @Ash: distinguish the tracks.
+        intersection._inter_config_params.get("print_commandline") and veh.print_trj_points(lane, veh_indx, identifier)

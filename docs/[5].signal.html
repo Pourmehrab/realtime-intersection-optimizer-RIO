@@ -1,0 +1,625 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>7. Signal Phase and Timing (SPaT) &mdash; AVIAN 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="8. Trajectory" href="[6].trajectory.html" />
+    <link rel="prev" title="6. Intersection" href="[4].intersection.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/uf_logo_AVIAN.jpg" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="[0].overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1].config.html">2. Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[2].time.html">3. Time Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[3].traffic.html">4. Traffic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[3].traffic.html#module-src.traffic_io">5. Traffic i/o</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[4].intersection.html">6. Intersection</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">7. Signal Phase and Timing (SPaT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[6].trajectory.html">8. Trajectory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[7].signal.ctrl.interface.html">9. Signal Controller Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[8].util.html">10. Util</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">AVIAN</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>7. Signal Phase and Timing (SPaT)</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-src.signal">
+<span id="signal-phase-and-timing-spat"></span><h1>7. Signal Phase and Timing (SPaT)<a class="headerlink" href="#module-src.signal" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="src.signal.Signal">
+<em class="property">class </em><code class="descclassname">src.signal.</code><code class="descname">Signal</code><span class="sig-paren">(</span><em>intersection</em>, <em>sc</em>, <em>start_time_stamp</em><span class="sig-paren">)</span><a class="headerlink" href="#src.signal.Signal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="docutils">
+<dt>The class serves the following goals:</dt>
+<dd><ul class="first last simple">
+<li>Keeps the SPaT decision updated</li>
+<li><dl class="first docutils">
+<dt>Makes SPaT decisions through variety of control methods. It supports:</dt>
+<dd><ul class="first last">
+<li>Pre-timed control</li>
+<li>Genetic Algorithm</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+<p>Set the class variable <code class="docutils literal notranslate"><span class="pre">lag_on_green</span></code> to the time (in seconds) that from start of green is not valid to schedule any departure.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>The signal status is saved under <code class="docutils literal notranslate"><span class="pre">\log\&lt;intersection</span> <span class="pre">name&gt;\</span></code> directory.</li>
+</ul>
+</div>
+<p>Use Case:</p>
+<blockquote>
+<div><p>Instantiate like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">signal</span> <span class="o">=</span> <span class="n">MCF_SPaT</span><span class="p">(</span><span class="o">.</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Perform <a class="reference internal" href="[0].overview.html#term-spat"><span class="xref std std-term">SPaT</span></a> computation by:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">signal</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="o">.</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="src.signal.Signal.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>intersection</em>, <em>sc</em>, <em>start_time_stamp</em><span class="sig-paren">)</span><a class="headerlink" href="#src.signal.Signal.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Elements:</dt>
+<dd><ul class="first last simple">
+<li>Sequence keeps the sequence of phases to be executed from 0</li>
+<li><code class="docutils literal notranslate"><span class="pre">green_dur</span></code> keeps the amount of green allocated to each phase</li>
+<li><code class="docutils literal notranslate"><span class="pre">yellow</span></code> and <code class="docutils literal notranslate"><span class="pre">all-red</span></code> is a fixed amount at the end of all phases (look at class variables)</li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><a class="reference internal" href="[0].overview.html#term-spat"><span class="xref std std-term">SPaT</span></a> starts executing from front (index 0) to the back of each list.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.signal.Signal._set_lane_lane_incidence">
+<code class="descname">_set_lane_lane_incidence</code><span class="sig-paren">(</span><em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.signal.Signal._set_lane_lane_incidence" title="Permalink to this definition">¶</a></dt>
+<dd><p>This converts a dictionary of the form:
+key is a lane and value is a <em>set</em> of lanes that are in conflict with key (note numbering starts from 1 not 0) to <code class="docutils literal notranslate"><span class="pre">lane_lane_incidence</span></code> which includes the conflict matrix <span class="math notranslate nohighlight">\(|L|\times |L|\)</span> where element <span class="math notranslate nohighlight">\(ij\)</span> is 1 if <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span> are conflicting movements</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>num_lanes</strong> – number of incoming lanes</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.signal.Signal._set_phase_lane_incidence">
+<code class="descname">_set_phase_lane_incidence</code><span class="sig-paren">(</span><em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.signal.Signal._set_phase_lane_incidence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the phase-phase incidence matrix of the intersection</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>num_lanes</strong> – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.signal.Signal._append_extend_phase">
+<code class="descname">_append_extend_phase</code><span class="sig-paren">(</span><em>phase</em>, <em>actual_green</em>, <em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.signal.Signal._append_extend_phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Appends a phase to the <a class="reference internal" href="[0].overview.html#term-spat"><span class="xref std std-term">SPaT</span></a> (append/extend a phase and its green to the end of signal array)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>phase</strong> – phase to be added</li>
+<li><strong>actual_green</strong> – green duration of that phase</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body"><p class="first last">April-2018</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.signal.Signal.update_SPaT">
+<code class="descname">update_SPaT</code><span class="sig-paren">(</span><em>intersection</em>, <em>simulation_time</em>, <em>sc</em><span class="sig-paren">)</span><a class="headerlink" href="#src.signal.Signal.update_SPaT" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Performs two tasks to update SPaT based on the given opt_clock:</dt>
+<dd><ul class="first last simple">
+<li>Removes terminated phase (happens when the all-red is passed)</li>
+<li>Checks for SPaT to not get empty after being updated</li>
+</ul>
+</dd>
+</dl>
+<div class="admonition attention">
+<p class="first admonition-title">Attention</p>
+<ul class="last simple">
+<li>If all phases are getting purged, either make longer SPaT decisions or reduce the simulation steps.</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>simulation_time</strong> – Normally the current opt_clock of simulation or real-time in <span class="math notranslate nohighlight">\(s\)</span></li>
+<li><strong>sc</strong> – scenario number to be recorded in CSV</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body"><p class="first last">April-2018</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.signal.Signal.close_sig_csv">
+<code class="descname">close_sig_csv</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.signal.Signal.close_sig_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Closes the signal CSV file</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.signal.Signal._flush_upcoming_SPaTs">
+<code class="descname">_flush_upcoming_SPaTs</code><span class="sig-paren">(</span><em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.signal.Signal._flush_upcoming_SPaTs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Just leaves the first SPaT and removes the rest.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">One more severe variant to this is to even reduce the the green time of the first phase.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="src.signal.MCF_SPaT">
+<em class="property">class </em><code class="descclassname">src.signal.</code><code class="descname">MCF_SPaT</code><span class="sig-paren">(</span><em>first_detection_time</em>, <em>intersection</em>, <em>sc</em>, <em>start_time_stamp</em><span class="sig-paren">)</span><a class="headerlink" href="#src.signal.MCF_SPaT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#src.signal.Signal" title="src.signal.Signal"><code class="xref py py-class docutils literal notranslate"><span class="pre">src.signal.Signal</span></code></a></p>
+<p>Under this class, the <a class="reference internal" href="[0].overview.html#term-spat"><span class="xref std std-term">SPaT</span></a> is decided optimally by a <a class="reference internal" href="[0].overview.html#term-mcf"><span class="xref std std-term">MCF</span></a> model.</p>
+<p>The first phase in <cite>_allowable_phases</cite> gets initialized with a minimum green in the constructor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="src.signal.MCF_SPaT.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>first_detection_time</em>, <em>intersection</em>, <em>sc</em>, <em>start_time_stamp</em><span class="sig-paren">)</span><a class="headerlink" href="#src.signal.MCF_SPaT.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Elements:</dt>
+<dd><ul class="first last simple">
+<li>Sequence keeps the sequence of phases to be executed from 0</li>
+<li><code class="docutils literal notranslate"><span class="pre">green_dur</span></code> keeps the amount of green allocated to each phase</li>
+<li><code class="docutils literal notranslate"><span class="pre">yellow</span></code> and <code class="docutils literal notranslate"><span class="pre">all-red</span></code> is a fixed amount at the end of all phases (look at class variables)</li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><a class="reference internal" href="[0].overview.html#term-spat"><span class="xref std std-term">SPaT</span></a> starts executing from front (index 0) to the back of each list.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.signal.MCF_SPaT._append_extend_phase">
+<code class="descname">_append_extend_phase</code><span class="sig-paren">(</span><em>phase</em>, <em>actual_green</em>, <em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.signal.MCF_SPaT._append_extend_phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Appends a phase to the <a class="reference internal" href="[0].overview.html#term-spat"><span class="xref std std-term">SPaT</span></a> (append/extend a phase and its green to the end of signal array)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>phase</strong> – phase to be added</li>
+<li><strong>actual_green</strong> – green duration of that phase</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body"><p class="first last">April-2018</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.signal.MCF_SPaT._flush_upcoming_SPaTs">
+<code class="descname">_flush_upcoming_SPaTs</code><span class="sig-paren">(</span><em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.signal.MCF_SPaT._flush_upcoming_SPaTs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Just leaves the first SPaT and removes the rest.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">One more severe variant to this is to even reduce the the green time of the first phase.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.signal.MCF_SPaT._set_lane_lane_incidence">
+<code class="descname">_set_lane_lane_incidence</code><span class="sig-paren">(</span><em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.signal.MCF_SPaT._set_lane_lane_incidence" title="Permalink to this definition">¶</a></dt>
+<dd><p>This converts a dictionary of the form:
+key is a lane and value is a <em>set</em> of lanes that are in conflict with key (note numbering starts from 1 not 0) to <code class="docutils literal notranslate"><span class="pre">lane_lane_incidence</span></code> which includes the conflict matrix <span class="math notranslate nohighlight">\(|L|\times |L|\)</span> where element <span class="math notranslate nohighlight">\(ij\)</span> is 1 if <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span> are conflicting movements</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>num_lanes</strong> – number of incoming lanes</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.signal.MCF_SPaT._set_phase_lane_incidence">
+<code class="descname">_set_phase_lane_incidence</code><span class="sig-paren">(</span><em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.signal.MCF_SPaT._set_phase_lane_incidence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the phase-phase incidence matrix of the intersection</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>num_lanes</strong> – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Author:</th><td class="field-body">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April-2018</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.signal.MCF_SPaT.close_sig_csv">
+<code class="descname">close_sig_csv</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.signal.MCF_SPaT.close_sig_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Closes the signal CSV file</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.signal.MCF_SPaT.solve">
+<code class="descname">solve</code><span class="sig-paren">(</span><em>lanes</em>, <em>intersection</em>, <em>trajectory_planner</em><span class="sig-paren">)</span><a class="headerlink" href="#src.signal.MCF_SPaT.solve" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lanes</strong> – </li>
+<li><strong>intersection</strong> – </li>
+<li><strong>critical_volume_ratio</strong> – </li>
+<li><strong>trajectory_planner</strong> – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body"><p class="first last">July-2018</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.signal.MCF_SPaT.update_SPaT">
+<code class="descname">update_SPaT</code><span class="sig-paren">(</span><em>intersection</em>, <em>simulation_time</em>, <em>sc</em><span class="sig-paren">)</span><a class="headerlink" href="#src.signal.MCF_SPaT.update_SPaT" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Performs two tasks to update SPaT based on the given opt_clock:</dt>
+<dd><ul class="first last simple">
+<li>Removes terminated phase (happens when the all-red is passed)</li>
+<li>Checks for SPaT to not get empty after being updated</li>
+</ul>
+</dd>
+</dl>
+<div class="admonition attention">
+<p class="first admonition-title">Attention</p>
+<ul class="last simple">
+<li>If all phases are getting purged, either make longer SPaT decisions or reduce the simulation steps.</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>simulation_time</strong> – Normally the current opt_clock of simulation or real-time in <span class="math notranslate nohighlight">\(s\)</span></li>
+<li><strong>sc</strong> – scenario number to be recorded in CSV</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body"><p class="first last">April-2018</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="[6].trajectory.html" class="btn btn-neutral float-right" title="8. Trajectory" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="[4].intersection.html" class="btn btn-neutral" title="6. Intersection" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Mahmoud Pourmehrab
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/copybutton.js"></script>
+    
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

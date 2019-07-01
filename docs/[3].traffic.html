@@ -1,0 +1,561 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>4. Traffic &mdash; AVIAN 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="6. Intersection" href="[4].intersection.html" />
+    <link rel="prev" title="3. Time Management" href="[2].time.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/uf_logo_AVIAN.jpg" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="[0].overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1].config.html">2. Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[2].time.html">3. Time Management</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. Traffic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#module-src.traffic_io">5. Traffic i/o</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[4].intersection.html">6. Intersection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[5].signal.html">7. Signal Phase and Timing (SPaT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[6].trajectory.html">8. Trajectory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[7].signal.ctrl.interface.html">9. Signal Controller Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[8].util.html">10. Util</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">AVIAN</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>4. Traffic</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <hr class="docutils" />
+<div class="section" id="module-src.traffic">
+<span id="traffic"></span><h1>4. Traffic<a class="headerlink" href="#module-src.traffic" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="src.traffic.RealTimeTraffic">
+<em class="property">class </em><code class="descclassname">src.traffic.</code><code class="descname">RealTimeTraffic</code><span class="sig-paren">(</span><em>vehicle_data_queue</em>, <em>track_split_merge_queue</em>, <em>cav_traj_queue</em>, <em>intersection</em>, <em>sc</em>, <em>args</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic.RealTimeTraffic" title="Permalink to this definition">¶</a></dt>
+<dd><p>TODO</p>
+<dl class="method">
+<dt id="src.traffic.RealTimeTraffic.get_traffic_info">
+<code class="descname">get_traffic_info</code><span class="sig-paren">(</span><em>lanes</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic.RealTimeTraffic.get_traffic_info" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Objectives</dt>
+<dd><ul class="first last simple">
+<li>Appends arrived vehicles from the CSV file to <a class="reference internal" href="[4].intersection.html#src.intersection.Lanes" title="src.intersection.Lanes"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Lanes</span></code></a></li>
+<li>Assigns their earliest arrival time</li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>lanes</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Lanes" title="src.intersection.Lanes"><em>Lanes</em></a>) – vehicles are added to this data structure</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="src.traffic.RealTimeTraffic.get_volumes">
+<em class="property">static </em><code class="descname">get_volumes</code><span class="sig-paren">(</span><em>lanes</em>, <em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic.RealTimeTraffic.get_volumes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unit of volume in each lane is <span class="math notranslate nohighlight">\(veh/sec/lane\)</span>. Uses the fundamental traffic flow equation <span class="math notranslate nohighlight">\(F=D \times S\)</span>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lanes</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Lanes" title="src.intersection.Lanes"><em>Lanes</em></a>) – includes all vehicles</li>
+<li><strong>intersection</strong> – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return volumes:</th><td class="field-body"><p class="first last">array of volume level per lanes</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.traffic.RealTimeTraffic.serve_update_at_stop_bar">
+<code class="descname">serve_update_at_stop_bar</code><span class="sig-paren">(</span><em>lanes</em>, <em>elapsed_time</em>, <em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic.RealTimeTraffic.serve_update_at_stop_bar" title="Permalink to this definition">¶</a></dt>
+<dd><p>To remove the served vehicles and print proper notification.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lanes</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Lanes" title="src.intersection.Lanes"><em>Lanes</em></a>) – includes all the vehicles in all lanes</li>
+<li><strong>elapsed_time</strong> – time since start</li>
+<li><strong>intersection</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Intersection" title="src.intersection.Intersection"><em>Intersection</em></a>) – </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="src.traffic.SimTraffic">
+<em class="property">class </em><code class="descclassname">src.traffic.</code><code class="descname">SimTraffic</code><span class="sig-paren">(</span><em>intersection</em>, <em>sc</em>, <em>start_time_stamp</em>, <em>args</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic.SimTraffic" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Objectives:</dt>
+<dd><ul class="first last simple">
+<li>To adds new vehicles from the log file (offline mode) to <code class="docutils literal notranslate"><span class="pre">lanes.vehlist</span></code> structure</li>
+<li>To appends travel time and ID columns and log</li>
+<li>To computes volumes in lanes and other traffic performance measure</li>
+<li>To remove served vehicles</li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li><dl class="first docutils">
+<dt>The CSV should be located under the <code class="docutils literal notranslate"><span class="pre">/data/</span></code> directory with the valid name consistent to what was inputted</dt>
+<dd>as an argument and what exists in the <code class="docutils literal notranslate"><span class="pre">config.py</span></code> file.</dd>
+</dl>
+</li>
+<li>The scenario number should be appended to the name of intersection followed by an underscore.</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Ash Omidvar &lt;<a class="reference external" href="mailto:aschkan&#37;&#52;&#48;ufl&#46;edu">aschkan<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">Nov-2018</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">some methods of this class are adopted from the simulation version of the system, developed</p>
+</div>
+<p>by Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:mpourmehrab&#37;&#52;&#48;ufl&#46;edu">mpourmehrab<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;.</p>
+<dl class="method">
+<dt id="src.traffic.SimTraffic.get_traffic_info">
+<code class="descname">get_traffic_info</code><span class="sig-paren">(</span><em>lanes</em>, <em>simulation_time</em>, <em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic.SimTraffic.get_traffic_info" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Objectives</dt>
+<dd><ul class="first last simple">
+<li>Appends arrived vehicles from the CSV file to <a class="reference internal" href="[4].intersection.html#src.intersection.Lanes" title="src.intersection.Lanes"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Lanes</span></code></a></li>
+<li>Assigns their earliest arrival time</li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lanes</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Lanes" title="src.intersection.Lanes"><em>Lanes</em></a>) – vehicles are added to this data structure</li>
+<li><strong>simulation_time</strong> – current simulation clock in seconds measured from zero</li>
+<li><strong>intersection</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Intersection" title="src.intersection.Intersection"><em>Intersection</em></a>) – intersection</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.traffic.SimTraffic.set_row_vehicle_level_csv">
+<code class="descname">set_row_vehicle_level_csv</code><span class="sig-paren">(</span><em>dep_time</em>, <em>veh</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic.SimTraffic.set_row_vehicle_level_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the departure time of an individual vehicle that is just served.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dep_time</strong> – departure time in seconds</li>
+<li><strong>veh</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Vehicle" title="src.intersection.Vehicle"><em>Vehicle</em></a>) – subject vehicle to be recorder</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.traffic.SimTraffic.save_veh_level_csv">
+<code class="descname">save_veh_level_csv</code><span class="sig-paren">(</span><em>inter_name</em>, <em>start_time_stamp</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic.SimTraffic.save_veh_level_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the recorded values and save the  CSV at vehicle level.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>inter_name</strong> – intersection name</li>
+<li><strong>start_time_stamp</strong> – local time stamp to include in the CSV filename</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.traffic.SimTraffic.close_trj_csv">
+<code class="descname">close_trj_csv</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic.SimTraffic.close_trj_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Closes trajectory CSV file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.traffic.SimTraffic.last_veh_arr">
+<code class="descname">last_veh_arr</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic.SimTraffic.last_veh_arr" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if all vehicles from the input CSV have been added at some point.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<dl class="last docutils">
+<dt>The fact that all vehicles are <em>added</em> does not equal to all <em>served</em>. Thus, we check if any vehicle is in</dt>
+<dd>any of the incoming lanes before halting the program.</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.traffic.SimTraffic.get_first_det_time">
+<code class="descname">get_first_det_time</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic.SimTraffic.get_first_det_time" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The time when the first vehicle in current scenario shows up. Assumes the CSV file is not sorted in arrival time.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="src.traffic.SimTraffic.get_volumes">
+<em class="property">static </em><code class="descname">get_volumes</code><span class="sig-paren">(</span><em>lanes</em>, <em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic.SimTraffic.get_volumes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unit of volume in each lane is <span class="math notranslate nohighlight">\(veh/sec/lane\)</span>. Uses the fundamental traffic flow equation <span class="math notranslate nohighlight">\(F=D \times S\)</span>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lanes</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Lanes" title="src.intersection.Lanes"><em>Lanes</em></a>) – includes all vehicles</li>
+<li><strong>intersection</strong> – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return volumes:</th><td class="field-body"><p class="first last">array of volume level per lanes</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.traffic.SimTraffic.serve_update_at_stop_bar">
+<code class="descname">serve_update_at_stop_bar</code><span class="sig-paren">(</span><em>lanes</em>, <em>simulation_time</em>, <em>intersection</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic.SimTraffic.serve_update_at_stop_bar" title="Permalink to this definition">¶</a></dt>
+<dd><p>To remove the served vehicles and print proper notification.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lanes</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Lanes" title="src.intersection.Lanes"><em>Lanes</em></a>) – includes all the vehicles in all lanes</li>
+<li><strong>simulation_time</strong> – current simulation clock</li>
+<li><strong>intersection</strong> (<a class="reference internal" href="[4].intersection.html#src.intersection.Intersection" title="src.intersection.Intersection"><em>Intersection</em></a>) – </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.traffic.SimTraffic.publish">
+<code class="descname">publish</code><span class="sig-paren">(</span><em>lanes</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic.SimTraffic.publish" title="Permalink to this definition">¶</a></dt>
+<dd><p>TODO: incrementally write to CSV</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-src.traffic_io">
+<span id="traffic-i-o"></span><h1>5. Traffic i/o<a class="headerlink" href="#module-src.traffic_io" title="Permalink to this headline">¶</a></h1>
+<dl class="attribute">
+<dt id="src.traffic_io.vehicle_msg">
+<code class="descclassname">src.traffic_io.</code><code class="descname">vehicle_msg</code><a class="headerlink" href="#src.traffic_io.vehicle_msg" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">src.traffic_io.VehicleMsg</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="src.traffic_io.StoppableThread">
+<em class="property">class </em><code class="descclassname">src.traffic_io.</code><code class="descname">StoppableThread</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic_io.StoppableThread" title="Permalink to this definition">¶</a></dt>
+<dd><p>Thread class with a stop() method. The thread itself has to check
+regularly for the stopped() condition.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Patrick Emami &lt;<a class="reference external" href="mailto:pemami&#37;&#52;&#48;ufl&#46;edu">pemami<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">Dec 2018</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="src.traffic_io.StoppableThread.stop">
+<code class="descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic_io.StoppableThread.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop the thread.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="src.traffic_io.SocketThread">
+<em class="property">class </em><code class="descclassname">src.traffic_io.</code><code class="descname">SocketThread</code><span class="sig-paren">(</span><em>ip_address</em>, <em>port</em>, <em>msg_len</em>, <em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic_io.SocketThread" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used for receiving data over a UDP socket.</p>
+<dl class="method">
+<dt id="src.traffic_io.SocketThread.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic_io.SocketThread.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main method for Stoppable thread</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.traffic_io.SocketThread.handle">
+<code class="descname">handle</code><span class="sig-paren">(</span><em>msg</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic_io.SocketThread.handle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Push the msg through the processing pipeline.</p>
+<p>Needs to be defined by the subclass</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="src.traffic_io.TrafficListener">
+<em class="property">class </em><code class="descclassname">src.traffic_io.</code><code class="descname">TrafficListener</code><span class="sig-paren">(</span><em>ip_address</em>, <em>port</em>, <em>msg_len=500</em>, <em>name='TrafficListener'</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic_io.TrafficListener" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="src.traffic_io.TrafficListener.handle">
+<code class="descname">handle</code><span class="sig-paren">(</span><em>msg</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic_io.TrafficListener.handle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Push the msg through the processing pipeline.</p>
+<p>Needs to be defined by the subclass</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="src.traffic_io.TrafficPublisher">
+<em class="property">class </em><code class="descclassname">src.traffic_io.</code><code class="descname">TrafficPublisher</code><span class="sig-paren">(</span><em>ip</em>, <em>port</em>, <em>name='TrafficPublisher'</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic_io.TrafficPublisher" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="src.traffic_io.TrafficPublisher.veh_to_IAM">
+<code class="descname">veh_to_IAM</code><span class="sig-paren">(</span><em>veh</em><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic_io.TrafficPublisher.veh_to_IAM" title="Permalink to this definition">¶</a></dt>
+<dd><p>TODO</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="src.traffic_io.TrafficPublisher.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.traffic_io.TrafficPublisher.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main method for Stoppable thread</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="[4].intersection.html" class="btn btn-neutral float-right" title="6. Intersection" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="[2].time.html" class="btn btn-neutral" title="3. Time Management" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Mahmoud Pourmehrab
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/copybutton.js"></script>
+    
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

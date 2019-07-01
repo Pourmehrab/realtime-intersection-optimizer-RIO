@@ -3,15 +3,18 @@
 
 # Copyright pending (c) 2017, Aschkan Omidvar <aschkan@ufl.edu>
 # Created on Jan. 2017
-# Updated on May 2018
+# Updated on Feb. 2019
 # University of Florida
 # UF Transportation Institute
 # Dept. of Civil and Coastal Engineering
 # @author: aschkan
 
+from multiprocessing import current_process
 from pysnmp.hlapi import *
-from data.config import get_sig_ctrl_interface_params
+from src.config import get_sig_ctrl_interface_params
 
+IP = '169.254.91.71'
+PORT = 161
 
 def snmpSet(OID, Value):
     """
@@ -20,11 +23,14 @@ def snmpSet(OID, Value):
     :Date:
         Jan-2017
     """
+    global IP
+    global PORT
+
     assert type(OID) == str
     errorIndication, errorStatus, errorIndex, varBinds = next(
         setCmd(SnmpEngine(),
                CommunityData('public', mpModel=0),  # snmp v1. delete mpModel for v2c),
-               UdpTransportTarget(('169.254.91.71', 161)),
+               UdpTransportTarget((IP, PORT)), # Target IP + UPD port (hard coded)
                ContextData(),
                ObjectType(ObjectIdentity(str(OID)), Integer(Value))))
 
@@ -33,10 +39,9 @@ def snmpSet(OID, Value):
     elif errorStatus:
         print('%s at %s' % (errorStatus.prettyPrint(),
                             errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
-    else:
-        for varBind in varBinds:
-            print(' = '.join([x.prettyPrint() for x in varBind]))
-
+    #else:
+    #    for varBind in varBinds:
+    #        print(' = '.join([x.prettyPrint() for x in varBind]))
 
 def snmpTranslate(List):
     """
@@ -58,7 +63,7 @@ def snmpTranslate(List):
 
     .. note::
         This module translates the phase numbers in a given list into snmp legible
-        integers according to NTCIP 1202. The code encripts the list of the phases
+        integers according to NTCIP 1202. The code encrypts the list of the phases
         into a binary string and then parses it to an snmp int value.
 
     """
@@ -120,7 +125,7 @@ def snmpForceOff(List):
         Aschkan Omidvar <aschkan@ufl.edu>
     :Date:
         Jan-2017
-  
+
     .. note::
         This module transforms the bit matrix values for OID
         enterprise::1206.4.2.1.1.5.1.5.1 to the corresponding phase number and
@@ -188,15 +193,53 @@ def snmp_phase_ctrl(Phase, inter_name):
     .. note::
         Send command to ASC
     """
-    num_phase, al, non, non_conflict = get_sig_ctrl_interface_params(inter_name)
+    num_phase, al, non, nonConflict = get_sig_ctrl_interface_params(inter_name)
+    # For debugging
+    # num_phase = 4
+    # al = range(1, num_phase + 1)
+    # non = [0]
+    # nonConflict = [[1,2], [4, 3]]
 
     snmpHold(list(al))
     snmpHold(list(non))
 
-    for p in range(len(non_conflict)):
-        if Phase in non_conflict[p]:
-            snmpVehCall(non_conflict[p])
-            snmpOmit([i for i in al if i not in non_conflict[p]])
+    for p in range(len(nonConflict)):
+        if Phase in nonConflict[p]:
+            snmpVehCall(nonConflict[p])
+            snmpOmit([i for i in al if i not in nonConflict[p]])
+
+def main(intersection, ip_, port_, parent_proc_conn, proc_conn):
+    """
+    Main function for real-time communication with the signal
+    controller.
+
+    Communication between main RIO process and this process is handled
+    with Pipes (see https://docs.python.org/3.6/library/multiprocessing.html#pipes-and-queues).
+
+    Communication between this process and the signal controller
+    is handled by the SNMP lib.
+    """
+    # set SNMP conn info
+    global IP
+    global PORT
+    IP = ip_
+    PORT = port_
+
+    # prepare Pipes
+    parent_proc_conn.close()
+    p = current_process()
+    print("Signal controller interface running on proc {}".format(p.pid))
+
+    # Loop continuously until KeyboardInterrupt,
+    # reading incoming msgs from Pipe conn
+    try:
+        while True:
+            cmd, data = proc_conn.recv()
+            if cmd == "SPaT":
+                snmp_phase_ctrl(data, intersection)
+    except KeyboardInterrupt:
+        print("Signal controller interface got KeyboardInterrupt, exiting")
+        proc_conn.close()
 
 # Quickstart Test
-# snmp_phase_ctrl(4)
+#snmp_phase_ctrl(4, "RTS")

@@ -24,12 +24,12 @@
 
   
 
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="2. Simulation" href="[1.1].simulator.html" />
+    <link rel="next" title="2. Configuration" href="[1].config.html" />
     <link rel="prev" title="Welcome to AVIAN’s documentation!" href="index.html" /> 
 
   
@@ -93,13 +93,15 @@
 <li class="toctree-l2"><a class="reference internal" href="#main-script">1.3. Main Script</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="[1.1].simulator.html">2. Simulation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="[1.1].simulator.html#module-data.data">3. Python Data</a></li>
-<li class="toctree-l1"><a class="reference internal" href="[1.2].intersection.html">4. Intersection</a></li>
-<li class="toctree-l1"><a class="reference internal" href="[1.3].signal.html">5. Signal Phase and Timing (SPaT)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="[1.4].trajectory.html">6. Trajectory</a></li>
-<li class="toctree-l1"><a class="reference internal" href="[1.5].opt.unit.tests.html">7. Optimizers/Simulator Unit Testing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="[2].signal.ctrl.interface.html">8. Signal Controller Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1].config.html">2. Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[2].time.html">3. Time Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[3].traffic.html">4. Traffic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[3].traffic.html#module-src.traffic_io">5. Traffic i/o</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[4].intersection.html">6. Intersection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[5].signal.html">7. Signal Phase and Timing (SPaT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[6].trajectory.html">8. Trajectory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[7].signal.ctrl.interface.html">9. Signal Controller Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[8].util.html">10. Util</a></li>
 </ul>
 
             
@@ -166,25 +168,29 @@
 <h1>1. Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="introduction">
 <h2>1.1. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>The goal of this program is to simulate the performance of an isolated intersection with traffic from autonomous and conventional vehicles using a variety of signal control methods. It is developed as part of the <a class="reference internal" href="#term-avian"><span class="xref std std-term">AVIAN</span></a> project supported by National Science Foundation under <a class="reference external" href="https://www.nsf.gov/awardsearch/showAward?AWD_ID=1446813&amp;HistoricalAwards=false">grant award 1446813</a>. The base implementation was done in MATLAB programming language in 2015 - 2017 (see <a class="footnote-reference" href="#id9" id="id1">[1]</a>). The methodology to use Genetic Algorithm (<a class="reference internal" href="#term-ga"><span class="xref std std-term">GA</span></a>) and polynomial <a class="reference internal" href="#term-trajectory"><span class="xref std std-term">trajectory</span></a> optimization is explained in-depth in  <a class="footnote-reference" href="#id10" id="id2">[2]</a>. The Min Cost Flow (<a class="reference internal" href="#term-mcf"><span class="xref std std-term">MCF</span></a>) signal optimization is elaborated in <a class="footnote-reference" href="#id11" id="id3">[3]</a>. For comments and questions please email me at <a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>. For details on the AVIAN project visit <a class="reference external" href="http://avian.essie.ufl.edu">AVIAN.ESSIE.UFL.EDU</a>.</p>
+<p>The goal of this program is to simulate the performance of an isolated intersection with traffic from autonomous and conventional vehicles using a variety of signal control methods. It is developed as part of the <a class="reference internal" href="#term-avian"><span class="xref std std-term">AVIAN</span></a> project supported by National Science Foundation under <a class="reference external" href="https://www.nsf.gov/awardsearch/showAward?AWD_ID=1446813&amp;HistoricalAwards=false">grant award 1446813</a>. The base implementation was done in MATLAB programming language in 2015 - 2017 (see <a class="footnote-reference" href="#id7" id="id1">[1]</a>). The Min Cost Flow (<a class="reference internal" href="#term-mcf"><span class="xref std std-term">MCF</span></a>) signal optimization is elaborated in <a class="footnote-reference" href="#id8" id="id2">[2]</a>. For details on the AVIAN project visit <a class="reference external" href="http://avian.essie.ufl.edu">AVIAN.ESSIE.UFL.EDU</a>.</p>
 <blockquote>
 <div><div class="admonition note">
 <p class="first admonition-title">Note</p>
 <ul class="last">
-<li><p class="first">The interpreter version requirement is set to <code class="docutils literal notranslate"><span class="pre">3.6.0</span></code>. If using conda, do:</p>
+<li><p class="first">The interpreter version requirement is set to <code class="docutils literal notranslate"><span class="pre">3.6.6</span></code>. If using conda, do:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conda</span> <span class="n">update</span> <span class="n">conda</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">conda</span> <span class="n">install</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.6</span><span class="o">.</span><span class="mi">6</span>
 </pre></div>
 </div>
 </li>
-<li><p class="first">Update pip and install packages using:</p>
+<li><p class="first">Update pip using:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">pip</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">pip3</span> <span class="n">install</span> <span class="o">-</span><span class="n">r</span> <span class="n">requirements</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Dependencies are managed using <cite>pipenv</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pip</span> <span class="n">install</span> <span class="n">pipenv</span>
 </pre></div>
 </div>
 </li>
 <li><p class="first">To execute the code:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">python</span> <span class="n">main</span><span class="o">.</span><span class="n">py</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pipenv</span> <span class="n">shell</span>
 </pre></div>
 </div>
 </li>
@@ -239,8 +245,8 @@
 </ul>
 </dd>
 </dl>
-<table border="1" class="docutils" id="id12">
-<caption><span class="caption-text">A few rows of a sample input traffic CSV-file.</span><a class="headerlink" href="#id12" title="Permalink to this table">¶</a></caption>
+<table border="1" class="docutils" id="id9">
+<caption><span class="caption-text">A few rows of a sample input traffic CSV-file.</span><a class="headerlink" href="#id9" title="Permalink to this table">¶</a></caption>
 <colgroup>
 <col width="10%" />
 <col width="10%" />
@@ -321,27 +327,24 @@
 <li><code class="docutils literal notranslate"><span class="pre">13th16th</span></code>: A physical intersection in Gainesville; google map it for the image and lane assignment detail.</li>
 <li><code class="docutils literal notranslate"><span class="pre">TERL</span></code>: A physical intersection located at <a class="reference external" href="https://goo.gl/maps/qiwW7TJe4co">2612 Springhill Road, Tallahassee, FL 32305</a>; google map it for the image and lane assignment detail. Note the lane numbering in the code is 1: Southbound (all movements), 2: Westbound (through and right turn), 3: Westbound (left turn), 4: Northbound (all movements), 5: Eastbound (through and right turn), 6: Eastbound (left turn).</li>
 <li><code class="docutils literal notranslate"><span class="pre">reserv</span></code>:  for the reservation based model intersection that has 12 incoming lanes: 3 per approach and all lanes are exclusive (for more detail check <a class="reference external" href="http://www.cs.utexas.edu/~aim/">UT Texas AIM</a>).</li>
-<li>Some possible intersections to add are <code class="docutils literal notranslate"><span class="pre">RTS,</span> <span class="pre">42nd40th,</span> <span class="pre">SolarPark</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Gale&amp;Std</span></code>: Gale Lemerand Dr and Stadium Dr.</li>
+<li><code class="docutils literal notranslate"><span class="pre">RTS</span></code>: RTS facility.</li>
 </ul>
 </dd>
-<dt>You also can choose from the following signal control methods:</dt>
+<dt>You also can choose the signal control methods:</dt>
 <dd><ul class="first last simple">
-<li><code class="docutils literal notranslate"><span class="pre">GA</span></code>: Genetic Algorithms</li>
-<li><code class="docutils literal notranslate"><span class="pre">pretimed</span></code>: pretimed control</li>
-<li><code class="docutils literal notranslate"><span class="pre">MCF</span></code>: Min Cost Flow (under development)</li>
-<li><code class="docutils literal notranslate"><span class="pre">actuated</span></code>: Actuated Control System (under development)</li>
+<li><code class="docutils literal notranslate"><span class="pre">MCF</span></code>: Min Cost Flow based</li>
 </ul>
 </dd>
 <dt>You can run in either of the following modes (<em>pay attention to the requirements of each run mode</em>):</dt>
 <dd><ul class="first last simple">
-<li>For simulation of optimization: run <code class="docutils literal notranslate"><span class="pre">sim_main.py</span></code></li>
 <li>For real-time mode: run <code class="docutils literal notranslate"><span class="pre">main.py</span></code></li>
 </ul>
 </dd>
 </dl>
 <p>The <strong>UML diagram</strong> of the project is as the following (<em>you may want to zoom in</em>):</p>
-<div class="figure align-center" id="id13">
-<img alt="map to buried treasure" src="_images/UML.JPG" />
+<div class="figure align-center" id="id10">
+<img alt="map to buried treasure" src="_images/UML.PNG" />
 <p class="caption"><span class="caption-text">The UML diagram of the simulation mode.</span></p>
 </div>
 </div>
@@ -366,69 +369,76 @@
 <dd>A car following model developed by in Gipps 1981 that models conventional vehicle movement. Read more <a class="reference external" href="https://en.wikipedia.org/wiki/Gipps%27_model">here</a>.</dd>
 <dt id="term-pretimed">pretimed</dt>
 <dd>Refers to a type of signal control in which the phase sequence and timing is predefined and is executed in a cyclic manner. Read section 5.2.1 of the <a class="reference external" href="http://www.signaltiming.com/The_Signal_Timing_Manual_08082008.pdf">Traffic Signal Timing Manual</a>.</dd>
-<dt id="term-ga">GA</dt>
-<dd>Genetic Algorithm used to optimize SPaTs decision. Read more <a class="reference external" href="https://en.wikipedia.org/wiki/Genetic_algorithm">here</a>.</dd>
-<dt id="term-badness">badness</dt>
-<dd>In the context of GA, badness is defined as the negative of the fitness of an individual. In other words, GA searches for an alternative with the least badness (equivalently, with the highest fitness) value.</dd>
 <dt id="term-mcf">MCF</dt>
 <dd>Minimum Cost Flow model used to optimize SPaTs decision. Read more <a class="reference external" href="https://en.wikipedia.org/wiki/Minimum-cost_flow_problem">here</a>.</dd>
 </dl>
 </div>
 <div class="section" id="main-script">
 <h2>1.3. Main Script<a class="headerlink" href="#main-script" title="Permalink to this headline">¶</a></h2>
-<p>The <code class="docutils literal notranslate"><span class="pre">sim_main.py</span></code> file implements the following work flow:</p>
-<span class="target" id="module-sim_main"></span><dl class="function">
-<dt id="sim_main.run_avian">
-<code class="descclassname">sim_main.</code><code class="descname">run_avian</code><span class="sig-paren">(</span><em>inter_name</em>, <em>sig_method</em>, <em>sc</em>, <em>start_time_stamp</em>, <em>tester</em><span class="sig-paren">)</span><a class="headerlink" href="#sim_main.run_avian" title="Permalink to this definition">¶</a></dt>
+<p>The <code class="docutils literal notranslate"><span class="pre">main.py</span></code> file implements the following work flow:</p>
+<span class="target" id="module-main"></span><dl class="function">
+<dt id="main.run_rio">
+<code class="descclassname">main.</code><code class="descname">run_rio</code><span class="sig-paren">(</span><em>args</em><span class="sig-paren">)</span><a class="headerlink" href="#main.run_rio" title="Permalink to this definition">¶</a></dt>
 <dd><div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">The following assumptions are important to notice:
-- Trajectories must end at the stop bar, i.e. the distance to stop bar converges to zero, even if they are temporarily assigned.
-- The desired speed of vehicles shall not exceed the speed limit or they will be advised speeding
-- Use default values for pieces of information that are impossible to obtain, i.e. accel/decel rates and destination of conventional vehicles.</p>
+<p class="last">Assumptions for trajectory generation:
+- Trajectories must show departure at the stop bar, i.e. the distance to stop bar converges to zero, even if
+they are temporarily assigned.
+- The desired speed of vehicles shall not exceed the speed limit (see config file)
+- Certain parameter value estimation has been considered in rio (e.g., accel/decel rates and destination of
+conventional vehicles.</p>
 </div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>inter_name</strong> (<em>str</em>) – The intersection name (should match the name given to identify an intersection in <code class="docutils literal notranslate"><span class="pre">data.py</span></code>)</li>
-<li><strong>sig_method</strong> (<em>str</em>) – signalization method <code class="docutils literal notranslate"><span class="pre">pretimed,</span> <span class="pre">GA,</span> <span class="pre">...</span></code></li>
-<li><strong>sc</strong> (<em>int</em>) – scenario number (should match <code class="docutils literal notranslate"><span class="pre">/data/&lt;intersection</span> <span class="pre">name&gt;/&lt;intersection</span> <span class="pre">name&gt;_&lt;scenario</span> <span class="pre">number&gt;.csv</span></code>)</li>
-<li><strong>start_time_stamp</strong> – The local time stamp to name the output CSV files</li>
-<li><strong>tester</strong> (<a class="reference internal" href="[1.5].opt.unit.tests.html#test.unit_tests.SimTest" title="test.unit_tests.SimTest"><em>test.unit_tests.SimTest</em></a>) – The tester object</li>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>inter_name</strong> (<em>str</em>) – Intersection name (should match the name given in <code class="docutils literal notranslate"><span class="pre">config.py</span></code>)</li>
+<li><strong>sc</strong> – In offline mode this parameter refers to certain log file, and it should match</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+</tbody>
+</table>
+<p><code class="docutils literal notranslate"><span class="pre">/data/&lt;intersection</span> <span class="pre">name&gt;/&lt;intersection</span> <span class="pre">name&gt;_&lt;scenario</span> <span class="pre">number&gt;.&lt;log</span> <span class="pre">format&gt;</span></code>. In online mode, this parameter is
+used for logging purpose. set arbitrarily or according to traffic listener.
+:type sc: int
+:param start_time_stamp: The local time stamp (used for logging purpose mainly)
+:param offline: if True, RIO runs offline by reading arrival information from a log file, dumping it in a pandas
+structure and occupying <code class="docutils literal notranslate"><span class="pre">vehlist</span></code> data structure from it. offline = False (or <code class="docutils literal notranslate"><span class="pre">online</span> <span class="pre">mode</span></code> is designed for the
+real-world field implementation and arrival info should be obtained from traffic listener (the fusion module.)
+:type offline: boolean
+:param run_duration: The duration we want to run RIO (in seconds.miliseconds). This parameter is in effect in online</p>
+<blockquote>
+<div>mode. Leave the field blank in offline mode</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Authors:</th><td class="field-body"><p class="first">Ash Omidvar &lt;<a class="reference external" href="mailto:aschkan&#37;&#52;&#48;ufl&#46;edu">aschkan<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;</p>
+<p>Mahmoud Pourmehrab &lt;<a class="reference external" href="mailto:pourmehrab&#37;&#52;&#48;gmail&#46;com">pourmehrab<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body"><p class="first">April-2018</p>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body"><p class="first">Dec-2018</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Organization:</th><td class="field-body"><p class="first last">University of Florida</p>
+<tr class="field-odd field"><th class="field-name">Organization:</th><td class="field-body"><p class="first last">University of Florida</p>
 </td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
-<table class="docutils footnote" frame="void" id="id9" rules="none">
+<table class="docutils footnote" frame="void" id="id7" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
 <tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Pourmehrab, M., Elefteriadou, L., Ranka, S., &amp; Martin-Gasulla, M. (2017). <em>Optimizing Signalized Intersections Performance under Conventional and Automated Vehicles Traffic</em>. arXiv preprint arXiv:1707.01748 (<a class="reference external" href="https://arxiv.org/abs/1707.01748">link</a>).</td></tr>
 </tbody>
 </table>
-<table class="docutils footnote" frame="void" id="id10" rules="none">
+<table class="docutils footnote" frame="void" id="id8" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>Pourmehrab, M., Elefteriadou, L., Ranka, S. (2018). <em>Dynamic Intersection Manager under Traffic of CAVs and Conventional Vehicles Using Hybrid Genetic Algorithm and Linear Programming</em>.</td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="id11" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>Pourmehrab, M., Elefteriadou, L., Ranka, S. (2018). <em>Real-time Optimizing a Hyper-Intersection Performance under Traffic of Automated Vehicles and Conventional Vehicles</em>.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>Pourmehrab, M., Elefteriadou, L., Ranka, S. (2018). <em>Real-time Intersection Optimization for Signal Phase and Timing and Automated Vehicles Trajectory</em>.</td></tr>
 </tbody>
 </table>
 </div>
@@ -442,7 +452,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="[1.1].simulator.html" class="btn btn-neutral float-right" title="2. Simulation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="[1].config.html" class="btn btn-neutral float-right" title="2. Configuration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="index.html" class="btn btn-neutral" title="Welcome to AVIAN’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
@@ -454,7 +464,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, Mahmoud Pourmehrab.
+        &copy; Copyright 2018, Mahmoud Pourmehrab
 
     </p>
   </div>
@@ -473,35 +483,23 @@
 
   
 
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'1.0.0',
-            LANGUAGE:'None',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="_static/copybutton.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/copybutton.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
 
   
 
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="_static/js/theme.js"></script>
 
   <script type="text/javascript">
       jQuery(function () {
-          
-          SphinxRtdTheme.Navigation.enableSticky();
-          
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script> 
 

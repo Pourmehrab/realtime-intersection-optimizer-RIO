@@ -1,0 +1,402 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>9. Signal Controller Interface &mdash; AVIAN 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="10. Util" href="[8].util.html" />
+    <link rel="prev" title="8. Trajectory" href="[6].trajectory.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/uf_logo_AVIAN.jpg" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="[0].overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[1].config.html">2. Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[2].time.html">3. Time Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[3].traffic.html">4. Traffic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[3].traffic.html#module-src.traffic_io">5. Traffic i/o</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[4].intersection.html">6. Intersection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[5].signal.html">7. Signal Phase and Timing (SPaT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[6].trajectory.html">8. Trajectory</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">9. Signal Controller Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="[8].util.html">10. Util</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">AVIAN</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>9. Signal Controller Interface</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-src.sig_ctrl_interface">
+<span id="signal-controller-interface"></span><h1>9. Signal Controller Interface<a class="headerlink" href="#module-src.sig_ctrl_interface" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="src.sig_ctrl_interface.snmpSet">
+<code class="descclassname">src.sig_ctrl_interface.</code><code class="descname">snmpSet</code><span class="sig-paren">(</span><em>OID</em>, <em>Value</em><span class="sig-paren">)</span><a class="headerlink" href="#src.sig_ctrl_interface.snmpSet" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Aschkan Omidvar &lt;<a class="reference external" href="mailto:aschkan&#37;&#52;&#48;ufl&#46;edu">aschkan<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">Jan-2017</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="src.sig_ctrl_interface.snmpTranslate">
+<code class="descclassname">src.sig_ctrl_interface.</code><code class="descname">snmpTranslate</code><span class="sig-paren">(</span><em>List</em><span class="sig-paren">)</span><a class="headerlink" href="#src.sig_ctrl_interface.snmpTranslate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Example: 2^^3 phase translation breakdown:</p>
+<ul class="simple">
+<li>Bit 7 = Ring number = (ringControlGroupNumber * 8)</li>
+<li>Bit 6 = Ring number = (ringControlGroupNumber * 8) - 1</li>
+<li>Bit 5 = Ring number = (ringControlGroupNumber * 8) - 2</li>
+<li>Bit 4 = Ring number = (ringControlGroupNumber * 8) - 3</li>
+<li>Bit 3 = Ring number = (ringControlGroupNumber * 8) - 4</li>
+<li>Bit 2 = Ring number = (ringControlGroupNumber * 8) - 5</li>
+<li>Bit 1 = Ring number = (ringControlGroupNumber * 8) - 6</li>
+<li>Bit 0 = Ring number = (ringControlGroupNumber * 8) - 7</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Aschkan Omidvar &lt;<a class="reference external" href="mailto:aschkan&#37;&#52;&#48;ufl&#46;edu">aschkan<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">Jan-2017</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This module translates the phase numbers in a given list into snmp legible
+integers according to NTCIP 1202. The code encrypts the list of the phases
+into a binary string and then parses it to an snmp int value.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="src.sig_ctrl_interface.snmpOmit">
+<code class="descclassname">src.sig_ctrl_interface.</code><code class="descname">snmpOmit</code><span class="sig-paren">(</span><em>List</em><span class="sig-paren">)</span><a class="headerlink" href="#src.sig_ctrl_interface.snmpOmit" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Aschkan Omidvar &lt;<a class="reference external" href="mailto:aschkan&#37;&#52;&#48;ufl&#46;edu">aschkan<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">Jan-2017</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This module transforms the bit matrix values for OID
+enterprise::1206.4.2.1.1.5.1.2.1 to the corresponding phase number and
+omit it. Hold is a command that causes omission of a selected phase.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="src.sig_ctrl_interface.snmpHold">
+<code class="descclassname">src.sig_ctrl_interface.</code><code class="descname">snmpHold</code><span class="sig-paren">(</span><em>List</em><span class="sig-paren">)</span><a class="headerlink" href="#src.sig_ctrl_interface.snmpHold" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Aschkan Omidvar &lt;<a class="reference external" href="mailto:aschkan&#37;&#52;&#48;ufl&#46;edu">aschkan<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">Jan-2017</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This module transforms the bit matrix values for OID
+enterprise::1206.4.2.1.1.5.1.4.1 to the corresponding phase number and
+hold it. Hold is a command that retains the existing Green interval.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="src.sig_ctrl_interface.snmpForceOff">
+<code class="descclassname">src.sig_ctrl_interface.</code><code class="descname">snmpForceOff</code><span class="sig-paren">(</span><em>List</em><span class="sig-paren">)</span><a class="headerlink" href="#src.sig_ctrl_interface.snmpForceOff" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Aschkan Omidvar &lt;<a class="reference external" href="mailto:aschkan&#37;&#52;&#48;ufl&#46;edu">aschkan<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">Jan-2017</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This module transforms the bit matrix values for OID
+enterprise::1206.4.2.1.1.5.1.5.1 to the corresponding phase number and
+Force Off it. Force off is A command to force the termination of the green
+interval in the actuated mode or Walk Hold in the nonactuated mode of the
+associated phase. Termination is subject to the presence of a serviceable
+conflicting call. The Force Off function shall not be effective during the
+timing of the Initial,Walk, or Pedestrian Clearance. The Force Off shall
+only be effective as long as the condition is sustained. If a phase
+specific Force Off is applied, the Force Off shall not prevent the start
+of green for that phase</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="src.sig_ctrl_interface.snmpVehCall">
+<code class="descclassname">src.sig_ctrl_interface.</code><code class="descname">snmpVehCall</code><span class="sig-paren">(</span><em>List</em><span class="sig-paren">)</span><a class="headerlink" href="#src.sig_ctrl_interface.snmpVehCall" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Aschkan Omidvar &lt;<a class="reference external" href="mailto:aschkan&#37;&#52;&#48;ufl&#46;edu">aschkan<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">Jan-2017</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This module transforms the bit matrix values for OID
+enterprise::1206.4.2.1.1.5.1.6.1 to the corresponding phase number and
+call a vehicle on it.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="src.sig_ctrl_interface.snmpTerminate">
+<code class="descclassname">src.sig_ctrl_interface.</code><code class="descname">snmpTerminate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.sig_ctrl_interface.snmpTerminate" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Aschkan Omidvar &lt;<a class="reference external" href="mailto:aschkan&#37;&#52;&#48;ufl&#46;edu">aschkan<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">Jan-2017</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This module terminates all the commands and resets the signal controller to
+the default mode (actauted)</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="src.sig_ctrl_interface.snmp_phase_ctrl">
+<code class="descclassname">src.sig_ctrl_interface.</code><code class="descname">snmp_phase_ctrl</code><span class="sig-paren">(</span><em>Phase</em>, <em>inter_name</em><span class="sig-paren">)</span><a class="headerlink" href="#src.sig_ctrl_interface.snmp_phase_ctrl" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Aschkan Omidvar &lt;<a class="reference external" href="mailto:aschkan&#37;&#52;&#48;ufl&#46;edu">aschkan<span>&#64;</span>ufl<span>&#46;</span>edu</a>&gt;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">Jan-2017</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Send command to ASC</p>
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="[8].util.html" class="btn btn-neutral float-right" title="10. Util" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="[6].trajectory.html" class="btn btn-neutral" title="8. Trajectory" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Mahmoud Pourmehrab
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/copybutton.js"></script>
+    
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
