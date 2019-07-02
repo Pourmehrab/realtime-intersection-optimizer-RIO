@@ -274,7 +274,7 @@ def load_inter_params(inter_name):
             "max_speed": 8.94, # 20 mph in m/s,
             "min_CAV_headway": 1.5,
             "min_CNV_headway": 2.0,
-            "det_range": (38, 59, 11, 190, 20, 156, 49, 14),
+            "det_range": (156, 59, 50, 190, 59, 156, 190, 50), #(38, 59, 11, 190, 20, 156, 49, 14),
             "k": int(4),
             "m": int(40),
             "num_lanes": int(8),
