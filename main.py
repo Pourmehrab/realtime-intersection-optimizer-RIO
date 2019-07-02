@@ -50,11 +50,11 @@ def run_rio(args, experiment):
     :Organization:
         University of Florida
     """
+    intersection = Intersection(args.intersection)
     if experiment:
-        for k,v in args:
+        for k,v in vars(args).items():
             if k in intersection._inter_config_params:
                 intersection._inter_config_params[k] = v
-    intersection = Intersection(args.intersection)
     lanes = Lanes(intersection)
     start_time_stamp_name = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")  # only for naming the CSV files
     if args.mode == "sim":
