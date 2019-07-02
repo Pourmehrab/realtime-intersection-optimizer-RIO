@@ -17,7 +17,7 @@ from datetime import datetime
 from multiprocessing import Process, Pipe
 
 
-def run_rio(args):
+def run_rio(args, experiment):
     """
     .. note:: Assumptions for trajectory generation:
                 - Trajectories must show departure at the stop bar, i.e. the distance to stop bar converges to zero, even if
@@ -50,7 +50,10 @@ def run_rio(args):
     :Organization:
         University of Florida
     """
-
+    if experiment:
+        for k,v in args:
+            if k in intersection._inter_config_params:
+                intersection._inter_config_params[k] = v
     intersection = Intersection(args.intersection)
     lanes = Lanes(intersection)
     start_time_stamp_name = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")  # only for naming the CSV files
