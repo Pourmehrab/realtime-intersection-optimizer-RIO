@@ -8,141 +8,157 @@ import matplotlib.pyplot as plt
 import numpy as np
 from main import run_rio
 
-def log_files(args, min_dist):
-    # rename sig_level.csv file, trj_point_level.csv file and trj_veh_level.csv file
+def set_up_log_files(args, min_dist):
+    """
+    :param args: provides path for csv files
+    :param min_dist: the current min_dist_too_stop_bar simulated in the experiment
+    :return: renames the sig_level.csv, trj_point_level.csv and trj_veh_level.csv files created in run_rio to reflect
+    the simulated min_dist value
+    """
     os.rename(str(args.log_dir + "\sig_level.csv"), str(args.log_dir + "\sig_level_" + str(min_dist) + ".csv"))
     os.rename(str(args.log_dir + "\\trj_point_level.csv"), str(args.log_dir + "\\trj_point_level_" + str(min_dist) + ".csv"))
     os.rename(str(args.log_dir + "\\trj_veh_level.csv"), str(args.log_dir + "\\trj_veh_level_" + str(min_dist) + ".csv"))
-    #filepath_sig_level = os.path.join(args.log_dir, "sig_level.csv")
-    #sig_level_csv_current = open(filepath_sig_level, 'r', newline = '')
-    #reader = csv.reader(sig_level_csv_current, delimiter=',')
-    #filepath_sig_min_dist = os.path.join(args.log_dir, "sig_level_" + str(min_dist) + ".csv")
-    #sig_level_csv_file = open(filepath_sig_min_dist, 'w', newline = '')
-    #writer = csv.writer(sig_level_csv_file, delimiter = ',')
-    #for row in reader:
-     #   writer.writerow(row)
-
-    # copy trj_point_level.csv file
-    #filepath_trj_point = os.path.join(args.log_dir, "trj_point_level.csv")
-    #trj_point_csv_current = open(filepath_trj_point, 'r', newline='')
-    #reader = csv.reader(trj_point_csv_current, delimiter=',')
-    #filepath_trj_point_min = os.path.join(args.log_dir, "trj_point_level_" + str(min_dist) + ".csv")
-    #trj_point_min_csv = open(filepath_trj_point_min, 'w', newline='')
-    #writer = csv.writer(trj_point_min_csv, delimiter=',')
-    #for row in reader:
-     #   writer.writerow(row)
-
-    # copy trj_veh_level.csv file
-    #filepath_trj_veh = os.path.join(args.log_dir, "trj_veh_level.csv")
-    #trj_veh_csv_current = open(filepath_trj_veh, 'r', newline='')
-    #reader = csv.reader(trj_veh_csv_current, delimiter=',')
-    #filepath_trj_veh_min = os.path.join(args.log_dir, "trj_veh_level_" + str(min_dist) + ".csv")
-    #trj_veh_csv_min = open(filepath_trj_veh_min, 'w', newline='')
-    #writer = csv.writer(trj_veh_csv_min, delimiter=',')
-    #for row in reader:
-     #   writer.writerow(row)
-
-    # open a file to store individual vehicle delay
-    filepath_delay = os.path.join(args.log_dir, 'veh_delay_' + str(min_dist) + '.csv') # open a file to store individual vehicle delay
-    veh_delay_csv_file = open(filepath_delay, 'w', newline='')
-    writer = csv.writer(veh_delay_csv_file, delimiter=',')
-    writer.writerow(["Vehicle #", 'Vehicle Delay'])
-
-    # open a file to store sorted trajectory points
-    filepath_sort = os.path.join(args.log_dir, 'trj_point_sort_' + str(min_dist) + '.csv')
 
 def delay_analysis(args, min_dist):
+    """
+    :param args: provides path for csv files
+    :param min_dist: the current min_dist_too_stop_bar simulated in the experiment
+    :return: The total travel time delay experienced at the intersection: the sum of individual vehicle travel delay.
+    Creates a csv file, "veh_delay_'min_dis'.csv", that contains individual vehicle delay and total intersection delay.
+    """
     Total_delay = 0
+    # set variable for trj_veh_level.csv file, which will be read to calculate travel time delay
     trj_veh_level = os.path.join(args.log_dir, 'trj_veh_level_' + str(min_dist) + '.csv')
+    # create "veh_delay_'min_dis'.csv" file
     veh_delay = os.path.join(args.log_dir, 'veh_delay_' + str(min_dist) + '.csv')
-    with open(trj_veh_level) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
+    with open(trj_veh_level) as current_csv_file:
+        veh_trj_reader = csv.reader(current_csv_file, delimiter=',')
         line_count = 0
-        for row in csv_reader:
+        for row in veh_trj_reader:
             if line_count == 0:
+                # set titles to csv file
+                with open(veh_delay, 'a') as current_csv_file:
+                    veh_delay_writer = csv.writer(current_csv_file, lineterminator='\n')
+                    veh_delay_writer.writerow(["Vehicle #", 'Vehicle Delay (s)'])
                 line_count += 1
             else:
+                # calculate veh delay (departure time - arrival time(in detection range) - (dist traveled/desSpd)) or
+                # (time travelled - ideal time travelled)
                 Veh_delay = float(row[18]) - float(row[7]) - float(row[14]) / float(row[13])
                 line_count += 1
+                # track total delay
                 Total_delay = Veh_delay + Total_delay
-                with open(veh_delay, 'a') as csv_file:
-                    writer = csv.writer(csv_file, lineterminator='\n')
-                    writer.writerow(["Vehicle " + str(line_count - 2), str("%.4f" % Veh_delay)])
+                # input into csv file
+                with open(veh_delay, 'a') as current_csv_file:
+                    veh_delay_writer = csv.writer(current_csv_file, lineterminator='\n')
+                    veh_delay_writer.writerow(["Vehicle " + str(line_count - 2), str("%.4f" % Veh_delay)])
 
+    # input total travel time delay in csv file
     with open(veh_delay, 'a') as csv_file:
         writer = csv.writer(csv_file, lineterminator='\n')
         writer.writerow(["Total travel time delay", str("%.4f" % Total_delay)])
 
     return Total_delay
 
-def executed_trajectory (args, min_dist):
+def plot_executed_trajectories (args, min_dist):
+    """
+    :param args: provides path for csv files
+    :param min_dist: the current min_dist_too_stop_bar simulated in the experiment
+    :return: trj_point_level csv file sorted by vehicle and then by lane
+    plots executed trajectories for each vehicle in their respective lane
+    """
+    # set variables for paths to needed csv files
     trj_point_level = os.path.join(args.log_dir, 'trj_point_level_' + str(min_dist) + '.csv')
-    trj_point_sort = os.path.join(args.log_dir, 'trj_point_sort_' + str(min_dist) + '.csv')
     signal_csv = os.path.join(args.log_dir, 'sig_level_' + str(min_dist) + '.csv')
+    # create file for sorted trajectory points
+    trj_point_sort = os.path.join(args.log_dir, 'trj_point_sort_' + str(min_dist) + '.csv')
+    with open(trj_point_sort, 'a') as current_csv_file:
+        writer = csv.writer(current_csv_file, lineterminator='\n')
+        writer.writerow(['sc', 'VehID', 'type', 'lane', 'time', 'distance', 'speed'])
 
-    sample = open(trj_point_level, 'r')
+    # sort trajectory points in "trj_point_level.csv" file
+    open_trj_point = open(trj_point_level, 'r')
+    trj_file_reader = csv.reader(open_trj_point, delimiter=',')
+    sort_by_vehicle = sorted(trj_file_reader, key=operator.itemgetter(1))
+    sort_by_lane = sorted(sort_by_vehicle, key=operator.itemgetter(3))
 
-    csv1 = csv.reader(sample, delimiter=',')
-
-    sort = sorted(csv1, key=operator.itemgetter(1))
-    sort2 = sorted(sort, key=operator.itemgetter(3))
-
-    for row in sort2:
-        with open(trj_point_sort, 'a') as csv_file:
-            writer = csv.writer(csv_file, lineterminator='\n')
+    # write sorted points to csv file
+    for row in sort_by_lane:
+        with open(trj_point_sort, 'a') as current_csv_file:
+            sort_writer = csv.writer(current_csv_file, lineterminator='\n')
             if row[0] != 'sc':
-                writer.writerow(row)
+                sort_writer.writerow(row)
             else:
-                writer.writerow([0, 'aaaaaa', 0, 0, 0, 0, 0, 0])
+                # this line is needed so that the code will read the last vehicle in the sorted file.
+                sort_writer.writerow([0, '1aaaaa', 0, 0, 0, 0, 0, 0])
 
+    # create dictionary "lanes" which lists vehicles to their respective lanes.
     vehicles = []
     lanes = {}
-    with open(trj_point_sort) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
+    with open(trj_point_sort) as current_csv_file:
+        sort_reader = csv.reader(current_csv_file, delimiter=',')
         vehicle = -1
         lanenum = 1
-        for row in csv_reader:
-            if row[3] == lanenum and row[1][5] != vehicle:
-                vehicles.append(row[1][5])
-                vehicle = row[1][5]
-            elif row[3] == lanenum:
-                vehicle = row[1][5]
+        line_count = 0
+        for row in sort_reader:
+            if line_count == 0:
+                line_count += 1
             else:
-                lanes[str(lanenum)] = [int(i) for i in vehicles]
-                lanenum = row[3]
-                vehicles = []
+                if row[1][0] != '1':
+                    csv_vehicle = int(row[1][4]) * 10 + int(row[1][5])
+                if row[3] == lanenum and csv_vehicle != vehicle:
+                    vehicles.append(csv_vehicle)
+                    vehicle = csv_vehicle
+                elif row[3] == lanenum:
+                    vehicle = csv_vehicle
+                else:
+                    lanes[str(lanenum)] = [int(i) for i in vehicles]
+                    lanenum = row[3]
+                    vehicles = []
 
+    # create dictionaries that assign distance and time points to each vehicle.
     time = []
     distance = []
     timefl = {}
     distancefl = {}
     maxtime = 0
-    with open(trj_point_sort) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
+    with open(trj_point_sort) as current_csv_file:
+        sort_reader = csv.reader(current_csv_file, delimiter=',')
         vehicle = 0
-        for row in csv_reader:
-            if row[1][5] == vehicle:
-                time.append(row[4])
-                distance.append(row[5])
-                timestamp = round(float(row[4]))
-                if timestamp >= maxtime:
-                    maxtime = round(float(row[4]))
+        line_count = 0
+        for row in sort_reader:
+            if line_count == 0:
+                line_count += 1
             else:
-                timefl[str(vehicle)] = [float(i) for i in time]
-                distancefl[str(vehicle)] = [float(i) for i in distance]
-                time = []
-                distance = []
-                vehicle = row[1][5]
-                time.append(row[4])
-                distance.append(row[5])
+                if row[1][0] != '1':
+                    csv_vehicle = int(row[1][4]) * 10 + int(row[1][5])
+                else:
+                    csv_vehicle = -1
+                if csv_vehicle == vehicle:
+                    time.append(row[4])
+                    distance.append(row[5])
+                    timestamp = round(float(row[4]))
+                    if timestamp >= maxtime:
+                        # keeps track of total time of the simulation in order to plot min_dist line
+                        maxtime = round(float(row[4]))
+                else:
+                    timefl[str(vehicle)] = [float(i) for i in time]
+                    distancefl[str(vehicle)] = [float(i) for i in distance]
+                    time = []
+                    distance = []
+                    vehicle = csv_vehicle
+                    time.append(row[4])
+                    distance.append(row[5])
 
     graphs = {}
+    # plot min_dist line
     x = np.linspace(0, maxtime)
     y = 0 * x + min_dist
     fig = plt.figure(figsize=(20, 15))
     fig.suptitle(
         'Executed Trajectories for Each Vehicle by Lane, ' + str(min_dist) + ' meters min_distance_to_stop_bar', fontsize = 30)
     place = 1
+    # create plots for each lane
     for number in lanes:
         ax1 = fig.add_subplot(2, 2, int(place))
         graphs[str(number)] = ax1
@@ -152,6 +168,7 @@ def executed_trajectory (args, min_dist):
         graphs[str(number)].xaxis.set_tick_params(labelsize=10)
         graphs[str(number)].yaxis.set_tick_params(labelsize=10)
         place +=1
+    # assign vehicle trajectories to each plot
     for number in lanes:
         graphs[str(number)].plot(x, y, '--')
         for veh_in_lane in lanes[number]:
@@ -159,7 +176,7 @@ def executed_trajectory (args, min_dist):
                                      label='Vehicle ' + str(veh_in_lane))
             graphs[str(number)].legend(loc='best')
 
-    # phasing, will have to change this depending on intersection phasing
+    # plots phasing, will have to change this depending on intersection phasing
     with open(signal_csv) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         line_count = 0
@@ -187,6 +204,7 @@ def executed_trajectory (args, min_dist):
                 graphs['1'].plot([float(row[2]), float(row[3])], [0, 0], color='red', linewidth=4)
                 graphs['3'].plot([float(row[2]), float(row[3])], [0, 0], color='green', linewidth=4)
 
+    # formatting
     with open(signal_csv) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         line_count = 0
@@ -198,7 +216,7 @@ def executed_trajectory (args, min_dist):
                 xticks.append(float(row[3]))
         for number in lanes:
             graphs[str(number)].set_xticks(xticks)
-    os.path.join('log', args.intersection + suffix, 'veh_delay')
+    # save figure to log file
     figpath = os.path.join(args.log_dir, 'min_dist_to_stop_bar_' + str(min_dist))
     fig.savefig(figpath)
 
@@ -237,6 +255,12 @@ if __name__ == "__main__":
                         help="Display the Matplotlib plot of traffic after each solve call")
     parser.add_argument("--save-viz", type=str_to_bool, default="False",
                         help="Save traffic viz plots to the log dir")
+    # "True" if you want to calculate delay
+    parser.add_argument("--delay-analysis", type=str_to_bool, default="True",
+                        help="Display csv files with individual vehicle and total intersection travel time delay")
+    # "True if you want to plot executed trajectories
+    parser.add_argument("--executed-trajectories-viz", type=str_to_bool, default="True",
+                        help="Display the Matplotlib plot of executed trajectories")
 
     args = parser.parse_args()
     print("Interpreter Information")
@@ -249,19 +273,27 @@ if __name__ == "__main__":
         os.makedirs(args.log_dir)
         print("creating log dir {}...".format(args.log_dir))
 
-min_dist_range = list(range(20,25))
+#adjuct min_dist_to_stop_bar range here
+min_dist_range = list(range(37,38))
 
-veh_delay_total = os.path.join(args.log_dir, 'veh_delay_total.csv')
+# create csv file that keeps track of total travel time delay for each min_dist value
+if args.delay_analysis:
+    total_delay = os.path.join(args.log_dir, 'total_travel_time_delay.csv')
+    with open(total_delay, 'a') as current_csv_file:
+        total_delay_writer = csv.writer(current_csv_file, lineterminator='\n')
+        total_delay_writer.writerow(["min_dist_to_stop_bar", 'total travel time delay (s)'])
 
 if __name__ == '__main__':
     for min_dist in min_dist_range:
         args.min_dist_to_stop_bar = min_dist
         run_rio(args, experiment = True)
-        log_files(args, min_dist)
-        delay = delay_analysis(args, min_dist)
-        with open(veh_delay_total, 'a') as csv_file:
-            writer = csv.writer(csv_file, lineterminator='\n')
-            writer.writerow([str(min_dist), 'Total travel time delay', str("%.4f" % delay)])
-        executed_trajectory(args, min_dist)
+        set_up_log_files(args, min_dist)
+        if args.delay_analysis:
+            delay = delay_analysis(args, min_dist)
+            with open(total_delay, 'a') as csv_file:
+                writer = csv.writer(csv_file, lineterminator='\n')
+                writer.writerow([str(min_dist), str("%.4f" % delay)])
+        if args.executed_trajectories_viz:
+            plot_executed_trajectories(args, min_dist)
 
 print("\nProgram Terminated.")

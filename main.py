@@ -173,7 +173,7 @@ def run_rio(args, experiment):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Runtime arguments for RIO")
-    parser.add_argument("--intersection", type=str, default="RTS",
+    parser.add_argument("--intersection", type=str, default="GaleStadium",
                         help="The name of the intersection")
     parser.add_argument("--mode", type=str, default="sim",
                         help="Run with traffic from CSV (sim) or sensor fusion (realtime)")
@@ -198,7 +198,7 @@ if __name__ == "__main__":
     parser.add_argument("--signal-controller-port", type=int, default=161,
                         help="The port number for the signal controller snmp conn")
 
-    parser.add_argument("--do-logging", type=str_to_bool, default="False",
+    parser.add_argument("--do-logging", type=str_to_bool, default="True",
                         help="Toggle logging")
     parser.add_argument("--run-with-signal-control", type=str_to_bool, default="False")
     parser.add_argument("--show-viz", type=str_to_bool, default="False",
@@ -217,5 +217,5 @@ if __name__ == "__main__":
         os.makedirs(args.log_dir)
         print("creating log dir {}...".format(args.log_dir))
 
-    run_rio(args)
+    run_rio(args, experiment = False)
     print("\nProgram Terminated.")
