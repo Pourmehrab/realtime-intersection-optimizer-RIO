@@ -7,6 +7,15 @@ import operator
 import matplotlib.pyplot as plt
 import numpy as np
 from main import run_rio
+from delay_analysis_2 import vehicle_exit_speed
+from delay_analysis_2 import time_to_reach_desired_speed
+from delay_analysis_2 import distance_covered
+from delay_analysis_2 import time_to_20_meters
+from delay_analysis_2 import total_20time
+from delay_analysis_2 import ideal_time
+from delay_analysis_2 import actual_time
+from delay_analysis_2 import vehicle_delay
+from delay_analysis_2 import log_delay
 
 def set_up_log_files(args, min_dist):
     """
@@ -14,63 +23,12 @@ def set_up_log_files(args, min_dist):
     :param min_dist: the current min_dist_too_stop_bar simulated in the experiment
     :return: renames the sig_level.csv, trj_point_level.csv and trj_veh_level.csv files created in run_rio to reflect
     the simulated min_dist value
+    trj_point_level csv file sorted by vehicle and then by lane: used in to plot executed trajectories and in delay_analysis 2.
     """
     os.rename(str(args.log_dir + "\sig_level.csv"), str(args.log_dir + "\sig_level_" + str(min_dist) + ".csv"))
     os.rename(str(args.log_dir + "\\trj_point_level.csv"), str(args.log_dir + "\\trj_point_level_" + str(min_dist) + ".csv"))
     os.rename(str(args.log_dir + "\\trj_veh_level.csv"), str(args.log_dir + "\\trj_veh_level_" + str(min_dist) + ".csv"))
-
-def delay_analysis(args, min_dist):
-    """
-    :param args: provides path for csv files
-    :param min_dist: the current min_dist_too_stop_bar simulated in the experiment
-    :return: The total travel time delay experienced at the intersection: the sum of individual vehicle travel delay.
-    Creates a csv file, "veh_delay_'min_dis'.csv", that contains individual vehicle delay and total intersection delay.
-    """
-    Total_delay = 0
-    # set variable for trj_veh_level.csv file, which will be read to calculate travel time delay
-    trj_veh_level = os.path.join(args.log_dir, 'trj_veh_level_' + str(min_dist) + '.csv')
-    # create "veh_delay_'min_dis'.csv" file
-    veh_delay = os.path.join(args.log_dir, 'veh_delay_' + str(min_dist) + '.csv')
-    with open(trj_veh_level) as current_csv_file:
-        veh_trj_reader = csv.reader(current_csv_file, delimiter=',')
-        line_count = 0
-        for row in veh_trj_reader:
-            if line_count == 0:
-                # set titles to csv file
-                with open(veh_delay, 'a') as current_csv_file:
-                    veh_delay_writer = csv.writer(current_csv_file, lineterminator='\n')
-                    veh_delay_writer.writerow(["Vehicle #", 'Vehicle Delay (s)'])
-                line_count += 1
-            else:
-                # calculate veh delay (departure time - arrival time(in detection range) - (dist traveled/desSpd)) or
-                # (time travelled - ideal time travelled)
-                Veh_delay = float(row[18]) - float(row[7]) - float(row[14]) / float(row[13])
-                line_count += 1
-                # track total delay
-                Total_delay = Veh_delay + Total_delay
-                # input into csv file
-                with open(veh_delay, 'a') as current_csv_file:
-                    veh_delay_writer = csv.writer(current_csv_file, lineterminator='\n')
-                    veh_delay_writer.writerow(["Vehicle " + str(line_count - 2), str("%.4f" % Veh_delay)])
-
-    # input total travel time delay in csv file
-    with open(veh_delay, 'a') as csv_file:
-        writer = csv.writer(csv_file, lineterminator='\n')
-        writer.writerow(["Total travel time delay", str("%.4f" % Total_delay)])
-
-    return Total_delay
-
-def plot_executed_trajectories (args, min_dist):
-    """
-    :param args: provides path for csv files
-    :param min_dist: the current min_dist_too_stop_bar simulated in the experiment
-    :return: trj_point_level csv file sorted by vehicle and then by lane
-    plots executed trajectories for each vehicle in their respective lane
-    """
-    # set variables for paths to needed csv files
     trj_point_level = os.path.join(args.log_dir, 'trj_point_level_' + str(min_dist) + '.csv')
-    signal_csv = os.path.join(args.log_dir, 'sig_level_' + str(min_dist) + '.csv')
-    # create file for sorted trajectory points
     trj_point_sort = os.path.join(args.log_dir, 'trj_point_sort_' + str(min_dist) + '.csv')
     with open(trj_point_sort, 'a') as current_csv_file:
         writer = csv.writer(current_csv_file, lineterminator='\n')
@@ -91,6 +49,18 @@ def plot_executed_trajectories (args, min_dist):
             else:
                 # this line is needed so that the code will read the last vehicle in the sorted file.
                 sort_writer.writerow([0, '1aaaaa', 0, 0, 0, 0, 0, 0])
+
+def plot_executed_trajectories (args, min_dist):
+    """
+    :param args: provides path for csv files
+    :param min_dist: the current min_dist_too_stop_bar simulated in the experiment
+    :return: plots executed trajectories for each vehicle in their respective lane
+    """
+    # set variables for paths to needed csv files
+    trj_point_sort = os.path.join(args.log_dir, 'trj_point_sort_' + str(min_dist) + '.csv')
+    signal_csv = os.path.join(args.log_dir, 'sig_level_' + str(min_dist) + '.csv')
+    # create file for sorted trajectory points
+
 
     # create dictionary "lanes" which lists vehicles to their respective lanes.
     vehicles = []
@@ -220,6 +190,58 @@ def plot_executed_trajectories (args, min_dist):
     figpath = os.path.join(args.log_dir, 'min_dist_to_stop_bar_' + str(min_dist))
     fig.savefig(figpath)
 
+def delay_analysis(args, min_dist):
+    """
+    :param args: provides path for csv files
+    :param min_dist: the current min_dist_too_stop_bar simulated in the experiment
+    :return: The total travel time delay experienced at the intersection: the sum of individual vehicle travel delay.
+    Creates a csv file, "veh_delay_'min_dis'.csv", that contains individual vehicle delay and total intersection delay.
+    """
+    Total_delay = 0
+    # set variable for trj_veh_level.csv file, which will be read to calculate travel time delay
+    trj_veh_level = os.path.join(args.log_dir, 'trj_veh_level_' + str(min_dist) + '.csv')
+    # create "veh_delay_'min_dis'.csv" file
+    veh_delay = os.path.join(args.log_dir, 'veh_delay_' + str(min_dist) + '.csv')
+    with open(trj_veh_level) as current_csv_file:
+        veh_trj_reader = csv.reader(current_csv_file, delimiter=',')
+        line_count = 0
+        for row in veh_trj_reader:
+            if line_count == 0:
+                # set titles to csv file
+                with open(veh_delay, 'a') as current_csv_file:
+                    veh_delay_writer = csv.writer(current_csv_file, lineterminator='\n')
+                    veh_delay_writer.writerow(["Vehicle #", 'Vehicle Delay (s)'])
+                line_count += 1
+            else:
+                # calculate veh delay (departure time - arrival time(in detection range) - (dist traveled/desSpd)) or
+                # (time travelled - ideal time travelled)
+                Veh_delay = float(row[18]) - float(row[7]) - float(row[14]) / float(row[13])
+                line_count += 1
+                # track total delay
+                Total_delay = Veh_delay + Total_delay
+                # input into csv file
+                with open(veh_delay, 'a') as current_csv_file:
+                    veh_delay_writer = csv.writer(current_csv_file, lineterminator='\n')
+                    veh_delay_writer.writerow(["Vehicle " + str(line_count - 2), str("%.4f" % Veh_delay)])
+
+    # input total travel time delay in csv file
+    with open(veh_delay, 'a') as csv_file:
+        writer = csv.writer(csv_file, lineterminator='\n')
+        writer.writerow(["Total travel time delay", str("%.4f" % Total_delay)])
+
+    return Total_delay
+
+def delay_analysis_2(args, min_dist):
+    exit_speed = vehicle_exit_speed(args, min_dist)
+    time_to_desSpd = time_to_reach_desired_speed(exit_speed, args, min_dist)
+    covered_distance = distance_covered(time_to_desSpd, exit_speed, args, min_dist)
+    time_to_20 = time_to_20_meters(covered_distance, args, min_dist)
+    total_time = total_20time(time_to_20, time_to_desSpd)
+    ideal = ideal_time(args, min_dist)
+    actual = actual_time(total_time, args, min_dist)
+    vdel = vehicle_delay(ideal, actual)
+    total_delay = log_delay(vdel, args, min_dist)
+    return total_delay
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Runtime arguments for RIO")
@@ -255,12 +277,13 @@ if __name__ == "__main__":
                         help="Display the Matplotlib plot of traffic after each solve call")
     parser.add_argument("--save-viz", type=str_to_bool, default="False",
                         help="Save traffic viz plots to the log dir")
-    # "True" if you want to calculate delay
-    parser.add_argument("--delay-analysis", type=str_to_bool, default="True",
-                        help="Display csv files with individual vehicle and total intersection travel time delay")
     # "True if you want to plot executed trajectories
     parser.add_argument("--executed-trajectories-viz", type=str_to_bool, default="True",
                         help="Display the Matplotlib plot of executed trajectories")
+    # "True" if you want to calculate delay to stop bar, "False" if you want to calculate at 20 meters after stop bar.
+    parser.add_argument("--delay-analysis", type=str_to_bool, default="False",
+                        help="Display csv files with individual vehicle and total intersection travel time delay")
+
 
     args = parser.parse_args()
     print("Interpreter Information")
@@ -273,13 +296,18 @@ if __name__ == "__main__":
         os.makedirs(args.log_dir)
         print("creating log dir {}...".format(args.log_dir))
 
-#adjuct min_dist_to_stop_bar range here
-min_dist_range = list(range(37,38))
+#adjust min_dist_to_stop_bar range here
+min_dist_range = list(range(33,34))
 
 # create csv file that keeps track of total travel time delay for each min_dist value
 if args.delay_analysis:
     total_delay = os.path.join(args.log_dir, 'total_travel_time_delay.csv')
     with open(total_delay, 'a') as current_csv_file:
+        total_delay_writer = csv.writer(current_csv_file, lineterminator='\n')
+        total_delay_writer.writerow(["min_dist_to_stop_bar", 'total travel time delay (s)'])
+else:
+    total_delay_20 = os.path.join(args.log_dir, 'total_travel_time_delay_20.csv')
+    with open(total_delay_20, 'a') as current_csv_file:
         total_delay_writer = csv.writer(current_csv_file, lineterminator='\n')
         total_delay_writer.writerow(["min_dist_to_stop_bar", 'total travel time delay (s)'])
 
@@ -288,12 +316,17 @@ if __name__ == '__main__':
         args.min_dist_to_stop_bar = min_dist
         run_rio(args, experiment = True)
         set_up_log_files(args, min_dist)
-        if args.delay_analysis:
-            delay = delay_analysis(args, min_dist)
-            with open(total_delay, 'a') as csv_file:
-                writer = csv.writer(csv_file, lineterminator='\n')
-                writer.writerow([str(min_dist), str("%.4f" % delay)])
         if args.executed_trajectories_viz:
             plot_executed_trajectories(args, min_dist)
+        if args.delay_analysis:
+            delay = delay_analysis(args, min_dist)
+            with open(os.path.join(args.log_dir, 'total_travel_time_delay.csv'), 'a') as csv_file:
+                writer = csv.writer(csv_file, lineterminator='\n')
+                writer.writerow([str(min_dist), str("%.4f" % delay)])
+        else:
+            delay = delay_analysis_2(args, min_dist)
+            with open(os.path.join(args.log_dir, 'total_travel_time_delay_20.csv'), 'a') as csv_file:
+                writer = csv.writer(csv_file, lineterminator='\n')
+                writer.writerow([str(min_dist), str("%.4f" % delay)])
 
 print("\nProgram Terminated.")
