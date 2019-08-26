@@ -71,21 +71,41 @@ def run_rio(args):
     # Load trajectory optimization sub-models and planner
     trajectory_generator = TrajectoryPlanner(intersection)
 
+    # TODO: Check if still needed
     # to measure the total RIO run time for performance measure (Different from RIO clock)
     if args.do_logging:
         t_start = perf_counter()
-    # Start the signal controller
+
+    # Initialize separate processes for the signal controller interface
+    # and the visualizer
+    # Start the signal controller proc
     if args.run_with_signal_control:
         print("Initializing signal controller...")
         from src.sig_ctrl_interface import main as sig_ctrl_main
-        parent, child = Pipe()
-        ps = Process(target=sig_ctrl_main, args=(args.intersection,
+        parent_sig, child = Pipe()
+        ps_sig = Process(target=sig_ctrl_main, args=(args.intersection,
                      args.signal_controller_ip, args.signal_controller_port,
-                     parent, child))
-        ps.daemon = True # if this proc crashes, dont cause things to hang
-        ps.start()
+                     parent_sig, child))
+        ps_sig.daemon = True # if this proc crashes, dont cause things to hang
+        ps_sig.start()
         child.close()
         print("Done initiailizing signal controller...")
+
+    if args.show_viz or args.save_viz:
+        print("Initializing visualizer...")
+        from src.visualizer import main as viz_main
+        parent_viz, child = Pipe()
+        if args.save_viz:
+            save_loc = os.path.join(args.log_dir, 'imgs')
+            if not os.path.exists(save_loc):
+                os.makedirs(save_loc)
+        else:
+            save_loc = ''
+        ps_viz = Process(target=viz_main, args=(intersection, args.show_viz, save_loc, parent_viz, child))
+        ps_viz.daemon = True
+        ps_viz.start()
+        child.close()
+        print("Done initiailizing visualizer...")
 
     try:
         optimizer_call_ctr = 0
@@ -122,51 +142,49 @@ def run_rio(args):
                 # call the proper phase on ATC Controller
                 if args.run_with_signal_control:
                     #snmp_phase_ctrl(signal.SPaT_sequence[0] + 1, args.intersection)
-                    parent.send(("SPaT", signal.SPaT_sequence[0] + 1))
+                    parent_sig.send(("SPaT", signal.SPaT_sequence[0] + 1))
                 
                 if args.show_viz or args.save_viz:
-                    if args.save_viz:
-                        save_loc = os.path.join(args.log_dir, 'imgs')
-                        if not os.path.exists(save_loc):
-                            os.makedirs(save_loc)
-                    else:
-                        save_loc = ''
-                    plot_SPaT_and_trajs(lanes, signal, intersection, elapsed_time, args.show_viz, save_loc)
-
+                    parent_viz.send(("plot", (lanes.vehlist, signal.SPaT_sequence, signal._phase_lane_incidence,
+                                              signal.SPaT_start, signal.SPaT_end, elapsed_time)))
+                print(lanes.vehlist)
             optimizer_call_ctr += 1
-
-            # Wrap up and log
+            
+            # Exit conditions
             if (args.mode == "sim" and (traffic.last_veh_arr() and lanes.all_served(num_lanes))) or \
                     (args.mode == "realtime" and (args.run_duration < elapsed_time)):
-                if args.do_logging:
-                    if args.mode == "sim":
-                        traffic.save_veh_level_csv(args.intersection, start_time_stamp_name)
-                    if args.mode == "realtime":
-                        traffic.close_arrs_deps_csv()
-                    traffic.close_trj_csv()
-                    signal.log_current_SPaT(args.sc, absolute_time)
-                    signal.close_sig_csv()
-                    intersection._inter_config_params.get("print_commandline") and print(
-                        "\n### Elapsed Process Time: {:.3f} s ###".format(elapsed_time))
-                if args.mode == "realtime":
-                    tl.stop()
-                    tp.stop()
                 break
+
             time_tracker.step()
 
     except KeyboardInterrupt:
         print("RIO got KeyboardInterrupt, exiting")
         # close
-
-        # Clean up data IO
+    
+    if args.do_logging:
+        if args.mode == "sim":
+            traffic.save_veh_level_csv(args.intersection, start_time_stamp_name)
         if args.mode == "realtime":
-            tl.stop()
-            tp.stop()
+            traffic.close_arrs_deps_csv()
+        traffic.close_trj_csv()
+        signal.log_current_SPaT(args.sc, absolute_time)
+        signal.close_sig_csv()
+        intersection._inter_config_params.get("print_commandline") and print(
+            "\n### Elapsed Process Time: {:.3f} s ###".format(elapsed_time))
 
-        # Clean up signal control interface
-        if args.run_with_signal_control:
-            parent.close()
-            ps.join()
+    # Clean up data IO
+    if args.mode == "realtime":
+        tl.stop()
+        tp.stop()
+
+    # Clean up signal control interface
+    if args.run_with_signal_control:
+        parent_sig.close()
+        ps_sig.join()
+    
+    if args.show_viz or args.save_viz:
+        parent_viz.close()
+        ps_viz.join()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Runtime arguments for RIO")

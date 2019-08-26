@@ -281,7 +281,6 @@ class Lanes:
                 for vehIndx, veh in enumerate(lanes.vehlist[lane]):
                     if veh.earliest_departure > 0.0:
                         continue
-
                     if veh.veh_type == 1:
                         # For CAVs, the earliest departure time is computed by actuating the following:
                         if len(lanes.vehlist.get(lane)) == 1:
@@ -436,6 +435,7 @@ class Vehicle:
         assigned a new trajectory. Set within signal.py's ``solve`` method.
         :type self.got_trajectory: bool
         :param self._call_reps_traj_planner: number of times a vehicle object trajectory is updated.
+        :param self.missed_update_counter: if this number exceeds a threshold, vehicle is removed from vehlist
 
         .. note::
             - By definition ``scheduled_departure`` is always greater than or equal to ``earliest_arrival``.
@@ -453,6 +453,8 @@ class Vehicle:
         self.max_accel_rate = a_max
         self.destination = dest
         self.desired_speed = des_speed
+        self.missed_update_counter = 0
+
         self.csv_indx = indx  # is used to find the vehicle in log file (offline mode)
 
         self.trajectory = np.zeros((3, intersection._inter_config_params.get('max_num_traj_points')),
@@ -734,3 +736,4 @@ class Vehicle:
         if dist_from_stopbar > self.min_dist_to_stop_bar:
             # TODO: Do i need to call self.reset_trj_points?
             self.trajectory[:, self.first_trj_point_indx] = [det_time, dist_from_stopbar, speed]
+        self.missed_update_counter = 0

@@ -248,8 +248,8 @@ class TrafficPublisher(StoppableThread):
             lat_offset = int(round(deltas[i,1] * 1e7))
             lon_offset = int(round(deltas[i,2] * 1e7))
             time_offset = int(round(deltas[i,0] * 1e3))
-            IAM_blob += "%d,%d,%d" % (lat_offset,lon_offset,time_offset)
-        return IAM_blob
+            IAM_blob += "%d,%d,%d," % (lat_offset,lon_offset,time_offset)
+        return IAM_blob[:-1]
 
     def close(self):
         self._IAM_publisher.close()

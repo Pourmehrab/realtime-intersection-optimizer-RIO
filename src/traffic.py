@@ -74,6 +74,12 @@ class RealTimeTraffic:
         :type lanes: Lanes
         :param time_tracker: Timer object for grabbing elapsed time since start
         """
+        # update missed update counter for all vehicles - gets reset
+        # if updated
+        for lane in range(len(lanes.vehlist)):
+            for veh in lanes.vehlist[lane]:
+                veh.missed_update_counter += 1
+
         # Read latest msg from track split/merge queue
         if len(self._track_split_merge_queue) != 0:
             self._track_split_merge_queue.pop()
@@ -127,12 +133,22 @@ class RealTimeTraffic:
                         # TODO: when debugging, print or log here
                         print("Not in opt zone!")
                 else:
-                    # TODO: vehicle gets purged bc current state is 0 before this ever gts called
                     # update v with latest data
                     print("Updating existing vehicle")
                     v.update(det_type, det_time, dist, speed)
         # N.b. eventually, add a flagging system so only vehicles with changes made to them 
         #   get new trajectories, to save on computation
+        
+        # remove vehicles with too many missed updates
+        for lane in range(len(lanes.vehlist)):  # 0-based indexing for lanes internally
+            if bool(lanes.vehlist.get(lane)):  # not an empty lane
+                last_veh_indx_to_remove = -1
+                for veh_indx, veh in enumerate(lanes.vehlist.get(lane)):
+                    if veh.missed_update_counter > 3:
+                        last_veh_indx_to_remove += 1
+                    else:
+                        break
+                last_veh_indx_to_remove > -1 and lanes.remove_srv_vehs(lane, last_veh_indx_to_remove)
 
     def close_trj_csv(self):
         """Closes trajectory CSV file."""

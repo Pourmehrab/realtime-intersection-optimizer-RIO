@@ -11,13 +11,14 @@ pylab.rcParams.update(params)
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+from multiprocessing import current_process
 
 def find_pannel_matplot(lane, _num_cols):
     return lane // _num_cols, lane % _num_cols
 
 
-def plot_SPaT_and_trajs(lanes, signal, intersection, absolute_time, show=False, save_dir=''):
-    num_lanes = len(lanes.vehlist)
+def plot_SPaT_and_trajs(vehlist, SPaT_seq, pli, SPaT_start, SPaT_end, intersection, absolute_time, show=False, save_dir=''):
+    num_lanes = len(vehlist)
     min_dist_to_stop_bar = intersection._inter_config_params.get('min_dist_to_stop_bar')
 
     root = np.sqrt(num_lanes)
@@ -32,7 +33,7 @@ def plot_SPaT_and_trajs(lanes, signal, intersection, absolute_time, show=False, 
     
     _fig_matplotlib, _ax_matplotlib = plt.subplots(nrows=_num_rows, ncols=_num_cols, sharex=True, sharey=True)
     
-    num_phases_in_SPaT = len(signal.SPaT_sequence)
+    num_phases_in_SPaT = len(SPaT_seq)
 
     for lane, ax in enumerate(_fig_matplotlib.axes):
         if lane == num_lanes:
@@ -46,12 +47,12 @@ def plot_SPaT_and_trajs(lanes, signal, intersection, absolute_time, show=False, 
         ax.set_facecolor('#d4d4d4' if lane % 2 == 1 else 'w')
 
         for p in range(num_phases_in_SPaT):
-            phase = signal.SPaT_sequence[p]
-            color = 'g' if lane in signal._phase_lane_incidence[phase] else 'r'
-            _ax_matplotlib[i, j].plot([signal.SPaT_start[p], signal.SPaT_end[p]], [0] * 2, color=color, linewidth=2)
-            _ax_matplotlib[i, j].plot([signal.SPaT_start[p], signal.SPaT_end[p]], [min_dist_to_stop_bar] * 2, color='k',
+            phase = SPaT_seq[p]
+            color = 'g' if lane in pli[phase] else 'r'
+            _ax_matplotlib[i, j].plot([SPaT_start[p], SPaT_end[p]], [0] * 2, color=color, linewidth=2)
+            _ax_matplotlib[i, j].plot([SPaT_start[p], SPaT_end[p]], [min_dist_to_stop_bar] * 2, color='k',
                                       linewidth=1, linestyle=':')
-        for veh in lanes.vehlist[lane]:
+        for veh in vehlist[lane]:
             color = 'b' if veh.veh_type == 1 else 'k'
             s, e = veh.first_trj_point_indx, veh.last_trj_point_indx + 1
             _ax_matplotlib[i, j].plot(veh.trajectory[0, s:e], veh.trajectory[1, s:e], color=color, linewidth=1)
@@ -64,12 +65,12 @@ def plot_SPaT_and_trajs(lanes, signal, intersection, absolute_time, show=False, 
         ax.tick_params(axis='both', which='major', labelsize=6)
 
     plt.suptitle('time: {:2.1f} sec'.format(absolute_time))
-    plt.xticks([t for t in signal.SPaT_start] + [signal.SPaT_end[-1]], rotation=270)
+    plt.xticks([t for t in SPaT_start] + [SPaT_end[-1]], rotation=270)
     if save_dir != '':
         plt.savefig(os.path.join(save_dir, '{}.png'.format(int(1000 * absolute_time))))
     if show:
         plt.show()
-    plt.clf() # clear
+    plt.close()
 
 def get_veh_traj(vehlist, lane, veh_indx):
     veh = vehlist[lane][veh_indx]
@@ -135,6 +136,22 @@ class VisualizeSpaceTime:
         plt.draw()
         plt.show()
         self._fig_matplotlib.savefig('matplot_trjs_sc_' + str(sc) + '.' + format, format=format)
+
+
+def main(intersection, show=False, save_dir='', parent_proc_conn=None, proc_conn=None):
+    parent_proc_conn.close()
+    p = current_process()
+    print("Visualizer running on proc {}".format(p.pid))
+
+    try:
+        while True:
+            cmd, data = proc_conn.recv()
+            (vehlist, SPaT_seq, pli, SPaT_start, SPaT_end, absolute_time) = data
+            if cmd == "plot":
+                plot_SPaT_and_trajs(vehlist, SPaT_seq, pli, SPaT_start, SPaT_end,
+                        intersection, absolute_time, show, save_dir)
+    except KeyboardInterrupt:
+        proc_conn.close()
 
 if __name__ == '__main__':
     from moviepy.editor import ImageSequenceClip
